@@ -14,17 +14,32 @@ export default function Home() {
   const [registered, setRegistered] = useState([]);
 
   const login = async () => {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-    if (res.ok) {
+    try {
+      if (!username || !password) {
+        alert("Vui lòng nhập tên đăng nhập và mật khẩu");
+        return;
+      }
+
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
       const data = await res.json();
-      setToken(data.token);
-      fetchDots(data.token);
-    } else {
-      alert("Login failed");
+
+      if (data.success && data.token) {
+        setToken(data.token);
+        fetchDots(data.token);
+      } else {
+        alert(data.error || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại sau.");
     }
   };
 
