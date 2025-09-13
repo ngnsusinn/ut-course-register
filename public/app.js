@@ -1,1 +1,491 @@
-document.addEventListener("DOMContentLoaded",(()=>{const e=document.createElement("style");e.innerHTML="input:checked~.dot{transform:translateX(100%);background-color:#48bb78}input:checked~.block{background-color:#a7f3d0}",document.head.appendChild(e);const t=document.getElementById("username"),n=document.getElementById("password"),s=document.getElementById("delay-input"),a=document.getElementById("login-btn"),c=document.getElementById("start-insertion-btn"),o=document.getElementById("start-registration-btn"),l=document.getElementById("stop-btn"),r=document.getElementById("refresh-registered-btn"),i=document.getElementById("search-schedule"),d=document.getElementById("subject-filter"),h=document.getElementById("schedule-container"),p=document.getElementById("registered-container"),u=document.getElementById("selected-classes-list"),g=document.getElementById("log-output"),m=document.getElementById("registration-controls"),y=document.getElementById("login-form");let b,x,v,f,L,H,T,$=null,w=null,E=[],k=new Map,M=new Map,I=new Map,B=!1;const P=async(e,t={})=>{try{const n={"Content-Type":"application/json"};$&&(n.Authorization=`Bearer ${$}`);const s=await fetch("/api/handler",{method:"POST",headers:n,body:JSON.stringify({action:e,payload:t})});if(!s.ok){const t=await s.json().catch((()=>({message:`HTTP Error: ${s.status}`})));return C(`Lỗi '${e}': ${t.message}`,!0),null}return await s.json()}catch(e){return C(`Lỗi mạng khi gọi backend: ${e.message}`,!0),null}},C=(e,t=!1)=>{const n=(new Date).toLocaleTimeString(),s=document.createElement("p");s.innerHTML=`[${n}] ${e}`,s.className=t?"text-red-400":"text-green-300",g.appendChild(s),g.scrollTop=g.scrollHeight},S=(e,t)=>{e&&(t?(e.disabled=!0,e.innerHTML='<div class="loader"></div>'):(e.disabled=!1,e.innerHTML=e.originalHTML))};[a,c,o,l,r].forEach((e=>{e&&(e.originalHTML=e.innerHTML)}));const N=e=>e&&!e.error&&Array.isArray(e)&&0!==e.length?e.map((e=>`<div class="font-medium">Thứ ${e.thu} | Tiết ${e.tietHoc} | ${new Date(e.ngayBatDau).toLocaleDateString("vi-VN")} - ${new Date(e.ngayKetThuc).toLocaleDateString("vi-VN")}</div>`)).join('<hr class="my-1 border-gray-200">'):"Không có thông tin lịch học",D=(e,t,n="")=>{if(!L)return;if(-1===e)return void L.classList.add("hidden");L.classList.remove("hidden");const s=t>0?e/t*100:0;H.style.width=`${s}%`,T.textContent=n},K=async()=>{S(a,!0);const e=t.value.trim(),s=n.value.trim();if(!e||!s)return C("Vui lòng nhập tên đăng nhập và mật khẩu.",!0),void S(a,!1);const c=await P("login",{username:e,password:s});if(c&&c.token){$=c.token,C("✅ Đăng nhập thành công.");const e=await P("getInitialData");e&&e.success?(w=e.dot.id,C(`✅ Đã chọn đợt: ${e.dot.tenHocKy}`),(e=>{if(y.style.display="none",!document.getElementById("user-panel-content")){const e=document.createElement("div");e.id="user-panel-content",e.className="space-y-4",e.innerHTML='\n <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>\n <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">\n <label for="prerequisite-toggle" class="flex items-center cursor-pointer">\n <div class="relative">\n <input type="checkbox" id="prerequisite-toggle" class="sr-only">\n <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>\n <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>\n </div>\n <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện</div>\n </label>\n </div>\n <div id="progress-bar-container" class="my-4 hidden">\n <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>\n <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>\n </div>\n <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" /></svg><span>Lấy dữ liệu</span></button>\n <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>\n ',y.parentNode.insertBefore(e,y.nextSibling),b=document.getElementById("greeting-msg"),x=document.getElementById("prerequisite-toggle"),v=document.getElementById("fetch-schedule-btn"),f=document.getElementById("logout-btn"),L=document.getElementById("progress-bar-container"),H=document.getElementById("progress-bar-element"),T=document.getElementById("progress-bar-text"),v.originalHTML=v.innerHTML,f.originalHTML=f.innerHTML,v.addEventListener("click",q),f.addEventListener("click",j)}b.textContent=`Xin chào, ${e.hoDem} ${e.ten}!`,document.getElementById("user-panel-content").style.display="block"})(e.profile),await z()):(C(`❌ Lỗi lấy dữ liệu ban đầu: ${e?.message||"Không rõ"}`,!0),$=null)}else C(`❌ Đăng nhập thất bại: ${c?.message||"Lỗi không xác định"}`,!0);S(a,!1)},j=async()=>{await A(),$=null,w=null,(()=>{y.style.display="block";const e=document.getElementById("user-panel-content");e&&(e.style.display="none"),h.innerHTML='<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem dữ liệu.</p>',p.innerHTML='<p class="text-gray-500 text-center py-8">Chưa có dữ liệu.</p>',g.innerHTML="",d.innerHTML='<option value="">Tất cả môn học</option>',i.value="",E=[],k.clear(),X()})(),C("Đã đăng xuất.")},q=async()=>{if(!$)return C("Chưa đăng nhập.",!0);S(v,!0),B=!1,C("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");const e=x?.checked||!1;D(0,100,"Đang tải...");const t=await P("getFullSchedule",{dotId:w,fetchPrerequisites:e});t&&t.success?(E=t.schedule,M=new Map(Object.entries(t.subjectTypes)),C(`✅ Đã tải thành công ${E.length} lớp học phần.`),await G()):C("❌ Lỗi khi tải lịch học từ server.",!0),D(-1),S(v,!1)},z=async()=>{if(!$)return;S(r,!0);const e=x?.checked||!1,t=await P("getRegisteredClasses",{dotId:w,fetchPrerequisites:e});t&&t.success?(await O(t.body),C(`✅ Tải danh sách đã đăng ký thành công (${t.body.length} lớp).`)):C("❌ Lỗi khi tải danh sách đã đăng ký.",!0),S(r,!1)},A=async()=>{B=!0,C("🛑 Đang dừng tất cả các quá trình..."),I.forEach(clearInterval),I.clear(),V(!1),C("🛑 Đã dừng tất cả quá trình.")},V=e=>{c.classList.toggle("hidden",e),o.classList.toggle("hidden",e),l.classList.toggle("hidden",!e)},G=async()=>{const e=i.value.toLowerCase(),t=d.value;if(E.length>0){const e=[...new Set(E.map((e=>e.tenMonHoc)))].sort();d.innerHTML='<option value="">Tất cả môn học</option>'+e.map((e=>`<option value="${e}" ${e===t?"selected":""}>${e}</option>`)).join("")}const n=E.filter((n=>(!t||n.tenMonHoc===t)&&`${n.tenMonHoc} ${n.maLopHocPhan} ${n.maHocPhan}`.toLowerCase().includes(e)));if(0===n.length)return void(h.innerHTML=0===E.length?'<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>':'<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>');const s=document.createElement("table");s.className="w-full text-sm text-left text-gray-500",s.innerHTML='\n <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>\n <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>\n <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>\n <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>\n </tr></thead><tbody></tbody>';const a=s.querySelector("tbody");n.forEach((e=>{const t=document.createElement("tr"),n=k.has(e.id.toString());t.className="bg-white border-b hover:bg-sky-100 cursor-pointer "+(n?"bg-yellow-200":""),t.dataset.classId=e.id;const s=M.get(e.maHocPhan),c="dkhpdk"===e.source?"":void 0===s?"N/A":s?'<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>':'<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>',o="dkhpdk"===e.source?'<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">DKHPĐK</span>':"";t.innerHTML=`\n <th scope="row" class="px-6 py-4 font-medium text-gray-900">${e.tenMonHoc} ${o}<div class="text-xs mt-1 text-gray-600">${N(e.scheduleDetails)}</div></th>\n <td class="px-6 py-4" data-label="Mã LHP">${e.maLopHocPhan}</td>\n <td class="px-6 py-4" data-label="Loại HP">${c}</td>\n <td class="px-6 py-4" data-label="Số TC">${e.soTinChi??"N/A"}</td>\n <td class="px-6 py-4" data-label="Trạng thái">${e.tenTrangThai||"N/A"}</td>\n <td class="px-6 py-4 font-semibold ${e.phanTramDangKy>=100?"text-red-500":"text-green-500"}" data-label="Đã ĐK">${e.phanTramDangKy}%</td>`,a.appendChild(t)})),h.innerHTML="",h.appendChild(s)},O=async e=>{if(!e||0===e.length)return void(p.innerHTML='<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>');const t=document.createElement("table");t.className="w-full text-sm text-left text-gray-500",t.innerHTML='\n <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>\n <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>\n <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>\n <th scope="col" class="px-6 py-3">Hành động</th>\n </tr></thead><tbody></tbody>';const n=t.querySelector("tbody");e.forEach((e=>{const t=document.createElement("tr");t.className="bg-white border-b hover:bg-gray-50";const s="dkhpdk"===e.source?'<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">DKHPĐK</span>':"";t.innerHTML=`\n <th scope="row" class="px-6 py-4 font-medium text-gray-900">${e.tenMonHoc} ${s}<div class="text-xs mt-1 text-gray-600">${N(e.scheduleDetails)}</div></th>\n <td class="px-6 py-4" data-label="Mã LHP">${e.maLopHocPhan}</td>\n <td class="px-6 py-4" data-label="Số TC">${e.soTinChi??"N/A"}</td>\n <td class="px-6 py-4" data-label="Trạng thái">${e.tenTrangThaiLopHocPhan||"N/A"}</td>\n <td class="px-6 py-4" data-label="Hành động"><button data-reg-id="${e.id}" data-ten-mon="${e.tenMonHoc}" data-source="${e.source}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button></td>`,n.appendChild(t)})),p.innerHTML="",p.appendChild(t)},X=async()=>{if(0===k.size)return u.innerHTML='<p class="text-gray-500">Chưa có lớp nào được chọn.</p>',void m.classList.add("hidden");u.innerHTML=[...k.values()].map((e=>{const t="dkhpdk"===e.source?'<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>':"";return`\n <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">\n <div>\n <p class="font-semibold text-sm text-blue-800">${e.tenMonHoc} ${t}</p>\n <div class="text-xs text-gray-600 mt-1">${((e,t)=>!t||t.error?'<span class="text-red-500">Không tải được lịch</span>':Array.isArray(t)&&0!==t.length?t.map((t=>`<span>${e.maLopHocPhan} | Thứ ${t.thu} | Tiết ${t.tietHoc}</span>`)).join("<br>"):"<span>Chưa có thông tin lịch học</span>")(e,e.scheduleDetails)}</div>\n </div>\n <button data-class-id="${e.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>\n </div>`})).join(""),m.classList.remove("hidden")};a.addEventListener("click",K),r.addEventListener("click",z),c.addEventListener("click",(()=>{if(0===k.size)return C("Vui lòng chọn lớp để chèn.",!0);A(),B=!1,V(!0),C("🚀 Bắt đầu quá trình chèn lớp...");const e=new Map;k.forEach((t=>{e.has(t.maHocPhan)||e.set(t.maHocPhan,[]),e.get(t.maHocPhan).push(t)}));const t=parseInt(s.value,10)||1e3;e.forEach(((e,n)=>{const s=e[0].tenMonHoc||n,a=e[0].source,c=setInterval((async()=>{if(B)return;const t=await P("checkClassStatus",{dotId:w,maHocPhan:n,source:a});if(t&&t.success)for(const c of t.body)if(k.has(c.id.toString())&&c.phanTramDangKy<100){C(`[${s}] 🔔 Phát hiện lớp còn chỗ: ${c.maLopHocPhan}`);const t=await P("register",{classId:c.id,source:a});if(t&&t.success)return C(`🎉 [${s}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`),clearInterval(I.get(n)),I.delete(n),e.forEach((e=>k.delete(e.id.toString()))),await Promise.all([z(),X(),G()]),void(0===I.size&&await A());C(`❌ [${s}] Chèn thất bại: ${t?.message||"Lỗi"}`,!0)}}),t);I.set(n,c)}))})),o.addEventListener("click",(()=>{if(0===k.size)return C("Vui lòng chọn lớp để đăng ký.",!0);A(),B=!1,V(!0),C("🚀 Bắt đầu đăng ký liên tục...");const e=new Map;k.forEach((t=>{e.has(t.maHocPhan)||e.set(t.maHocPhan,[]),e.get(t.maHocPhan).push(t)}));const t=parseInt(s.value,10)||1e3;e.forEach(((e,n)=>{const s=e[0].tenMonHoc,a=setInterval((async()=>{if(!B)for(const t of e){if(B)return;C(`[${s}] ⏳ Gửi yêu cầu đăng ký lớp ${t.maLopHocPhan}...`);const a=await P("register",{classId:t.id,source:t.source});if(a&&(a.success||"Bạn đã đăng ký môn này rồi."===a.message))return C(`🎉 [${s}] THÀNH CÔNG! Dừng đăng ký cho môn này.`),clearInterval(I.get(n)),I.delete(n),e.forEach((e=>k.delete(e.id.toString()))),await Promise.all([z(),X(),G()]),void(0===I.size&&await A());a&&C(`❌ [${s}] Thất bại: ${a.message}`,!0)}}),t);I.set(n,a)}))})),l.addEventListener("click",A),i.addEventListener("input",(()=>G())),d.addEventListener("change",(()=>G())),n.addEventListener("keydown",(e=>{"Enter"===e.key&&K()})),document.addEventListener("click",(e=>{const t=e.target.closest("#schedule-container tr");if(t){const e=t.dataset.classId,n=E.find((t=>t.id.toString()===e));if(!n)return;k.has(e)?k.delete(e):k.set(e,n),t.classList.toggle("bg-yellow-200"),X()}const n=e.target.closest(".remove-selected-btn");if(n){const e=n.dataset.classId;k.delete(e);const t=document.querySelector(`#schedule-container tr[data-class-id='${e}']`);t&&t.classList.remove("bg-yellow-200"),X()}const s=e.target.closest(".cancel-btn");if(s){const{regId:e,tenMon:t,source:n}=s.dataset;(async(e,t,n)=>{if(!confirm(`Bạn có chắc muốn hủy môn "${t}" không?`))return;C(`Đang hủy môn ${t}...`);const s=await P("cancel",{registrationId:e,source:n});s&&s.success?(C("✅ Hủy thành công."),await z()):C(`❌ Hủy thất bại: ${s?.message||"Lỗi"}`,!0)})(e,t,n)}}))}));
+document.addEventListener('DOMContentLoaded', () => {
+    // CSS Toggle Switch
+    const style = document.createElement('style');
+    style.innerHTML = `
+        input:checked ~ .dot { transform: translateX(100%); background-color: #48bb78; }
+        input:checked ~ .block { background-color: #a7f3d0; }
+        #close-vip-modal-btn { font-size: 2rem; line-height: 1; }
+    `;
+    document.head.appendChild(style);
+
+    // DOM Elements
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const delayInput = document.getElementById('delay-input');
+    const loginBtn = document.getElementById('login-btn');
+    const startInsertionBtn = document.getElementById('start-insertion-btn');
+    const startRegistrationBtn = document.getElementById('start-registration-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const refreshRegisteredBtn = document.getElementById('refresh-registered-btn');
+    const searchInput = document.getElementById('search-schedule');
+    const subjectFilter = document.getElementById('subject-filter');
+    const scheduleContainer = document.getElementById('schedule-container');
+    const registeredContainer = document.getElementById('registered-container');
+    const selectedList = document.getElementById('selected-classes-list');
+    const logOutput = document.getElementById('log-output');
+    const registrationControls = document.getElementById('registration-controls');
+    const loginForm = document.getElementById('login-form');
+    const dkhpdkToggle = document.getElementById('dkhpdk-toggle');
+    
+    // User Info & VIP Elements
+    const userInfoSection = document.getElementById('user-info-section');
+    const userNameDisplay = document.getElementById('user-name-display');
+    const vipStatusDisplay = document.getElementById('vip-status-display');
+    const buyVipBtn = document.getElementById('buy-vip-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // VIP Modal Elements
+    const vipModal = document.getElementById('vip-modal');
+    const closeVipModalBtn = document.getElementById('close-vip-modal-btn');
+    const vipStep1 = document.getElementById('vip-step-1');
+    const vipStep2 = document.getElementById('vip-step-2');
+    const qrCodeContainer = document.getElementById('qr-code-container');
+    const paymentAmount = document.getElementById('payment-amount');
+    const paymentContent = document.getElementById('payment-content');
+    const paymentStatus = document.getElementById('payment-status');
+    const backToPlansBtn = document.getElementById('back-to-plans-btn');
+
+
+    // State
+    let token = localStorage.getItem('authToken');
+    let username = localStorage.getItem('username');
+    let allScheduleData = [];
+    let selectedClasses = new Map();
+    let isProcessing = false;
+    let stopFlag = false;
+    let paymentCheckInterval = null;
+
+    // --- Core Functions ---
+    const log = (message, type = 'info') => {
+        const now = new Date().toLocaleTimeString();
+        const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-gray-300';
+        logOutput.innerHTML += `<p><span class="text-cyan-400">[${now}]</span> <span class="${color}">${message}</span></p>`;
+        logOutput.scrollTop = logOutput.scrollHeight;
+    };
+
+    const apiRequest = async (action, payload = {}, requiresAuth = true) => {
+        const headers = { 'Content-Type': 'application/json' };
+        if (requiresAuth) {
+            if (!token) {
+                log('Lỗi: Token không hợp lệ. Vui lòng đăng nhập lại.', 'error');
+                handleLogout();
+                return null;
+            }
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        try {
+            const response = await fetch('/api/handler', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ action, payload })
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Lỗi không xác định từ server.' }));
+                throw new Error(errorData.message || `Lỗi HTTP: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            log(`Lỗi API [${action}]: ${error.message}`, 'error');
+            if (error.message.includes("Token đã hết hạn")) handleLogout();
+            return null;
+        }
+    };
+    
+    // --- UI Update Functions ---
+    const updateButtonState = (processing) => {
+        isProcessing = processing;
+        startInsertionBtn.disabled = processing;
+        startRegistrationBtn.disabled = processing;
+        stopBtn.classList.toggle('hidden', !processing);
+
+        [startInsertionBtn, startRegistrationBtn].forEach(btn => {
+             if (processing) {
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                // Re-enable based on which one is relevant
+                if(btn.id === 'start-insertion-btn') btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                if(btn.id === 'start-registration-btn') btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
+        });
+    };
+    
+    const renderTable = (container, data, type) => {
+        if (!data || data.length === 0) {
+            container.innerHTML = `<p class="text-gray-500 text-center py-8">Không có dữ liệu.</p>`;
+            return;
+        }
+
+        const headers = type === 'schedule' 
+            ? ['Mã LHP', 'Tên môn', 'TC', 'Lớp', 'Sĩ số', 'Đã ĐK', 'Lịch học', 'Giảng viên'] 
+            : ['Mã LHP', 'Tên môn', 'TC', 'Trạng thái', 'Hủy'];
+
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left';
+        table.innerHTML = `
+            <thead class="bg-gray-200">
+                <tr>${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+                ${data.map(item => type === 'schedule' ? createScheduleRow(item) : createRegisteredRow(item)).join('')}
+            </tbody>
+        `;
+        container.innerHTML = '';
+        container.appendChild(table);
+    };
+    
+    const createScheduleRow = (cls) => {
+        const isSelected = selectedClasses.has(cls.id.toString());
+        return `
+            <tr data-class-id="${cls.id}" class="border-b hover:bg-gray-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}">
+                <td class="p-3">${cls.maLopHocPhan}</td>
+                <td class="p-3 font-semibold">${cls.tenMonHoc}</td>
+                <td class="p-3">${cls.soTinChi}</td>
+                <td class="p-3">${cls.tenLop}</td>
+                <td class="p-3">${cls.siSo}</td>
+                <td class="p-3">${cls.soLuongDaDangKy} / ${cls.soLuongToiDa}</td>
+                <td class="p-3">${cls.tkb}</td>
+                <td class="p-3">${cls.giangVien}</td>
+            </tr>`;
+    };
+
+    const createRegisteredRow = (reg) => {
+        const source = dkhpdkToggle.checked ? 'dkhpdk' : 'dkhp';
+        return `
+            <tr class="border-b">
+                <td class="p-3">${reg.maLopHocPhan}</td>
+                <td class="p-3 font-semibold">${reg.tenMonHoc}</td>
+                <td class="p-3">${reg.soTinChi}</td>
+                <td class="p-3">${reg.trangThai}</td>
+                <td class="p-3">
+                    <button class="cancel-btn bg-red-500 text-white px-2 py-1 rounded" data-reg-id="${reg.id}" data-ten-mon="${reg.tenMonHoc}" data-source="${source}">Hủy</button>
+                </td>
+            </tr>`;
+    };
+    
+    const renderScheduleTable = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedSubject = subjectFilter.value;
+        const filteredData = allScheduleData.filter(cls => {
+            const matchesSearch = Object.values(cls).some(val => 
+                String(val).toLowerCase().includes(searchTerm)
+            );
+            const matchesSubject = !selectedSubject || cls.maMonHoc === selectedSubject;
+            return matchesSearch && matchesSubject;
+        });
+        renderTable(scheduleContainer, filteredData, 'schedule');
+    };
+
+    const updateSelectedList = () => {
+        if (selectedClasses.size === 0) {
+            selectedList.innerHTML = '<p class="text-gray-500 text-center">Chưa chọn lớp nào.</p>';
+            return;
+        }
+        selectedList.innerHTML = Array.from(selectedClasses.values()).map(cls => `
+            <div class="flex justify-between items-center bg-gray-100 p-2 rounded">
+                <span>${cls.tenMonHoc} (${cls.maLopHocPhan})</span>
+                <button class="remove-selected-btn text-red-500" data-class-id="${cls.id}">&times;</button>
+            </div>
+        `).join('');
+    };
+
+    // --- Authentication and User Status ---
+    const handleLogin = async () => {
+        const u = usernameInput.value.trim();
+        const p = passwordInput.value.trim();
+        if (!u || !p) {
+            log('Vui lòng nhập tên đăng nhập và mật khẩu.', 'error');
+            return;
+        }
+        loginBtn.textContent = 'Đang đăng nhập...';
+        loginBtn.disabled = true;
+
+        const result = await apiRequest('login', { username: u, password: p }, false);
+
+        loginBtn.textContent = 'Đăng nhập';
+        loginBtn.disabled = false;
+
+        if (result && result.success) {
+            log('Đăng nhập thành công!', 'success');
+            token = result.token;
+            username = u;
+            localStorage.setItem('authToken', token);
+            localStorage.setItem('username', username);
+            initializeApp();
+        } else {
+            log(result?.message || 'Đăng nhập thất bại.', 'error');
+        }
+    };
+    
+    const handleLogout = () => {
+        token = null;
+        username = null;
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('username');
+        
+        loginForm.classList.remove('hidden');
+        registrationControls.classList.add('hidden');
+        userInfoSection.classList.add('hidden');
+        
+        // Reset UI
+        allScheduleData = [];
+        selectedClasses.clear();
+        scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem lịch.</p>';
+        registeredContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem lịch.</p>';
+        updateSelectedList();
+        log('Đã đăng xuất.');
+    };
+    
+    const fetchUserStatus = async () => {
+        const result = await apiRequest('get-user-status', { username });
+        if(result && result.success) {
+            userNameDisplay.textContent = username;
+            if(result.tier === 'vip') {
+                const expiryDate = new Date(result.vipExpiry._seconds * 1000).toLocaleString('vi-VN');
+                vipStatusDisplay.innerHTML = `Trạng thái: <span class="font-bold text-amber-500">VIP</span> (Hết hạn: ${expiryDate})`;
+            } else {
+                vipStatusDisplay.innerHTML = `Trạng thái: <span class="font-bold text-gray-500">Free</span>`;
+            }
+        } else {
+            vipStatusDisplay.textContent = 'Không thể tải trạng thái.';
+        }
+    };
+
+
+    // --- Core App Logic ---
+    const initializeApp = async () => {
+        if (!token || !username) return;
+
+        loginForm.classList.add('hidden');
+        registrationControls.classList.remove('hidden');
+        userInfoSection.classList.remove('hidden');
+        
+        await fetchUserStatus();
+        await fetchRegisteredCourses();
+        await fetchSchedule();
+    };
+
+    const fetchSchedule = async () => {
+        log('Đang tải danh sách lớp học phần...');
+        scheduleContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="loader"></div></div>';
+        const source = dkhpdkToggle.checked ? 'dkhpdk' : 'dkhp';
+        const result = await apiRequest('get-schedule', { source });
+        if (result && result.success) {
+            allScheduleData = result.data;
+            renderScheduleTable();
+            const subjects = [...new Set(allScheduleData.map(c => c.maMonHoc))].map(maMH => {
+                const cls = allScheduleData.find(c => c.maMonHoc === maMH);
+                return { ma: maMH, ten: cls.tenMonHoc };
+            });
+            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s.ma}">${s.ten}</option>`).join('');
+            log('Tải danh sách lớp thành công.', 'success');
+        } else {
+            scheduleContainer.innerHTML = `<p class="text-red-500 text-center py-8">${result?.message || 'Lỗi khi tải lịch.'}</p>`;
+        }
+    };
+    
+    const fetchRegisteredCourses = async () => {
+        log('Đang tải danh sách lớp đã đăng ký...');
+        registeredContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="loader"></div></div>';
+        const source = dkhpdkToggle.checked ? 'dkhpdk' : 'dkhp';
+        const result = await apiRequest('get-registered', { source });
+        if (result && result.success) {
+            renderTable(registeredContainer, result.data, 'registered');
+            log('Tải danh sách lớp đã đăng ký thành công.', 'success');
+        } else {
+             registeredContainer.innerHTML = `<p class="text-red-500 text-center py-8">${result?.message || 'Lỗi khi tải danh sách.'}</p>`;
+        }
+    };
+
+    const cancelRegistration = async (regId, tenMon, source) => {
+        const result = await apiRequest('cancel', { registrationId: regId, source });
+        if (result && result.success) {
+            log(`Hủy thành công môn: ${tenMon}`, 'success');
+            fetchRegisteredCourses(); // Refresh list
+        } else {
+            log(`Lỗi khi hủy môn ${tenMon}: ${result?.message}`, 'error');
+        }
+    };
+
+    const startProcess = async (mode) => {
+        if (isProcessing) return;
+        if (selectedClasses.size === 0) {
+            log('Vui lòng chọn ít nhất một lớp học phần.', 'error');
+            return;
+        }
+
+        updateButtonState(true);
+        stopFlag = false;
+        const delay = parseInt(delayInput.value, 10) || 1000;
+        const action = mode === 'register' ? 'register' : 'insert';
+        const actionName = mode === 'register' ? 'Đăng ký' : 'Chèn';
+        const source = dkhpdkToggle.checked ? 'dkhpdk' : 'dkhp';
+
+        log(`Bắt đầu quá trình ${actionName} với độ trễ ${delay}ms...`);
+
+        while (!stopFlag && selectedClasses.size > 0) {
+            for (const [classId, cls] of selectedClasses.entries()) {
+                if (stopFlag) break;
+                
+                log(`Đang thử ${actionName} lớp ${cls.maLopHocPhan} - ${cls.tenMonHoc}...`);
+                const result = await apiRequest(action, { classId, source });
+
+                if (result && result.success) {
+                    log(`${actionName} thành công lớp ${cls.maLopHocPhan}!`, 'success');
+                    selectedClasses.delete(classId);
+                    updateSelectedList();
+                     const row = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
+                    if(row) row.classList.remove('bg-yellow-200');
+                } else {
+                     log(`Lỗi ${actionName} lớp ${cls.maLopHocPhan}: ${result?.message || 'Lỗi không xác định'}`, 'error');
+                }
+                
+                if (selectedClasses.size === 0 || stopFlag) break;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+             if (selectedClasses.size === 0 || stopFlag) break;
+        }
+
+        if(stopFlag) log('Đã dừng quá trình.');
+        else log('Hoàn tất quá trình.');
+        
+        updateButtonState(false);
+        fetchRegisteredCourses();
+    };
+
+    const stopProcess = () => {
+        stopFlag = true;
+    };
+    
+    // --- VIP Payment Functions ---
+    const openVipModal = () => {
+      vipModal.classList.remove('hidden');
+      vipStep1.classList.remove('hidden');
+      vipStep2.classList.add('hidden');
+      if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    };
+
+    const closeVipModal = () => {
+      vipModal.classList.add('hidden');
+      if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    };
+
+    const generateVietQRUrl = (amount, content) => {
+        // THAY THẾ CÁC THÔNG TIN SAU BẰNG THÔNG TIN TÀI KHOẢN NGÂN HÀNG CỦA BẠN
+        const bankId = '970422'; // MB Bank
+        const accountNumber = '0948964567'; // Your Account Number
+        const accountName = 'NGUYEN VAN A'; // Your Account Name
+        // --------------------------------------------------------------------
+
+        const qrUrl = `https://api.vietqr.io/image/${bankId}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(accountName)}`;
+        return qrUrl;
+    };
+    
+    const initiatePayment = async (days, amount) => {
+        vipStep1.classList.add('hidden');
+        vipStep2.classList.remove('hidden');
+        qrCodeContainer.innerHTML = '<div class="loader"></div>';
+        paymentStatus.innerHTML = `<div class="flex justify-center items-center"><div class="loader mr-2"></div><span>Đang tạo giao dịch...</span></div>`;
+
+        const result = await apiRequest('create-payment', { username, days, amount });
+
+        if (result && result.success) {
+            const { transactionId, paymentContent: content, amount: finalAmount } = result;
+            const qrUrl = generateVietQRUrl(finalAmount, content);
+            
+            qrCodeContainer.innerHTML = `<img src="${qrUrl}" alt="Mã QR thanh toán" class="w-64 h-64">`;
+            paymentAmount.textContent = `${finalAmount.toLocaleString('vi-VN')} VNĐ`;
+            paymentContent.textContent = content;
+
+            pollPaymentStatus(transactionId);
+        } else {
+            paymentStatus.innerHTML = `<span class="text-red-500">Lỗi: ${result?.message || 'Không thể tạo giao dịch.'}</span>`;
+        }
+    };
+    
+    const pollPaymentStatus = (transactionId) => {
+        paymentStatus.innerHTML = `<div class="flex justify-center items-center"><div class="loader mr-2"></div><span>Đang chờ thanh toán...</span></div>`;
+        
+        if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+
+        paymentCheckInterval = setInterval(async () => {
+            const result = await apiRequest('check-payment-status', { transactionId });
+            if (result && result.success && result.status === 'completed') {
+                clearInterval(paymentCheckInterval);
+                paymentStatus.innerHTML = `<span class="text-green-500 font-bold">Thanh toán thành công!</span>`;
+                log('Nâng cấp VIP thành công!', 'success');
+                await fetchUserStatus(); // Cập nhật lại trạng thái VIP trên UI
+                setTimeout(closeVipModal, 2000); // Tự động đóng modal sau 2s
+            }
+        }, 3000); // Kiểm tra mỗi 3 giây
+    };
+
+    // --- Event Listeners ---
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    refreshRegisteredBtn.addEventListener('click', fetchRegisteredCourses);
+    startInsertionBtn.addEventListener('click', () => startProcess('insert'));
+    startRegistrationBtn.addEventListener('click', () => startProcess('register'));
+    stopBtn.addEventListener('click', stopProcess);
+    searchInput.addEventListener('input', renderScheduleTable);
+    subjectFilter.addEventListener('change', renderScheduleTable);
+    passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+    dkhpdkToggle.addEventListener('change', () => {
+        if(token) {
+            fetchRegisteredCourses();
+            fetchSchedule();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        const scheduleRow = e.target.closest('#schedule-container tr');
+        if (scheduleRow) {
+            const classId = scheduleRow.dataset.classId;
+            const cls = allScheduleData.find(c => c.id.toString() === classId);
+            if (!cls) return;
+            if (selectedClasses.has(classId)) selectedClasses.delete(classId);
+            else selectedClasses.set(classId, cls);
+            scheduleRow.classList.toggle('bg-yellow-200');
+            updateSelectedList();
+        }
+        
+        const removeBtn = e.target.closest('.remove-selected-btn');
+        if (removeBtn) {
+            const classId = removeBtn.dataset.classId;
+            selectedClasses.delete(classId);
+            const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
+            if (rowToUpdate) rowToUpdate.classList.remove('bg-yellow-200');
+            updateSelectedList();
+        }
+        
+        const cancelBtn = e.target.closest('.cancel-btn');
+        if (cancelBtn) {
+            const { regId, tenMon, source } = cancelBtn.dataset;
+            cancelRegistration(regId, tenMon, source);
+        }
+    });
+    
+    // VIP Modal Listeners
+    buyVipBtn.addEventListener('click', openVipModal);
+    closeVipModalBtn.addEventListener('click', closeVipModal);
+    backToPlansBtn.addEventListener('click', () => {
+      vipStep1.classList.remove('hidden');
+      vipStep2.classList.add('hidden');
+      if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    });
+    
+    document.querySelectorAll('.vip-plan-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const days = parseInt(button.dataset.days);
+            const amount = parseInt(button.dataset.amount);
+            initiatePayment(days, amount);
+        });
+    });
+
+
+    // Initial Check
+    if (token && username) {
+        initializeApp();
+    }
+});
