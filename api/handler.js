@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
+const db = require('./db'); // Import kết nối DB
 
-// Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -18,29 +18,36 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
 
     try {
         const response = await fetch(targetUrl, options);
-        if (!response.ok) { // Handle non-2xx responses
+        if (!response.ok) {
             return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
         }
-        return await response.json();
+        // Kiểm tra nếu response là JSON rỗng thì trả về object rỗng thay vì lỗi
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
     } catch (error) {
         return { success: false, message: error.message };
     }
 }
 
-// Tiện ích: Lấy chi tiết lịch học cho một lớp
 async function getScheduleDetails(classId, token, source) {
-    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
-    return (result && result.success) ? result.body : { error: true, message: result.message };
+    const result = await callApi(`/getLichHoc?idLopHocPhan=${classId}`, 'GET', token, null, source);
+    if (result && result.body) {
+        return result.body.map(item =>
+            `Thứ ${item.thu} (Tiết ${item.tietBatDau}-${item.tietKetThuc}) tại ${item.tenPhong}`
+        ).join(', ');
+    }
+    return 'Không có thông tin lịch học';
 }
 
-// === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
 module.exports = async (req, res) => {
-    // CORS Headers
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return res.status(200).end();
+    }
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 
     const { action, payload } = req.body;
     const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
@@ -48,96 +55,102 @@ module.exports = async (req, res) => {
     try {
         let result;
         switch (action) {
-            // --- HÀNH ĐỘNG XÁC THỰC ---
             case 'login': {
                 const { username, password } = payload;
-                const tokenUrl = `https://api.ngnsusinn.io.vn/get_token_uth.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
-                const response = await fetch(tokenUrl);
-                result = await response.json();
+                const tokenUrl = `https://portal.ut.edu.vn/api/v1/auth/token?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+                const response = await fetch(tokenUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const tokenData = await response.json();
+
+                if (tokenData && tokenData.token) {
+                    const [rows] = await db.execute('SELECT * FROM users WHERE username = ?', [username]);
+                    let user = rows[0];
+                    if (!user) {
+                        await db.execute('INSERT INTO users (username) VALUES (?)', [username]);
+                        user = { vip_until: null }; // Set default for new user
+                    }
+                    const isVip = user && user.vip_until && new Date(user.vip_until) > new Date();
+                    result = { ...tokenData, isVip };
+                } else {
+                    result = tokenData;
+                }
                 break;
             }
 
             case 'getInitialData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                const dotsRes = await callApi(`/getDot`, 'GET', token);
-                const latestDot = (dotsRes.success && dotsRes.body.length) 
-                    ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
-                    : null;
+                const dotRes = await callApi('/getDotHienTai', 'GET', token);
+                if (!profileRes.success || !dotRes.success) {
+                    return res.status(500).json({ success: false, message: "Không thể lấy dữ liệu ban đầu." });
+                }
+                const [userRows] = await db.execute('SELECT vip_until FROM users WHERE username = ?', [profileRes.body.tenDangNhap]);
+                const isVip = userRows[0] && userRows[0].vip_until && new Date(userRows[0].vip_until) > new Date();
+                
                 result = {
-                    success: profileRes.success && !!latestDot,
+                    success: true,
                     profile: profileRes.body,
-                    dot: latestDot
+                    dot: dotRes.body,
+                    isVip: isVip
                 };
                 break;
             }
 
-            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
-            case 'getFullSchedule': {
+            case 'createPayment': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, fetchPrerequisites } = payload;
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let allClassData = [];
-                let subjectTypeMap = {};
+                const { planDays } = payload;
+                const prices = { 1: 5000, 3: 15000, 7: 35000 };
+                const amount = prices[planDays];
 
-                for (const source of sources) {
-                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
-                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) continue;
+                if (!amount) return res.status(400).json({ success: false, message: 'Gói không hợp lệ.' });
 
-                    if (source === 'dkhp') {
-                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                    }
+                const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
+                if (!profileRes.success) return res.status(401).json({ success: false, message: 'Không lấy được thông tin user.' });
+                
+                const [userRows] = await db.execute('SELECT id FROM users WHERE username = ?', [profileRes.body.tenDangNhap]);
+                if (userRows.length === 0) return res.status(404).json({ success: false, message: 'User không tồn tại.' });
+                
+                const userId = userRows[0].id;
 
-                    // Process subjects in parallel for better performance
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
-                        const classEndpoint = source === 'dkhpdk'
-                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
+                const [insertResult] = await db.execute(
+                    'INSERT INTO transactions (user_id, plan_days, amount, status) VALUES (?, ?, ?, ?)',
+                    [userId, planDays, amount, 'pending']
+                );
+                const transactionId = insertResult.insertId;
 
-                        if (classRes.success && Array.isArray(classRes.body)) {
-                             await Promise.all(classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
-                        }
-                    }));
-                }
-                result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
+                // --- TẠO MÃ VIETQR ---
+                // Thay thế `accountNo`, `accountName`, `acqId` bằng thông tin của bạn
+                const qrCodeUrl = `https://api.vietqr.io/v2/generate?accountNo=0987654321&accountName=NGUYEN%20VAN%20A&acqId=970415&amount=${amount}&addInfo=UTHVIP${transactionId}&template=compact`;
+
+                result = { success: true, qrCodeUrl: qrCodeUrl };
                 break;
             }
-            
+
+            case 'getFullSchedule': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { idDot, isCay, source } = payload;
+                let scheduleUrl = `/getDanhSachLopHocPhan?idDot=${idDot}`;
+                if (isCay) {
+                    scheduleUrl = `/getDsLhpTrongNganh?idDot=${idDot}&isFilter=true`;
+                }
+                const scheduleData = await callApi(scheduleUrl, 'GET', token, null, source);
+                if (!scheduleData.success || !Array.isArray(scheduleData.body)) {
+                    return res.status(500).json({ success: false, message: "Lỗi khi tải lịch học." });
+                }
+                const detailedSchedule = await Promise.all(scheduleData.body.map(async (cls) => {
+                    cls.lichHocChiTiet = await getScheduleDetails(cls.id, token, source);
+                    return cls;
+                }));
+                result = { success: true, data: detailedSchedule };
+                break;
+            }
+
             case 'getRegisteredClasses': {
                  if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                 const { dotId, fetchPrerequisites } = payload;
-                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                 let registeredData = [];
-
-                 for (const source of sources) {
-                     const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                     if (regRes.success && Array.isArray(regRes.body)) {
-                         await Promise.all(regRes.body.map(async (reg) => {
-                            const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp'); // API này luôn dùng source dkhp
-                            const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
-                            registeredData.push({ ...reg, source, scheduleDetails });
-                         }));
-                     }
-                 }
-                 result = { success: true, body: registeredData };
+                 const { idDot, source } = payload;
+                 result = await callApi(`/getDanhSachLopHocPhanDaDangKy?idDot=${idDot}`, 'GET', token, null, source);
                  break;
             }
             
-            case 'checkClassStatus': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, maHocPhan, source } = payload;
-                 const classEndpoint = source === 'dkhpdk'
-                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                result = await callApi(classEndpoint, 'GET', token, null, source);
-                break;
-            }
-
-            // --- HÀNH ĐỘNG GHI (ĐĂNG KÝ/HỦY) ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source } = payload;
@@ -151,13 +164,13 @@ module.exports = async (req, res) => {
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
                 break;
             }
-
+            
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action.' });
         }
         res.status(200).json(result);
-
     } catch (error) {
+        console.error('Handler Error:', error);
         res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
     }
 };
