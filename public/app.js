@@ -371,11 +371,11 @@ document.addEventListener('DOMContentLoaded', () => {
         subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
     }
     
-    // Đoạn filter này đã chính xác
+    // This filtering section has been updated to exclude "Đã khoá lớp"
     const filteredData = allScheduleData.filter(cls =>
         (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
         (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
-        (cls.tenTrangThai != "Đã khoá lớp")
+        (cls.tenTrangThai !== "Đã khoá lớp") // This condition excludes locked classes
     );
 
     if (filteredData.length === 0) {
