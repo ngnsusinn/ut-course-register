@@ -370,10 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
-        const filteredData = allScheduleData.filter(cls => 
-            (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
-            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
-        );
+      const filteredData = allScheduleData.filter(cls =>
+    (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
+    (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
+    (cls.tenTrangThai !== "Đã khoá lớp") // <-- Thêm điều kiện này
+);
         if (filteredData.length === 0) {
             scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
             return;
@@ -388,9 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
-			if (cls.tenTrangThai == "Đã khóa lớp") {
-				return;
-			}
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
             row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
