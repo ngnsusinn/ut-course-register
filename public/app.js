@@ -388,6 +388,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
+			if (cls.tenTrangThai === "Đã khóa lớp") {
+				return;
+			}
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
             row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
