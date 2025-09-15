@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
-			if (cls.tenTrangThai === "Đã khóa lớp") {
+			if (cls.tenTrangThai == "Đã khóa lớp") {
 				return;
 			}
             const row = document.createElement('tr');
