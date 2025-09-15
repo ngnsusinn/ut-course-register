@@ -373,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const filteredData = allScheduleData.filter(cls =>
     (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
     (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
-    (cls.tenTrangThai !== "Đã khoá lớp") // <-- Thêm điều kiện này
+    (cls.tenTrangThai != "Đã khoá lớp") // <-- Thêm điều kiện này
 );
         if (filteredData.length === 0) {
             scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
