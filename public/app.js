@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // === CÁC BIẾN DOM ELEMENT (KHÔNG THAY ĐỔI) ===
     const loginForm = document.getElementById('login-form');
     const loginBtn = document.getElementById('login-btn');
     const startBtn = document.getElementById('start-btn');
@@ -11,10 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const intervalInput = document.getElementById('interval');
     const refreshBtn = document.getElementById('refresh-registered-btn');
     const registeredContainer = document.getElementById('registered-container');
-    const alertContainer = document.getElementById('alert-container');
     const donateBtn = document.getElementById('donate-btn');
     const donationAmountInput = document.getElementById('donation-amount');
-
+    // Thêm biến cho container alert mới
+    const alertContainer = document.getElementById('alert-container');
 
     let token = null;
     let dotId = null;
@@ -35,31 +36,50 @@ document.addEventListener('DOMContentLoaded', () => {
         logOutput.scrollTop = logOutput.scrollHeight;
     }
 
+    // ===== HÀM HIỂN THỊ THÔNG BÁO MỚI =====
     function showAlert(message, type = 'success') {
+        // Xác định màu sắc dựa trên loại thông báo
         const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        const icon = type === 'success' 
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>` 
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+
         const alertDiv = document.createElement('div');
-        alertDiv.className = `p-4 ${bgColor} text-white rounded-lg shadow-md mb-4 animate-pulse`;
-        alertDiv.textContent = message;
-        alertContainer.innerHTML = ''; // Clear previous alerts
+        alertDiv.className = `p-4 ${bgColor} text-white rounded-lg shadow-lg flex items-center transition-opacity duration-300`;
+        alertDiv.innerHTML = `${icon}<span>${message}</span>`;
+        
+        alertContainer.innerHTML = ''; // Xóa thông báo cũ
         alertContainer.appendChild(alertDiv);
+
+        // Tự động xóa thông báo sau 5 giây
         setTimeout(() => {
             alertDiv.style.opacity = '0';
-            setTimeout(() => alertContainer.removeChild(alertDiv), 500);
-        }, 3000);
+            setTimeout(() => {
+                if (alertContainer.contains(alertDiv)) {
+                    alertContainer.removeChild(alertDiv);
+                }
+            }, 500);
+        }, 5000);
     }
-    
-    // Check for payment status from URL and show alert
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment_status');
-    const paymentMessage = urlParams.get('message');
 
-    if (paymentStatus && paymentMessage) {
-        showAlert(decodeURIComponent(paymentMessage), paymentStatus === 'success' ? 'success' : 'error');
-        // Clean up the URL
-        window.history.replaceState({}, document.title, "/");
+    // ===== ĐOẠN CODE KIỂM TRA URL KHI TẢI TRANG =====
+    function checkPaymentStatus() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentStatus = urlParams.get('payment_status');
+        const message = urlParams.get('message');
+
+        if (paymentStatus && message) {
+            showAlert(decodeURIComponent(message), paymentStatus);
+            // Xóa các tham số khỏi URL để không hiển thị lại khi tải lại trang
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
     }
+    // Gọi hàm này ngay khi DOM được tải xong
+    checkPaymentStatus();
+    // ===============================================
 
     async function apiCall(action, payload = {}) {
+        // ... (phần còn lại của hàm apiCall giữ nguyên)
         const headers = { 'Content-Type': 'application/json' };
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
@@ -82,8 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- XỬ LÝ SỰ KIỆN ---
-    
+    // --- XỬ LÝ SỰ KIỆN (phần còn lại giữ nguyên) ---
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value;
@@ -124,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginBtn.textContent = 'Đăng nhập';
     });
 
+    // ... (các hàm startBtn, stopBtn, fetchRegisteredClasses, donateBtn giữ nguyên không đổi) ...
     startBtn.addEventListener('click', () => {
         const classIds = classIdsInput.value.split(',').map(id => id.trim()).filter(id => id);
         const interval = parseInt(intervalInput.value, 10);
@@ -153,16 +173,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (result.success) {
                 log(`Kết quả: ${JSON.stringify(result.body)}`);
-                // Check if any class was successfully registered and stop
                 if (result.body && result.body.some(r => r.trangThai === 'ThanhCong')) {
                     log('Phát hiện đăng ký thành công! Đã dừng tiến trình.', false);
                     showAlert('Đăng ký thành công!', 'success');
-                    stopBtn.click(); // Trigger stop
-                    await fetchRegisteredClasses(); // Refresh list
+                    stopBtn.click();
+                    await fetchRegisteredClasses();
                 }
             } else {
                 log(`Đăng ký thất bại: ${result.message}`, true);
-                if (result.status === 401) { // Unauthorized
+                if (result.status === 401) {
                     log('Token hết hạn. Vui lòng đăng nhập lại.', true);
                     showAlert('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.', 'error');
                     stopBtn.click();
