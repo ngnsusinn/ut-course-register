@@ -12,7 +12,7 @@ const dbConfig = {
 
 const sepayConfig = {
     accountNumber: process.env.SEPAY_ACCOUNT_NUMBER,
-    bank: process.env.SEPAY_BANK 
+    bank: process.env.SEPAY_BANK
 };
 
 let dbPool;
@@ -20,7 +20,6 @@ let dbPool;
 async function getDbPool() {
     if (!dbPool) {
         dbPool = mysql.createPool(dbConfig);
-        // Khởi tạo bảng nếu chưa có
         try {
             const connection = await dbPool.getConnection();
             await connection.query(`
@@ -40,8 +39,6 @@ async function getDbPool() {
     return dbPool;
 }
 
-
-// --- Tiện ích gọi API của trường ---
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -70,7 +67,6 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     }
 }
 
-// --- Xử lý Webhook từ SePay ---
 async function handleWebhook(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
@@ -79,7 +75,7 @@ async function handleWebhook(req, res) {
         const body = req.body;
         console.log("Received SePay Webhook:", body);
 
-        const { status, amount, description, transactionId } = body;
+        const { status, amount, description } = body;
 
         if (status === "SUCCESS") {
             const parts = description.split(' ');
@@ -129,15 +125,12 @@ async function handleWebhook(req, res) {
     }
 }
 
-// --- Handler chính ---
 module.exports = async (req, res) => {
-    // Định tuyến cho webhook
     const parsedUrl = url.parse(req.url, true);
     if (parsedUrl.pathname === '/api/webhook') {
         return handleWebhook(req, res);
     }
     
-    // Xử lý các API call thông thường
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
@@ -151,7 +144,8 @@ module.exports = async (req, res) => {
                 const { username, password } = payload;
                 const loginPayload = {
                     tenDangNhap: username,
-                    matKhau: Buffer.from(password).toString('base64'),
+                    // *** SỬA LỖI: Gửi mật khẩu dạng plain text, không mã hóa Base64 ***
+                    matKhau: password, 
                     isNhoMatKhau: true
                 };
                 const loginResult = await callApi('/user/login', 'POST', null, loginPayload);
