@@ -1,250 +1,112 @@
 const fetch = require('node-fetch');
+const moment = require('moment-timezone');
 const crypto = require('crypto');
 const querystring = require('qs');
-const { format } = require('date-fns');
 
-// --- HÀM CHUẨN TỪ DEMO VNPAY ---
-// Hàm này đảm bảo các tham số được sắp xếp và định dạng chính xác tuyệt đối
-function sortObject(obj) {
-	let sorted = {};
-	let str = [];
-	let key;
-	for (key in obj){
-		if (obj.hasOwnProperty(key)) {
-		str.push(encodeURIComponent(key));
-		}
-	}
-	str.sort();
-    for (key = 0; key < str.length; key++) {
-        sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
-    }
-    return sorted;
-}
-// ------------------------------------
+// Tải biến môi trường (chỉ cần thiết khi chạy local, Vercel tự động tải)
+// require('dotenv').config();
 
-
-// Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
-async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
-    let baseApiUrl;
-    if (endpoint.startsWith('/user/')) {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
-    } else if (source === 'dkhpdk') {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhpdk';
-    } else {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhp';
-    }
-    const targetUrl = baseApiUrl + endpoint;
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
-    try {
-        const response = await fetch(targetUrl, options);
-        if (!response.ok) {
-            return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
-        }
-        return await response.json();
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
-}
-
-// Tiện ích: Lấy chi tiết lịch học cho một lớp
-async function getScheduleDetails(classId, token, source) {
-    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
-    return (result && result.success) ? result.body : { error: true, message: result.message };
-}
-
-
-// === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
 module.exports = async (req, res) => {
     // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    const urlPath = req.url.split('?')[0];
-
-    // XỬ LÝ VNPAY IPN VÀ RETURN (LOGIC CHUẨN TỪ DEMO)
-    if (urlPath === '/api/vnpay_return' || urlPath === '/api/vnpay_ipn') {
-        try {
-            let vnp_Params = req.query;
-            let secureHash = vnp_Params['vnp_SecureHash'];
-
-            delete vnp_Params['vnp_SecureHash'];
-            delete vnp_Params['vnp_SecureHashType'];
-
-            vnp_Params = sortObject(vnp_Params);
-            let secretKey = process.env.VNP_HASHSECRET;
-            let signData = querystring.stringify(vnp_Params, { encode: false });
-            let hmac = crypto.createHmac("sha512", secretKey);
-            let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
-
-            if (secureHash === signed) {
-                 if (urlPath === '/api/vnpay_return') {
-                     // Chuyển hướng về trang thành công hoặc thất bại
-                     const returnUrl = (process.env.APP_URL) + (vnp_Params['vnp_ResponseCode'] === '00' ? '/payment_success.html' : '/payment_fail.html');
-                     res.writeHead(302, { Location: returnUrl });
-                     res.end();
-                } else { // IPN URL
-                    res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
-                }
-            } else {
-                 if (urlPath === '/api/vnpay_return') {
-                    const returnUrl = (process.env.APP_URL) + '/payment_fail.html?checksum=failed';
-                    res.writeHead(302, { Location: returnUrl });
-                    res.end();
-                 } else { // IPN URL
-                    res.status(200).json({ RspCode: '97', Message: 'Fail checksum' });
-                 }
-            }
-        } catch (error) {
-            console.error("VNPAY handler error:", error);
-            res.status(500).json({ message: "Internal Server Error" });
-        }
-        return;
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
-    const { action, payload } = req.body;
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+    // VNPAY Config from Environment Variables
+    const tmnCode = process.env.VNP_TMN_CODE;
+    const secretKey = process.env.VNP_SECRET_KEY;
+    const vnpUrl = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+    
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    const { action, studentId, password, token, courseCode } = req.body;
+    let result = {};
 
     try {
-        let result;
         switch (action) {
+            case 'login': {
+                const response = await fetch('https://dkh.uth.edu.vn/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentId, password, campusId: 1 })
+                });
+                result = await response.json();
+                break;
+            }
+
+            case 'getRegisteredCourses': {
+                const response = await fetch('https://dkh.uth.edu.vn/api/sch/w-schregisteredcourse/filter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ sortOrder: "asc", sortField: "", page: 1, pageSize: 100, filter: { semester: "HK1_2025-2026" } })
+                });
+                result = await response.json();
+                break;
+            }
+
+            case 'registerCourse': {
+                const response = await fetch('https://dkh.uth.edu.vn/api/sch/w-schstudentregister/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ courseCode, semester: "HK1_2025-2026", campusId: 1 })
+                });
+                result = await response.json();
+                break;
+            }
+
             case 'create_payment_url': {
-                // TẠO URL THANH TOÁN (LOGIC CHUẨN TỪ DEMO)
-                const date = new Date();
-                const createDate = format(date, 'yyyyMMddHHmmss');
-                
+                if (!tmnCode || !secretKey) {
+                    throw new Error('VNPAY TmnCode or SecretKey is not configured on the server.');
+                }
+                const returnUrl = `http://${req.headers.host}/vnpay_return.html`;
                 const ipAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-                const tmnCode = process.env.VNP_TMNCODE;
-                const secretKey = process.env.VNP_HASHSECRET;
-                let vnpUrl = process.env.VNP_URL;
-                const returnUrl = (process.env.APP_URL) + '/api/vnpay_return';
+                const date = new Date();
+                const createDate = moment(date).tz("Asia/Ho_Chi_Minh").format('YYYYMMDDHHmmss');
+                const orderId = moment(date).tz("Asia/Ho_Chi_Minh").format('DDHHmmss');
+                const { amount, bankCode, orderDescription, orderType, language } = req.body;
                 
                 let vnp_Params = {};
                 vnp_Params['vnp_Version'] = '2.1.0';
                 vnp_Params['vnp_Command'] = 'pay';
                 vnp_Params['vnp_TmnCode'] = tmnCode;
-                vnp_Params['vnp_Locale'] = 'vn';
+                vnp_Params['vnp_Locale'] = language || 'vn';
                 vnp_Params['vnp_CurrCode'] = 'VND';
-                vnp_Params['vnp_TxnRef'] = format(date, 'HHmmss');
-                vnp_Params['vnp_OrderInfo'] = 'Thanh toan cho ma GD:' + format(date, 'HHmmss');
-                vnp_Params['vnp_OrderType'] = 'other';
-                vnp_Params['vnp_Amount'] = (payload.amount || 10000) * 100;
+                vnp_Params['vnp_TxnRef'] = orderId;
+                vnp_Params['vnp_OrderInfo'] = orderDescription || 'Thanh toan dich vu';
+                vnp_Params['vnp_OrderType'] = orderType || 'billpayment';
+                vnp_Params['vnp_Amount'] = amount * 100;
                 vnp_Params['vnp_ReturnUrl'] = returnUrl;
                 vnp_Params['vnp_IpAddr'] = ipAddr;
                 vnp_Params['vnp_CreateDate'] = createDate;
-                
-                vnp_Params = sortObject(vnp_Params);
+                if (bankCode) {
+                    vnp_Params['vnp_BankCode'] = bankCode;
+                }
 
-                let signData = querystring.stringify(vnp_Params, { encode: false });
-                let hmac = crypto.createHmac("sha512", secretKey);
-                let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+                vnp_Params = Object.fromEntries(Object.entries(vnp_Params).sort());
+                
+                const signData = querystring.stringify(vnp_Params, { encode: false });
+                const hmac = crypto.createHmac("sha512", secretKey);
+                const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
                 vnp_Params['vnp_SecureHash'] = signed;
                 
-                vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: true });
-                
-                result = { success: true, paymentUrl: vnpUrl };
+                const paymentUrl = vnpUrl + '?' + querystring.stringify(vnp_Params, { encode: false });
+                result = { paymentUrl };
                 break;
             }
-
-            // --- CÁC CASE KHÁC CỦA BẠN GIỮ NGUYÊN ---
-            case 'login': {
-                const { username, password } = payload;
-                result = await callApi('/user/login', 'POST', null, { username, password });
-                break;
-            }
-            case 'getInitialData': {
-                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                const dotsRes = await callApi(`/getDot`, 'GET', token);
-                const latestDot = (dotsRes.success && dotsRes.body.length) 
-                    ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
-                    : null;
-                result = {
-                    success: profileRes.success && !!latestDot,
-                    profile: profileRes.body,
-                    dot: latestDot
-                };
-                break;
-            }
-            case 'getFullSchedule': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, fetchPrerequisites } = payload;
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let allClassData = [];
-                let subjectTypeMap = {};
-                for (const source of sources) {
-                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
-                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) continue;
-                    if (source === 'dkhp') {
-                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                    }
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
-                        const classEndpoint = source === 'dkhpdk'
-                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-                        if (classRes.success && Array.isArray(classRes.body)) {
-                             await Promise.all(classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
-                        }
-                    }));
-                }
-                result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
-                break;
-            }
-            case 'getRegisteredClasses': {
-                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                 const { dotId, fetchPrerequisites } = payload;
-                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                 let registeredData = [];
-                 for (const source of sources) {
-                      const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                      if (regRes.success && Array.isArray(regRes.body)) {
-                           await Promise.all(regRes.body.map(async (reg) => {
-                                const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
-                                const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
-                                registeredData.push({ ...reg, source, scheduleDetails });
-                           }));
-                      }
-                 }
-                 result = { success: true, body: registeredData };
-                 break;
-            }
-            case 'checkClassStatus': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, maHocPhan, source } = payload;
-                 const classEndpoint = source === 'dkhpdk'
-                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                result = await callApi(classEndpoint, 'GET', token, null, source);
-                break;
-            }
-            case 'register': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source } = payload;
-                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
-                break;
-            }
-            case 'cancel': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { registrationId, source } = payload;
-                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
-                break;
-            }
-
 
             default:
-                return res.status(400).json({ success: false, message: 'Invalid action.' });
+                result = { error: 'Invalid action' };
+                return res.status(400).json(result);
         }
         res.status(200).json(result);
 
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
+        console.error('API Handler Error:', error);
+        res.status(500).json({ error: error.message });
     }
 };

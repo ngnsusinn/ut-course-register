@@ -1,35 +1,13 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/handler.js",
-      "use": "@vercel/node"
+      "source": "/api/(.*)",
+      "destination": "/api/handler"
     },
     {
-      "src": "public/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/handler",
-      "dest": "/api/handler.js"
-    },
-    {
-      "src": "/api/create_payment_url",
-      "dest": "/api/handler.js"
-    },
-    {
-      "src": "/api/vnpay_return",
-      "dest": "/api/handler.js"
-    },
-    {
-      "src": "/api/vnpay_ipn",
-      "dest": "/api/handler.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "source": "/(.*)",
+      "destination": "/public/$1"
     }
   ]
 }

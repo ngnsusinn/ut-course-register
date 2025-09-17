@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả thanh toán VNPAY</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="container mx-auto p-4 max-w-2xl">
+        <div class="bg-white p-8 rounded-xl shadow-md text-center">
+            <div id="result-icon"></div>
+            <h1 id="result-title" class="text-2xl font-bold mt-4">Đang xử lý kết quả...</h1>
+            <p id="result-message" class="text-gray-600 mt-2">Vui lòng chờ trong giây lát.</p>
+            <div id="info-container" class="text-left mt-6 border-t pt-6 space-y-2"></div>
+            <a href="/" class="mt-8 inline-block bg-blue-600 text-white px-8 py-3 rounded-md hover:bg-blue-700">
+                Quay về trang chủ
+            </a>
+        </div>
+    </div>
+    <script src="vnpay_return.js" defer></script>
+</body>
+</html>
