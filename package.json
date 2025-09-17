@@ -5,6 +5,7 @@
   "main": "api/handler.js",
   "dependencies": {
     "node-fetch": "^2.6.7",
-    "qs": "^6.11.0"
+    "qs": "^6.11.0",
+    "date-fns": "^2.29.3"
   }
 }
