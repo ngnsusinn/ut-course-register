@@ -5,8 +5,6 @@
   "main": "api/handler.js",
   "dependencies": {
     "node-fetch": "^2.6.7",
-    "qs": "^6.11.0",
-    "moment": "^2.29.4",
-    "crypto": "^1.0.1"
+    "mysql2": "^3.6.1"
   }
 }

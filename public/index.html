@@ -1,84 +1,83 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UTH Secure Tool</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTH Đăng Ký Học Phần Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        .disabled-section { opacity: 0.5; pointer-events: none; }
+    </style>
 </head>
-<body class="bg-gray-100">
-  <div class="container mx-auto p-4 max-w-4xl">
-    <header class="text-center mb-8">
-      <h1 class="text-3xl font-bold text-blue-600">UTH Secure Tool</h1>
-      <p class="text-gray-600">Công cụ hỗ trợ đăng ký học phần an toàn và hiệu quả.</p>
-    </header>
+<body class="bg-gray-100 font-sans">
+    <div id="app-container" class="hidden p-4 md:p-8 max-w-7xl mx-auto">
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Xin chào, <span id="student-name"></span>!</h1>
+                    <p class="text-gray-600">MSSV: <span id="student-code"></span></p>
+                    <p class="text-sm font-semibold">Tài khoản: <span id="user-role" class="px-2 py-1 rounded text-white"></span></p>
+                </div>
+                <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">Đăng Xuất</button>
+            </div>
+        </div>
 
-    <div id="alert-container" class="mb-4"></div>
-    
-    <div class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
-          <div>
-            <h2 class="text-xl font-semibold mb-2">1. Đăng nhập</h2>
-            <form id="login-form" class="space-y-3">
-              <input type="text" id="username" placeholder="Mã số sinh viên" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-              <input type="password" id="password" placeholder="Mật khẩu" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-              <button type="submit" id="login-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Đăng nhập</button>
-            </form>
-          </div>
-          <div>
-            <h2 class="text-xl font-semibold mb-2">2. Thông tin</h2>
-            <div id="user-info" class="text-gray-700 space-y-1">
-              <p>Trạng thái: <span id="status" class="font-semibold text-gray-500">Chưa đăng nhập</span></p>
-              <p>Họ tên: <span id="user-name" class="font-semibold">N/A</span></p>
-              <p>Đợt ĐKHP: <span id="dot-dkhp" class="font-semibold">N/A</span></p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="bg-white p-6 rounded-xl shadow-md space-y-4">
-          <h2 class="text-xl font-semibold">3. Thao tác</h2>
-          <div class="space-y-3">
-            <input type="text" id="class-ids" placeholder="Nhập mã lớp học phần, cách nhau bởi dấu phẩy" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <div class="flex items-center space-x-2">
-                <input type="number" id="interval" value="500" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <span class="text-gray-600">ms</span>
-            </div>
-            <button id="start-btn" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 disabled:opacity-50" disabled>Bắt đầu đăng ký</button>
-            <button id="stop-btn" class="w-full bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300">Dừng lại</button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="bg-white p-6 rounded-xl shadow-md">
-        <h2 class="text-xl font-semibold mb-4 border-b pb-2">🌟 Ủng hộ nhà phát triển</h2>
-        <p class="text-gray-600 mb-4">Nếu bạn thấy công cụ này hữu ích, hãy ủng hộ để chúng tôi có thêm động lực phát triển nhé!</p>
-        <div class="flex items-center space-x-4">
-          <input type="number" id="donation-amount" placeholder="Nhập số tiền (VND)" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" min="1000" step="1000">
-          <button id="donate-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-600 transition duration-300">Ủng hộ qua VNPay</button>
-        </div>
-      </div>
+        <div id="main-content" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div id="registration-section" class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="flex items-center space-x-4 mb-4">
+                    <button id="fetch-data-btn" class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Lấy Dữ Liệu</button>
+                    <button id="buy-vip-btn" class="hidden w-full bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition">✨ Mua VIP</button>
+                </div>
+                </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-white p-6 rounded-xl shadow-md">
-            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                <h2 class="text-xl font-semibold">Lớp đã đăng ký</h2>
-                <button id="refresh-registered-btn" class="bg-gray-200 text-gray-700 font-bold py-1 px-3 rounded-lg hover:bg-gray-300 transition duration-300 text-sm">Làm mới</button>
+            <div id="registered-section" class="bg-white p-6 rounded-xl shadow-lg">
+                 <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Các học phần đã đăng ký thành công</h2>
+                 <div id="registered-list" class="space-y-3">
+                     </div>
             </div>
-            <div id="registered-container" class="overflow-auto max-h-96 responsive-table">
-              <p class="text-gray-500 text-center py-8">Chưa có dữ liệu. Nhấn nút "Làm mới" sau khi có token.</p>
-            </div>
-          </div>
-          <div class="bg-white p-6 rounded-xl shadow-md">
-            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Nhật ký hoạt động</h2>
-            <div id="log-output" class="w-full h-48 bg-gray-900 text-white text-sm font-mono rounded-lg p-3 overflow-y-auto"></div>
-          </div>
         </div>
-      </div>
-      <footer class="text-center text-sm text-gray-500 mt-8 py-4 border-t">
-        <p>Last updated on September 12, 2025</p>
-      </footer>
     </div>
+
+    <div id="vip-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all scale-95">
+            <h2 class="text-3xl font-bold text-center text-gray-800 mb-2">Nâng cấp tài khoản VIP</h2>
+            <p class="text-center text-gray-500 mb-6">Mở khóa tất cả tính năng không giới hạn.</p>
+            <div class="space-y-4">
+                <button class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-300 vip-package-btn" data-days="1" data-price="10000">
+                    1 Ngày - 10,000 VNĐ
+                </button>
+                <button class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-300 vip-package-btn" data-days="3" data-price="30000">
+                    3 Ngày - 30,000 VNĐ
+                </button>
+                <button class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition duration-300 vip-package-btn" data-days="5" data-price="50000">
+                    5 Ngày - 50,000 VNĐ
+                </button>
+            </div>
+            <button id="close-modal-btn" class="mt-6 w-full bg-gray-300 text-gray-800 p-2 rounded-lg hover:bg-gray-400 transition duration-300">
+                Đóng
+            </button>
+        </div>
+    </div>
+    
+    <div id="payment-modal" class="modal fixed inset-0 bg-black bg-opacity-70 items-center justify-center">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm text-center">
+            <h2 class="text-xl font-bold mb-4">Quét mã QR để thanh toán</h2>
+            <img id="qr-code-img" src="" alt="QR Code" class="mx-auto mb-4 border rounded-lg">
+            <div class="text-left bg-gray-50 p-4 rounded-lg">
+                <p><strong>Ngân hàng:</strong> <span id="payment-bank"></span></p>
+                <p><strong>Số tài khoản:</strong> <span id="payment-account"></span></p>
+                <p><strong>Chủ tài khoản:</strong> <span id="payment-name"></span></p>
+                <p><strong>Số tiền:</strong> <span id="payment-amount" class="font-bold text-red-600"></span> VNĐ</p>
+                <p><strong>Nội dung:</strong> <span id="payment-content" class="font-bold text-blue-600"></span></p>
+            </div>
+            <p id="payment-status-text" class="mt-4 text-gray-600">Trạng thái: Đang chờ thanh toán...</p>
+             <button id="close-payment-modal-btn" class="mt-4 w-full bg-gray-300 p-2 rounded-lg">Đóng</button>
+        </div>
+    </div>
+
+
     <script src="app.js" defer></script>
-  </body>
+</body>
 </html>
