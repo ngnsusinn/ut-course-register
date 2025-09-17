@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const crypto = require('crypto');
 const querystring = require('qs');
 
-// ... (Giữ nguyên các hàm callApi và getScheduleDetails của bạn)
+// Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -26,14 +26,16 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         return { success: false, message: error.message };
     }
 }
+
+// Tiện ích: Lấy chi tiết lịch học cho một lớp
 async function getScheduleDetails(classId, token, source) {
     const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
-
+// === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
 module.exports = async (req, res) => {
-    // ... (Giữ nguyên phần CORS header)
+    // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -41,7 +43,7 @@ module.exports = async (req, res) => {
 
     const urlPath = req.url.split('?')[0];
 
-    // ... (Giữ nguyên phần xử lý VNPAY Return và IPN)
+    // Xử lý VNPAY IPN và Return
     if (urlPath === '/api/vnpay_return' || urlPath === '/api/vnpay_ipn') {
         try {
             let vnp_Params = req.query;
@@ -49,29 +51,18 @@ module.exports = async (req, res) => {
             delete vnp_Params['vnp_SecureHash'];
             delete vnp_Params['vnp_SecureHashType'];
             let secretKey = process.env.VNP_HASHSECRET;
-            
-            // Sắp xếp lại để kiểm tra
+
             vnp_Params = Object.entries(vnp_Params).sort(([key1], [key2]) => key1.localeCompare(key2)).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-
-            // DEBUG LOGGING KHI NHẬN KẾT QUẢ
-            console.log("--- VNPAY RETURN/IPN DATA ---");
-            console.log("Sorted Params:", vnp_Params);
-
             let signData = querystring.stringify(vnp_Params, { encode: false });
-            console.log("String to Hash (Receive):", signData);
-            
             let hmac = crypto.createHmac("sha512", secretKey);
             let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
-            console.log("Calculated Hash (Receive):", signed);
-            console.log("VNPAY Hash:", secureHash);
-            console.log("----------------------------");
 
             if (secureHash === signed) {
                  if (urlPath === '/api/vnpay_return') {
                      const returnUrl = (process.env.APP_URL) + (vnp_Params['vnp_ResponseCode'] === '00' ? '/payment_success.html' : '/payment_fail.html');
                      res.writeHead(302, { Location: returnUrl });
                      res.end();
-                } else {
+                } else { // IPN
                     res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
                 }
             } else {
@@ -79,7 +70,7 @@ module.exports = async (req, res) => {
                     const returnUrl = (process.env.APP_URL) + '/payment_fail.html?checksum=failed';
                     res.writeHead(302, { Location: returnUrl });
                     res.end();
-                 } else {
+                 } else { // IPN
                     res.status(200).json({ RspCode: '97', Message: 'Fail checksum' });
                  }
             }
@@ -89,7 +80,6 @@ module.exports = async (req, res) => {
         }
         return;
     }
-
 
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     const { action, payload } = req.body;
@@ -127,26 +117,21 @@ module.exports = async (req, res) => {
 
                 vnp_Params = Object.entries(vnp_Params).sort(([key1], [key2]) => key1.localeCompare(key2)).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
                 
-                // === THÊM LOGGING ĐỂ DEBUG ===
-                console.log("--- VNPAY PAYMENT CREATION ---");
-                console.log("Sorted Params:", vnp_Params);
-                
+                // BƯỚC 1: Tạo chuỗi dữ liệu để băm (KHÔNG mã hóa URL)
                 let signData = querystring.stringify(vnp_Params, { encode: false });
                 
-                console.log("String to Hash:", signData);
-                // ==============================
-
                 let hmac = crypto.createHmac("sha512", secretKey);
                 let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
                 vnp_Params['vnp_SecureHash'] = signed;
 
-                vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: true }); // Dùng encode: true cho URL cuối cùng
+                // BƯỚC 2: Tạo URL cuối cùng (CÓ mã hóa URL)
+                vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: true });
                 
                 result = { success: true, paymentUrl: vnpUrl };
                 break;
             }
 
-            // ... (Giữ nguyên tất cả các case khác: 'login', 'getInitialData', v.v...)
+            // --- CÁC CASE KHÁC GIỮ NGUYÊN ---
             case 'login': {
                 const { username, password } = payload;
                 result = await callApi('/user/login', 'POST', null, { username, password });
