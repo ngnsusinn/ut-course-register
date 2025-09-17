@@ -36,7 +36,6 @@ async function getScheduleDetails(classId, token, source) {
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
-
 function sortObject(obj) {
 	let sorted = {};
 	let str = [];
@@ -53,7 +52,6 @@ function sortObject(obj) {
     return sorted;
 }
 
-
 // === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
 module.exports = async (req, res) => {
     // CORS Headers
@@ -61,8 +59,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
-    
-    // VNPay return URL handling is a GET request
+
     if (req.method === 'GET' && req.query.vnp_ResponseCode) {
         let vnp_Params = req.query;
         let secureHash = vnp_Params['vnp_SecureHash'];
@@ -74,18 +71,20 @@ module.exports = async (req, res) => {
         let secretKey = process.env.VNP_HASHSECRET;
         let signData = querystring.stringify(vnp_Params, { encode: false });
         let hmac = crypto.createHmac("sha512", secretKey);
-        let signed = hmac.update(new Buffer(signData, 'utf-8')).digest("hex");     
+        
+        // =============== DÒNG CODE ĐÃ SỬA LỖI ===============
+        let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+        // =======================================================
 
         if(secureHash === signed){
-            // Check response code and update order status accordingly
-            // For now, just redirect to the front-end with a status message
             const success = vnp_Params.vnp_ResponseCode === '00';
             const message = success ? 'Giao dịch thành công' : 'Giao dịch không thành công';
+            // Chuyển hướng về trang chủ với tham số
             const redirectUrl = `/?payment_status=${success ? 'success' : 'fail'}&message=${encodeURIComponent(message)}`;
-            return res.redirect(redirectUrl);
-        } else{
+            return res.redirect(301, redirectUrl);
+        } else {
             const redirectUrl = `/?payment_status=fail&message=${encodeURIComponent('Chữ ký không hợp lệ')}`;
-            return res.redirect(redirectUrl);
+            return res.redirect(301, redirectUrl);
         }
     }
 
@@ -99,9 +98,7 @@ module.exports = async (req, res) => {
         switch (action) {
             // --- HÀNH ĐỘNG XÁC THỰC ---
             case 'login': {
-                // Chỉnh sửa ở đây:
                 const { username, password } = payload;
-                // Gọi API đăng nhập của trường bằng hàm callApi đã có
                 result = await callApi('/user/login', 'POST', null, { username, password });
                 break;
             }
@@ -127,7 +124,7 @@ module.exports = async (req, res) => {
                 const date = new Date();
                 const createDate = moment(date).format('YYYYMMDDHHmmss');
                 const orderId = moment(date).format('DDHHmmss');
-                
+
                 let vnp_Params = {};
                 vnp_Params['vnp_Version'] = '2.1.0';
                 vnp_Params['vnp_Command'] = 'pay';
@@ -139,9 +136,9 @@ module.exports = async (req, res) => {
                 vnp_Params['vnp_OrderType'] = 'other';
                 vnp_Params['vnp_Amount'] = amount * 100;
                 vnp_Params['vnp_ReturnUrl'] = process.env.VNP_RETURN_URL;
-                let ipAddr = req.headers['x-forwarded-for'] || 
-                             req.connection.remoteAddress || 
-                             req.socket.remoteAddress || 
+                let ipAddr = req.headers['x-forwarded-for'] ||
+                             req.connection.remoteAddress ||
+                             req.socket.remoteAddress ||
                              (req.connection.socket ? req.connection.socket.remoteAddress : null);
                 vnp_Params['vnp_IpAddr'] = ipAddr;
                 vnp_Params['vnp_CreateDate'] = createDate;
@@ -153,18 +150,16 @@ module.exports = async (req, res) => {
 
                 let signData = querystring.stringify(vnp_Params, { encode: false });
                 let hmac = crypto.createHmac("sha512", process.env.VNP_HASHSECRET);
-                let signed = hmac.update(new Buffer(signData, 'utf-8')).digest("hex"); 
+                let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
                 vnp_Params['vnp_SecureHash'] = signed;
-                
+
                 const vnpUrl = process.env.VNP_URL + '?' + querystring.stringify(vnp_Params, { encode: false });
-                
+
                 result = { success: true, paymentUrl: vnpUrl };
                 break;
             }
 
             // --- CÁC HÀNH ĐỘNG KHÁC ---
-            // (Thêm các case khác của bạn ở đây)
-
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action' });
         }
