@@ -6,10 +6,6 @@
       "use": "@vercel/node"
     },
     {
-       "src": "api/webhook.js",
-       "use": "@vercel/node"
-    },
-    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -18,10 +14,6 @@
     {
       "src": "/api/handler",
       "dest": "/api/handler.js"
-    },
-    {
-      "src": "/api/webhook",
-      "dest": "/api/webhook.js"
     },
     {
       "src": "/(.*)",
