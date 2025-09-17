@@ -1,8 +1,8 @@
 const fetch = require('node-fetch');
 const crypto = require('crypto');
-const querystring = require('qs'); // Dùng để sắp xếp và chuỗi hóa params
+const querystring = require('qs');
 
-// Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
+// ... (Giữ nguyên các hàm callApi và getScheduleDetails của bạn)
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -15,12 +15,10 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     const targetUrl = baseApiUrl + endpoint;
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-
     const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
-
     try {
         const response = await fetch(targetUrl, options);
-        if (!response.ok) { // Handle non-2xx responses
+        if (!response.ok) {
             return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
         }
         return await response.json();
@@ -28,56 +26,60 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         return { success: false, message: error.message };
     }
 }
-
-// Tiện ích: Lấy chi tiết lịch học cho một lớp
 async function getScheduleDetails(classId, token, source) {
     const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
-// === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
+
 module.exports = async (req, res) => {
-    // CORS Headers
+    // ... (Giữ nguyên phần CORS header)
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS'); // Thêm GET
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // Phân luồng request cho VNPAY (dựa vào URL) và cho tool (dựa vào body.action)
     const urlPath = req.url.split('?')[0];
 
+    // ... (Giữ nguyên phần xử lý VNPAY Return và IPN)
     if (urlPath === '/api/vnpay_return' || urlPath === '/api/vnpay_ipn') {
-        // Xử lý VNPAY IPN và Return
         try {
             let vnp_Params = req.query;
             let secureHash = vnp_Params['vnp_SecureHash'];
             delete vnp_Params['vnp_SecureHash'];
             delete vnp_Params['vnp_SecureHashType'];
-
-            // Lấy biến môi trường (quan trọng!)
             let secretKey = process.env.VNP_HASHSECRET;
-
+            
+            // Sắp xếp lại để kiểm tra
             vnp_Params = Object.entries(vnp_Params).sort(([key1], [key2]) => key1.localeCompare(key2)).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+
+            // DEBUG LOGGING KHI NHẬN KẾT QUẢ
+            console.log("--- VNPAY RETURN/IPN DATA ---");
+            console.log("Sorted Params:", vnp_Params);
+
             let signData = querystring.stringify(vnp_Params, { encode: false });
+            console.log("String to Hash (Receive):", signData);
+            
             let hmac = crypto.createHmac("sha512", secretKey);
             let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+            console.log("Calculated Hash (Receive):", signed);
+            console.log("VNPAY Hash:", secureHash);
+            console.log("----------------------------");
 
             if (secureHash === signed) {
-                console.log("VNPAY transaction valid:", vnp_Params);
-                if (urlPath === '/api/vnpay_return') {
-                     // Chuyển hướng người dùng về trang kết quả
-                     const returnUrl = (process.env.APP_URL || 'http://localhost:3000') + (vnp_Params['vnp_ResponseCode'] === '00' ? '/payment_success.html' : '/payment_fail.html');
+                 if (urlPath === '/api/vnpay_return') {
+                     const returnUrl = (process.env.APP_URL) + (vnp_Params['vnp_ResponseCode'] === '00' ? '/payment_success.html' : '/payment_fail.html');
                      res.writeHead(302, { Location: returnUrl });
                      res.end();
-                } else { // IPN
+                } else {
                     res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
                 }
             } else {
                  if (urlPath === '/api/vnpay_return') {
-                    const returnUrl = (process.env.APP_URL || 'http://localhost:3000') + '/payment_fail.html';
+                    const returnUrl = (process.env.APP_URL) + '/payment_fail.html?checksum=failed';
                     res.writeHead(302, { Location: returnUrl });
                     res.end();
-                 } else { // IPN
+                 } else {
                     res.status(200).json({ RspCode: '97', Message: 'Fail checksum' });
                  }
             }
@@ -85,7 +87,7 @@ module.exports = async (req, res) => {
             console.error("VNPAY handler error:", error);
             res.status(500).json({ message: "Internal Server Error" });
         }
-        return; // Dừng thực thi sau khi xử lý VNPAY
+        return;
     }
 
 
@@ -96,53 +98,55 @@ module.exports = async (req, res) => {
     try {
         let result;
         switch (action) {
-            // --- HÀNH ĐỘNG MỚI: TẠO URL THANH TOÁN VNPAY ---
             case 'create_payment_url': {
                 const ipAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-                
-                // Lấy biến môi trường (quan trọng!)
                 const tmnCode = process.env.VNP_TMNCODE;
                 const secretKey = process.env.VNP_HASHSECRET;
                 let vnpUrl = process.env.VNP_URL;
                 const returnUrl = (process.env.APP_URL) + '/api/vnpay_return';
-
                 const date = new Date();
                 const createDate = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
-                
                 const orderId = `order_${Date.now()}`;
                 const amount = payload.amount || 10000;
                 const orderInfo = payload.orderInfo || 'Thanh toan don hang';
-                const locale = 'vn';
                 
                 let vnp_Params = {
                     'vnp_Version': '2.1.0',
                     'vnp_Command': 'pay',
                     'vnp_TmnCode': tmnCode,
-                    'vnp_Locale': locale,
+                    'vnp_Locale': 'vn',
                     'vnp_CurrCode': 'VND',
                     'vnp_TxnRef': orderId,
                     'vnp_OrderInfo': orderInfo,
                     'vnp_OrderType': 'other',
-                    'vnp_Amount': amount * 100, // Số tiền nhân 100
+                    'vnp_Amount': amount * 100,
                     'vnp_ReturnUrl': returnUrl,
                     'vnp_IpAddr': ipAddr,
                     'vnp_CreateDate': createDate
                 };
 
                 vnp_Params = Object.entries(vnp_Params).sort(([key1], [key2]) => key1.localeCompare(key2)).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-
+                
+                // === THÊM LOGGING ĐỂ DEBUG ===
+                console.log("--- VNPAY PAYMENT CREATION ---");
+                console.log("Sorted Params:", vnp_Params);
+                
                 let signData = querystring.stringify(vnp_Params, { encode: false });
+                
+                console.log("String to Hash:", signData);
+                // ==============================
+
                 let hmac = crypto.createHmac("sha512", secretKey);
                 let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
                 vnp_Params['vnp_SecureHash'] = signed;
 
-                vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: false });
+                vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: true }); // Dùng encode: true cho URL cuối cùng
                 
                 result = { success: true, paymentUrl: vnpUrl };
                 break;
             }
 
-            // --- CÁC HÀNH ĐỘNG GỐC CỦA BẠN ---
+            // ... (Giữ nguyên tất cả các case khác: 'login', 'getInitialData', v.v...)
             case 'login': {
                 const { username, password } = payload;
                 result = await callApi('/user/login', 'POST', null, { username, password });
@@ -168,21 +172,17 @@ module.exports = async (req, res) => {
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
-
                 for (const source of sources) {
                     const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
                     if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) continue;
-
                     if (source === 'dkhp') {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
-
                     await Promise.all(subjectsRes.body.map(async (subject) => {
                         const classEndpoint = source === 'dkhpdk'
                             ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                             : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                         const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-
                         if (classRes.success && Array.isArray(classRes.body)) {
                              await Promise.all(classRes.body.map(async (cls) => {
                                 const scheduleDetails = await getScheduleDetails(cls.id, token, source);
@@ -199,7 +199,6 @@ module.exports = async (req, res) => {
                  const { dotId, fetchPrerequisites } = payload;
                  const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                  let registeredData = [];
-
                  for (const source of sources) {
                       const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
                       if (regRes.success && Array.isArray(regRes.body)) {
@@ -234,6 +233,7 @@ module.exports = async (req, res) => {
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
                 break;
             }
+
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action.' });
         }
