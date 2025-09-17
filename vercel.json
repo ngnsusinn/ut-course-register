@@ -6,10 +6,6 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/receiver.js",
-      "use": "@vercel/node"
-    },
-    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -20,8 +16,16 @@
       "dest": "/api/handler.js"
     },
     {
-      "src": "/api/receiver",
-      "dest": "/api/receiver.js"
+      "src": "/api/create_payment_url",
+      "dest": "/api/handler.js"
+    },
+    {
+      "src": "/api/vnpay_return",
+      "dest": "/api/handler.js"
+    },
+    {
+      "src": "/api/vnpay_ipn",
+      "dest": "/api/handler.js"
     },
     {
       "src": "/(.*)",
