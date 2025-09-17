@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/receiver.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -14,6 +18,10 @@
     {
       "src": "/api/handler",
       "dest": "/api/handler.js"
+    },
+    {
+      "src": "/api/receiver",
+      "dest": "/api/receiver.js"
     },
     {
       "src": "/(.*)",
