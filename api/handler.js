@@ -145,8 +145,7 @@ module.exports = async (req, res) => {
                 const loginPayload = {
                     tenDangNhap: username,
                     // *** SỬA LỖI: Gửi mật khẩu dạng plain text, không mã hóa Base64 ***
-                    matKhau: password, 
-                    isNhoMatKhau: true
+                    matKhau: password
                 };
                 const loginResult = await callApi('/user/login', 'POST', null, loginPayload);
                 const token = loginResult.data.token;
