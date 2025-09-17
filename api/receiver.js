@@ -3,10 +3,10 @@ const mysql = require('mysql2/promise');
 
 // Cấu hình thông tin kết nối cơ sở dữ liệu
 const dbConfig = {
-    host: 'localhost',
-    user: 'webhooks_receiver',
-    password: 'EL2vKpfpDLsz',
-    database: 'webhooks_receiver'
+    host: '103.97.126.29',
+    user: 'roacqgfa_test',
+    password: 'testtest',
+    database: 'roacqgfa_test'
 };
 
 // Khởi tạo ứng dụng Express
