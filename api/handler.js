@@ -1,163 +1,255 @@
 const fetch = require('node-fetch');
+const mysql = require('mysql2/promise');
+const url = require('url');
 
-// Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
+// Đọc thông tin cấu hình từ biến môi trường của Vercel
+const dbConfig = {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+};
+
+const sepayConfig = {
+    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER,
+    bank: process.env.SEPAY_BANK 
+};
+
+let dbPool;
+
+async function getDbPool() {
+    if (!dbPool) {
+        dbPool = mysql.createPool(dbConfig);
+        // Khởi tạo bảng nếu chưa có
+        try {
+            const connection = await dbPool.getConnection();
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(255) NOT NULL UNIQUE,
+                    user_type ENUM('free', 'vip') NOT NULL DEFAULT 'free',
+                    vip_expires_at DATETIME NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+            connection.release();
+        } catch (error) {
+            console.error("Lỗi khi khởi tạo bảng 'users':", error);
+        }
+    }
+    return dbPool;
+}
+
+
+// --- Tiện ích gọi API của trường ---
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
-    let baseApiUrl;
-    if (endpoint.startsWith('/user/')) {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
-    } else if (source === 'dkhpdk') {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhpdk';
-    } else {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhp';
-    }
-    const targetUrl = baseApiUrl + endpoint;
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    let baseApiUrl;
+    if (endpoint.startsWith('/user/')) {
+        baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
+    } else if (source === 'dkhpdk') {
+        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhpdk';
+    } else {
+        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhp';
+    }
+    const targetUrl = baseApiUrl + endpoint;
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
+    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
 
-    try {
-        const response = await fetch(targetUrl, options);
-        if (!response.ok) { // Handle non-2xx responses
-            return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
-        }
-        return await response.json();
-    } catch (error) {
-        return { success: false, message: error.message };
-    }
+    try {
+        const response = await fetch(targetUrl, options);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Error ${response.status}: ${errorText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(`Lỗi khi gọi ${targetUrl}:`, error);
+        throw error;
+    }
 }
 
-// Tiện ích: Lấy chi tiết lịch học cho một lớp
-async function getScheduleDetails(classId, token, source) {
-    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
-    return (result && result.success) ? result.body : { error: true, message: result.message };
+// --- Xử lý Webhook từ SePay ---
+async function handleWebhook(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
+    }
+    try {
+        const body = req.body;
+        console.log("Received SePay Webhook:", body);
+
+        const { status, amount, description, transactionId } = body;
+
+        if (status === "SUCCESS") {
+            const parts = description.split(' ');
+            if (parts.length < 2 || parts[0].toUpperCase() !== 'VIP') {
+                 console.log("Webhook description không hợp lệ, bỏ qua.");
+                 return res.status(200).json({ message: 'OK, ignored' });
+            }
+            const username = parts[1];
+
+            let daysToAdd = 0;
+            if (amount === 10000) daysToAdd = 1;
+            else if (amount === 20000) daysToAdd = 3;
+            else if (amount === 50000) daysToAdd = 7;
+
+            if (daysToAdd > 0) {
+                const pool = await getDbPool();
+                const [users] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+                
+                if (users.length > 0) {
+                    const user = users[0];
+                    const now = new Date();
+                    let newExpiryDate;
+
+                    if (user.user_type === 'vip' && user.vip_expires_at && new Date(user.vip_expires_at) > now) {
+                        newExpiryDate = new Date(user.vip_expires_at);
+                    } else {
+                        newExpiryDate = now;
+                    }
+                    newExpiryDate.setDate(newExpiryDate.getDate() + daysToAdd);
+
+                    await pool.query(
+                        'UPDATE users SET user_type = ?, vip_expires_at = ? WHERE username = ?',
+                        ['vip', newExpiryDate, username]
+                    );
+                    console.log(`Cập nhật VIP thành công cho user ${username}. Hết hạn vào: ${newExpiryDate}`);
+                } else {
+                     console.log(`Webhook: Không tìm thấy user ${username}`);
+                }
+            } else {
+                console.log(`Webhook: Số tiền ${amount} không khớp với gói VIP nào.`);
+            }
+        }
+        res.status(200).json({ message: 'Webhook received' });
+    } catch (error) {
+        console.error('Lỗi xử lý webhook:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
 }
 
-// === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
+// --- Handler chính ---
 module.exports = async (req, res) => {
-    // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+    // Định tuyến cho webhook
+    const parsedUrl = url.parse(req.url, true);
+    if (parsedUrl.pathname === '/api/webhook') {
+        return handleWebhook(req, res);
+    }
+    
+    // Xử lý các API call thông thường
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
+    }
 
-    const { action, payload } = req.body;
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+    try {
+        const { action, payload } = req.body;
+        let result;
 
-    try {
-        let result;
-        switch (action) {
-            // --- HÀNH ĐỘNG XÁC THỰC ---
-            case 'login': {
-                // Chỉnh sửa ở đây:
-                const { username, password } = payload;
-                // Gọi API đăng nhập của trường bằng hàm callApi đã có
-                result = await callApi('/user/login', 'POST', null, { username, password });
-                break;
-            }
+        switch (action) {
+            case 'login': {
+                const { username, password } = payload;
+                const loginPayload = {
+                    tenDangNhap: username,
+                    matKhau: Buffer.from(password).toString('base64'),
+                    isNhoMatKhau: true
+                };
+                const loginResult = await callApi('/user/login', 'POST', null, loginPayload);
+                const token = loginResult.data.token;
+                const userInfo = await callApi('/user/info', 'GET', token);
+                
+                const pool = await getDbPool();
+                let [users] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+                let user;
 
-            case 'getInitialData': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                const dotsRes = await callApi(`/getDot`, 'GET', token);
-                const latestDot = (dotsRes.success && dotsRes.body.length) 
-                    ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
-                    : null;
-                result = {
-                    success: profileRes.success && !!latestDot,
-                    profile: profileRes.body,
-                    dot: latestDot
-                };
-                break;
-            }
+                if (users.length === 0) {
+                    await pool.query('INSERT INTO users (username, user_type) VALUES (?, ?)', [username, 'free']);
+                    user = { username, user_type: 'free', vip_expires_at: null };
+                } else {
+                    user = users[0];
+                    if (user.user_type === 'vip' && user.vip_expires_at && new Date(user.vip_expires_at) < new Date()) {
+                        await pool.query("UPDATE users SET user_type = 'free', vip_expires_at = NULL WHERE username = ?", [username]);
+                        user.user_type = 'free';
+                    }
+                }
+                
+                result = {
+                    token: token,
+                    fullName: userInfo.data.hoTen,
+                    is_vip: user.user_type === 'vip'
+                };
+                break;
+            }
 
-            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
-            case 'getFullSchedule': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, fetchPrerequisites } = payload;
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let allClassData = [];
-                let subjectTypeMap = {};
+            case 'create-payment': {
+                const { username, price } = payload;
+                if (!username || !price) throw new Error("Thiếu thông tin");
+                
+                const description = `VIP ${username}`;
 
-                for (const source of sources) {
-                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
-                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) continue;
+                result = {
+                    accountNumber: sepayConfig.accountNumber,
+                    bank: sepayConfig.bank,
+                    amount: price,
+                    description: encodeURIComponent(description)
+                };
+                break;
+            }
 
-                    if (source === 'dkhp') {
-                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                    }
+            case 'getRegistered':
+                result = await callApi('/getDanhSachLopHocPhanDaDangKy', 'GET', payload.token);
+                result = result.data.dsLopHocPhanDaDangKy.map(item => ({ ...item, source: 'dkhp' }))
+                         .concat(result.data.dsLopHocPhanDaDangKy_DKHPDotPhu.map(item => ({...item, source: 'dkhpdk'})));
+                break;
 
-                    // Process subjects in parallel for better performance
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
-                        const classEndpoint = source === 'dkhpdk'
-                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
+            case 'getSchedule': {
+                const { token, dotId, source } = payload;
+                const subjects = await callApi(`/getMonHocTrongDot?idDot=${dotId}`, 'GET', token, null, source);
+                let allSchedules = [];
+                for (const subject of subjects.data) {
+                    const classes = await callApi(`/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`, 'GET', token, null, source);
+                    allSchedules.push(...classes.data);
+                }
+                result = allSchedules;
+                break;
+            }
+                
+            case 'getClassDetails': {
+                const { token, dotId, maHocPhan, source } = payload;
+                const classEndpoint = source === 'dkhpdk'
+                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                result = await callApi(classEndpoint, 'GET', token, null, source);
+                break;
+            }
 
-                        if (classRes.success && Array.isArray(classRes.body)) {
-                             await Promise.all(classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
-                        }
-                    }));
-                }
-                result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
-                break;
-            }
-            
-            case 'getRegisteredClasses': {
-                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                 const { dotId, fetchPrerequisites } = payload;
-                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                 let registeredData = [];
+            case 'register': {
+                if (!payload.token) return res.status(401).json({ message: 'Unauthorized' });
+                const registerPayload = { IdLopHocPhan: [payload.classId] };
+                result = await callApi('/dangKy', 'POST', payload.token, registerPayload, payload.source);
+                break;
+            }
 
-                 for (const source of sources) {
-                     const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                     if (regRes.success && Array.isArray(regRes.body)) {
-                         await Promise.all(regRes.body.map(async (reg) => {
-                            const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp'); // API này luôn dùng source dkhp
-                            const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
-                            registeredData.push({ ...reg, source, scheduleDetails });
-                         }));
-                     }
-                 }
-                 result = { success: true, body: registeredData };
-                 break;
-            }
-            
-            case 'checkClassStatus': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, maHocPhan, source } = payload;
-                 const classEndpoint = source === 'dkhpdk'
-                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                result = await callApi(classEndpoint, 'GET', token, null, source);
-                break;
-            }
+            case 'unregister': {
+                 if (!payload.token) return res.status(401).json({ message: 'Unauthorized' });
+                const unregisterPayload = { ID: payload.regId };
+                result = await callApi('/huyDangKy', 'POST', payload.token, unregisterPayload, payload.source);
+                break;
+            }
 
-            // --- HÀNH ĐỘNG GHI (ĐĂNG KÝ/HỦY) ---
-            case 'register': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source } = payload;
-                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
-                break;
-            }
-
-            case 'cancel': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { registrationId, source } = payload;
-                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
-                break;
-            }
-
-            default:
-                return res.status(400).json({ success: false, message: 'Invalid action.' });
-        }
-        res.status(200).json(result);
-
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
-    }
+            case 'insert': {
+                if (!payload.token) return res.status(401).json({ message: 'Unauthorized' });
+                const insertPayload = { IdLopHocPhan: payload.classId, IsChen: true };
+                result = await callApi('/dangKy', 'POST', payload.token, insertPayload, payload.source);
+                break;
+            }
+                
+            default:
+                throw new Error('Hành động không hợp lệ');
+        }
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Lỗi handler:', error);
+        res.status(500).json({ message: error.message || 'Đã có lỗi xảy ra' });
+    }
 };

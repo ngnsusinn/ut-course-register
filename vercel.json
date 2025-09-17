@@ -12,6 +12,10 @@
   ],
   "routes": [
     {
+      "src": "/api/webhook",
+      "dest": "/api/handler.js"
+    },
+    {
       "src": "/api/handler",
       "dest": "/api/handler.js"
     },
