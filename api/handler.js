@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 const crypto = require('crypto');
-const querystring = require('qs');
+const querystring = require('qs'); // Vẫn cần cho việc tạo URL cuối cùng
 
 // Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
@@ -51,9 +51,14 @@ module.exports = async (req, res) => {
             delete vnp_Params['vnp_SecureHash'];
             delete vnp_Params['vnp_SecureHashType'];
             let secretKey = process.env.VNP_HASHSECRET;
+            
+            // Logic tạo chuỗi hash để kiểm tra (áp dụng logic mới)
+            let sortedKeys = Object.keys(vnp_Params).sort();
+            let signData = '';
+            for (let key of sortedKeys) {
+                signData += (signData.length === 0 ? '' : '&') + key + '=' + vnp_Params[key];
+            }
 
-            vnp_Params = Object.entries(vnp_Params).sort(([key1], [key2]) => key1.localeCompare(key2)).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-            let signData = querystring.stringify(vnp_Params, { encode: false });
             let hmac = crypto.createHmac("sha512", secretKey);
             let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
 
@@ -89,42 +94,47 @@ module.exports = async (req, res) => {
         let result;
         switch (action) {
             case 'create_payment_url': {
+                process.env.TZ = 'Asia/Ho_Chi_Minh'; // Set timezone for VNPAY
+                const date = new Date();
+                const createDate = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
+                
                 const ipAddr = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
                 const tmnCode = process.env.VNP_TMNCODE;
                 const secretKey = process.env.VNP_HASHSECRET;
                 let vnpUrl = process.env.VNP_URL;
                 const returnUrl = (process.env.APP_URL) + '/api/vnpay_return';
-                const date = new Date();
-                const createDate = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}${date.getSeconds().toString().padStart(2, '0')}`;
                 const orderId = `order_${Date.now()}`;
                 const amount = payload.amount || 10000;
-                const orderInfo = payload.orderInfo || 'Thanh toan don hang';
-                
+                let orderInfo = payload.orderInfo || 'Thanh toan don hang';
+                // Remove Vietnamese characters for vnp_OrderInfo
+                orderInfo = orderInfo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+
                 let vnp_Params = {
                     'vnp_Version': '2.1.0',
                     'vnp_Command': 'pay',
                     'vnp_TmnCode': tmnCode,
-                    'vnp_Locale': 'vn',
+                    'vnp_Amount': amount * 100,
+                    'vnp_CreateDate': createDate,
                     'vnp_CurrCode': 'VND',
-                    'vnp_TxnRef': orderId,
+                    'vnp_IpAddr': ipAddr,
+                    'vnp_Locale': 'vn',
                     'vnp_OrderInfo': orderInfo,
                     'vnp_OrderType': 'other',
-                    'vnp_Amount': amount * 100,
                     'vnp_ReturnUrl': returnUrl,
-                    'vnp_IpAddr': ipAddr,
-                    'vnp_CreateDate': createDate
+                    'vnp_TxnRef': orderId
                 };
+                
+                // Sắp xếp các key và tạo chuỗi signData THEO MÃ NGUỒN THAM KHẢO
+                let sortedKeys = Object.keys(vnp_Params).sort();
+                let signData = '';
+                for (let key of sortedKeys) {
+                    signData += (signData.length === 0 ? '' : '&') + key + '=' + vnp_Params[key];
+                }
 
-                vnp_Params = Object.entries(vnp_Params).sort(([key1], [key2]) => key1.localeCompare(key2)).reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-                
-                // BƯỚC 1: Tạo chuỗi dữ liệu để băm (KHÔNG mã hóa URL)
-                let signData = querystring.stringify(vnp_Params, { encode: false });
-                
                 let hmac = crypto.createHmac("sha512", secretKey);
                 let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
                 vnp_Params['vnp_SecureHash'] = signed;
 
-                // BƯỚC 2: Tạo URL cuối cùng (CÓ mã hóa URL)
                 vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: true });
                 
                 result = { success: true, paymentUrl: vnpUrl };
@@ -137,6 +147,7 @@ module.exports = async (req, res) => {
                 result = await callApi('/user/login', 'POST', null, { username, password });
                 break;
             }
+            // ... (Tất cả các case khác của bạn được giữ nguyên ở đây)
             case 'getInitialData': {
                  if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
