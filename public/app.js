@@ -214,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
         
         const fetchPrerequisites = prerequisiteToggle?.checked || false;
-        updateProgressBar(0, 100, `Đang tải...`);
         const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites });
 
         if (scheduleRes && scheduleRes.success) {
