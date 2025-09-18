@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     
     // Dynamically created elements
-    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, skipLockedToggle;
+    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText;
 
     // State
     let authToken = null;
@@ -33,11 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
-
-    // Helper function to remove diacritics and normalize
-    function removeDiacritics(str) {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    }
 
     // === SINGLE BACKEND COMMUNICATION FUNCTION ===
     const backendRequest = async (action, payload = {}) => {
@@ -116,17 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện</div>
                     </label>
                 </div>
-				<div id="skip-locked-toggle-container" class="flex items-center justify-center my-3">
-    <label for="skip-locked-toggle" class="flex items-center cursor-pointer">
-        <div class="relative">
-            <input type="checkbox" id="skip-locked-toggle" class="sr-only">
-            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
-            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
-        </div>
-        <div class="ml-3 text-gray-700 font-medium">Bỏ qua lớp đã khoá</div>
-    </label>
-</div>
-
                  <div id="progress-bar-container" class="my-4 hidden">
                     <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>
                     <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
@@ -139,12 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-assign element variables
             greetingMsg = document.getElementById('greeting-msg');
             prerequisiteToggle = document.getElementById('prerequisite-toggle');
-			skipLockedToggle = document.getElementById('skip-locked-toggle');
-            skipLockedToggle.addEventListener('change', () => {
-                console.log('Toggle changed to:', skipLockedToggle.checked);
-                renderScheduleTable();
-            });
-
             fetchBtn = document.getElementById('fetch-schedule-btn');
             logoutBtn = document.getElementById('logout-btn');
             progressBarContainer = document.getElementById('progress-bar-container');
@@ -241,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scheduleRes && scheduleRes.success) {
             allScheduleData = scheduleRes.schedule;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-            console.log('Fetched allScheduleData:', allScheduleData); // Debug: Kiểm tra dữ liệu lịch học
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
             await renderScheduleTable();
         } else {
@@ -386,40 +363,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- RENDER FUNCTIONS ---
     const renderScheduleTable = async () => {
-        const query = searchInput.value;
-        const queryNormalized = removeDiacritics(query).toLowerCase();
-        let selectedSubject = subjectFilter.value;
-
-        // Debug unique statuses
-        const uniqueStatuses = [...new Set(allScheduleData.map(cls => cls.tenTrangThai || 'N/A'))];
-        const uniqueNormalizedStatuses = [...new Set(allScheduleData.map(cls => removeDiacritics(cls.tenTrangThai || 'N/A')))];
-        console.log('Unique tenTrangThai (original):', uniqueStatuses);
-        console.log('Unique tenTrangThai (normalized):', uniqueNormalizedStatuses);
-
-        // Count locked classes
-        const lockedClasses = allScheduleData.filter(cls => removeDiacritics(cls.tenTrangThai || '').trim() === 'da khoa lop').length;
-        console.log('Number of locked classes:', lockedClasses);
-
-        const preFilteredData = allScheduleData.filter(cls => 
-            (`${removeDiacritics(cls.tenMonHoc || '')} ${cls.maLopHocPhan || ''} ${cls.maHocPhan || ''}`.toLowerCase().includes(queryNormalized)) &&
-            (!(skipLockedToggle?.checked) || removeDiacritics(cls.tenTrangThai || '').trim() !== 'da khoa lop')
-        );
-
-        console.log('preFilteredData length:', preFilteredData.length); // Debug: Kiểm tra số lượng dữ liệu sau lọc
-
-        const subjects = [...new Set(preFilteredData.map(cls => cls.tenMonHoc))].sort();
-        subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
-
-        // Reset selectedSubject if it's no longer available
-        if (selectedSubject && !subjects.includes(selectedSubject)) {
-            selectedSubject = '';
-            subjectFilter.value = '';
+        const query = searchInput.value.toLowerCase();
+        const selectedSubject = subjectFilter.value;
+        if (allScheduleData.length > 0) {
+            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
+            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
-
-        const filteredData = preFilteredData.filter(cls => 
-            (!selectedSubject || cls.tenMonHoc === selectedSubject)
+        const filteredData = allScheduleData.filter(cls => 
+            (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
+            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
-
         if (filteredData.length === 0) {
             scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
             return;
