@@ -135,7 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
             greetingMsg = document.getElementById('greeting-msg');
             prerequisiteToggle = document.getElementById('prerequisite-toggle');
 			skipLockedToggle = document.getElementById('skip-locked-toggle');
-            skipLockedToggle.addEventListener('change', () => renderScheduleTable());
+            skipLockedToggle.addEventListener('change', () => {
+                console.log('Toggle changed to:', skipLockedToggle.checked);
+                renderScheduleTable();
+            });
 
             fetchBtn = document.getElementById('fetch-schedule-btn');
             logoutBtn = document.getElementById('logout-btn');
@@ -233,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scheduleRes && scheduleRes.success) {
             allScheduleData = scheduleRes.schedule;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
+            console.log('Fetched allScheduleData:', allScheduleData); // Debug: Kiểm tra dữ liệu lịch học
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
             await renderScheduleTable();
         } else {
@@ -384,6 +388,8 @@ document.addEventListener('DOMContentLoaded', () => {
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
             (!(skipLockedToggle?.checked) || cls.tenTrangThai !== "Đã khoá lớp")
         );
+
+        console.log('preFilteredData length:', preFilteredData.length); // Debug: Kiểm tra số lượng dữ liệu sau lọc
 
         const subjects = [...new Set(preFilteredData.map(cls => cls.tenMonHoc))].sort();
         subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
