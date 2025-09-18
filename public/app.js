@@ -401,7 +401,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
                 <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
-                <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi ?? 'N/A'}</td>
+                <td class="px-6 py-4" data-label="Số TC">
+  ${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}
+</td>
+
                 <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
                 <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
             tbody.appendChild(row);
