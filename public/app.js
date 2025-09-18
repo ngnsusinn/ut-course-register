@@ -34,6 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let registrationIntervals = new Map();
     let isProcessStopped = false;
 
+    // Helper function to remove diacritics and normalize
+    function removeDiacritics(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
     // === SINGLE BACKEND COMMUNICATION FUNCTION ===
     const backendRequest = async (action, payload = {}) => {
         try {
@@ -384,9 +389,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const query = searchInput.value.toLowerCase();
         let selectedSubject = subjectFilter.value;
 
+        // Debug unique statuses
+        const uniqueStatuses = [...new Set(allScheduleData.map(cls => cls.tenTrangThai || 'N/A'))];
+        const uniqueNormalizedStatuses = [...new Set(allScheduleData.map(cls => removeDiacritics(cls.tenTrangThai || 'N/A')))];
+        console.log('Unique tenTrangThai (original):', uniqueStatuses);
+        console.log('Unique tenTrangThai (normalized):', uniqueNormalizedStatuses);
+
         const preFilteredData = allScheduleData.filter(cls => 
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
-            (!(skipLockedToggle?.checked) || cls.tenTrangThai !== "Đã khoá lớp")
+            (!(skipLockedToggle?.checked) || removeDiacritics(cls.tenTrangThai || '').toLowerCase() !== 'da khoa lop')
         );
 
         console.log('preFilteredData length:', preFilteredData.length); // Debug: Kiểm tra số lượng dữ liệu sau lọc
