@@ -99,6 +99,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+	// --------- LOGIN HANDLER (thêm vào) ----------
+const handleLogin = async (evt) => {
+  evt && evt.preventDefault && evt.preventDefault();
+  if (!loginBtn) return;
+  const username = usernameInput?.value?.trim() || '';
+  const password = passwordInput?.value || '';
+
+  if (!username || !password) {
+    showNotification('Vui lòng nhập tên đăng nhập và mật khẩu', 'error');
+    return;
+  }
+
+  toggleLoading(loginBtn, true);
+  log('🔐 Đang đăng nhập...');
+
+  // Gọi backend; backendRequest trả về object hoặc null
+  const res = await backendRequest('login', { username, password });
+
+  // Nếu backend không có action 'login', thử các biến thể thông dụng
+  let result = res;
+  if (!result) {
+    log('❌ Không nhận được phản hồi từ backend khi gọi "login".', true);
+    toggleLoading(loginBtn, false);
+    return;
+  }
+
+  // Kiểm tra token / thành công
+  const token = result.token || result.authToken || result.accessToken || result.data?.token;
+  const profile = result.profile || result.user || result.data?.user || result.data || result;
+
+  if (token) {
+    authToken = token;
+    updateUIAfterLogin(profile);
+    showNotification('Đăng nhập thành công', 'success');
+    log('✅ Đăng nhập thành công');
+  } else if (result.success) {
+    // một số backend trả success + user nhưng token ở khác chỗ
+    authToken = result.token || result.authToken || null;
+    updateUIAfterLogin(profile);
+    showNotification('Đăng nhập có vẻ thành công', 'success');
+    log('✅ Đăng nhập (success = true)');
+  } else {
+    const msg = result.message || result.error || 'Sai thông tin đăng nhập hoặc lỗi server';
+    showNotification('Đăng nhập thất bại: ' + msg, 'error');
+    log('❌ Đăng nhập thất bại: ' + msg, true);
+  }
+
+  toggleLoading(loginBtn, false);
+};
+
+// Gắn event cho nút và cho phím Enter (username/password)
+if (loginBtn) loginBtn.addEventListener('click', handleLogin);
+if (passwordInput) passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(e); });
+if (usernameInput) usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(e); });
+// -----------------------------------------------
+
     [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn].forEach(btn => {
         if (btn) btn.originalHTML = btn.innerHTML;
     });
