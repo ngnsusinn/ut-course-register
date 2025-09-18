@@ -430,13 +430,17 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach(reg => {
             const row = document.createElement('tr');
             row.className = 'bg-white border-b hover:bg-gray-50';
-            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : (isBatBuoc === undefined ? '' : (isBatBuoc ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>` : `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
                 <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi ?? 'N/A'}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
-                <td class="px-6 py-4" data-label="Hành động"><button data-reg-id="${reg.id}" data-ten-mon="${reg.tenMonHoc}" data-source="${reg.source}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button></td>`;
+                <td class="px-6 py-4" data-label="Hành động">${
+      reg.isAllowCancel === false
+        ? ''
+        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
+    }</td>`;
             tbody.appendChild(row);
         });
         registeredContainer.innerHTML = '';
