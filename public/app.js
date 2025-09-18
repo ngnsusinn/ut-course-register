@@ -393,10 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
             row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
             row.dataset.classId = cls.id;
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
-           // build typeHtml: nếu source là 'dkhpdk' -> hiển thị badge; 
-// ngược lại hiển thị N/A hoặc Bắt buộc / Tự chọn
 const typeHtml = cls.source === 'dkhpdk'
-  ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">DKHPĐK</span>`
+  ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">DKHPĐK</span>`
   : (isBatBuoc === undefined
       ? 'N/A'
       : (isBatBuoc
