@@ -16,8 +16,19 @@
       "dest": "/api/handler.js"
     },
     {
+      "src": "/api/vnpay/return",
+      "dest": "/api/handler.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ]
+  ],
+  "env": {
+    "VNP_TMN_CODE": "@vnp_tmn_code",
+    "VNP_HASH_SECRET": "@vnp_hash_secret",
+    "VNP_URL": "@vnp_url",
+    "VNP_API": "@vnp_api",
+    "VNP_RETURN_URL": "@vnp_return_url"
+  }
 }

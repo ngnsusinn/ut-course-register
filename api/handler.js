@@ -1,8 +1,25 @@
-// ut/api/handler.js
 const fetch = require('node-fetch');
-const { query } = require('./db'); // Import hàm query DB
+const crypto = require('crypto');
+const querystring = require('querystring');
 
-// Hàm gọi API nội bộ của trường
+// Utility: Sort object keys for VNPAY signature
+function sortObject(obj) {
+    let sorted = {};
+    let str = [];
+    let key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            str.push(encodeURIComponent(key));
+        }
+    }
+    str.sort();
+    for (key = 0; key < str.length; key++) {
+        sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+    }
+    return sorted;
+}
+
+// Tiện ích: Gọi API nội bộ của trường
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -29,38 +46,48 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     }
 }
 
-// Lấy chi tiết lịch học cho một lớp
+// Tiện ích: Lấy chi tiết lịch học cho một lớp
 async function getScheduleDetails(classId, token, source) {
     const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
-// === HÀM MỚI: KIỂM TRA HOẶC TẠO USER TRONG DATABASE VIP ===
-async function checkOrCreateUserVip(username) {
-    try {
-        // Reset role về free nếu hết hạn
-        await query('UPDATE users_vip SET role = "free", vip_expiry_date = NULL WHERE vip_expiry_date IS NOT NULL AND vip_expiry_date < NOW()');
-
-        let users = await query('SELECT * FROM users_vip WHERE username = ?', [username]);
-        if (users.length === 0) {
-            // Nếu chưa có user thì thêm mới
-            await query('INSERT INTO users_vip (username, role) VALUES (?, ?)', [username, 'free']);
-            return { username, role: 'free', vip_expiry_date: null };
-        }
-        return users[0];
-    } catch (error) {
-        console.error("Database error in checkOrCreateUserVip:", error);
-        return { username, role: 'free', vip_expiry_date: null }; // fallback
-    }
-}
-
 // === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
 module.exports = async (req, res) => {
-    // CORS
+    // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     if (req.method === 'OPTIONS') return res.status(200).end();
+    
+    // Handle VNPAY callback
+    if (req.method === 'GET' && req.url && req.url.includes('/api/vnpay/return')) {
+        const vnp_Params = req.query || {};
+        const secureHash = vnp_Params['vnp_SecureHash'];
+        
+        delete vnp_Params['vnp_SecureHash'];
+        delete vnp_Params['vnp_SecureHashType'];
+        
+        const sorted_params = sortObject(vnp_Params);
+        const secretKey = process.env.VNP_HASH_SECRET;
+        const signData = querystring.stringify(sorted_params, { encode: false });
+        const hmac = crypto.createHmac("sha512", secretKey);
+        const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+        
+        if (secureHash === signed) {
+            const responseCode = vnp_Params['vnp_ResponseCode'];
+            if (responseCode === '00') {
+                // Payment successful
+                res.writeHead(302, { Location: '/?payment=success' });
+                return res.end();
+            }
+        }
+        
+        res.writeHead(302, { Location: '/?payment=failed' });
+        return res.end();
+    }
+    
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 
     const { action, payload } = req.body;
@@ -69,78 +96,239 @@ module.exports = async (req, res) => {
     try {
         let result;
         switch (action) {
-            // --- LOGIN ---
+            // --- HÀNH ĐỘNG XÁC THỰC ---
             case 'login': {
                 const { username, password } = payload;
                 result = await callApi('/user/login', 'POST', null, { username, password });
-
-                if (result.success) {
-                    const userVipStatus = await checkOrCreateUserVip(username);
-                    result.body.user.role = userVipStatus.role;
-                }
                 break;
             }
 
-            // --- LẤY DỮ LIỆU BAN ĐẦU ---
             case 'getInitialData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
                 const dotsRes = await callApi(`/getDot`, 'GET', token);
-                const latestDot = (dotsRes.success && dotsRes.body.length)
-                                ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
-                                : null;
-                const hocPhanRes = latestDot ? await callApi(`/getHocPhanTrongDot?idDot=${latestDot.id}`, 'GET', token) : { success: false };
-                const registeredRes = latestDot ? await callApi(`/getLopHocPhanDaDangKy?idDot=${latestDot.id}`, 'GET', token) : { success: false };
-
+                const latestDot = (dotsRes.success && dotsRes.body.length) 
+                    ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
+                    : null;
                 result = {
-                    success: true,
-                    profile: profileRes.success ? profileRes.body : null,
-                    latestDot,
-                    hocPhan: hocPhanRes.success ? hocPhanRes.body : [],
-                    registered: registeredRes.success ? registeredRes.body : [],
+                    success: profileRes.success && !!latestDot,
+                    profile: profileRes.body,
+                    dot: latestDot
                 };
                 break;
             }
 
-            // --- TÌM LỚP HỌC ---
-            case 'searchClasses': {
+            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
+            case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { idHocPhan, idDot, source } = payload;
-                result = await callApi(`/getLopHocPhan?idHocPhan=${idHocPhan}&idDot=${idDot}`, 'GET', token, null, source);
+                const { dotId, fetchPrerequisites } = payload;
+                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                let allClassData = [];
+                let subjectTypeMap = {};
+
+                for (const source of sources) {
+                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
+                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) continue;
+
+                    if (source === 'dkhp') {
+                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
+                    }
+
+                    await Promise.all(subjectsRes.body.map(async (subject) => {
+                        const classEndpoint = source === 'dkhpdk'
+                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
+
+                        if (classRes.success && Array.isArray(classRes.body)) {
+                            await Promise.all(classRes.body.map(async (cls) => {
+                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
+                            }));
+                        }
+                    }));
+                }
+                result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
+                break;
+            }
+            
+            case 'getRegisteredClasses': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { dotId, fetchPrerequisites } = payload;
+                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                let registeredData = [];
+
+                for (const source of sources) {
+                    const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
+                    if (regRes.success && Array.isArray(regRes.body)) {
+                        await Promise.all(regRes.body.map(async (reg) => {
+                            const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
+                            const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
+                            registeredData.push({ ...reg, source, scheduleDetails });
+                        }));
+                    }
+                }
+                result = { success: true, body: registeredData };
+                break;
+            }
+            
+            case 'checkClassStatus': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { dotId, maHocPhan, source } = payload;
+                const classEndpoint = source === 'dkhpdk'
+                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                result = await callApi(classEndpoint, 'GET', token, null, source);
                 break;
             }
 
-            // --- CHI TIẾT LỊCH HỌC ---
-            case 'getScheduleDetails': {
+            // --- HÀNH ĐỘNG GHI (ĐĂNG KÝ/HỦY) ---
+            case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source } = payload;
-                result = await getScheduleDetails(classId, token, source);
+                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
                 break;
             }
 
-            // --- ĐĂNG KÝ HỌC PHẦN ---
-            case 'registerClass': {
+            case 'cancel': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { idDot, dsLop } = payload;
-                result = await callApi('/dangKyHocPhan', 'POST', token, { idDot, dsLop });
+                const { registrationId, source } = payload;
+                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
                 break;
             }
 
-            // --- HỦY ĐĂNG KÝ ---
-            case 'cancelClass': {
+            // === VNPAY PAYMENT ACTIONS ===
+            case 'createPaymentUrl': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { idDot, idLopHocPhan, idHocPhan } = payload;
-                result = await callApi('/huyDangKyHocPhan', 'POST', token, { idDot, idLopHocPhan, idHocPhan });
+                
+                const { amount, orderInfo, bankCode, language, userId } = payload;
+                
+                // Get environment variables
+                const tmnCode = process.env.VNP_TMN_CODE;
+                const secretKey = process.env.VNP_HASH_SECRET;
+                const vnpUrl = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+                const returnUrl = process.env.VNP_RETURN_URL || 'https://your-vercel-app.vercel.app/api/vnpay/return';
+                
+                if (!tmnCode || !secretKey) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: 'VNPAY configuration missing. Please set environment variables.' 
+                    });
+                }
+                
+                const date = new Date();
+                const createDate = date.getFullYear().toString() +
+                    ('0' + (date.getMonth() + 1)).slice(-2) +
+                    ('0' + date.getDate()).slice(-2) +
+                    ('0' + date.getHours()).slice(-2) +
+                    ('0' + date.getMinutes()).slice(-2) +
+                    ('0' + date.getSeconds()).slice(-2);
+                
+                const orderId = createDate + Math.floor(Math.random() * 1000000);
+                const locale = language || 'vn';
+                const currCode = 'VND';
+                
+                let vnp_Params = {};
+                vnp_Params['vnp_Version'] = '2.1.0';
+                vnp_Params['vnp_Command'] = 'pay';
+                vnp_Params['vnp_TmnCode'] = tmnCode;
+                vnp_Params['vnp_Locale'] = locale;
+                vnp_Params['vnp_CurrCode'] = currCode;
+                vnp_Params['vnp_TxnRef'] = orderId;
+                vnp_Params['vnp_OrderInfo'] = orderInfo || 'Thanh toan hoc phi UTH';
+                vnp_Params['vnp_OrderType'] = 'other';
+                vnp_Params['vnp_Amount'] = amount * 100;
+                vnp_Params['vnp_ReturnUrl'] = returnUrl;
+                vnp_Params['vnp_IpAddr'] = req.headers['x-forwarded-for'] || 
+                    req.connection?.remoteAddress || 
+                    req.socket?.remoteAddress || 
+                    '127.0.0.1';
+                vnp_Params['vnp_CreateDate'] = createDate;
+                
+                if (bankCode) {
+                    vnp_Params['vnp_BankCode'] = bankCode;
+                }
+                
+                vnp_Params = sortObject(vnp_Params);
+                
+                const signData = querystring.stringify(vnp_Params, { encode: false });
+                const hmac = crypto.createHmac("sha512", secretKey);
+                const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
+                vnp_Params['vnp_SecureHash'] = signed;
+                
+                const paymentUrl = vnpUrl + '?' + querystring.stringify(vnp_Params, { encode: false });
+                
+                result = {
+                    success: true,
+                    paymentUrl: paymentUrl,
+                    orderId: orderId
+                };
+                break;
+            }
+            
+            case 'checkPaymentStatus': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                
+                const { orderId, transDate } = payload;
+                
+                const tmnCode = process.env.VNP_TMN_CODE;
+                const secretKey = process.env.VNP_HASH_SECRET;
+                const vnpApi = process.env.VNP_API || 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction';
+                
+                const date = new Date();
+                const vnp_RequestId = date.getTime().toString();
+                const vnp_Version = '2.1.0';
+                const vnp_Command = 'querydr';
+                const vnp_CreateDate = date.getFullYear().toString() +
+                    ('0' + (date.getMonth() + 1)).slice(-2) +
+                    ('0' + date.getDate()).slice(-2) +
+                    ('0' + date.getHours()).slice(-2) +
+                    ('0' + date.getMinutes()).slice(-2) +
+                    ('0' + date.getSeconds()).slice(-2);
+                
+                const vnp_IpAddr = req.headers['x-forwarded-for'] || '127.0.0.1';
+                const vnp_OrderInfo = 'Kiem tra trang thai thanh toan';
+                
+                const data = vnp_RequestId + "|" + vnp_Version + "|" + vnp_Command + "|" + 
+                            tmnCode + "|" + orderId + "|" + transDate + "|" + 
+                            vnp_CreateDate + "|" + vnp_IpAddr + "|" + vnp_OrderInfo;
+                
+                const hmac = crypto.createHmac("sha512", secretKey);
+                const vnp_SecureHash = hmac.update(Buffer.from(data, 'utf-8')).digest("hex");
+                
+                const dataObj = {
+                    'vnp_RequestId': vnp_RequestId,
+                    'vnp_Version': vnp_Version,
+                    'vnp_Command': vnp_Command,
+                    'vnp_TmnCode': tmnCode,
+                    'vnp_TxnRef': orderId,
+                    'vnp_OrderInfo': vnp_OrderInfo,
+                    'vnp_TransactionDate': transDate,
+                    'vnp_CreateDate': vnp_CreateDate,
+                    'vnp_IpAddr': vnp_IpAddr,
+                    'vnp_SecureHash': vnp_SecureHash
+                };
+                
+                try {
+                    const response = await fetch(vnpApi, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dataObj)
+                    });
+                    
+                    result = await response.json();
+                } catch (error) {
+                    result = { success: false, message: 'Error checking payment status: ' + error.message };
+                }
                 break;
             }
 
             default:
-                return res.status(400).json({ success: false, message: 'Invalid action' });
+                return res.status(400).json({ success: false, message: 'Invalid action.' });
         }
+        res.status(200).json(result);
 
-        return res.status(200).json(result);
     } catch (error) {
-        console.error('Server Error:', error);
-        return res.status(500).json({ success: false, message: 'An internal server error occurred.' });
+        res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
     }
 };
