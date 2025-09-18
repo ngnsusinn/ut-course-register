@@ -395,9 +395,13 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Unique tenTrangThai (original):', uniqueStatuses);
         console.log('Unique tenTrangThai (normalized):', uniqueNormalizedStatuses);
 
+        // Count locked classes
+        const lockedClasses = allScheduleData.filter(cls => removeDiacritics(cls.tenTrangThai || '').includes('da khoa lop')).length;
+        console.log('Number of locked classes:', lockedClasses);
+
         const preFilteredData = allScheduleData.filter(cls => 
-            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
-            (!(skipLockedToggle?.checked) || removeDiacritics(cls.tenTrangThai || '').toLowerCase() !== 'da khoa lop')
+            (`${removeDiacritics(cls.tenMonHoc)} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
+            (!(skipLockedToggle?.checked) || !removeDiacritics(cls.tenTrangThai || '').includes('da khoa lop'))
         );
 
         console.log('preFilteredData length:', preFilteredData.length); // Debug: Kiểm tra số lượng dữ liệu sau lọc
