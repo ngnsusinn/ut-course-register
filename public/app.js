@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             greetingMsg = document.getElementById('greeting-msg');
             prerequisiteToggle = document.getElementById('prerequisite-toggle');
 			skipLockedToggle = document.getElementById('skip-locked-toggle');
-skipLockedToggle.addEventListener('change', () => renderScheduleTable());
+            skipLockedToggle.addEventListener('change', () => renderScheduleTable());
 
             fetchBtn = document.getElementById('fetch-schedule-btn');
             logoutBtn = document.getElementById('logout-btn');
@@ -378,16 +378,25 @@ skipLockedToggle.addEventListener('change', () => renderScheduleTable());
     // --- RENDER FUNCTIONS ---
     const renderScheduleTable = async () => {
         const query = searchInput.value.toLowerCase();
-        const selectedSubject = subjectFilter.value;
-        if (allScheduleData.length > 0) {
-            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
-            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
+        let selectedSubject = subjectFilter.value;
+
+        const preFilteredData = allScheduleData.filter(cls => 
+            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
+            (!(skipLockedToggle?.checked) || cls.tenTrangThai !== "Đã khoá lớp")
+        );
+
+        const subjects = [...new Set(preFilteredData.map(cls => cls.tenMonHoc))].sort();
+        subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
+
+        // Reset selectedSubject if it's no longer available
+        if (selectedSubject && !subjects.includes(selectedSubject)) {
+            selectedSubject = '';
+            subjectFilter.value = '';
         }
-        const filteredData = allScheduleData.filter(cls => 
-    (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
-    (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
-    (!(skipLockedToggle?.checked) || cls.tenTrangThai !== "Đã khoá lớp")
-);
+
+        const filteredData = preFilteredData.filter(cls => 
+            (!selectedSubject || cls.tenMonHoc === selectedSubject)
+        );
 
         if (filteredData.length === 0) {
             scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
