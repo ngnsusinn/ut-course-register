@@ -16,10 +16,6 @@
       "dest": "/api/handler.js"
     },
     {
-      "src": "/api/vnpay/return",
-      "dest": "/api/handler.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "/public/$1"
     }

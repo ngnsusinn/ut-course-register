@@ -1,14 +1,9 @@
 {
-  "name": "uth-secure-tool-with-vnpay",
-  "version": "2.0.0",
-  "description": "Secure UTH Course Registration Tool with VNPAY Payment Integration on Vercel.",
+  "name": "uth-secure-tool",
+  "version": "1.0.0",
+  "description": "Secure UTH Course Registration Tool with backend logic on Vercel.",
   "main": "api/handler.js",
   "dependencies": {
-    "node-fetch": "^2.6.7",
-    "crypto": "^1.0.1",
-    "querystring": "^0.2.1"
-  },
-  "engines": {
-    "node": ">=14.x"
+    "node-fetch": "^2.6.7" 
   }
 }
