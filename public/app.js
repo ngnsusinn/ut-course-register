@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     
     // Dynamically created elements
-    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText;
+    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, skipLockedToggle;
 
     // State
     let authToken = null;
@@ -111,6 +111,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện</div>
                     </label>
                 </div>
+				<div id="skip-locked-toggle-container" class="flex items-center justify-center my-3">
+    <label for="skip-locked-toggle" class="flex items-center cursor-pointer">
+        <div class="relative">
+            <input type="checkbox" id="skip-locked-toggle" class="sr-only">
+            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+        </div>
+        <div class="ml-3 text-gray-700 font-medium">Bỏ qua lớp đã khoá</div>
+    </label>
+</div>
+
                  <div id="progress-bar-container" class="my-4 hidden">
                     <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>
                     <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
@@ -123,6 +134,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-assign element variables
             greetingMsg = document.getElementById('greeting-msg');
             prerequisiteToggle = document.getElementById('prerequisite-toggle');
+			skipLockedToggle = document.getElementById('skip-locked-toggle');
+skipLockedToggle.addEventListener('change', () => renderScheduleTable());
+
             fetchBtn = document.getElementById('fetch-schedule-btn');
             logoutBtn = document.getElementById('logout-btn');
             progressBarContainer = document.getElementById('progress-bar-container');
@@ -363,59 +377,56 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- RENDER FUNCTIONS ---
     const renderScheduleTable = async () => {
-    const query = searchInput.value.toLowerCase();
-    const selectedSubject = subjectFilter.value;
-    if (allScheduleData.length > 0) {
-        const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
-        subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
-    }
+        const query = searchInput.value.toLowerCase();
+        const selectedSubject = subjectFilter.value;
+        if (allScheduleData.length > 0) {
+            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
+            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
+        }
+        const filteredData = allScheduleData.filter(cls => 
+    (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
+    (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
+    (!(skipLockedToggle?.checked) || cls.tenTrangThai !== "Đã khoá lớp")
+);
 
-    // Lọc: theo subject, theo query và loại bỏ lớp có tenTrangThai === "Đã khóa lớp"
-    const filteredData = allScheduleData.filter(cls => 
-        (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
-        (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query)) &&
-        (cls.tenTrangThai !== 'Đã khóa lớp')
-    );
-
-    if (filteredData.length === 0) {
-        scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
-        return;
-    }
-    const table = document.createElement('table');
-    table.className = 'w-full text-sm text-left text-gray-500';
-    table.innerHTML = `
-        <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
-            <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
-            <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
-            <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>
-        </tr></thead><tbody></tbody>`;
-    const tbody = table.querySelector('tbody');
-    filteredData.forEach(cls => {
-        const row = document.createElement('tr');
-        const isSelected = selectedClasses.has(cls.id.toString());
-        row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
-        row.dataset.classId = cls.id;
-        const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
-        const typeHtml = cls.source === 'dkhpdk'
+        if (filteredData.length === 0) {
+            scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-500';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>
+            </tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        filteredData.forEach(cls => {
+            const row = document.createElement('tr');
+            const isSelected = selectedClasses.has(cls.id.toString());
+            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
+            row.dataset.classId = cls.id;
+            const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
+            const typeHtml = cls.source === 'dkhpdk'
   ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
   : (isBatBuoc === undefined
       ? 'N/A'
       : (isBatBuoc
           ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
           : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
-        row.innerHTML = `
-            <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
-            <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
-            <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
-            <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
-            <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
-            <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
-        tbody.appendChild(row);
-    });
-    scheduleContainer.innerHTML = '';
-    scheduleContainer.appendChild(table);
-};
-
+            row.innerHTML = `
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
+                <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
+                <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
+            tbody.appendChild(row);
+        });
+        scheduleContainer.innerHTML = '';
+        scheduleContainer.appendChild(table);
+    };
 
     const renderRegisteredTable = async (data) => {
         if (!data || data.length === 0) {
