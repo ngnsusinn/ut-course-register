@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
-                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi ?? 'N/A'}</td>
+                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
                 <td class="px-6 py-4" data-label="Hành động">${
       reg.isAllowCancel === false
