@@ -100,66 +100,114 @@ module.exports = async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites } = payload;
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                
+                // --- CÁC BIẾN LƯU TRỮ KẾT QUẢ ---
                 let allClassData = [];
                 let subjectTypeMap = {};
-                let hasFailed = false; 
-                // KHỞI TẠO MẢNG ĐỂ GHI LOG LỖI
-                let failedRequests = []; 
+                let hasFailed = false;
+                let failedRequests = [];
 
+                // --- CÁC HẰNG SỐ CẤU HÌNH ---
+                const BATCH_SIZE = 5; // Xử lý 5 môn học mỗi lần
+                const DELAY_MS = 500; // Delay 0.5 giây giữa các lô
+
+                // Lặp qua các nguồn dữ liệu (dkhp, dkhpdk)
                 for (const source of sources) {
+                    console.log(`Bắt đầu lấy dữ liệu từ nguồn: [${source}]`);
+
+                    // 1. Lấy danh sách TẤT CẢ các môn học của nguồn hiện tại
                     const subjectsRes = await callApiWithRetry(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
 
                     if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) {
                         hasFailed = true;
-                        // GHI LOG LỖI: Không thể lấy danh sách môn học
-                        failedRequests.push({ 
-                            type: 'GET_SUBJECT_LIST', 
-                            endpoint: `/getHocPhanHocMoi?idDot=${dotId}`, 
+                        failedRequests.push({
+                            type: 'GET_SUBJECT_LIST',
+                            source: source,
                             error: subjectsRes.message || 'Response body is not an array.'
                         });
-                        break;
+                        break; // Bỏ qua nguồn này nếu không lấy được danh sách môn học
                     }
 
+                    const subjects = subjectsRes.body;
+                    console.log(`> [${source}] Tìm thấy ${subjects.length} môn học. Bắt đầu xử lý theo lô ${BATCH_SIZE} môn...`);
+
+                    // Ghi nhận loại môn học (Bắt buộc/Tự chọn)
                     if (source === 'dkhp') {
-                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
+                        subjects.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
-                        const classEndpoint = source === 'dkhpdk'
-                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                    // 2. Lặp qua danh sách môn học theo từng lô (batch)
+                    for (let i = 0; i < subjects.length; i += BATCH_SIZE) {
+                        const subjectBatch = subjects.slice(i, i + BATCH_SIZE); // Lấy ra 1 lô gồm 5 môn
                         
-                        const classRes = await callApiWithRetry(classEndpoint, 'GET', token, null, source);
+                        console.log(`--> Đang xử lý lô ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(subjects.length / BATCH_SIZE)} (Gồm ${subjectBatch.length} môn)`);
 
-                        if (classRes.success && Array.isArray(classRes.body)) {
-                             await Promise.all(classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                if (scheduleDetails.error) {
-                                    hasFailed = true;
-                                    // GHI LOG LỖI: Không thể lấy chi tiết lớp học
-                                    failedRequests.push({
-                                        type: 'GET_CLASS_DETAILS',
-                                        classId: cls.id,
-                                        className: cls.tenLopHocPhan,
-                                        error: scheduleDetails.message
-                                    });
-                                }
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
-                        } else {
-                            hasFailed = true;
-                            // GHI LOG LỖI: Không thể lấy danh sách lớp của một môn
-                            failedRequests.push({
-                                type: 'GET_CLASS_LIST_FOR_SUBJECT',
-                                subjectCode: subject.maHocPhan,
-                                subjectName: subject.tenHocPhan,
-                                endpoint: classEndpoint,
-                                error: classRes.message || 'Response body is not an array.'
-                            });
+                        // 3. Xử lý đồng thời 5 môn học trong lô hiện tại
+                        const batchPromises = subjectBatch.map(async (subject) => {
+                            const classEndpoint = source === 'dkhpdk'
+                                ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                                : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                            
+                            const classRes = await callApiWithRetry(classEndpoint, 'GET', token, null, source);
+
+                            if (classRes.success && Array.isArray(classRes.body)) {
+                                // Lấy chi tiết lịch học cho từng lớp của môn học này
+                                const detailPromises = classRes.body.map(async (cls) => {
+                                    const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                                    if (scheduleDetails.error) {
+                                        hasFailed = true;
+                                        failedRequests.push({
+                                            type: 'GET_CLASS_DETAILS',
+                                            classId: cls.id,
+                                            error: scheduleDetails.message
+                                        });
+                                    }
+                                    allClassData.push({ ...subject, ...cls, source, scheduleDetails });
+                                });
+                                await Promise.all(detailPromises);
+                            } else {
+                                hasFailed = true;
+                                failedRequests.push({
+                                    type: 'GET_CLASS_LIST_FOR_SUBJECT',
+                                    subjectCode: subject.maHocPhan,
+                                    error: classRes.message || 'Response body is not an array.'
+                                });
+                            }
+                        });
+                        
+                        // Đợi cho lô 5 môn học hiện tại xử lý xong
+                        await Promise.all(batchPromises);
+
+                        // 4. Nếu đây chưa phải lô cuối cùng, thì delay
+                        if (i + BATCH_SIZE < subjects.length) {
+                            console.log(`--- Hoàn thành lô. Delay ${DELAY_MS}ms... ---\n`);
+                            await new Promise(res => setTimeout(res, DELAY_MS));
                         }
-                    }));
-                    if (hasFailed) break;
+                    }
+
+                    if (hasFailed) break; // Nếu có lỗi thì không cần xử lý nguồn tiếp theo
                 }
+
+                // --- TRẢ KẾT QUẢ CUỐI CÙNG VỀ CHO CLIENT ---
+                if (hasFailed && allClassData.length === 0) {
+                    console.error('--- LỖI NGHIÊM TRỌNG, KHÔNG LẤY ĐƯỢC DỮ LIỆU ---');
+                    console.error(JSON.stringify(failedRequests, null, 2));
+                    result = {
+                        success: false,
+                        message: 'Không thể lấy dữ liệu lịch học sau nhiều lần thử.',
+                        errors: failedRequests
+                    };
+                } else {
+                    result = {
+                        success: !hasFailed,
+                        message: hasFailed ? 'Hoàn thành nhưng có một số lỗi. Dữ liệu có thể không đầy đủ.' : 'Lấy thành công toàn bộ dữ liệu lịch học.',
+                        schedule: allClassData,
+                        subjectTypes: subjectTypeMap,
+                        errors: failedRequests 
+                    };
+                }
+                break;
+            }
 
                 // KIỂM TRA CUỐI CÙNG VÀ TRẢ VỀ KẾT QUẢ
                 if (hasFailed) {
