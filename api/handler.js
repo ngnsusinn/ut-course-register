@@ -34,7 +34,7 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
 }
 
 // Tiện ích MỚI: Tự động thử lại khi gọi API thất bại
-async function callApiWithRetry(endpoint, method, token, body = null, source = 'dkhp', retries = 3, delay = 1000) {
+async function callApiWithRetry(endpoint, method, token, body = null, source = 'dkhp', retries = 10, delay = 1000) {
     for (let i = 0; i < retries; i++) {
         const result = await callApi(endpoint, method, token, body, source);
         if (result.success) {
