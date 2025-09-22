@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-// Tiện ích: Gọi API nội bộ của trường
+// Tiện ích: Gọi API nội bộ của trường, chỉ dùng trong file này
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -19,12 +19,12 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         headers,
         body: body ? JSON.stringify(body) : null,
         timeout: 30000,
-        cache: 'no-store'
+        cache: 'no-store' // Đảm bảo fetch luôn lấy dữ liệu mới nhất
     };
 
     try {
         const response = await fetch(targetUrl, options);
-        if (!response.ok) {
+        if (!response.ok) { // Handle non-2xx responses
             return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
         }
         return await response.json();
@@ -33,26 +33,23 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     }
 }
 
-// Tiện ích: Tự động thử lại khi gọi API thất bại
+// Tiện ích MỚI: Tự động thử lại khi gọi API thất bại
 async function callApiWithRetry(endpoint, method, token, body = null, source = 'dkhp', retries = 10, delay = 1000) {
     for (let i = 0; i < retries; i++) {
         const result = await callApi(endpoint, method, token, body, source);
-        // FIX: Sửa điều kiện kiểm tra thành công. API có thể trả về success: true nhưng body là null hoặc rỗng.
-        // Điều kiện cũ `result.success` vẫn đúng, nhưng làm rõ hơn là ta mong đợi một kết quả thành công.
-        if (result && result.success) {
+        if (result.success) {
             return result; // Thành công, trả về kết quả ngay
         }
-        
-        // Thất bại, chờ trước khi thử lại
-        const waitTime = delay * Math.pow(2, i);
-        console.log(`API call to ${endpoint} failed. Retrying in ${waitTime}ms... (Attempt ${i + 1}/${retries})`);
-        if (i < retries - 1) {
-            await new Promise(res => setTimeout(res, waitTime));
+        // Thất bại, ghi log và chờ trước khi thử lại
+        console.log(`API call to ${endpoint} failed. Retrying in ${delay * Math.pow(2, i)}ms... (Attempt ${i + 1}/${retries})`);
+        if (i < retries - 1) { // Chỉ chờ nếu đây không phải lần thử cuối cùng
+            await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
         } else {
-            return result; // Hết số lần thử, trả về lỗi cuối cùng
+             return result; // Hết số lần thử, trả về lỗi cuối cùng
         }
     }
 }
+
 
 // Tiện ích: Lấy chi tiết lịch học cho một lớp
 async function getScheduleDetails(classId, token, source) {
@@ -75,6 +72,7 @@ module.exports = async (req, res) => {
     try {
         let result;
         switch (action) {
+            // --- HÀNH ĐỘNG XÁC THỰC ---
             case 'login': {
                 const { username, password } = payload;
                 result = await callApi('/user/login', 'POST', null, { username, password });
@@ -85,7 +83,7 @@ module.exports = async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const profileRes = await callApiWithRetry('/user/getSummaryProfile', 'GET', token);
                 const dotsRes = await callApiWithRetry(`/getDot`, 'GET', token);
-                const latestDot = (dotsRes.success && dotsRes.body && dotsRes.body.length)
+                const latestDot = (dotsRes.success && dotsRes.body.length)
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
                 result = {
@@ -96,43 +94,55 @@ module.exports = async (req, res) => {
                 break;
             }
 
+            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
+            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
             case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites } = payload;
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 
+                // --- CÁC BIẾN LƯU TRỮ KẾT QUẢ ---
                 let allClassData = [];
                 let subjectTypeMap = {};
                 let hasFailed = false;
                 let failedRequests = [];
-                let logs = []; // NEW: Mảng để lưu log gửi về client
 
-                const BATCH_SIZE = 5;
-                const DELAY_MS = 500;
+                // --- CÁC HẰNG SỐ CẤU HÌNH ---
+                const BATCH_SIZE = 5; // Xử lý 5 môn học mỗi lần
+                const DELAY_MS = 100; // Delay 0.5 giây giữa các lô
 
+                // Lặp qua các nguồn dữ liệu (dkhp, dkhpdk)
                 for (const source of sources) {
-                    logs.push(`INFO: Bắt đầu lấy dữ liệu từ nguồn: [${source}]`);
+                    console.log(`Bắt đầu lấy dữ liệu từ nguồn: [${source}]`);
+
+                    // 1. Lấy danh sách TẤT CẢ các môn học của nguồn hiện tại
                     const subjectsRes = await callApiWithRetry(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
 
                     if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) {
                         hasFailed = true;
-                        const errorMsg = subjectsRes.message || 'Response body is not an array.';
-                        logs.push(`ERROR: Không thể lấy danh sách môn học từ nguồn [${source}]. Lỗi: ${errorMsg}`);
-                        failedRequests.push({ type: 'GET_SUBJECT_LIST', source: source, error: errorMsg });
-                        break;
+                        failedRequests.push({
+                            type: 'GET_SUBJECT_LIST',
+                            source: source,
+                            error: subjectsRes.message || 'Response body is not an array.'
+                        });
+                        break; // Bỏ qua nguồn này nếu không lấy được danh sách môn học
                     }
 
                     const subjects = subjectsRes.body;
-                    logs.push(`INFO: [${source}] Tìm thấy ${subjects.length} môn học. Bắt đầu xử lý theo lô ${BATCH_SIZE} môn...`);
+                    console.log(`> [${source}] Tìm thấy ${subjects.length} môn học. Bắt đầu xử lý theo lô ${BATCH_SIZE} môn...`);
 
+                    // Ghi nhận loại môn học (Bắt buộc/Tự chọn)
                     if (source === 'dkhp') {
                         subjects.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
+                    // 2. Lặp qua danh sách môn học theo từng lô (batch)
                     for (let i = 0; i < subjects.length; i += BATCH_SIZE) {
-                        const subjectBatch = subjects.slice(i, i + BATCH_SIZE);
-                        logs.push(`\n---> Đang xử lý lô ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(subjects.length / BATCH_SIZE)} (Gồm ${subjectBatch.length} môn)`);
+                        const subjectBatch = subjects.slice(i, i + BATCH_SIZE); // Lấy ra 1 lô gồm 5 môn
+                        
+                        console.log(`--> Đang xử lý lô ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(subjects.length / BATCH_SIZE)} (Gồm ${subjectBatch.length} môn)`);
 
+                        // 3. Xử lý đồng thời 5 môn học trong lô hiện tại
                         const batchPromises = subjectBatch.map(async (subject) => {
                             const classEndpoint = source === 'dkhpdk'
                                 ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
@@ -141,105 +151,130 @@ module.exports = async (req, res) => {
                             const classRes = await callApiWithRetry(classEndpoint, 'GET', token, null, source);
 
                             if (classRes.success && Array.isArray(classRes.body)) {
+                                // Lấy chi tiết lịch học cho từng lớp của môn học này
                                 const detailPromises = classRes.body.map(async (cls) => {
                                     const scheduleDetails = await getScheduleDetails(cls.id, token, source);
                                     if (scheduleDetails.error) {
                                         hasFailed = true;
-                                        logs.push(`WARN: Lấy chi tiết lớp ${cls.id} thất bại. Lỗi: ${scheduleDetails.message}`);
-                                        failedRequests.push({ type: 'GET_CLASS_DETAILS', classId: cls.id, error: scheduleDetails.message });
+                                        failedRequests.push({
+                                            type: 'GET_CLASS_DETAILS',
+                                            classId: cls.id,
+                                            error: scheduleDetails.message
+                                        });
                                     }
                                     allClassData.push({ ...subject, ...cls, source, scheduleDetails });
                                 });
                                 await Promise.all(detailPromises);
                             } else {
                                 hasFailed = true;
-                                const errorMsg = classRes.message || 'Response body is not an array.';
-                                logs.push(`WARN: Lấy danh sách lớp cho môn ${subject.maHocPhan} thất bại. Lỗi: ${errorMsg}`);
-                                failedRequests.push({ type: 'GET_CLASS_LIST_FOR_SUBJECT', subjectCode: subject.maHocPhan, error: errorMsg });
+                                failedRequests.push({
+                                    type: 'GET_CLASS_LIST_FOR_SUBJECT',
+                                    subjectCode: subject.maHocPhan,
+                                    error: classRes.message || 'Response body is not an array.'
+                                });
                             }
                         });
                         
+                        // Đợi cho lô 5 môn học hiện tại xử lý xong
                         await Promise.all(batchPromises);
 
+                        // 4. Nếu đây chưa phải lô cuối cùng, thì delay
                         if (i + BATCH_SIZE < subjects.length) {
-                            logs.push(`--- Hoàn thành lô. Chờ ${DELAY_MS}ms... ---`);
+                            console.log(`--- Hoàn thành lô. Delay ${DELAY_MS}ms... ---\n`);
                             await new Promise(res => setTimeout(res, DELAY_MS));
                         }
                     }
 
-                    if (hasFailed) break;
+                    if (hasFailed) break; // Nếu có lỗi thì không cần xử lý nguồn tiếp theo
                 }
 
+                // --- TRẢ KẾT QUẢ CUỐI CÙNG VỀ CHO CLIENT ---
                 if (hasFailed && allClassData.length === 0) {
-                    logs.push('FATAL: Lỗi nghiêm trọng, không lấy được bất kỳ dữ liệu nào.');
+                    console.error('--- LỖI NGHIÊM TRỌNG, KHÔNG LẤY ĐƯỢC DỮ LIỆU ---');
+                    console.error(JSON.stringify(failedRequests, null, 2));
                     result = {
                         success: false,
                         message: 'Không thể lấy dữ liệu lịch học sau nhiều lần thử.',
-                        errors: failedRequests,
-                        logs: logs // NEW
+                        errors: failedRequests
                     };
                 } else {
-                    const finalMessage = hasFailed ? 'Hoàn thành nhưng có một số lỗi. Dữ liệu có thể không đầy đủ.' : 'Lấy thành công toàn bộ dữ liệu lịch học.';
-                    logs.push(`SUCCESS: ${finalMessage}`);
                     result = {
                         success: !hasFailed,
-                        message: finalMessage,
+                        message: hasFailed ? 'Hoàn thành nhưng có một số lỗi. Dữ liệu có thể không đầy đủ.' : 'Lấy thành công toàn bộ dữ liệu lịch học.',
                         schedule: allClassData,
                         subjectTypes: subjectTypeMap,
-                        errors: failedRequests,
-                        logs: logs // NEW
+                        errors: failedRequests 
                     };
                 }
                 break;
             }
-            
-            // ... (các case khác không thay đổi)
+
+                // KIỂM TRA CUỐI CÙNG VÀ TRẢ VỀ KẾT QUẢ
+                if (hasFailed) {
+                    console.error('--- CÓ LỖI XẢY RA KHI FETCH DỮ LIỆU ---');
+                    console.error(JSON.stringify(failedRequests, null, 2)); // In ra console server-side
+                    console.error('------------------------------------------');
+                    
+                    // Trả về thông báo lỗi cùng với chi tiết các lỗi
+                    result = { 
+                        success: false, 
+                        message: 'Failed to fetch some required data after multiple retries.',
+                        errors: failedRequests 
+                    };
+                } else {
+                    result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
+                }
+                break;
+            }
+
             case 'getRegisteredClasses': {
                  if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                  const { dotId, fetchPrerequisites } = payload;
                  const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                  let registeredData = [];
+
                  for (const source of sources) {
-                       const regRes = await callApiWithRetry(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                       if (regRes.success && Array.isArray(regRes.body)) {
+                      const regRes = await callApiWithRetry(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
+                      if (regRes.success && Array.isArray(regRes.body)) {
                            await Promise.all(regRes.body.map(async (reg) => {
                              const detailRes = await callApiWithRetry(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
                              const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
                              registeredData.push({ ...reg, source, scheduleDetails });
                            }));
-                       }
+                      }
                  }
                  result = { success: true, body: registeredData };
                  break;
             }
+
             case 'checkClassStatus': {
-                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                 const { dotId, maHocPhan, source } = payload;
-                   const classEndpoint = source === 'dkhpdk'
-                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                 result = await callApiWithRetry(classEndpoint, 'GET', token, null, source);
-                 break;
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { dotId, maHocPhan, source } = payload;
+                  const classEndpoint = source === 'dkhpdk'
+                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                result = await callApiWithRetry(classEndpoint, 'GET', token, null, source);
+                break;
             }
+
+            // --- HÀNH ĐỘNG GHI (ĐĂNG KÝ/HỦY) ---
             case 'register': {
-                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                 const { classId, source } = payload;
-                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
-                 break;
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { classId, source } = payload;
+                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
+                break;
             }
+
             case 'cancel': {
-                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                 const { registrationId, source } = payload;
-                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
-                 break;
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { registrationId, source } = payload;
+                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
+                break;
             }
+
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action.' });
         }
-        
-        // **FIX**: Xóa bỏ khối if/else kiểm tra `hasFailed` ở đây vì nó đã được xử lý trong case 'getFullSchedule'.
-        // Khối code cũ ở đây sẽ gây lỗi ReferenceError cho các action khác.
-
         res.status(200).json(result);
 
     } catch (error) {
