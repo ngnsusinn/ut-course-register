@@ -95,19 +95,28 @@ module.exports = async (req, res) => {
             }
 
             // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
+            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
             case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites } = payload;
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
-                let hasFailed = false; // Thêm cờ để theo dõi lỗi
+                let hasFailed = false; 
+                // KHỞI TẠO MẢNG ĐỂ GHI LOG LỖI
+                let failedRequests = []; 
 
                 for (const source of sources) {
                     const subjectsRes = await callApiWithRetry(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
 
                     if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) {
                         hasFailed = true;
+                        // GHI LOG LỖI: Không thể lấy danh sách môn học
+                        failedRequests.push({ 
+                            type: 'GET_SUBJECT_LIST', 
+                            endpoint: `/getHocPhanHocMoi?idDot=${dotId}`, 
+                            error: subjectsRes.message || 'Response body is not an array.'
+                        });
                         break;
                     }
 
@@ -127,18 +136,43 @@ module.exports = async (req, res) => {
                                 const scheduleDetails = await getScheduleDetails(cls.id, token, source);
                                 if (scheduleDetails.error) {
                                     hasFailed = true;
+                                    // GHI LOG LỖI: Không thể lấy chi tiết lớp học
+                                    failedRequests.push({
+                                        type: 'GET_CLASS_DETAILS',
+                                        classId: cls.id,
+                                        className: cls.tenLopHocPhan,
+                                        error: scheduleDetails.message
+                                    });
                                 }
                                 allClassData.push({ ...subject, ...cls, source, scheduleDetails });
                             }));
                         } else {
                             hasFailed = true;
+                            // GHI LOG LỖI: Không thể lấy danh sách lớp của một môn
+                            failedRequests.push({
+                                type: 'GET_CLASS_LIST_FOR_SUBJECT',
+                                subjectCode: subject.maHocPhan,
+                                subjectName: subject.tenHocPhan,
+                                endpoint: classEndpoint,
+                                error: classRes.message || 'Response body is not an array.'
+                            });
                         }
                     }));
                     if (hasFailed) break;
                 }
 
+                // KIỂM TRA CUỐI CÙNG VÀ TRẢ VỀ KẾT QUẢ
                 if (hasFailed) {
-                    result = { success: false, message: 'Failed to fetch some required data after multiple retries.' };
+                    console.error('--- CÓ LỖI XẢY RA KHI FETCH DỮ LIỆU ---');
+                    console.error(JSON.stringify(failedRequests, null, 2)); // In ra console server-side
+                    console.error('------------------------------------------');
+                    
+                    // Trả về thông báo lỗi cùng với chi tiết các lỗi
+                    result = { 
+                        success: false, 
+                        message: 'Failed to fetch some required data after multiple retries.',
+                        errors: failedRequests 
+                    };
                 } else {
                     result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 }
