@@ -14,7 +14,7 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
+    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000,  cache: 'no-store' };
 
     try {
         const response = await fetch(targetUrl, options);
