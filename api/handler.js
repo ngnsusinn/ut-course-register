@@ -1,20 +1,103 @@
 const fetch = require('node-fetch');
 
-// Rate limiting configuration
+// Advanced rate limiting with intelligent patterns
 const RATE_LIMIT_CONFIG = {
     maxRetries: 5,
-    baseDelay: 1000, // 1 second
-    maxDelay: 30000, // 30 seconds
-    backoffMultiplier: 2,
-    jitterMax: 1000, // Random jitter up to 1 second
-    concurrentLimit: 2, // Max concurrent requests per source
-    batchDelay: 800, // Delay between batches
-    retryOn: [429, 502, 503, 504, 520, 521, 522, 523, 524] // Status codes to retry
+    baseDelay: 500, // Reduced base delay
+    maxDelay: 15000, // Reduced max delay
+    backoffMultiplier: 1.5, // Gentler backoff
+    jitterMax: 500,
+    
+    // Per-source concurrent limits (tuned for each API)
+    concurrentLimits: {
+        'user': 3,      // User APIs can handle more
+        'dkhp': 4,      // Main registration API
+        'dkhpdk': 3,    // Prerequisite API
+    },
+    
+    // Adaptive timing
+    batchDelay: 200,           // Minimal batch delay
+    dynamicDelayEnabled: true, // Enable adaptive delays
+    burstMode: true,          // Allow bursts of requests
+    
+    // Request patterns
+    burstSize: 8,             // Allow bursts of 8 requests
+    burstCooldown: 2000,      // 2s cooldown after burst
+    
+    retryOn: [429, 502, 503, 504, 520, 521, 522, 523, 524]
 };
 
-// Global request queue and semaphores for rate limiting
-const requestQueues = new Map(); // Per-source queues
-const semaphores = new Map(); // Per-source semaphores
+// Intelligent request distribution
+class RequestManager {
+    constructor() {
+        this.sourceLimits = new Map();
+        this.requestCounts = new Map();
+        this.lastRequestTime = new Map();
+        this.burstCounts = new Map();
+        this.lastBurstTime = new Map();
+        this.adaptiveDelays = new Map();
+        
+        // Initialize for each source
+        ['user', 'dkhp', 'dkhpdk'].forEach(source => {
+            this.sourceLimits.set(source, new RequestSemaphore(RATE_LIMIT_CONFIG.concurrentLimits[source]));
+            this.requestCounts.set(source, 0);
+            this.lastRequestTime.set(source, 0);
+            this.burstCounts.set(source, 0);
+            this.lastBurstTime.set(source, 0);
+            this.adaptiveDelays.set(source, 0);
+        });
+    }
+
+    async acquireSlot(source) {
+        const semaphore = this.sourceLimits.get(source);
+        const now = Date.now();
+        
+        // Check if we can do a burst
+        if (RATE_LIMIT_CONFIG.burstMode) {
+            const lastBurst = this.lastBurstTime.get(source);
+            const burstCount = this.burstCounts.get(source);
+            
+            if (now - lastBurst > RATE_LIMIT_CONFIG.burstCooldown) {
+                // Reset burst counter
+                this.burstCounts.set(source, 0);
+                this.lastBurstTime.set(source, now);
+            }
+            
+            if (burstCount < RATE_LIMIT_CONFIG.burstSize) {
+                this.burstCounts.set(source, burstCount + 1);
+                await semaphore.acquire();
+                return { isBurst: true };
+            }
+        }
+        
+        // Apply adaptive delay based on recent success/failure
+        const adaptiveDelay = this.adaptiveDelays.get(source);
+        if (adaptiveDelay > 0) {
+            await new Promise(resolve => setTimeout(resolve, adaptiveDelay));
+        }
+        
+        await semaphore.acquire();
+        this.lastRequestTime.set(source, now);
+        return { isBurst: false };
+    }
+
+    releaseSlot(source) {
+        const semaphore = this.sourceLimits.get(source);
+        semaphore.release();
+    }
+
+    recordSuccess(source) {
+        // Reduce adaptive delay on success
+        const currentDelay = this.adaptiveDelays.get(source);
+        this.adaptiveDelays.set(source, Math.max(0, currentDelay - 50));
+    }
+
+    recordRateLimit(source) {
+        // Increase adaptive delay on rate limit
+        const currentDelay = this.adaptiveDelays.get(source);
+        this.adaptiveDelays.set(source, Math.min(2000, currentDelay + 200));
+    }
+}
 
 class RequestSemaphore {
     constructor(maxConcurrent) {
@@ -28,10 +111,7 @@ class RequestSemaphore {
             this.current++;
             return;
         }
-
-        return new Promise(resolve => {
-            this.queue.push(resolve);
-        });
+        return new Promise(resolve => this.queue.push(resolve));
     }
 
     release() {
@@ -44,37 +124,41 @@ class RequestSemaphore {
     }
 }
 
-// Get or create semaphore for a source
-function getSemaphore(source) {
-    if (!semaphores.has(source)) {
-        semaphores.set(source, new RequestSemaphore(RATE_LIMIT_CONFIG.concurrentLimit));
-    }
-    return semaphores.get(source);
-}
+// Global request manager
+const requestManager = new RequestManager();
 
-// Calculate delay with exponential backoff and jitter
-function calculateDelay(attempt, isRateLimit = false) {
+// Smart delay calculation
+function calculateSmartDelay(attempt, isRateLimit = false, source = 'dkhp') {
     let delay = RATE_LIMIT_CONFIG.baseDelay * Math.pow(RATE_LIMIT_CONFIG.backoffMultiplier, attempt - 1);
     
-    // For rate limits, use longer delays
+    // Rate limit gets special treatment
     if (isRateLimit) {
-        delay *= 3;
+        delay *= 2; // Less aggressive than before
     }
     
-    // Cap at max delay
     delay = Math.min(delay, RATE_LIMIT_CONFIG.maxDelay);
     
-    // Add random jitter to avoid thundering herd
+    // Add jitter
     const jitter = Math.random() * RATE_LIMIT_CONFIG.jitterMax;
     return delay + jitter;
 }
 
-// Enhanced API call with advanced rate limiting and retry logic
-async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
+// Request deduplication cache
+const requestCache = new Map();
+const cacheTimeout = 5000; // 5 seconds cache
+
+function getCacheKey(endpoint, source, token) {
+    return `${source}:${endpoint}:${token?.substring(0, 10) || 'notoken'}`;
+}
+
+// Enhanced API call with smart request management
+async function callApi(endpoint, method, token, body = null, source = 'dkhp', allowCache = true) {
     let baseApiUrl;
+    let actualSource = source;
+    
     if (endpoint.startsWith('/user/')) {
         baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
-        source = 'user'; // Separate rate limiting for user endpoints
+        actualSource = 'user';
     } else if (source === 'dkhpdk') {
         baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhpdk';
     } else {
@@ -82,179 +166,216 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     }
     
     const targetUrl = baseApiUrl + endpoint;
+    
+    // Check cache for GET requests (except POST/DELETE operations)
+    if (method === 'GET' && allowCache) {
+        const cacheKey = getCacheKey(endpoint, actualSource, token);
+        const cached = requestCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < cacheTimeout) {
+            console.log(`[${actualSource}] 💨 Cache hit: ${endpoint}`);
+            return cached.data;
+        }
+    }
+
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const semaphore = getSemaphore(source);
-
     for (let attempt = 1; attempt <= RATE_LIMIT_CONFIG.maxRetries; attempt++) {
-        // Acquire semaphore to limit concurrent requests
-        await semaphore.acquire();
-
+        const slotInfo = await requestManager.acquireSlot(actualSource);
+        
         try {
             const options = { 
                 method, 
                 headers, 
                 body: body ? JSON.stringify(body) : null, 
-                timeout: 90000 // Increased to 90s for slower responses
+                timeout: 45000 // Optimized timeout
             };
 
-            console.log(`[${source}] [Attempt ${attempt}/${RATE_LIMIT_CONFIG.maxRetries}] ${method} ${endpoint}`);
+            const burstIndicator = slotInfo.isBurst ? '🚀' : '📡';
+            console.log(`[${actualSource}] ${burstIndicator} [${attempt}/${RATE_LIMIT_CONFIG.maxRetries}] ${method} ${endpoint}`);
             
             const response = await fetch(targetUrl, options);
             
-            console.log(`[${source}] Response: ${response.status} ${response.statusText} for ${endpoint}`);
-
-            // Handle successful responses
             if (response.ok) {
                 const responseText = await response.text();
                 
                 if (!responseText) {
-                    console.warn(`[${source}] Empty response from: ${endpoint}`);
-                    semaphore.release();
-                    return { success: false, message: 'Empty response from server' };
+                    requestManager.releaseSlot(actualSource);
+                    return { success: false, message: 'Empty response' };
                 }
 
                 try {
                     const jsonData = JSON.parse(responseText);
-                    console.log(`[${source}] ✅ Success: ${endpoint}`);
-                    semaphore.release();
+                    
+                    // Cache successful GET responses
+                    if (method === 'GET' && allowCache) {
+                        const cacheKey = getCacheKey(endpoint, actualSource, token);
+                        requestCache.set(cacheKey, {
+                            data: jsonData,
+                            timestamp: Date.now()
+                        });
+                        
+                        // Clean old cache entries periodically
+                        if (Math.random() < 0.1) { // 10% chance
+                            cleanCache();
+                        }
+                    }
+                    
+                    requestManager.recordSuccess(actualSource);
+                    requestManager.releaseSlot(actualSource);
+                    console.log(`[${actualSource}] ✅ ${endpoint}`);
                     return jsonData;
+                    
                 } catch (parseError) {
-                    console.error(`[${source}] JSON Parse error for ${endpoint}:`, parseError.message);
-                    semaphore.release();
-                    return { success: false, message: 'Invalid JSON response', details: responseText.substring(0, 200) };
+                    requestManager.releaseSlot(actualSource);
+                    return { success: false, message: 'Invalid JSON response' };
                 }
             }
 
-            // Handle error responses
-            const errorText = await response.text().catch(() => '');
+            // Handle errors
             const shouldRetry = RATE_LIMIT_CONFIG.retryOn.includes(response.status) && attempt < RATE_LIMIT_CONFIG.maxRetries;
             
             if (response.status === 429) {
-                // Rate limit - extract retry-after header if available
-                const retryAfter = response.headers.get('retry-after');
-                const delay = retryAfter ? parseInt(retryAfter) * 1000 : calculateDelay(attempt, true);
+                requestManager.recordRateLimit(actualSource);
                 
-                console.warn(`[${source}] 🚫 Rate limited (${response.status}). Retrying after ${Math.round(delay/1000)}s... (${attempt}/${RATE_LIMIT_CONFIG.maxRetries})`);
+                // Try to extract retry-after
+                const retryAfter = response.headers.get('retry-after');
+                const delay = retryAfter ? Math.min(parseInt(retryAfter) * 1000, 5000) : calculateSmartDelay(attempt, true, actualSource);
+                
+                console.warn(`[${actualSource}] 🚫 Rate limit. Retry in ${Math.round(delay/1000)}s...`);
                 
                 if (shouldRetry) {
-                    semaphore.release();
+                    requestManager.releaseSlot(actualSource);
                     await new Promise(resolve => setTimeout(resolve, delay));
                     continue;
                 }
             } else if (shouldRetry) {
-                const delay = calculateDelay(attempt, false);
-                console.warn(`[${source}] ⚠️ Server error (${response.status}). Retrying after ${Math.round(delay/1000)}s... (${attempt}/${RATE_LIMIT_CONFIG.maxRetries})`);
-                semaphore.release();
+                const delay = calculateSmartDelay(attempt, false, actualSource);
+                console.warn(`[${actualSource}] ⚠️ Error ${response.status}. Retry in ${Math.round(delay/1000)}s...`);
+                requestManager.releaseSlot(actualSource);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }
             
-            console.error(`[${source}] ❌ API Error: ${response.status} for ${endpoint}`);
-            semaphore.release();
+            requestManager.releaseSlot(actualSource);
             return { 
                 success: false, 
-                message: `API Error: Status ${response.status}`, 
-                status: response.status,
-                details: errorText.substring(0, 200)
+                message: `API Error: ${response.status}`, 
+                status: response.status
             };
 
         } catch (error) {
-            console.error(`[${source}] 🔌 Network error for ${endpoint} (attempt ${attempt}):`, error.message);
-            
             const shouldRetry = attempt < RATE_LIMIT_CONFIG.maxRetries && (
                 error.code === 'ECONNRESET' || 
                 error.code === 'ETIMEDOUT' || 
-                error.code === 'ENOTFOUND' ||
                 error.message.includes('timeout')
             );
             
             if (shouldRetry) {
-                const delay = calculateDelay(attempt, false);
-                console.log(`[${source}] 🔄 Network retry after ${Math.round(delay/1000)}s...`);
-                semaphore.release();
+                const delay = calculateSmartDelay(attempt, false, actualSource);
+                requestManager.releaseSlot(actualSource);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
             }
             
-            semaphore.release();
+            requestManager.releaseSlot(actualSource);
             return { success: false, message: `Network error: ${error.message}` };
         }
     }
 
-    return { success: false, message: `Max retries (${RATE_LIMIT_CONFIG.maxRetries}) exceeded` };
+    return { success: false, message: 'Max retries exceeded' };
 }
 
-// Rate-limited batch processing with progressive backoff
-async function processBatch(items, asyncFn, batchSize = 2, source = 'dkhp') {
-    const results = [];
-    let consecutiveErrors = 0;
-    const maxConsecutiveErrors = 3;
+function cleanCache() {
+    const now = Date.now();
+    for (const [key, value] of requestCache.entries()) {
+        if (now - value.timestamp > cacheTimeout) {
+            requestCache.delete(key);
+        }
+    }
+}
 
-    for (let i = 0; i < items.length; i += batchSize) {
-        const batch = items.slice(i, i + batchSize);
-        console.log(`[${source}] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(items.length/batchSize)} (${batch.length} items)`);
+// Intelligent parallel processing with load balancing
+async function processIntelligently(items, asyncFn, source = 'dkhp') {
+    const results = [];
+    const concurrentLimit = RATE_LIMIT_CONFIG.concurrentLimits[source] || 2;
+    
+    // Use sliding window approach for better throughput
+    const slidingWindow = [];
+    let processed = 0;
+    
+    const processNext = async () => {
+        if (processed >= items.length) return;
+        
+        const item = items[processed++];
+        const itemIndex = processed - 1;
         
         try {
-            const batchResults = await Promise.all(batch.map(asyncFn));
-            results.push(...batchResults);
-            consecutiveErrors = 0; // Reset error counter on success
-            
-            // Dynamic delay based on recent errors
-            if (i + batchSize < items.length) {
-                const delay = RATE_LIMIT_CONFIG.batchDelay + (consecutiveErrors * 500);
-                console.log(`[${source}] Batch delay: ${delay}ms`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-            
-        } catch (batchError) {
-            console.error(`[${source}] Batch error:`, batchError.message);
-            consecutiveErrors++;
-            
-            // If too many consecutive errors, increase delay significantly
-            if (consecutiveErrors >= maxConsecutiveErrors) {
-                console.warn(`[${source}] Too many consecutive errors, cooling down...`);
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                consecutiveErrors = 0;
-            }
-            
-            // Add empty results for failed batch
-            results.push(...batch.map(() => ({ error: true, message: 'Batch processing failed' })));
+            const result = await asyncFn(item, itemIndex);
+            results[itemIndex] = result;
+        } catch (error) {
+            results[itemIndex] = { error: true, message: error.message };
         }
+        
+        // Process next item
+        if (processed < items.length) {
+            return processNext();
+        }
+    };
+    
+    // Start initial batch
+    const initialPromises = [];
+    for (let i = 0; i < Math.min(concurrentLimit, items.length); i++) {
+        initialPromises.push(processNext());
+    }
+    
+    await Promise.all(initialPromises);
+    
+    // Ensure all results are filled
+    while (results.length < items.length) {
+        results.push({ error: true, message: 'Processing incomplete' });
     }
     
     return results;
 }
 
-// Enhanced schedule details fetcher with caching
+// Smart schedule cache with invalidation
 const scheduleCache = new Map();
+const SCHEDULE_CACHE_TTL = 30000; // 30 seconds
+
 async function getScheduleDetails(classId, token, source) {
     const cacheKey = `${source}-${classId}`;
+    const cached = scheduleCache.get(cacheKey);
     
-    if (scheduleCache.has(cacheKey)) {
-        console.log(`[${source}] 📋 Cache hit for class ${classId}`);
-        return scheduleCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < SCHEDULE_CACHE_TTL) {
+        console.log(`[${source}] 💨 Schedule cache hit: ${classId}`);
+        return cached.data;
     }
 
-    console.log(`[${source}] 📋 Getting schedule details for class ${classId}`);
     const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
     
     if (result && result.success) {
-        console.log(`[${source}] 📋 Schedule details retrieved for class ${classId}`);
-        scheduleCache.set(cacheKey, result.body);
-        return result.body;
+        const data = result.body;
+        scheduleCache.set(cacheKey, { data, timestamp: Date.now() });
+        return data;
     } else {
-        console.warn(`[${source}] 📋 Failed to get schedule details for class ${classId}:`, result?.message);
-        const errorResult = { error: true, message: result?.message || 'Unknown error' };
-        scheduleCache.set(cacheKey, errorResult); // Cache errors too to avoid repeated failures
-        return errorResult;
+        const errorData = { error: true, message: result?.message || 'Unknown error' };
+        // Don't cache errors for too long
+        scheduleCache.set(cacheKey, { data: errorData, timestamp: Date.now() - SCHEDULE_CACHE_TTL + 5000 });
+        return errorData;
     }
 }
 
-// === BỘ NÃO XỬ LÝ CÁC HÀNH ĐỘNG TỪ CLIENT ===
+// Request queue optimization
+async function optimizeRequestOrder(requests) {
+    // Sort requests by priority: user endpoints first, then by source
+    return requests.sort((a, b) => {
+        const sourceWeight = { 'user': 0, 'dkhp': 1, 'dkhpdk': 2 };
+        return (sourceWeight[a.source] || 3) - (sourceWeight[b.source] || 3);
+    });
+}
+
 module.exports = async (req, res) => {
-    // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -262,18 +383,17 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 
     const { action, payload } = req.body;
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+    const token = req.headers.authorization?.split(' ')[1];
 
     const startTime = Date.now();
-    console.log(`🚀 [${new Date().toISOString()}] Starting action: ${action}`);
+    console.log(`🚀 [${new Date().toISOString()}] Action: ${action}`);
 
     try {
         let result;
+        
         switch (action) {
-            // --- HÀNH ĐỘNG XÁC THỰC ---
             case 'login': {
                 const { username, password } = payload;
-                console.log(`🔐 Login attempt for user: ${username}`);
                 result = await callApi('/user/login', 'POST', null, { username, password });
                 break;
             }
@@ -281,14 +401,13 @@ module.exports = async (req, res) => {
             case 'getInitialData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
-                console.log('📊 Getting initial data...');
+                // Parallel execution for independent calls
+                const [profileRes, dotsRes] = await Promise.all([
+                    callApi('/user/getSummaryProfile', 'GET', token),
+                    callApi(`/getDot`, 'GET', token)
+                ]);
                 
-                // Sequential calls to avoid overwhelming the server
-                const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
-                const dotsRes = await callApi(`/getDot`, 'GET', token);
-                
-                const latestDot = (dotsRes.success && dotsRes.body && dotsRes.body.length) 
+                const latestDot = (dotsRes.success && dotsRes.body?.length) 
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
                     
@@ -297,77 +416,57 @@ module.exports = async (req, res) => {
                     profile: profileRes.body,
                     dot: latestDot
                 };
-                console.log('📊 Initial data retrieved:', { hasProfile: !!result.profile, hasDot: !!result.dot });
                 break;
             }
 
-            // --- HÀNH ĐỘNG LẤY DỮ LIỆU ---
             case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
                 const { dotId, fetchPrerequisites } = payload;
-                console.log(`📅 Getting full schedule for dot ${dotId}, fetchPrerequisites: ${fetchPrerequisites}`);
-                
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
 
-                for (const source of sources) {
-                    console.log(`📚 Processing source: ${source}`);
-                    
+                // Process sources in parallel when possible
+                const sourcePromises = sources.map(async (source) => {
                     const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
                     
-                    if (!subjectsRes.success) {
-                        console.warn(`📚 Failed to get subjects from ${source}:`, subjectsRes.message);
-                        continue;
+                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) {
+                        console.warn(`Failed to get subjects from ${source}`);
+                        return { source, classes: [] };
                     }
-                    
-                    if (!Array.isArray(subjectsRes.body)) {
-                        console.warn(`📚 Invalid subjects response from ${source}:`, typeof subjectsRes.body);
-                        continue;
-                    }
-
-                    console.log(`📚 Found ${subjectsRes.body.length} subjects from ${source}`);
 
                     if (source === 'dkhp') {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    // Process subjects with aggressive rate limiting
-                    const subjectResults = await processBatch(subjectsRes.body, async (subject) => {
-                        try {
-                            const classEndpoint = source === 'dkhpdk'
-                                ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                                : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                            
-                            const classRes = await callApi(classEndpoint, 'GET', token, null, source);
+                    // Process subjects intelligently
+                    const sourceClasses = [];
+                    await processIntelligently(subjectsRes.body, async (subject) => {
+                        const classEndpoint = source === 'dkhpdk'
+                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                        
+                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
 
-                            if (classRes.success && Array.isArray(classRes.body)) {
-                                console.log(`📚 Found ${classRes.body.length} classes for subject ${subject.maHocPhan}`);
-                                
-                                // Process classes sequentially to be extra careful with rate limits
-                                const classResults = [];
-                                for (const cls of classRes.body) {
-                                    const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                    classResults.push({ ...subject, ...cls, source, scheduleDetails });
-                                    
-                                    // Small delay between class detail requests
-                                    if (classRes.body.length > 1) {
-                                        await new Promise(resolve => setTimeout(resolve, 300));
-                                    }
-                                }
-                                
-                                allClassData.push(...classResults);
-                            } else {
-                                console.warn(`📚 No classes found for subject ${subject.maHocPhan} from ${source}`);
-                            }
-                        } catch (error) {
-                            console.error(`📚 Error processing subject ${subject.maHocPhan}:`, error.message);
+                        if (classRes.success && Array.isArray(classRes.body)) {
+                            // Process classes in parallel with intelligent batching
+                            const classPromises = classRes.body.map(async (cls) => {
+                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                                return { ...subject, ...cls, source, scheduleDetails };
+                            });
+                            
+                            const classResults = await Promise.all(classPromises);
+                            sourceClasses.push(...classResults);
                         }
-                    }, 1, source); // Process only 1 subject at a time to be very conservative
-                }
+                    }, source);
+                    
+                    return { source, classes: sourceClasses };
+                });
+
+                const sourceResults = await Promise.all(sourcePromises);
+                sourceResults.forEach(({ classes }) => allClassData.push(...classes));
                 
-                console.log(`📅 Total classes retrieved: ${allClassData.length}`);
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
             }
@@ -376,35 +475,27 @@ module.exports = async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
                 const { dotId, fetchPrerequisites } = payload;
-                console.log(`📋 Getting registered classes for dot ${dotId}`);
-                
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
 
                 for (const source of sources) {
-                    console.log(`📋 Getting registered classes from ${source}`);
                     const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
                     
                     if (regRes.success && Array.isArray(regRes.body)) {
-                        console.log(`📋 Found ${regRes.body.length} registered classes from ${source}`);
-                        
-                        // Process registered classes sequentially with delays
-                        for (const reg of regRes.body) {
+                        // Process registered classes in parallel
+                        const regPromises = regRes.body.map(async (reg) => {
                             const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
-                            const scheduleDetails = (detailRes && detailRes.success) 
+                            const scheduleDetails = (detailRes?.success) 
                                 ? detailRes.body 
-                                : { error: true, message: detailRes?.message || 'Failed to get schedule details' };
-                            registeredData.push({ ...reg, source, scheduleDetails });
-                            
-                            // Delay between registered class detail requests
-                            if (regRes.body.length > 1) {
-                                await new Promise(resolve => setTimeout(resolve, 400));
-                            }
-                        }
+                                : { error: true, message: detailRes?.message || 'Failed to get details' };
+                            return { ...reg, source, scheduleDetails };
+                        });
+                        
+                        const regResults = await Promise.all(regPromises);
+                        registeredData.push(...regResults);
                     }
                 }
                 
-                console.log(`📋 Total registered classes: ${registeredData.length}`);
                 result = { success: true, body: registeredData };
                 break;
             }
@@ -413,8 +504,6 @@ module.exports = async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
                 const { dotId, maHocPhan, source } = payload;
-                console.log(`🔍 Checking class status for ${maHocPhan} from ${source}`);
-                
                 const classEndpoint = source === 'dkhpdk'
                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
@@ -423,34 +512,31 @@ module.exports = async (req, res) => {
                 break;
             }
 
-            // --- HÀNH ĐỘNG GHI (ĐĂNG KÝ/HỦY) ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source } = payload;
-                console.log(`✅ Registering class ${classId} from ${source}`);
-                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
+                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source, false);
                 break;
             }
 
             case 'cancel': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { registrationId, source } = payload;
-                console.log(`❌ Canceling registration ${registrationId} from ${source}`);
-                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
+                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source, false);
                 break;
             }
 
             default:
-                return res.status(400).json({ success: false, message: 'Invalid action.' });
+                return res.status(400).json({ success: false, message: 'Invalid action' });
         }
         
         const duration = Date.now() - startTime;
-        console.log(`✅ [${new Date().toISOString()}] Action ${action} completed successfully in ${duration}ms`);
+        console.log(`✅ Action ${action} completed in ${duration}ms`);
         res.status(200).json(result);
 
     } catch (error) {
         const duration = Date.now() - startTime;
-        console.error(`❌ [${new Date().toISOString()}] Handler error for action ${action} after ${duration}ms:`, error);
+        console.error(`❌ Handler error for ${action} after ${duration}ms:`, error);
         res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
     }
 };
