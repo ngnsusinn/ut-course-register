@@ -11,7 +11,7 @@ const RATE_LIMIT_CONFIG = {
     // Per-source concurrent limits (tuned for each API)
     concurrentLimits: {
         'user': 3,      // User APIs can handle more
-        'dkhp': 3,      // Main registration API
+        'dkhp': 4,      // Main registration API
         'dkhpdk': 3,    // Prerequisite API
     },
     
@@ -143,12 +143,32 @@ function calculateSmartDelay(attempt, isRateLimit = false, source = 'dkhp') {
     return delay + jitter;
 }
 
-// Request deduplication cache
+// Request deduplication cache with smart invalidation
 const requestCache = new Map();
-const cacheTimeout = 5000; // 5 seconds cache
+const cacheTimeout = 3000; // Reduced to 3 seconds cache
 
 function getCacheKey(endpoint, source, token) {
-    return `${source}:${endpoint}:${token?.substring(0, 10) || 'notoken'}`;
+    // Include more context in cache key to avoid collisions
+    const bodyHash = endpoint.includes('?') ? endpoint.split('?')[1] : '';
+    return `${source}:${endpoint.split('?')[0]}:${bodyHash}:${token?.substring(0, 10) || 'notoken'}`;
+}
+
+function shouldCacheResponse(response, endpoint) {
+    // Don't cache empty or failed responses
+    if (!response || !response.success) return false;
+    
+    // Don't cache responses with empty important data
+    if (endpoint.includes('getHocPhanHocMoi') && (!response.body || !Array.isArray(response.body) || response.body.length === 0)) {
+        console.log('Not caching empty subjects response');
+        return false;
+    }
+    
+    if (endpoint.includes('getLopHocPhan') && (!response.body || !Array.isArray(response.body) || response.body.length === 0)) {
+        console.log('Not caching empty classes response');
+        return false;
+    }
+    
+    return true;
 }
 
 // Enhanced API call with smart request management
@@ -172,8 +192,15 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', al
         const cacheKey = getCacheKey(endpoint, actualSource, token);
         const cached = requestCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < cacheTimeout) {
-            console.log(`[${actualSource}] 💨 Cache hit: ${endpoint}`);
-            return cached.data;
+            // Additional validation for cached data
+            if (shouldCacheResponse(cached.data, endpoint)) {
+                console.log(`[${actualSource}] 💨 Cache hit: ${endpoint}`);
+                return cached.data;
+            } else {
+                // Remove invalid cached data
+                console.log(`[${actualSource}] 🗑️ Removing invalid cache: ${endpoint}`);
+                requestCache.delete(cacheKey);
+            }
         }
     }
 
@@ -207,23 +234,26 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', al
                 try {
                     const jsonData = JSON.parse(responseText);
                     
-                    // Cache successful GET responses
-                    if (method === 'GET' && allowCache) {
+                    // Cache successful GET responses with validation
+                    if (method === 'GET' && allowCache && shouldCacheResponse(jsonData, endpoint)) {
                         const cacheKey = getCacheKey(endpoint, actualSource, token);
                         requestCache.set(cacheKey, {
                             data: jsonData,
                             timestamp: Date.now()
                         });
+                        console.log(`[${actualSource}] 💾 Cached response for: ${endpoint}`);
                         
                         // Clean old cache entries periodically
                         if (Math.random() < 0.1) { // 10% chance
                             cleanCache();
                         }
+                    } else if (method === 'GET' && allowCache) {
+                        console.log(`[${actualSource}] ⚠️ Not caching response for: ${endpoint} (validation failed)`);
                     }
                     
                     requestManager.recordSuccess(actualSource);
                     requestManager.releaseSlot(actualSource);
-                    console.log(`[${actualSource}] ✅ ${endpoint}`);
+                    console.log(`[${actualSource}] ✅ ${endpoint} (${Array.isArray(jsonData.body) ? jsonData.body.length + ' items' : 'success'})`);
                     return jsonData;
                     
                 } catch (parseError) {
@@ -288,10 +318,24 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', al
 
 function cleanCache() {
     const now = Date.now();
+    let cleaned = 0;
     for (const [key, value] of requestCache.entries()) {
         if (now - value.timestamp > cacheTimeout) {
             requestCache.delete(key);
+            cleaned++;
         }
+    }
+    
+    // Also clean schedule cache
+    for (const [key, value] of scheduleCache.entries()) {
+        if (now - value.timestamp > SCHEDULE_CACHE_TTL) {
+            scheduleCache.delete(key);
+            cleaned++;
+        }
+    }
+    
+    if (cleaned > 0) {
+        console.log(`🗑️ Cleaned ${cleaned} expired cache entries`);
     }
 }
 
@@ -339,29 +383,37 @@ async function processIntelligently(items, asyncFn, source = 'dkhp') {
     return results;
 }
 
-// Smart schedule cache with invalidation
+// Smart schedule cache with better invalidation
 const scheduleCache = new Map();
-const SCHEDULE_CACHE_TTL = 30000; // 30 seconds
+const SCHEDULE_CACHE_TTL = 10000; // Reduced to 10 seconds
 
 async function getScheduleDetails(classId, token, source) {
     const cacheKey = `${source}-${classId}`;
     const cached = scheduleCache.get(cacheKey);
     
     if (cached && Date.now() - cached.timestamp < SCHEDULE_CACHE_TTL) {
-        console.log(`[${source}] 💨 Schedule cache hit: ${classId}`);
-        return cached.data;
+        // Validate cached data
+        if (cached.data && !cached.data.error) {
+            console.log(`[${source}] 💨 Schedule cache hit: ${classId}`);
+            return cached.data;
+        } else {
+            // Remove invalid cache
+            scheduleCache.delete(cacheKey);
+        }
     }
 
-    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
+    console.log(`[${source}] 📋 Fetching schedule details for class ${classId}`);
+    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source, false); // Disable cache for schedule details
     
-    if (result && result.success) {
+    if (result && result.success && result.body) {
         const data = result.body;
         scheduleCache.set(cacheKey, { data, timestamp: Date.now() });
+        console.log(`[${source}] 💾 Cached schedule for class ${classId}`);
         return data;
     } else {
-        const errorData = { error: true, message: result?.message || 'Unknown error' };
-        // Don't cache errors for too long
-        scheduleCache.set(cacheKey, { data: errorData, timestamp: Date.now() - SCHEDULE_CACHE_TTL + 5000 });
+        console.warn(`[${source}] ❌ Failed to get schedule for class ${classId}:`, result?.message);
+        const errorData = { error: true, message: result?.message || 'Failed to fetch schedule details' };
+        // Don't cache errors to allow retry
         return errorData;
     }
 }
@@ -423,50 +475,73 @@ module.exports = async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
                 const { dotId, fetchPrerequisites } = payload;
+                console.log(`📅 Getting full schedule for dot ${dotId}, fetchPrerequisites: ${fetchPrerequisites}`);
+                
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
 
-                // Process sources in parallel when possible
-                const sourcePromises = sources.map(async (source) => {
-                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
+                // Process sources sequentially to avoid overwhelming the server
+                for (const source of sources) {
+                    console.log(`📚 Processing source: ${source}`);
                     
-                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) {
-                        console.warn(`Failed to get subjects from ${source}`);
-                        return { source, classes: [] };
+                    // Always fetch fresh data for subjects
+                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source, false);
+                    
+                    if (!subjectsRes.success) {
+                        console.warn(`📚 Failed to get subjects from ${source}:`, subjectsRes.message);
+                        continue;
                     }
+                    
+                    if (!Array.isArray(subjectsRes.body)) {
+                        console.warn(`📚 Invalid subjects response from ${source}:`, typeof subjectsRes.body);
+                        continue;
+                    }
+
+                    console.log(`📚 Found ${subjectsRes.body.length} subjects from ${source}`);
 
                     if (source === 'dkhp') {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    // Process subjects intelligently
+                    // Process subjects with better error handling
                     const sourceClasses = [];
-                    await processIntelligently(subjectsRes.body, async (subject) => {
-                        const classEndpoint = source === 'dkhpdk'
-                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                        
-                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-
-                        if (classRes.success && Array.isArray(classRes.body)) {
-                            // Process classes in parallel with intelligent batching
-                            const classPromises = classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                return { ...subject, ...cls, source, scheduleDetails };
-                            });
+                    for (const subject of subjectsRes.body) {
+                        try {
+                            const classEndpoint = source === 'dkhpdk'
+                                ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                                : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                             
-                            const classResults = await Promise.all(classPromises);
-                            sourceClasses.push(...classResults);
-                        }
-                    }, source);
-                    
-                    return { source, classes: sourceClasses };
-                });
+                            // Fetch fresh class data
+                            const classRes = await callApi(classEndpoint, 'GET', token, null, source, false);
 
-                const sourceResults = await Promise.all(sourcePromises);
-                sourceResults.forEach(({ classes }) => allClassData.push(...classes));
+                            if (classRes.success && Array.isArray(classRes.body)) {
+                                console.log(`📚 Found ${classRes.body.length} classes for subject ${subject.maHocPhan}`);
+                                
+                                // Process classes with schedule details
+                                for (const cls of classRes.body) {
+                                    const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                                    sourceClasses.push({ ...subject, ...cls, source, scheduleDetails });
+                                    
+                                    // Small delay between schedule requests
+                                    await new Promise(resolve => setTimeout(resolve, 100));
+                                }
+                            } else {
+                                console.warn(`📚 No classes for subject ${subject.maHocPhan} from ${source}`);
+                            }
+                        } catch (error) {
+                            console.error(`📚 Error processing subject ${subject.maHocPhan}:`, error.message);
+                        }
+                        
+                        // Small delay between subjects
+                        await new Promise(resolve => setTimeout(resolve, 150));
+                    }
+                    
+                    allClassData.push(...sourceClasses);
+                    console.log(`📚 Added ${sourceClasses.length} classes from ${source}`);
+                }
                 
+                console.log(`📅 Total classes retrieved: ${allClassData.length}`);
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
             }
