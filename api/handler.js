@@ -10,7 +10,7 @@ const RATE_LIMIT_CONFIG = {
     
     // Optimized concurrent limits
     concurrentLimits: {
-        'user': 2,      // User APIs are usually more stable
+        'user': 1,      // User APIs are usually more stable
         'dkhp': 2,      // Allow 2 concurrent for main API
         'dkhpdk': 2,    // Allow 2 concurrent for prerequisite API
     },
