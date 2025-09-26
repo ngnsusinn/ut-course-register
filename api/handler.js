@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 
 // Advanced rate limiting with intelligent patterns
 const RATE_LIMIT_CONFIG = {
-    maxRetries: 5,
+    maxRetries: 24,
     baseDelay: 500, // Reduced base delay
     maxDelay: 15000, // Reduced max delay
     backoffMultiplier: 1.5, // Gentler backoff
