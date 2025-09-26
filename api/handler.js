@@ -7,7 +7,7 @@ const RATE_LIMIT_CONFIG = {
     maxDelay: 30000, // 30 seconds
     backoffMultiplier: 2,
     jitterMax: 1000, // Random jitter up to 1 second
-    concurrentLimit: 2, // Max concurrent requests per source
+    concurrentLimit: 3, // Max concurrent requests per source
     batchDelay: 800, // Delay between batches
     retryOn: [429, 502, 503, 504, 520, 521, 522, 523, 524] // Status codes to retry
 };
