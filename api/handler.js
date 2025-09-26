@@ -1,24 +1,26 @@
 const fetch = require('node-fetch');
 
-// Ultra-conservative rate limiting to completely avoid rate limits
+// Balanced rate limiting - avoid both rate limits and timeouts
 const RATE_LIMIT_CONFIG = {
-    maxRetries: 8, // More retries
-    baseDelay: 2000, // Start with 2 seconds
-    maxDelay: 60000, // Up to 60 seconds
-    backoffMultiplier: 1.8,
-    jitterMax: 1000,
+    maxRetries: 6,
+    baseDelay: 1000, // Reduced base delay
+    maxDelay: 30000, // Reduced max delay  
+    backoffMultiplier: 1.6,
+    jitterMax: 500,
     
-    // Very conservative concurrent limits
+    // Optimized concurrent limits
     concurrentLimits: {
-        'user': 1,      // Only 1 concurrent request for user APIs
-        'dkhp': 1,      // Only 1 concurrent request for dkhp
-        'dkhpdk': 1,    // Only 1 concurrent request for dkhpdk
+        'user': 2,      // User APIs are usually more stable
+        'dkhp': 2,      // Allow 2 concurrent for main API
+        'dkhpdk': 2,    // Allow 2 concurrent for prerequisite API
     },
     
-    // Longer delays between requests
-    requestDelay: 1500,        // 1.5s between requests
-    sequentialDelay: 800,      // 0.8s between sequential items
-    batchDelay: 3000,          // 3s between batches
+    // Reduced delays to prevent timeouts
+    requestDelay: 400,         // 400ms between requests
+    sequentialDelay: 300,      // 300ms between sequential items
+    batchDelay: 1500,          // 1.5s between batches
+    classDelay: 200,           // 200ms between classes
+    scheduleDelay: 150,        // 150ms between schedule requests
     
     retryOn: [429, 502, 503, 504, 520, 521, 522, 523, 524, 500]
 };
@@ -78,24 +80,23 @@ function getSemaphore(source) {
     return semaphores.get(source);
 }
 
-// Enhanced delay calculation with more aggressive backoff for rate limits
-function calculateDelay(attempt, isRateLimit = false, hasRetryAfter = false, retryAfterSeconds = 0) {
+// Enhanced delay calculation with 524 timeout handling
+function calculateDelay(attempt, isRateLimit = false, isTimeout = false, hasRetryAfter = false, retryAfterSeconds = 0) {
     if (hasRetryAfter && retryAfterSeconds > 0) {
-        // Use server-provided retry-after, but cap it
         return Math.min(retryAfterSeconds * 1000, RATE_LIMIT_CONFIG.maxDelay);
     }
     
     let delay = RATE_LIMIT_CONFIG.baseDelay * Math.pow(RATE_LIMIT_CONFIG.backoffMultiplier, attempt - 1);
     
     if (isRateLimit) {
-        // Much more aggressive backoff for rate limits
-        delay *= 5; // 5x longer for rate limits
-        delay += 10000; // Add extra 10 seconds base
+        delay *= 3; // Less aggressive than before
+    } else if (isTimeout) {
+        // For timeouts, use shorter delays to retry faster
+        delay *= 1.5;
     }
     
     delay = Math.min(delay, RATE_LIMIT_CONFIG.maxDelay);
     
-    // Add jitter
     const jitter = Math.random() * RATE_LIMIT_CONFIG.jitterMax;
     return delay + jitter;
 }
@@ -128,7 +129,7 @@ async function callApiWithoutCache(endpoint, method, token, body = null, source 
                 method, 
                 headers, 
                 body: body ? JSON.stringify(body) : null, 
-                timeout: 120000 // 2 minute timeout
+                timeout: 45000 // Reduced timeout to 45 seconds
             };
 
             console.log(`[${actualSource}] 🔄 [${attempt}/${RATE_LIMIT_CONFIG.maxRetries}] ${method} ${endpoint}`);
@@ -166,17 +167,28 @@ async function callApiWithoutCache(endpoint, method, token, body = null, source 
 
             // Handle error responses
             const errorText = await response.text().catch(() => 'No error text');
+            const isTimeout = response.status === 524 || response.status === 504;
             const shouldRetry = RATE_LIMIT_CONFIG.retryOn.includes(response.status) && attempt < RATE_LIMIT_CONFIG.maxRetries;
             
             if (response.status === 429) {
                 // Rate limit detected
                 const retryAfterHeader = response.headers.get('retry-after');
                 const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader) : 0;
-                const delay = calculateDelay(attempt, true, !!retryAfterHeader, retryAfterSeconds);
+                const delay = calculateDelay(attempt, true, false, !!retryAfterHeader, retryAfterSeconds);
                 
                 console.error(`[${actualSource}] 🚫 RATE LIMITED! Status: ${response.status}`);
-                console.error(`[${actualSource}] 📄 Error response:`, errorText.substring(0, 300));
-                console.warn(`[${actualSource}] ⏰ Waiting ${Math.round(delay/1000)}s before retry (attempt ${attempt}/${RATE_LIMIT_CONFIG.maxRetries})`);
+                console.warn(`[${actualSource}] ⏰ Waiting ${Math.round(delay/1000)}s before retry...`);
+                
+                if (shouldRetry) {
+                    semaphore.release();
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                }
+            } else if (isTimeout) {
+                // Handle timeout errors (524, 504)
+                const delay = calculateDelay(attempt, false, true);
+                console.error(`[${actualSource}] ⏱️ TIMEOUT ERROR ${response.status}! Server took too long to respond.`);
+                console.warn(`[${actualSource}] ⏰ Retrying in ${Math.round(delay/1000)}s... (attempt ${attempt}/${RATE_LIMIT_CONFIG.maxRetries})`);
                 
                 if (shouldRetry) {
                     semaphore.release();
@@ -184,8 +196,8 @@ async function callApiWithoutCache(endpoint, method, token, body = null, source 
                     continue;
                 }
             } else if (shouldRetry) {
-                const delay = calculateDelay(attempt, false);
-                console.warn(`[${actualSource}] ⚠️ Server error ${response.status}. Retrying in ${Math.round(delay/1000)}s... Error: ${errorText.substring(0, 200)}`);
+                const delay = calculateDelay(attempt, false, false);
+                console.warn(`[${actualSource}] ⚠️ Server error ${response.status}. Retrying in ${Math.round(delay/1000)}s...`);
                 semaphore.release();
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
@@ -228,29 +240,43 @@ async function callApiWithoutCache(endpoint, method, token, body = null, source 
     return { success: false, message: `Max retries (${RATE_LIMIT_CONFIG.maxRetries}) exceeded` };
 }
 
-// Ultra-safe sequential processing with delays
-async function processSequentiallyWithDelays(items, asyncFn, source = 'dkhp', itemName = 'item') {
+// Smart batch processing with hybrid approach
+async function processBatches(items, asyncFn, source = 'dkhp', itemName = 'item', batchSize = 3) {
     const results = [];
     
-    console.log(`[${source}] 🔄 Processing ${items.length} ${itemName}s sequentially...`);
+    console.log(`[${source}] 🔄 Processing ${items.length} ${itemName}s in batches of ${batchSize}...`);
     
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        console.log(`[${source}] 📋 Processing ${itemName} ${i + 1}/${items.length}`);
+    for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        const totalBatches = Math.ceil(items.length / batchSize);
+        
+        console.log(`[${source}] 📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} ${itemName}s)`);
         
         try {
-            const result = await asyncFn(item, i);
-            results.push(result);
-            console.log(`[${source}] ✅ Completed ${itemName} ${i + 1}/${items.length}`);
+            // Process batch items in parallel for better performance
+            const batchPromises = batch.map(async (item, batchIndex) => {
+                const globalIndex = i + batchIndex;
+                console.log(`[${source}] 📋 Processing ${itemName} ${globalIndex + 1}/${items.length}`);
+                return await asyncFn(item, globalIndex);
+            });
+            
+            const batchResults = await Promise.all(batchPromises);
+            results.push(...batchResults);
+            
+            console.log(`[${source}] ✅ Completed batch ${batchNumber}/${totalBatches}`);
+            
         } catch (error) {
-            console.error(`[${source}] ❌ Error processing ${itemName} ${i + 1}:`, error.message);
-            results.push({ error: true, message: error.message });
+            console.error(`[${source}] ❌ Error in batch ${batchNumber}:`, error.message);
+            // Add error placeholders for failed batch
+            const errorResults = batch.map(() => ({ error: true, message: error.message }));
+            results.push(...errorResults);
         }
         
-        // Add delay between items (except for the last one)
-        if (i < items.length - 1) {
-            console.log(`[${source}] ⏳ Waiting ${RATE_LIMIT_CONFIG.sequentialDelay}ms before next ${itemName}...`);
-            await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.sequentialDelay));
+        // Add delay between batches (except for the last one)
+        if (i + batchSize < items.length) {
+            console.log(`[${source}] ⏳ Waiting ${RATE_LIMIT_CONFIG.batchDelay}ms before next batch...`);
+            await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.batchDelay));
         }
     }
     
@@ -362,8 +388,8 @@ module.exports = async (req, res) => {
                         console.log(`[${source}] 📝 Stored ${Object.keys(subjectTypeMap).length} subject types`);
                     }
 
-                    // Process subjects sequentially
-                    await processSequentiallyWithDelays(
+                    // Process subjects in small batches
+                    await processBatches(
                         subjectsRes.body, 
                         async (subject, index) => {
                             console.log(`[${source}] 📚 Processing subject: ${subject.maHocPhan} (${index + 1}/${subjectsRes.body.length})`);
@@ -386,24 +412,29 @@ module.exports = async (req, res) => {
 
                             console.log(`[${source}] 📚 Found ${classRes.body.length} classes for ${subject.maHocPhan}`);
 
-                            // Process each class sequentially
-                            await processSequentiallyWithDelays(
-                                classRes.body,
-                                async (cls, classIndex) => {
-                                    console.log(`[${source}] 🏫 Processing class ${cls.id} (${classIndex + 1}/${classRes.body.length})`);
-                                    
-                                    const scheduleDetails = await getScheduleDetailsNow(cls.id, token, source);
-                                    const classData = { ...subject, ...cls, source, scheduleDetails };
-                                    allClassData.push(classData);
-                                    
-                                    console.log(`[${source}] ✅ Added class ${cls.id}, total classes: ${allClassData.length}`);
-                                },
-                                source,
-                                'class'
-                            );
+                            // Process classes with smaller delays
+                            for (let classIndex = 0; classIndex < classRes.body.length; classIndex++) {
+                                const cls = classRes.body[classIndex];
+                                console.log(`[${source}] 🏫 Processing class ${cls.id} (${classIndex + 1}/${classRes.body.length})`);
+                                
+                                const scheduleDetails = await getScheduleDetailsNow(cls.id, token, source);
+                                const classData = { ...subject, ...cls, source, scheduleDetails };
+                                allClassData.push(classData);
+                                
+                                console.log(`[${source}] ✅ Added class ${cls.id}, total: ${allClassData.length}`);
+                                
+                                // Small delay between classes to avoid overwhelming
+                                if (classIndex < classRes.body.length - 1) {
+                                    await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.classDelay));
+                                }
+                            }
+                            
+                            // Small delay between schedule details requests
+                            await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_CONFIG.scheduleDelay));
                         },
                         source,
-                        'subject'
+                        'subject',
+                        2 // Process 2 subjects per batch
                     );
                     
                     console.log(`[${source}] 🎉 Completed source ${source}. Total classes so far: ${allClassData.length}`);
@@ -453,8 +484,8 @@ module.exports = async (req, res) => {
 
                     console.log(`[${source}] ✅ Found ${regRes.body.length} registered classes`);
                     
-                    // Process registered classes sequentially
-                    await processSequentiallyWithDelays(
+                    // Process in small batches
+                    await processBatches(
                         regRes.body,
                         async (reg, index) => {
                             console.log(`[${source}] 📋 Processing registration ${reg.id} (${index + 1}/${regRes.body.length})`);
@@ -467,7 +498,8 @@ module.exports = async (req, res) => {
                             registeredData.push({ ...reg, source, scheduleDetails });
                         },
                         source,
-                        'registration'
+                        'registration',
+                        3 // Process 3 registrations per batch
                     );
                 }
                 
