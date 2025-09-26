@@ -11,7 +11,7 @@ const RATE_LIMIT_CONFIG = {
     // Per-source concurrent limits (tuned for each API)
     concurrentLimits: {
         'user': 3,      // User APIs can handle more
-        'dkhp': 4,      // Main registration API
+        'dkhp': 3,      // Main registration API
         'dkhpdk': 3,    // Prerequisite API
     },
     
