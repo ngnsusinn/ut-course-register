@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .toggle-on .toggle-label{color:#10b981!important;font-weight:600!important}
         .toggle-off .toggle-label{color:#6b7280!important;font-weight:400!important}
         .debug-toggle{position:fixed;top:10px;right:10px;z-index:1000;background:rgba(0,0,0,0.8);color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer}
-        .retry-schedule-btn{transition:all 0.2s ease}
+        .retry-schedule-btn{transition:all 0.2s ease;font-size:11px;padding:2px 6px;margin-top:4px;border:none;border-radius:4px;cursor:pointer}
         .retry-schedule-btn:hover{transform:scale(1.05)}
         .retry-schedule-btn:disabled{opacity:0.5;cursor:not-allowed}
     `;
@@ -148,6 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (details.error) {
             debugLog(`Schedule error for ${className}: ${details.message}`);
+            if (details.status === 403) {
+                return `<span class="text-red-500">Bị chặn truy cập (403)</span>`;
+            }
             return `<span class="text-red-500">Lỗi: ${details.message}</span>`;
         }
         
@@ -187,32 +190,93 @@ document.addEventListener('DOMContentLoaded', () => {
         return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${detail.thu} | Tiết ${detail.tietHoc}</span>`).join('<br>');
     };
     
-    // === RETRY INDIVIDUAL CLASS SCHEDULE ===
-    const retryClassSchedule = async (classId, className) => {
+    // === ENHANCED RETRY INDIVIDUAL CLASS SCHEDULE ===
+    const retryClassSchedule = async (classId, className, button) => {
         if (!authToken) return;
         
         log(`🔄 Đang thử lại lấy lịch học cho lớp ${className}...`);
         
+        // Update button state
+        if (button) {
+            button.innerHTML = '⏳ Loading...';
+            button.disabled = true;
+            button.style.opacity = '0.5';
+        }
+        
         try {
-            const result = await backendRequest('getClassSchedule', { classId });
+            const result = await backendRequest('getClassSchedule', { classId }, 3); // 3 retries
             
-            if (result && result.success && result.scheduleDetails) {
-                log(`✅ Đã tải lại lịch học cho ${className}`);
-                
-                // Update the specific class in allScheduleData
-                const classIndex = allScheduleData.findIndex(c => c.id.toString() === classId);
-                if (classIndex !== -1) {
-                    allScheduleData[classIndex].scheduleDetails = result.scheduleDetails;
-                    await renderScheduleTable();
-                    debugLog(`Updated schedule for ${className}`, result.scheduleDetails);
-                } else {
-                    debugLog(`Could not find class ${classId} in allScheduleData`);
+            if (result && result.success) {
+                if (result.scheduleDetails && Array.isArray(result.scheduleDetails) && result.scheduleDetails.length > 0) {
+                    log(`✅ Đã tải lại lịch học cho ${className}`);
+                    
+                    // Update the specific class in allScheduleData
+                    const classIndex = allScheduleData.findIndex(c => c.id.toString() === classId);
+                    if (classIndex !== -1) {
+                        allScheduleData[classIndex].scheduleDetails = result.scheduleDetails;
+                        await renderScheduleTable();
+                        debugLog(`Updated schedule for ${className}`, result.scheduleDetails);
+                    } else {
+                        debugLog(`Could not find class ${classId} in allScheduleData`);
+                    }
+                    
+                    // Update button to success state
+                    if (button) {
+                        button.innerHTML = '✅ Thành công';
+                        button.style.backgroundColor = '#10b981';
+                        setTimeout(() => {
+                            button.style.display = 'none';
+                        }, 2000);
+                    }
+                    
+                } else if (result.scheduleDetails && Array.isArray(result.scheduleDetails) && result.scheduleDetails.length === 0) {
+                    log(`⚠️ Lớp ${className} không có lịch học (có thể chưa được phân công)`, false);
+                    
+                    // Update the class data
+                    const classIndex = allScheduleData.findIndex(c => c.id.toString() === classId);
+                    if (classIndex !== -1) {
+                        allScheduleData[classIndex].scheduleDetails = [];
+                        await renderScheduleTable();
+                    }
+                    
+                    if (button) {
+                        button.innerHTML = '⚠️ Không có lịch';
+                        button.style.backgroundColor = '#f59e0b';
+                    }
                 }
             } else {
-                log(`❌ Vẫn không thể tải lịch cho ${className}: ${result?.message || 'Unknown error'}`, true);
+                const errorMsg = result?.message || result?.error?.message || 'Unknown error';
+                
+                if (errorMsg.includes('403') || errorMsg.includes('Access denied')) {
+                    log(`❌ Lớp ${className}: Bị chặn truy cập (Rate limit hoặc không có quyền)`, true);
+                    if (button) {
+                        button.innerHTML = '🚫 Bị chặn';
+                        button.style.backgroundColor = '#ef4444';
+                    }
+                } else {
+                    log(`❌ Vẫn không thể tải lịch cho ${className}: ${errorMsg}`, true);
+                    if (button) {
+                        button.innerHTML = '❌ Thất bại';
+                        button.style.backgroundColor = '#ef4444';
+                    }
+                }
             }
         } catch (error) {
             log(`❌ Lỗi khi thử lại: ${error.message}`, true);
+            if (button) {
+                button.innerHTML = '❌ Lỗi';
+                button.style.backgroundColor = '#ef4444';
+            }
+        }
+        
+        // Reset button state after delay if not success
+        if (button && button.innerHTML !== '✅ Thành công') {
+            setTimeout(() => {
+                button.innerHTML = '🔄 Thử lại';
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.backgroundColor = '#3b82f6';
+            }, 3000);
         }
     };
     
@@ -584,10 +648,12 @@ document.addEventListener('DOMContentLoaded', () => {
                       : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
 
             // Enhanced schedule detail with retry button for errors
-            const scheduleDetailHtml = (cls.scheduleDetails?.error || 
+            const hasScheduleError = cls.scheduleDetails?.error || 
                 (Array.isArray(cls.scheduleDetails) && cls.scheduleDetails.length === 0) ||
-                !cls.scheduleDetails) && DEBUG_MODE
-                ? `${formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan)}<br><button class="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1 retry-schedule-btn hover:bg-blue-600" data-class-id="${cls.id}" data-class-name="${cls.maLopHocPhan}">🔄 Thử lại</button>`
+                !cls.scheduleDetails;
+            
+            const scheduleDetailHtml = (hasScheduleError && DEBUG_MODE)
+                ? `${formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan)}<br><button class="retry-schedule-btn bg-blue-500 text-white hover:bg-blue-600" data-class-id="${cls.id}" data-class-name="${cls.maLopHocPhan}">🔄 Thử lại</button>`
                 : formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan);
 
             row.innerHTML = `
@@ -719,17 +785,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const classId = retryBtn.dataset.classId;
             const className = retryBtn.dataset.className;
             
-            retryBtn.textContent = 'Loading...';
-            retryBtn.disabled = true;
-            
-            try {
-                await retryClassSchedule(classId, className);
-            } catch (error) {
-                log(`❌ Lỗi khi thử lại: ${error.message}`, true);
-            }
-            
-            retryBtn.textContent = '🔄 Thử lại';
-            retryBtn.disabled = false;
+            // Pass button reference for state updates
+            await retryClassSchedule(classId, className, retryBtn);
             return;
         }
 
