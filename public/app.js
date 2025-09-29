@@ -33,22 +33,42 @@ document.addEventListener('DOMContentLoaded', () => {
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
+    let requestQueue = [];
+    let isProcessingQueue = false;
 
-    // === SINGLE BACKEND COMMUNICATION FUNCTION ===
-    const backendRequest = async (action, payload = {}) => {
-        try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-            const response = await fetch('/api/handler', { method: 'POST', headers, body: JSON.stringify({ action, payload }) });
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
-                log(`Lỗi '${action}': ${errorData.message}`, true);
-                return null;
+    // === IMPROVED BACKEND COMMUNICATION ===
+    const backendRequest = async (action, payload = {}, retries = 2) => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+                
+                const response = await fetch('/api/handler', { 
+                    method: 'POST', 
+                    headers, 
+                    body: JSON.stringify({ action, payload }),
+                    timeout: 30000
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 429 && attempt < retries) {
+                        log(`Rate limited, retrying in ${attempt * 2} seconds...`, false);
+                        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                        continue;
+                    }
+                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
+                    log(`Lỗi '${action}': ${errorData.message}`, true);
+                    return null;
+                }
+                
+                return await response.json();
+            } catch (error) {
+                if (attempt === retries) {
+                    log(`Lỗi mạng khi gọi backend: ${error.message}`, true);
+                    return null;
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
-            return await response.json();
-        } catch (error) {
-            log(`Lỗi mạng khi gọi backend: ${error.message}`, true);
-            return null;
         }
     };
 
@@ -60,6 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         logEntry.className = isError ? 'text-red-400' : 'text-green-300';
         logOutput.appendChild(logEntry);
         logOutput.scrollTop = logOutput.scrollHeight;
+        
+        // Keep log size manageable
+        while (logOutput.children.length > 100) {
+            logOutput.removeChild(logOutput.firstChild);
+        }
     };
 
     const toggleLoading = (button, isLoading) => {
@@ -69,10 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
             button.innerHTML = `<div class="loader"></div>`;
         } else {
             button.disabled = false;
-            button.innerHTML = button.originalHTML;
+            button.innerHTML = button.originalHTML || button.textContent;
         }
     };
 
+    // Store original HTML for buttons
     [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn].forEach(btn => {
         if (btn) btn.originalHTML = btn.innerHTML;
     });
@@ -209,6 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fetchFullSchedule = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
+        
+        // Prevent multiple concurrent calls
+        if (fetchBtn.disabled) return;
+        
         toggleLoading(fetchBtn, true);
         isProcessStopped = false;
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
@@ -217,13 +247,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites });
 
         if (scheduleRes && scheduleRes.success) {
-            allScheduleData = scheduleRes.schedule;
-            subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-            log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
-            await renderScheduleTable();
+            if (scheduleRes.schedule.length === 0) {
+                log("⚠️ Không có dữ liệu lịch học. Thử lại sau ít phút.");
+            } else {
+                allScheduleData = scheduleRes.schedule;
+                subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
+                log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+                await renderScheduleTable();
+            }
         } else {
-            log("❌ Lỗi khi tải lịch học từ server.", true);
+            log(`❌ Lỗi khi tải lịch học: ${scheduleRes?.message || 'Server có thể bị quá tải, thử lại sau'}`, true);
         }
+        
         updateProgressBar(-1);
         toggleLoading(fetchBtn, false);
     };
@@ -236,10 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites });
 
         if (registeredRes && registeredRes.success) {
-             await renderRegisteredTable(registeredRes.body);
-             log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+            if (registeredRes.body.length === 0) {
+                log("⚠️ Chưa đăng ký học phần nào.");
+            } else {
+                log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+            }
+            await renderRegisteredTable(registeredRes.body);
         } else {
-             log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
+            log(`❌ Lỗi khi tải danh sách đã đăng ký: ${registeredRes?.message || 'Không rõ'}`, true);
         }
         toggleLoading(refreshRegisteredBtn, false);
     };
@@ -270,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
             classesBySubject.get(cls.maHocPhan).push(cls);
         });
-        const delay = parseInt(delayInput.value, 10) || 1000;
+        const delay = Math.max(parseInt(delayInput.value, 10) || 1000, 500); // Minimum 500ms delay
 
         classesBySubject.forEach((classes, maHocPhan) => {
             const tenMonHoc = classes[0].tenMonHoc || maHocPhan;
@@ -278,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const intervalId = setInterval(async () => {
                 if (isProcessStopped) return;
+                
                 const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
 
                 if (!statusRes || !statusRes.success) return;
@@ -317,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
             classesBySubject.get(cls.maHocPhan).push(cls);
         });
-        const delay = parseInt(delayInput.value, 10) || 1000;
+        const delay = Math.max(parseInt(delayInput.value, 10) || 1000, 500); // Minimum 500ms delay
     
         classesBySubject.forEach((classes, maHocPhan) => {
             const tenMonHoc = classes[0].tenMonHoc;
@@ -374,7 +414,9 @@ document.addEventListener('DOMContentLoaded', () => {
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
         if (filteredData.length === 0) {
-            scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
+            scheduleContainer.innerHTML = allScheduleData.length === 0 
+                ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy dữ liệu".</p>' 
+                : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
             return;
         }
         const table = document.createElement('table');
