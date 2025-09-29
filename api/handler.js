@@ -1,8 +1,16 @@
 const fetch = require('node-fetch');
 
+// === DEBUG MODE ===
+const DEBUG = process.env.DEBUG_MODE === 'true' || false;
+const debugLog = (message, data = null) => {
+    if (DEBUG) {
+        console.log(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+    }
+};
+
 // === CACHING SYSTEM ===
 const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+const CACHE_TTL = 3 * 60 * 1000; // Giảm xuống 3 phút để debug
 
 function getCacheKey(endpoint, params) {
     return `${endpoint}_${JSON.stringify(params)}`;
@@ -11,9 +19,11 @@ function getCacheKey(endpoint, params) {
 function getCachedData(key) {
     const cached = cache.get(key);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        debugLog(`Cache HIT for key: ${key}`);
         return cached.data;
     }
     cache.delete(key);
+    debugLog(`Cache MISS for key: ${key}`);
     return null;
 }
 
@@ -22,6 +32,7 @@ function setCachedData(key, data) {
         data,
         timestamp: Date.now()
     });
+    debugLog(`Cache SET for key: ${key}, data size: ${JSON.stringify(data).length}`);
 }
 
 // === UTILITY FUNCTIONS ===
@@ -36,7 +47,6 @@ async function throttledPromiseAll(promises, limit = 3, delay = 500) {
         const batchResults = await Promise.all(batch);
         results.push(...batchResults);
         
-        // Delay giữa các batch
         if (i + limit < promises.length) {
             await sleep(delay);
         }
@@ -90,17 +100,18 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
         timeout: 30000 
     };
 
+    debugLog(`API Call: ${method} ${targetUrl} (source: ${source})`);
+
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            // Add delay for retry attempts
             if (attempt > 1) {
                 await sleep(1000 * attempt);
             }
             
             const response = await fetch(targetUrl, options);
             
-            if (response.status === 429) { // Rate limited
-                console.log(`Rate limited on attempt ${attempt}, retrying...`);
+            if (response.status === 429) {
+                debugLog(`Rate limited on attempt ${attempt} for ${targetUrl}`);
                 if (attempt < retries) {
                     await sleep(2000 * attempt);
                     continue;
@@ -122,9 +133,10 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
                 setCachedData(cacheKey, result);
             }
             
+            debugLog(`API Success: ${targetUrl} returned ${Array.isArray(result.body) ? result.body.length : 'non-array'} items`);
             return result;
         } catch (error) {
-            console.error(`API call failed on attempt ${attempt}:`, error.message);
+            debugLog(`API Error on attempt ${attempt}: ${error.message}`);
             if (attempt === retries) {
                 return { success: false, message: error.message };
             }
@@ -160,6 +172,8 @@ module.exports = async (req, res) => {
     const { action, payload } = req.body;
     const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
 
+    debugLog(`Handler called with action: ${action}`, payload);
+
     try {
         let result;
         switch (action) {
@@ -187,49 +201,93 @@ module.exports = async (req, res) => {
                 break;
             }
 
+            case 'clearCache': {
+                const { cacheType } = payload;
+                
+                if (cacheType === 'schedule') {
+                    let cleared = 0;
+                    cache.forEach((_, key) => {
+                        if (key.includes('fullSchedule') || key.includes('registeredClasses')) {
+                            cache.delete(key);
+                            cleared++;
+                        }
+                    });
+                    debugLog(`Cleared ${cleared} schedule cache entries`);
+                    result = { success: true, message: `Cleared ${cleared} schedule cache entries` };
+                } else {
+                    const cacheSize = cache.size;
+                    cache.clear();
+                    debugLog(`Cleared all cache (${cacheSize} entries)`);
+                    result = { success: true, message: `Cleared all cache (${cacheSize} entries)` };
+                }
+                break;
+            }
+
             case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
-                const { dotId, fetchPrerequisites } = payload;
-                const cacheKey = `fullSchedule_${dotId}_${fetchPrerequisites}`;
+                const { dotId, fetchPrerequisites, _forceRefresh } = payload;
                 
-                // Check cache first
-                const cached = getCachedData(cacheKey);
-                if (cached) {
-                    return res.status(200).json(cached);
+                // Create unique cache key
+                const cacheKey = `fullSchedule_${dotId}_${fetchPrerequisites ? 'with_prereq' : 'no_prereq'}`;
+                
+                // Check cache only if not forcing refresh
+                if (!_forceRefresh) {
+                    const cached = getCachedData(cacheKey);
+                    if (cached) {
+                        debugLog(`Returning cached fullSchedule: ${cached.schedule?.length || 0} classes`);
+                        return res.status(200).json(cached);
+                    }
                 }
+                
+                debugLog(`Fetching fresh fullSchedule data. dotId: ${dotId}, fetchPrerequisites: ${fetchPrerequisites}`);
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
+                
+                debugLog(`Processing sources: ${sources.join(', ')}`);
 
+                // Process each source independently and merge results
+                const sourceResults = {};
+                
                 for (const source of sources) {
                     try {
+                        debugLog(`--- Processing source: ${source} ---`);
+                        
                         const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
                         const validation = validateApiResponse(subjectsRes, `subjects for ${source}`);
                         
                         if (!validation.isValid) {
-                            console.log(`Failed to get subjects for ${source}:`, validation.message);
+                            debugLog(`Failed validation for ${source}: ${validation.message}`);
+                            sourceResults[source] = [];
                             continue;
                         }
 
                         if (validation.isEmpty) {
-                            console.log(`No subjects found for ${source}`);
+                            debugLog(`Empty response for ${source}`);
+                            sourceResults[source] = [];
                             continue;
                         }
 
+                        debugLog(`Found ${subjectsRes.body.length} subjects for ${source}`);
+
+                        // Store subject types only from dkhp
                         if (source === 'dkhp') {
                             subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
+                            debugLog(`Stored ${Object.keys(subjectTypeMap).length} subject types`);
                         }
 
-                        // Process subjects in batches to avoid rate limiting
+                        const sourceClassData = [];
+
+                        // Process subjects in batches
                         const subjectPromises = subjectsRes.body.map(async (subject) => {
                             const classEndpoint = source === 'dkhpdk'
                                 ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                                 : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                             
                             const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-                            const classValidation = validateApiResponse(classRes, `classes for ${subject.maHocPhan}`);
+                            const classValidation = validateApiResponse(classRes, `classes for ${subject.maHocPhan} from ${source}`);
                             
                             if (!classValidation.isValid || classValidation.isEmpty) {
                                 return [];
@@ -240,23 +298,44 @@ module.exports = async (req, res) => {
                                 return { ...subject, ...cls, source, scheduleDetails };
                             });
                             
-                            // Throttle schedule detail requests
                             return await throttledPromiseAll(classPromises, 2, 300);
                         });
 
-                        // Process subject batches with throttling
                         const batchResults = await throttledPromiseAll(subjectPromises, 3, 500);
-                        allClassData.push(...batchResults.flat());
+                        const flatResults = batchResults.flat();
+                        
+                        sourceResults[source] = flatResults;
+                        debugLog(`Completed ${source}: ${flatResults.length} classes processed`);
                         
                     } catch (error) {
-                        console.error(`Error processing source ${source}:`, error);
+                        debugLog(`Error processing source ${source}: ${error.message}`);
+                        sourceResults[source] = [];
                     }
                 }
+
+                // Merge all source results
+                sources.forEach(source => {
+                    if (sourceResults[source]) {
+                        allClassData.push(...sourceResults[source]);
+                    }
+                });
+
+                // Final counts
+                const dkhpCount = allClassData.filter(c => c.source === 'dkhp').length;
+                const dkhpdkCount = allClassData.filter(c => c.source === 'dkhpdk').length;
+                
+                debugLog(`Final result: ${allClassData.length} total classes`);
+                debugLog(`DKHP: ${dkhpCount}, DKHPDK: ${dkhpdkCount}`);
 
                 result = { 
                     success: true, 
                     schedule: allClassData, 
-                    subjectTypes: subjectTypeMap 
+                    subjectTypes: subjectTypeMap,
+                    debug: {
+                        sources: sources,
+                        counts: { dkhp: dkhpCount, dkhpdk: dkhpdkCount },
+                        cacheKey: cacheKey
+                    }
                 };
                 
                 // Cache the result
@@ -271,7 +350,6 @@ module.exports = async (req, res) => {
                 const { dotId, fetchPrerequisites } = payload;
                 const cacheKey = `registeredClasses_${dotId}_${fetchPrerequisites}`;
                 
-                // Check cache first
                 const cached = getCachedData(cacheKey);
                 if (cached) {
                     return res.status(200).json(cached);
@@ -300,18 +378,15 @@ module.exports = async (req, res) => {
                             return { ...reg, source, scheduleDetails };
                         });
                         
-                        // Throttle registration detail requests
                         const batchResults = await throttledPromiseAll(registrationPromises, 3, 400);
                         registeredData.push(...batchResults);
                         
                     } catch (error) {
-                        console.error(`Error processing registered classes for ${source}:`, error);
+                        debugLog(`Error processing registered classes for ${source}: ${error.message}`);
                     }
                 }
                 
                 result = { success: true, body: registeredData };
-                
-                // Cache the result
                 setCachedData(cacheKey, result);
                 
                 break;
@@ -320,7 +395,7 @@ module.exports = async (req, res) => {
             case 'checkClassStatus': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, maHocPhan, source } = payload;
-                 const classEndpoint = source === 'dkhpdk'
+                const classEndpoint = source === 'dkhpdk'
                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                 result = await callApi(classEndpoint, 'GET', token, null, source);
@@ -354,32 +429,15 @@ module.exports = async (req, res) => {
                 });
                 break;
             }
-			// Thêm vào switch case trong handler.js
-case 'clearCache': {
-    const { cacheType } = payload;
-    
-    if (cacheType === 'schedule') {
-        // Clear all schedule-related cache
-        cache.forEach((_, key) => {
-            if (key.includes('fullSchedule') || key.includes('registeredClasses')) {
-                cache.delete(key);
-            }
-        });
-        result = { success: true, message: 'Schedule cache cleared' };
-    } else {
-        cache.clear();
-        result = { success: true, message: 'All cache cleared' };
-    }
-    break;
-}
-
 
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action.' });
         }
+        
         res.status(200).json(result);
 
     } catch (error) {
+        debugLog('Handler Error: ' + error.message);
         console.error('Handler Error:', error);
         res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
     }
