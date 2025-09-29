@@ -126,24 +126,31 @@ document.addEventListener('DOMContentLoaded', () => {
             panelContainer.id = 'user-panel-content';
             panelContainer.className = 'space-y-4';
             panelContainer.innerHTML = `
-                <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
-                <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">
-                    <label for="prerequisite-toggle" class="flex items-center cursor-pointer">
-                        <div class="relative">
-                            <input type="checkbox" id="prerequisite-toggle" class="sr-only">
-                            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
-                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
-                        </div>
-                        <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện</div>
-                    </label>
-                </div>
-                 <div id="progress-bar-container" class="my-4 hidden">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>
-                    <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
-                </div>
-                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" /></svg><span>Lấy dữ liệu</span></button>
-                <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
-            `;
+    <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
+    <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">
+        <label for="prerequisite-toggle" class="flex items-center cursor-pointer toggle-off" id="toggle-label">
+            <div class="relative">
+                <input type="checkbox" id="prerequisite-toggle" class="sr-only">
+                <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+            </div>
+            <div class="ml-3 text-gray-700 font-medium toggle-label">Lấy dữ liệu môn học điều kiện</div>
+        </label>
+    </div>
+    <div id="progress-bar-container" class="my-4 hidden">
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+        <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
+    </div>
+    <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+        </svg>
+        <span>Lấy dữ liệu</span>
+    </button>
+    <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
+`;
             loginForm.parentNode.insertBefore(panelContainer, loginForm.nextSibling);
 
             // Re-assign element variables
@@ -234,34 +241,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchFullSchedule = async () => {
-        if (!authToken) return log("Chưa đăng nhập.", true);
-        
-        // Prevent multiple concurrent calls
-        if (fetchBtn.disabled) return;
-        
-        toggleLoading(fetchBtn, true);
-        isProcessStopped = false;
-        log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
-        
-        const fetchPrerequisites = prerequisiteToggle?.checked || false;
-        const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites });
+    if (!authToken) return log("Chưa đăng nhập.", true);
+    
+    // Prevent multiple concurrent calls
+    if (fetchBtn.disabled) return;
+    
+    toggleLoading(fetchBtn, true);
+    isProcessStopped = false;
+    
+    const fetchPrerequisites = prerequisiteToggle?.checked || false;
+    log(`♻️ Bắt đầu lấy lịch học${fetchPrerequisites ? ' (bao gồm môn điều kiện)' : ''}...`);
+    
+    // Clear cache for this specific request to ensure fresh data
+    await backendRequest('clearCache', { cacheType: 'schedule' });
+    
+    const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites });
 
-        if (scheduleRes && scheduleRes.success) {
-            if (scheduleRes.schedule.length === 0) {
-                log("⚠️ Không có dữ liệu lịch học. Thử lại sau ít phút.");
-            } else {
-                allScheduleData = scheduleRes.schedule;
-                subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-                log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
-                await renderScheduleTable();
-            }
+    if (scheduleRes && scheduleRes.success) {
+        if (scheduleRes.schedule.length === 0) {
+            log("⚠️ Không có dữ liệu lịch học. Thử lại sau ít phút.");
         } else {
-            log(`❌ Lỗi khi tải lịch học: ${scheduleRes?.message || 'Server có thể bị quá tải, thử lại sau'}`, true);
+            allScheduleData = scheduleRes.schedule;
+            subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
+            
+            const dkhpCount = scheduleRes.schedule.filter(c => c.source === 'dkhp').length;
+            const dkhpdkCount = scheduleRes.schedule.filter(c => c.source === 'dkhpdk').length;
+            
+            log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+            if (fetchPrerequisites && dkhpdkCount > 0) {
+                log(`📚 Bao gồm: ${dkhpCount} lớp chính + ${dkhpdkCount} lớp điều kiện`);
+            }
+            
+            await renderScheduleTable();
         }
-        
-        updateProgressBar(-1);
-        toggleLoading(fetchBtn, false);
-    };
+    } else {
+        log(`❌ Lỗi khi tải lịch học: ${scheduleRes?.message || 'Server có thể bị quá tải, thử lại sau'}`, true);
+    }
+    
+    updateProgressBar(-1);
+    toggleLoading(fetchBtn, false);
+};
+
 
     const fetchRegisteredClasses = async () => {
         if (!authToken) return;
@@ -543,4 +563,19 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelRegistration(regId, tenMon, source);
         }
     });
+	document.addEventListener('change', (e) => {
+    if (e.target.id === 'prerequisite-toggle') {
+        // Clear cached data khi toggle thay đổi
+        log(`${e.target.checked ? '🟢' : '🔴'} Đã ${e.target.checked ? 'bật' : 'tắt'} chế độ lấy môn học điều kiện`);
+        
+        // Clear data để force refresh
+        allScheduleData = [];
+        subjectTypeMap = new Map();
+        scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Nhấn "Lấy dữ liệu" để tải lại với cài đặt mới.</p>';
+        
+        // Clear selected classes để tránh conflict
+        selectedClasses.clear();
+        updateSelectedList();
+    }
+});
 });

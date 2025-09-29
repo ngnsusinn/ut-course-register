@@ -354,6 +354,25 @@ module.exports = async (req, res) => {
                 });
                 break;
             }
+			// Thêm vào switch case trong handler.js
+case 'clearCache': {
+    const { cacheType } = payload;
+    
+    if (cacheType === 'schedule') {
+        // Clear all schedule-related cache
+        cache.forEach((_, key) => {
+            if (key.includes('fullSchedule') || key.includes('registeredClasses')) {
+                cache.delete(key);
+            }
+        });
+        result = { success: true, message: 'Schedule cache cleared' };
+    } else {
+        cache.clear();
+        result = { success: true, message: 'All cache cleared' };
+    }
+    break;
+}
+
 
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action.' });
