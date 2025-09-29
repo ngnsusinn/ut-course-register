@@ -1,65 +1,84 @@
-// UTH Course Registration Tool - Backend Handler (Stable Enhanced Version)
-// Giữ nguyên logic gốc với cải tiến rate limiting cơ bản
+// UTH Course Registration Tool - Ultra Fast Handler
+// Optimized for speed and timeout prevention
 
 const fetch = require('node-fetch');
 
-// Simple rate limiting với queue cơ bản
-class SimpleRequestQueue {
+// Performance constants
+const REQUEST_TIMEOUT = 12000; // 12s timeout per request
+const HANDLER_TIMEOUT = 25000; // 25s max for entire handler
+const MAX_CONCURRENT = 10; // High concurrency
+const MIN_DELAY = 50; // Very low delay
+const MAX_RETRIES = 2;
+
+// Ultra fast queue with minimal overhead
+class UltraFastQueue {
     constructor() {
-        this.queue = [];
-        this.processing = false;
-        this.baseDelay = 300; // 300ms delay cơ bản
+        this.activeRequests = 0;
         this.requestCount = 0;
         this.lastReset = Date.now();
     }
     
-    async add(requestFunc) {
-        return new Promise((resolve, reject) => {
-            this.queue.push({ requestFunc, resolve, reject });
-            if (!this.processing) {
-                this.process();
-            }
-        });
-    }
-    
-    async process() {
-        if (this.processing || this.queue.length === 0) return;
+    async execute(requestFunc) {
+        // Reset counter every minute
+        const now = Date.now();
+        if (now - this.lastReset > 60000) {
+            this.requestCount = 0;
+            this.lastReset = now;
+        }
         
-        this.processing = true;
-        
-        while (this.queue.length > 0) {
-            const { requestFunc, resolve, reject } = this.queue.shift();
+        // Immediate execution if under limit
+        if (this.activeRequests < MAX_CONCURRENT) {
+            this.activeRequests++;
             
             try {
-                // Reset counter mỗi phút
-                const now = Date.now();
-                if (now - this.lastReset > 60000) {
-                    this.requestCount = 0;
-                    this.lastReset = now;
+                // Minimal delay to prevent rate limiting
+                if (this.requestCount > 0 && this.requestCount % 5 === 0) {
+                    await new Promise(r => setTimeout(r, MIN_DELAY));
                 }
-                
-                // Dynamic delay dựa trên số request
-                const dynamicDelay = this.baseDelay + (this.requestCount * 50);
-                await new Promise(r => setTimeout(r, Math.min(dynamicDelay, 2000)));
                 
                 const result = await requestFunc();
                 this.requestCount++;
-                resolve(result);
-                
-            } catch (error) {
-                reject(error);
+                return result;
+            } finally {
+                this.activeRequests--;
             }
+        } else {
+            // Wait briefly and retry
+            await new Promise(r => setTimeout(r, 25));
+            return this.execute(requestFunc);
         }
-        
-        this.processing = false;
     }
 }
 
-// Global instance
-const requestQueue = new SimpleRequestQueue();
+const ultraQueue = new UltraFastQueue();
 
-// Enhanced callApi function với retry đơn giản
-async function callApi(endpoint, method, token, body = null, source = 'dkhp', retries = 3) {
+// Cache for repeated requests
+const requestCache = new Map();
+const CACHE_TTL = 30000; // 30s cache
+
+function getCacheKey(url, token) {
+    return `${url}_${token ? 'auth' : 'noauth'}`;
+}
+
+function getFromCache(key) {
+    const cached = requestCache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    requestCache.delete(key);
+    return null;
+}
+
+function setCache(key, data) {
+    if (requestCache.size > 100) {
+        const firstKey = requestCache.keys().next().value;
+        requestCache.delete(firstKey);
+    }
+    requestCache.set(key, { data, timestamp: Date.now() });
+}
+
+// Lightning fast API caller
+async function callApi(endpoint, method, token, body = null, source = 'dkhp', retries = MAX_RETRIES) {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
         baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
@@ -71,297 +90,269 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
     
     const targetUrl = baseApiUrl + endpoint;
     
-    return requestQueue.add(async () => {
+    // Check cache for GET requests
+    if (method === 'GET' && !body) {
+        const cacheKey = getCacheKey(targetUrl, token);
+        const cached = getFromCache(cacheKey);
+        if (cached) return cached;
+    }
+    
+    return ultraQueue.execute(async () => {
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
-                // Progressive delay cho retry
                 if (attempt > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    await new Promise(resolve => setTimeout(resolve, 100 * attempt));
                 }
                 
                 const headers = {
                     'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'application/json, text/plain, */*',
-                    'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json',
                     'Cache-Control': 'no-cache',
                 };
                 
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
+                if (token) headers['Authorization'] = `Bearer ${token}`;
                 
-                const options = {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+                
+                const response = await fetch(targetUrl, {
                     method,
                     headers,
                     body: body ? JSON.stringify(body) : null,
-                };
+                    signal: controller.signal,
+                });
                 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000);
-                options.signal = controller.signal;
-                
-                const response = await fetch(targetUrl, options);
                 clearTimeout(timeoutId);
                 
-                // Handle specific status codes
                 if (response.status === 429) {
-                    console.warn(`Rate limited on ${endpoint}, attempt ${attempt + 1}`);
                     if (attempt < retries - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
+                        await new Promise(resolve => setTimeout(resolve, 200));
                         continue;
                     }
-                    return { 
-                        success: false, 
-                        message: 'Request quá nhanh, vui lòng thử lại sau', 
-                        status: 429 
-                    };
-                }
-                
-                if (response.status === 401) {
-                    return { 
-                        success: false, 
-                        message: 'Token hết hạn hoặc không hợp lệ', 
-                        status: 401 
-                    };
+                    return { success: false, message: 'Rate limited', status: 429 };
                 }
                 
                 if (!response.ok) {
-                    return { 
-                        success: false, 
-                        message: `API Error: HTTP ${response.status}`, 
-                        status: response.status 
-                    };
+                    return { success: false, message: `HTTP ${response.status}`, status: response.status };
                 }
                 
-                return await response.json();
+                const result = await response.json();
+                
+                // Cache successful GET responses
+                if (method === 'GET' && !body) {
+                    const cacheKey = getCacheKey(targetUrl, token);
+                    setCache(cacheKey, result);
+                }
+                
+                return result;
                 
             } catch (error) {
-                console.error(`API call failed (attempt ${attempt + 1}):`, error.message);
-                
                 if (error.name === 'AbortError') {
-                    if (attempt === retries - 1) {
-                        return { success: false, message: 'Request timeout' };
-                    }
-                    continue;
+                    return { success: false, message: 'Request timeout', status: 408 };
                 }
                 
                 if (attempt === retries - 1) {
-                    return { success: false, message: `Network error: ${error.message}` };
+                    return { success: false, message: error.message };
                 }
             }
         }
     });
 }
 
-// Enhanced schedule details function
-async function getScheduleDetails(classId, token, source) {
+// Fast schedule details (optional for speed)
+async function getScheduleDetailsOptional(classId, token, source, timeLeft) {
+    // Skip if low on time
+    if (timeLeft < 3000) return null;
+    
     try {
-        const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
-        return (result && result.success) ? result.body : { error: true, message: result?.message || 'Unknown error' };
-    } catch (error) {
-        return { error: true, message: error.message };
+        const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source, 1);
+        return (result && result.success) ? result.body : null;
+    } catch {
+        return null;
     }
 }
 
-// Main handler - giữ nguyên logic gốc nhưng có cải tiến
+// Main handler with aggressive timeout management
 module.exports = async (req, res) => {
-    // CORS headers
+    const startTime = Date.now();
+    
+    // Set response timeout
+    req.setTimeout(HANDLER_TIMEOUT - 2000);
+    
+    // Ultra fast CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.setHeader('Access-Control-Max-Age', '86400');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     
-    if (req.method !== 'POST') {
-        return res.status(405).json({ 
-            success: false, 
-            message: 'Method Not Allowed. Only POST requests are supported.' 
-        });
-    }
+    const { action, payload = {} } = req.body || {};
+    if (!action) return res.status(400).json({ success: false, message: 'Action required' });
     
-    if (!req.body || !req.body.action) {
-        return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid request format. Action is required.' 
-        });
-    }
+    const token = req.headers.authorization?.split(' ')[1];
     
-    const { action, payload = {} } = req.body;
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
-    
-    console.log(`[${new Date().toISOString()}] Action: ${action}, Has Token: ${!!token}`);
+    // Timeout checker
+    const checkTimeout = () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > HANDLER_TIMEOUT - 1000) {
+            throw new Error(`Handler timeout after ${elapsed}ms`);
+        }
+        return HANDLER_TIMEOUT - elapsed;
+    };
     
     try {
         let result;
         
         switch (action) {
-            // === AUTHENTICATION ===
             case 'login': {
                 const { username, password } = payload;
-                
                 if (!username || !password) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: 'Username và password là bắt buộc' 
-                    });
+                    return res.status(400).json({ success: false, message: 'Credentials required' });
                 }
-                
                 result = await callApi('/user/login', 'POST', null, { username, password });
                 break;
             }
             
             case 'getInitialData': {
-                if (!token) {
-                    return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
-                }
+                if (!token) return res.status(401).json({ success: false, message: 'Token required' });
                 
+                checkTimeout();
                 const [profileRes, dotsRes] = await Promise.all([
                     callApi('/user/getSummaryProfile', 'GET', token),
                     callApi('/getDot', 'GET', token)
                 ]);
                 
-                const latestDot = (dotsRes.success && dotsRes.body.length) 
+                const latestDot = (dotsRes.success && dotsRes.body?.length) 
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
                 
                 result = {
                     success: profileRes.success && !!latestDot,
                     profile: profileRes.body,
-                    dot: latestDot,
-                    message: !profileRes.success ? 'Lỗi lấy thông tin profile' : 
-                             !latestDot ? 'Không tìm thấy đợt đăng ký' : undefined
+                    dot: latestDot
                 };
                 break;
             }
             
-            // === DATA FETCHING - Giữ nguyên logic gốc ===
             case 'getFullSchedule': {
-                if (!token) {
-                    return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
-                }
-                
+                if (!token) return res.status(401).json({ success: false, message: 'Token required' });
                 const { dotId, fetchPrerequisites } = payload;
+                if (!dotId) return res.status(400).json({ success: false, message: 'dotId required' });
                 
-                if (!dotId) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: 'dotId là bắt buộc' 
-                    });
-                }
+                checkTimeout();
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
+                let processedSubjects = 0;
+                let totalSubjects = 0;
                 
                 for (const source of sources) {
-                    try {
-                        const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
+                    const timeLeft = checkTimeout();
+                    
+                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
+                    if (!subjectsRes?.success || !Array.isArray(subjectsRes.body)) continue;
+                    
+                    totalSubjects += subjectsRes.body.length;
+                    
+                    if (source === 'dkhp') {
+                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
+                    }
+                    
+                    // Ultra parallel processing
+                    const MEGA_BATCH_SIZE = 20; // Very large batches
+                    for (let i = 0; i < subjectsRes.body.length; i += MEGA_BATCH_SIZE) {
+                        const remainingTime = checkTimeout();
                         
-                        if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) {
-                            console.warn(`Failed to fetch subjects for source ${source}:`, subjectsRes.message);
-                            continue;
-                        }
+                        const batch = subjectsRes.body.slice(i, i + MEGA_BATCH_SIZE);
                         
-                        // Build subject type map cho main source
-                        if (source === 'dkhp') {
-                            subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                        }
-                        
-                        // Process subjects với controlled batching
-                        const batchSize = 5;
-                        for (let i = 0; i < subjectsRes.body.length; i += batchSize) {
-                            const batch = subjectsRes.body.slice(i, i + batchSize);
-                            
-                            await Promise.all(batch.map(async (subject) => {
+                        const batchPromises = batch.map(async (subject) => {
+                            try {
                                 const classEndpoint = source === 'dkhpdk'
                                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                                 
-                                const classRes = await callApi(classEndpoint, 'GET', token, null, source);
+                                const classRes = await callApi(classEndpoint, 'GET', token, null, source, 1);
+                                if (!classRes?.success || !Array.isArray(classRes.body)) return [];
                                 
-                                if (classRes.success && Array.isArray(classRes.body)) {
-                                    // Process classes sequentially để tránh overwhelming server
-                                    for (const cls of classRes.body) {
-                                        const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                        allClassData.push({ 
-                                            ...subject, 
-                                            ...cls, 
-                                            source, 
-                                            scheduleDetails 
-                                        });
-                                    }
-                                }
-                            }));
-                            
-                            // Small delay giữa các batch
-                            if (i + batchSize < subjectsRes.body.length) {
-                                await new Promise(resolve => setTimeout(resolve, 200));
+                                // Ultra fast parallel class processing
+                                const classPromises = classRes.body.map(async (cls) => {
+                                    const currentTimeLeft = Date.now() - startTime;
+                                    const scheduleDetails = await getScheduleDetailsOptional(cls.id, token, source, HANDLER_TIMEOUT - currentTimeLeft);
+                                    
+                                    return {
+                                        ...subject,
+                                        ...cls,
+                                        source,
+                                        scheduleDetails: scheduleDetails || { 
+                                            error: true, 
+                                            message: 'Skipped for performance' 
+                                        }
+                                    };
+                                });
+                                
+                                return Promise.all(classPromises);
+                            } catch (error) {
+                                console.warn(`Subject processing error:`, error.message);
+                                return [];
                             }
+                        });
+                        
+                        try {
+                            const batchResults = await Promise.all(batchPromises);
+                            allClassData.push(...batchResults.flat());
+                            processedSubjects += batch.length;
+                        } catch (error) {
+                            console.warn(`Batch processing error:`, error.message);
                         }
                         
-                    } catch (error) {
-                        console.error(`Error processing source ${source}:`, error.message);
+                        // Micro delay only if we have time
+                        if (remainingTime > 5000 && i + MEGA_BATCH_SIZE < subjectsRes.body.length) {
+                            await new Promise(resolve => setTimeout(resolve, 5));
+                        }
                     }
                 }
                 
-                result = { 
-                    success: true, 
-                    schedule: allClassData, 
+                result = {
+                    success: true,
+                    schedule: allClassData,
                     subjectTypes: subjectTypeMap,
-                    totalClasses: allClassData.length
+                    totalClasses: allClassData.length,
+                    processedSubjects,
+                    totalSubjects,
+                    processingTime: Date.now() - startTime
                 };
                 break;
             }
             
             case 'getRegisteredClasses': {
-                if (!token) {
-                    return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
-                }
-                
+                if (!token) return res.status(401).json({ success: false, message: 'Token required' });
                 const { dotId, fetchPrerequisites } = payload;
-                
-                if (!dotId) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: 'dotId là bắt buộc' 
-                    });
-                }
+                if (!dotId) return res.status(400).json({ success: false, message: 'dotId required' });
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
                 
                 for (const source of sources) {
-                    try {
-                        const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                        
-                        if (regRes.success && Array.isArray(regRes.body)) {
-                            // Process registered classes với limited concurrency
-                            const batchSize = 3;
-                            for (let i = 0; i < regRes.body.length; i += batchSize) {
-                                const batch = regRes.body.slice(i, i + batchSize);
-                                
-                                await Promise.all(batch.map(async (reg) => {
-                                    const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
-                                    const scheduleDetails = (detailRes && detailRes.success) 
-                                        ? detailRes.body 
-                                        : { error: true, message: detailRes?.message || 'Lỗi lấy lịch học' };
-                                    
-                                    registeredData.push({ ...reg, source, scheduleDetails });
-                                }));
-                                
-                                // Delay giữa batches
-                                if (i + batchSize < regRes.body.length) {
-                                    await new Promise(resolve => setTimeout(resolve, 150));
-                                }
-                            }
+                    checkTimeout();
+                    const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
+                    if (!regRes?.success || !Array.isArray(regRes.body)) continue;
+                    
+                    // Ultra fast parallel processing
+                    const registeredPromises = regRes.body.map(async (reg) => {
+                        try {
+                            const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp', 1);
+                            const scheduleDetails = detailRes?.success ? detailRes.body : null;
+                            return { ...reg, source, scheduleDetails };
+                        } catch {
+                            return { ...reg, source, scheduleDetails: null };
                         }
-                    } catch (error) {
-                        console.error(`Error fetching registered classes for source ${source}:`, error.message);
-                    }
+                    });
+                    
+                    const batchResults = await Promise.all(registeredPromises);
+                    registeredData.push(...batchResults);
                 }
                 
                 result = { success: true, body: registeredData };
@@ -369,88 +360,72 @@ module.exports = async (req, res) => {
             }
             
             case 'checkClassStatus': {
-                if (!token) {
-                    return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
-                }
-                
+                if (!token) return res.status(401).json({ success: false, message: 'Token required' });
                 const { dotId, maHocPhan, source = 'dkhp' } = payload;
-                
                 if (!dotId || !maHocPhan) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: 'dotId và maHocPhan là bắt buộc' 
-                    });
+                    return res.status(400).json({ success: false, message: 'dotId and maHocPhan required' });
                 }
                 
-                const classEndpoint = source === 'dkhpdk'
+                const endpoint = source === 'dkhpdk'
                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                 
-                result = await callApi(classEndpoint, 'GET', token, null, source);
+                result = await callApi(endpoint, 'GET', token, null, source);
                 break;
             }
             
-            // === REGISTRATION ACTIONS ===
             case 'register': {
-                if (!token) {
-                    return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
-                }
-                
+                if (!token) return res.status(401).json({ success: false, message: 'Token required' });
                 const { classId, source = 'dkhp' } = payload;
-                
-                if (!classId) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: 'classId là bắt buộc' 
-                    });
-                }
+                if (!classId) return res.status(400).json({ success: false, message: 'classId required' });
                 
                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
                 break;
             }
             
             case 'cancel': {
-                if (!token) {
-                    return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
-                }
-                
+                if (!token) return res.status(401).json({ success: false, message: 'Token required' });
                 const { registrationId, source = 'dkhp' } = payload;
-                
-                if (!registrationId) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: 'registrationId là bắt buộc' 
-                    });
-                }
+                if (!registrationId) return res.status(400).json({ success: false, message: 'registrationId required' });
                 
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
                 break;
             }
             
             default:
-                return res.status(400).json({ 
-                    success: false, 
-                    message: `Action không hợp lệ: ${action}` 
-                });
+                return res.status(400).json({ success: false, message: `Invalid action: ${action}` });
         }
         
-        // Response với timestamp
+        // Lightning fast response
         const response = {
             ...result,
             timestamp: new Date().toISOString(),
-            action
+            action,
+            processingTime: Date.now() - startTime
         };
         
         res.status(200).json(response);
         
     } catch (error) {
-        console.error(`Handler Error for action ${action}:`, error);
+        console.error(`Handler Error for action ${action}:`, error.message);
         
-        res.status(500).json({ 
-            success: false, 
-            message: 'Internal Server Error: ' + error.message,
-            action,
-            timestamp: new Date().toISOString()
-        });
+        const processingTime = Date.now() - startTime;
+        
+        if (error.message.includes('timeout') || processingTime > HANDLER_TIMEOUT - 1000) {
+            res.status(524).json({
+                success: false,
+                message: `Processing timeout after ${processingTime}ms - try reducing data scope`,
+                action,
+                processingTime,
+                suggestion: 'Try unchecking "Lấy dữ liệu môn học điều kiện" to reduce load'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: error.message,
+                action,
+                processingTime
+            });
+        }
     }
 };
