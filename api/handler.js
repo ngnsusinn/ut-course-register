@@ -159,20 +159,54 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
 
 
 // === IMPROVED SCHEDULE DETAILS FUNCTION ===
-async function getScheduleDetails(classId, token, source) {
-    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
-    const validation = validateApiResponse(result, `schedule details for class ${classId}`);
+async function getScheduleDetails(classId, token, source, retries = 3) {
+    debugLog(`Getting schedule details for classId: ${classId}, source: ${source}`);
     
-    if (!validation.isValid) {
-        return { error: true, message: validation.message };
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            // Add progressive delay for retries
+            if (attempt > 1) {
+                const delay = 1000 * attempt; // 1s, 2s, 3s
+                debugLog(`Retrying schedule details for ${classId}, attempt ${attempt} after ${delay}ms`);
+                await sleep(delay);
+            }
+            
+            const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source, 2);
+            
+            if (!result) {
+                debugLog(`No result for schedule details classId: ${classId}, attempt: ${attempt}`);
+                if (attempt < retries) continue;
+                return { error: true, message: 'No response from API', classId };
+            }
+            
+            if (!result.success) {
+                debugLog(`Failed schedule details for ${classId}: ${result.message}, attempt: ${attempt}`);
+                if (attempt < retries) continue;
+                return { error: true, message: result.message || 'API call failed', classId };
+            }
+            
+            if (!result.body || !Array.isArray(result.body) || result.body.length === 0) {
+                debugLog(`Empty schedule details for ${classId}, attempt: ${attempt}`);
+                if (attempt < retries) continue;
+                // Return empty array instead of error for empty schedules (this might be normal)
+                return [];
+            }
+            
+            debugLog(`Successfully got ${result.body.length} schedule details for classId: ${classId}`);
+            return result.body;
+            
+        } catch (error) {
+            debugLog(`Exception getting schedule details for ${classId}, attempt ${attempt}: ${error.message}`);
+            if (attempt === retries) {
+                return { error: true, message: error.message, classId };
+            }
+        }
     }
     
-    if (validation.isEmpty) {
-        return [];
-    }
-    
-    return result.body;
+    // Fallback - should not reach here
+    return { error: true, message: 'Max retries exceeded', classId };
 }
+
 
 // === MAIN HANDLER ===
 module.exports = async (req, res) => {

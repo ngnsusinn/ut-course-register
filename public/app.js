@@ -4,9 +4,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // CSS Toggle Switch
     const style = document.createElement('style');
-    style.innerHTML = `input:checked~.dot{transform:translateX(100%);background-color:#48bb78}input:checked~.block{background-color:#a7f3d0}
-    .toggle-label{transition:all 0.3s ease}.toggle-on .toggle-label{color:#10b981!important;font-weight:600!important}.toggle-off .toggle-label{color:#6b7280!important;font-weight:400!important}
-    .debug-toggle{position:fixed;top:10px;right:10px;z-index:1000;background:rgba(0,0,0,0.8);color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer}`;
+    style.innerHTML = `
+        input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
+        input:checked~.block{background-color:#a7f3d0}
+        .toggle-label{transition:all 0.3s ease}
+        .toggle-on .toggle-label{color:#10b981!important;font-weight:600!important}
+        .toggle-off .toggle-label{color:#6b7280!important;font-weight:400!important}
+        .debug-toggle{position:fixed;top:10px;right:10px;z-index:1000;background:rgba(0,0,0,0.8);color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer}
+        .retry-schedule-btn{transition:all 0.2s ease}
+        .retry-schedule-btn:hover{transform:scale(1.05)}
+        .retry-schedule-btn:disabled{opacity:0.5;cursor:not-allowed}
+    `;
     document.head.appendChild(style);
 
     // DOM Elements
@@ -130,17 +138,82 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btn) btn.originalHTML = btn.innerHTML;
     });
     
-    const formatScheduleDetail = (details) => {
-        if (!details || details.error || !Array.isArray(details) || details.length === 0) {
-            return 'Không có thông tin lịch học';
+    // === ENHANCED SCHEDULE FORMATTING ===
+    const formatScheduleDetail = (details, className = '') => {
+        // Enhanced error handling and display
+        if (!details) {
+            debugLog(`No details provided for ${className}`);
+            return `<span class="text-red-500">Không thể tải lịch học</span>`;
         }
-        return details.map(d => `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
+        
+        if (details.error) {
+            debugLog(`Schedule error for ${className}: ${details.message}`);
+            return `<span class="text-red-500">Lỗi: ${details.message}</span>`;
+        }
+        
+        if (!Array.isArray(details)) {
+            debugLog(`Invalid schedule data type for ${className}:`, typeof details);
+            return `<span class="text-orange-500">Dữ liệu lịch học không hợp lệ</span>`;
+        }
+        
+        if (details.length === 0) {
+            debugLog(`Empty schedule array for ${className}`);
+            return `<span class="text-yellow-600">Chưa có lịch học được công bố</span>`;
+        }
+        
+        try {
+            return details.map(d => {
+                if (!d.thu || !d.tietHoc) {
+                    debugLog(`Missing schedule fields for ${className}:`, d);
+                    return `<div class="font-medium text-orange-500">Thông tin lịch không đầy đủ</div>`;
+                }
+                
+                const startDate = d.ngayBatDau ? new Date(d.ngayBatDau).toLocaleDateString('vi-VN') : 'N/A';
+                const endDate = d.ngayKetThuc ? new Date(d.ngayKetThuc).toLocaleDateString('vi-VN') : 'N/A';
+                const room = d.phongHoc ? ` | ${d.phongHoc}` : '';
+                const teacher = d.tenGiangVien ? ` | GV: ${d.tenGiangVien}` : '';
+                
+                return `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${startDate} - ${endDate}${room}${teacher}</div>`;
+            }).join('<hr class="my-1 border-gray-200">');
+        } catch (error) {
+            debugLog(`Error formatting schedule for ${className}: ${error.message}`);
+            return `<span class="text-red-500">Lỗi hiển thị lịch học: ${error.message}</span>`;
+        }
     };
     
     const formatSelectedClassDetail = (cls, details) => {
         if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
         if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
         return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${detail.thu} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+    };
+    
+    // === RETRY INDIVIDUAL CLASS SCHEDULE ===
+    const retryClassSchedule = async (classId, className) => {
+        if (!authToken) return;
+        
+        log(`🔄 Đang thử lại lấy lịch học cho lớp ${className}...`);
+        
+        try {
+            const result = await backendRequest('getClassSchedule', { classId });
+            
+            if (result && result.success && result.scheduleDetails) {
+                log(`✅ Đã tải lại lịch học cho ${className}`);
+                
+                // Update the specific class in allScheduleData
+                const classIndex = allScheduleData.findIndex(c => c.id.toString() === classId);
+                if (classIndex !== -1) {
+                    allScheduleData[classIndex].scheduleDetails = result.scheduleDetails;
+                    await renderScheduleTable();
+                    debugLog(`Updated schedule for ${className}`, result.scheduleDetails);
+                } else {
+                    debugLog(`Could not find class ${classId} in allScheduleData`);
+                }
+            } else {
+                log(`❌ Vẫn không thể tải lịch cho ${className}: ${result?.message || 'Unknown error'}`, true);
+            }
+        } catch (error) {
+            log(`❌ Lỗi khi thử lại: ${error.message}`, true);
+        }
     };
     
     // --- UI UPDATE FUNCTIONS ---
@@ -287,26 +360,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 allScheduleData = scheduleRes.schedule;
                 subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
                 
-                // Count by source
+                // Count by source and schedule status
                 const dkhpCount = scheduleRes.schedule.filter(c => c.source === 'dkhp').length;
                 const dkhpdkCount = scheduleRes.schedule.filter(c => c.source === 'dkhpdk').length;
+                const withScheduleCount = scheduleRes.schedule.filter(c => 
+                    c.scheduleDetails && Array.isArray(c.scheduleDetails) && c.scheduleDetails.length > 0
+                ).length;
+                const noScheduleCount = scheduleRes.schedule.filter(c => 
+                    !c.scheduleDetails || c.scheduleDetails.error || 
+                    (Array.isArray(c.scheduleDetails) && c.scheduleDetails.length === 0)
+                ).length;
                 
                 log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
                 
                 if (fetchPrerequisites && (dkhpCount > 0 || dkhpdkCount > 0)) {
                     log(`📚 Bao gồm: ${dkhpCount} lớp chính + ${dkhpdkCount} lớp điều kiện`);
-                    debugLog('Schedule breakdown', { total: allScheduleData.length, dkhp: dkhpCount, dkhpdk: dkhpdkCount });
                 }
                 
-                if (fetchPrerequisites) {
-    if (dkhpdkCount === 0) {
-        log(`⚠️ WARNING: Toggle bật nhưng không có lớp điều kiện nào! API có thể đang quá tải.`);
-        log(`💡 TIP: Thử lại sau 30 giây hoặc tắt bật toggle để refresh.`);
-    } else {
-        log(`📚 Bao gồm: ${dkhpCount} lớp chính + ${dkhpdkCount} lớp điều kiện`);
-    }
-}
-
+                if (noScheduleCount > 0) {
+                    log(`⚠️ ${noScheduleCount} lớp chưa có lịch học, ${withScheduleCount} lớp có lịch đầy đủ`);
+                }
+                
+                if (fetchPrerequisites && dkhpdkCount === 0) {
+                    log(`⚠️ WARNING: Toggle bật nhưng không có lớp điều kiện nào! API có thể đang quá tải.`);
+                    log(`💡 TIP: Thử lại sau 30 giây hoặc tắt bật toggle để refresh.`);
+                }
+                
+                debugLog('Schedule breakdown', { 
+                    total: allScheduleData.length, 
+                    dkhp: dkhpCount, 
+                    dkhpdk: dkhpdkCount,
+                    withSchedule: withScheduleCount,
+                    noSchedule: noScheduleCount 
+                });
                 
                 await renderScheduleTable();
             }
@@ -496,8 +582,16 @@ document.addEventListener('DOMContentLoaded', () => {
                   : (isBatBuoc
                       ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
                       : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+
+            // Enhanced schedule detail with retry button for errors
+            const scheduleDetailHtml = (cls.scheduleDetails?.error || 
+                (Array.isArray(cls.scheduleDetails) && cls.scheduleDetails.length === 0) ||
+                !cls.scheduleDetails) && DEBUG_MODE
+                ? `${formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan)}<br><button class="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1 retry-schedule-btn hover:bg-blue-600" data-class-id="${cls.id}" data-class-name="${cls.maLopHocPhan}">🔄 Thử lại</button>`
+                : formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan);
+
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${scheduleDetailHtml}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
                 <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
                 <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
@@ -528,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.className = 'bg-white border-b hover:bg-gray-50';
             const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails, reg.maLopHocPhan)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
                 <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
@@ -604,9 +698,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.addEventListener('click', (e) => {
+    // Enhanced click event handler
+    document.addEventListener('click', async (e) => {
+        // Handle schedule row clicks
         const scheduleRow = e.target.closest('#schedule-container tr');
-        if (scheduleRow) {
+        if (scheduleRow && !e.target.closest('.retry-schedule-btn')) {
             const classId = scheduleRow.dataset.classId;
             const cls = allScheduleData.find(c => c.id.toString() === classId);
             if (!cls) return;
@@ -614,7 +710,30 @@ document.addEventListener('DOMContentLoaded', () => {
             else selectedClasses.set(classId, cls);
             scheduleRow.classList.toggle('bg-yellow-200');
             updateSelectedList();
+            return;
         }
+
+        // Handle retry schedule button clicks
+        const retryBtn = e.target.closest('.retry-schedule-btn');
+        if (retryBtn && authToken) {
+            const classId = retryBtn.dataset.classId;
+            const className = retryBtn.dataset.className;
+            
+            retryBtn.textContent = 'Loading...';
+            retryBtn.disabled = true;
+            
+            try {
+                await retryClassSchedule(classId, className);
+            } catch (error) {
+                log(`❌ Lỗi khi thử lại: ${error.message}`, true);
+            }
+            
+            retryBtn.textContent = '🔄 Thử lại';
+            retryBtn.disabled = false;
+            return;
+        }
+
+        // Handle remove selected class button clicks
         const removeBtn = e.target.closest('.remove-selected-btn');
         if (removeBtn) {
             const classId = removeBtn.dataset.classId;
@@ -622,11 +741,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
             if (rowToUpdate) rowToUpdate.classList.remove('bg-yellow-200');
             updateSelectedList();
+            return;
         }
+
+        // Handle cancel registration button clicks
         const cancelBtn = e.target.closest('.cancel-btn');
         if (cancelBtn) {
             const { regId, tenMon, source } = cancelBtn.dataset;
             cancelRegistration(regId, tenMon, source);
+            return;
         }
     });
 });
