@@ -1,521 +1,812 @@
-const fetch = require('node-fetch');
+document.addEventListener('DOMContentLoaded', () => {
+    // === DEBUG MODE ===
+    let DEBUG_MODE = false; // Bật/tắt debug mode
+    
+    // CSS Toggle Switch
+    const style = document.createElement('style');
+    style.innerHTML = `
+        input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
+        input:checked~.block{background-color:#a7f3d0}
+        .toggle-label{transition:all 0.3s ease}
+        .toggle-on .toggle-label{color:#10b981!important;font-weight:600!important}
+        .toggle-off .toggle-label{color:#6b7280!important;font-weight:400!important}
+        .debug-toggle{position:fixed;top:10px;right:10px;z-index:1000;background:rgba(0,0,0,0.8);color:white;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer}
+        .retry-schedule-btn{transition:all 0.2s ease;font-size:11px;padding:2px 6px;margin-top:4px;border:none;border-radius:4px;cursor:pointer}
+        .retry-schedule-btn:hover{transform:scale(1.05)}
+        .retry-schedule-btn:disabled{opacity:0.5;cursor:not-allowed}
+    `;
+    document.head.appendChild(style);
 
-// === DEBUG MODE ===
-const DEBUG = process.env.DEBUG_MODE === 'true' || false;
-const debugLog = (message, data = null) => {
-    if (DEBUG) {
-        console.log(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-    }
-};
+    // DOM Elements
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const delayInput = document.getElementById('delay-input');
+    const loginBtn = document.getElementById('login-btn');
+    const startInsertionBtn = document.getElementById('start-insertion-btn');
+    const startRegistrationBtn = document.getElementById('start-registration-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const refreshRegisteredBtn = document.getElementById('refresh-registered-btn');
+    const searchInput = document.getElementById('search-schedule');
+    const subjectFilter = document.getElementById('subject-filter');
+    const scheduleContainer = document.getElementById('schedule-container');
+    const registeredContainer = document.getElementById('registered-container');
+    const selectedList = document.getElementById('selected-classes-list');
+    const logOutput = document.getElementById('log-output');
+    const registrationControls = document.getElementById('registration-controls');
+    const loginForm = document.getElementById('login-form');
+    
+    // Dynamically created elements
+    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText;
 
-// === CACHING SYSTEM ===
-const cache = new Map();
-const CACHE_TTL = 3 * 60 * 1000; // Giảm xuống 3 phút để debug
+    // State
+    let authToken = null;
+    let dotId = null;
+    let allScheduleData = [];
+    let selectedClasses = new Map();
+    let subjectTypeMap = new Map();
+    let registrationIntervals = new Map();
+    let isProcessStopped = false;
 
-function getCacheKey(endpoint, params) {
-    return `${endpoint}_${JSON.stringify(params)}`;
-}
+    // Add debug toggle button
+    const debugToggle = document.createElement('div');
+    debugToggle.className = 'debug-toggle';
+    debugToggle.textContent = `DEBUG: ${DEBUG_MODE ? 'ON' : 'OFF'}`;
+    debugToggle.onclick = () => {
+        DEBUG_MODE = !DEBUG_MODE;
+        debugToggle.textContent = `DEBUG: ${DEBUG_MODE ? 'ON' : 'OFF'}`;
+        log(`🔧 Debug mode: ${DEBUG_MODE ? 'ON' : 'OFF'}`);
+    };
+    document.body.appendChild(debugToggle);
 
-function getCachedData(key) {
-    const cached = cache.get(key);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        debugLog(`Cache HIT for key: ${key}`);
-        return cached.data;
-    }
-    cache.delete(key);
-    debugLog(`Cache MISS for key: ${key}`);
-    return null;
-}
-
-function setCachedData(key, data) {
-    cache.set(key, {
-        data,
-        timestamp: Date.now()
-    });
-    debugLog(`Cache SET for key: ${key}, data size: ${JSON.stringify(data).length}`);
-}
-
-// === UTILITY FUNCTIONS ===
-async function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function throttledPromiseAll(promises, limit = 3, delay = 500) {
-    const results = [];
-    for (let i = 0; i < promises.length; i += limit) {
-        const batch = promises.slice(i, i + limit);
-        const batchResults = await Promise.all(batch);
-        results.push(...batchResults);
-        
-        if (i + limit < promises.length) {
-            await sleep(delay);
+    // === DEBUG LOGGING ===
+    const debugLog = (message, data = null) => {
+        if (DEBUG_MODE) {
+            log(`🔧 DEBUG: ${message}${data ? ` | Data: ${JSON.stringify(data)}` : ''}`, false);
         }
-    }
-    return results;
-}
-
-const validateApiResponse = (response, context) => {
-    if (!response) {
-        return { isValid: false, message: `No response from ${context}` };
-    }
-    
-    if (!response.success) {
-        return { isValid: false, message: response.message || `Failed ${context}` };
-    }
-    
-    if (Array.isArray(response.body) && response.body.length === 0) {
-        return { isValid: true, isEmpty: true, message: `No data available for ${context}` };
-    }
-    
-    return { isValid: true, isEmpty: false };
-};
-
-// === IMPROVED API CALL FUNCTION ===
-async function callApi(endpoint, method, token, body = null, source = 'dkhp', retries = 3) {
-    const cacheKey = getCacheKey(endpoint, { method, body, source });
-    
-    // Check cache first for GET requests
-    if (method === 'GET') {
-        const cached = getCachedData(cacheKey);
-        if (cached) return cached;
-    }
-    
-    let baseApiUrl;
-    if (endpoint.startsWith('/user/')) {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
-    } else if (source === 'dkhpdk') {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhpdk';
-    } else {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhp';
-    }
-    
-    const targetUrl = baseApiUrl + endpoint;
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    // Increase timeout especially for dkhpdk
-    const timeoutMs = source === 'dkhpdk' ? 45000 : 30000; // 45s for dkhpdk, 30s for others
-    
-    const options = { 
-        method, 
-        headers, 
-        body: body ? JSON.stringify(body) : null, 
-        timeout: timeoutMs
     };
 
-    debugLog(`API Call: ${method} ${targetUrl} (source: ${source}, timeout: ${timeoutMs}ms)`);
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            if (attempt > 1) {
-                const delay = source === 'dkhpdk' ? 2000 * attempt : 1000 * attempt;
-                debugLog(`Retrying ${targetUrl} after ${delay}ms delay...`);
-                await sleep(delay);
-            }
-            
-            const response = await fetch(targetUrl, options);
-            
-            if (response.status === 429) {
-                debugLog(`Rate limited on attempt ${attempt} for ${targetUrl}`);
-                if (attempt < retries) {
-                    const rateLimitDelay = source === 'dkhpdk' ? 3000 * attempt : 2000 * attempt;
-                    await sleep(rateLimitDelay);
-                    continue;
-                }
-            }
-            
-            if (!response.ok) {
-                const errorMessage = `API Error: Status ${response.status}`;
-                debugLog(`${errorMessage} for ${targetUrl}`);
-                return { 
-                    success: false, 
-                    message: errorMessage, 
-                    status: response.status 
-                };
-            }
-            
-            const result = await response.json();
-            
-            // Cache successful GET requests
-            if (method === 'GET' && result.success) {
-                setCachedData(cacheKey, result);
-            }
-            
-            debugLog(`API Success: ${targetUrl} returned ${Array.isArray(result.body) ? result.body.length : 'non-array'} items`);
-            return result;
-            
-        } catch (error) {
-            debugLog(`API Error on attempt ${attempt}: ${error.message}`);
-            if (error.name === 'AbortError' || error.message.includes('timeout')) {
-                debugLog(`Timeout detected for ${targetUrl} on attempt ${attempt}`);
-            }
-            
-            if (attempt === retries) {
-                return { success: false, message: `${error.message} (after ${retries} attempts)` };
-            }
-        }
-    }
-}
-
-
-// === IMPROVED SCHEDULE DETAILS FUNCTION ===
-async function getScheduleDetails(classId, token, source, retries = 3) {
-    debugLog(`Getting schedule details for classId: ${classId}, source: ${source}`);
-    
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            // Add progressive delay for retries
-            if (attempt > 1) {
-                const delay = 1000 * attempt; // 1s, 2s, 3s
-                debugLog(`Retrying schedule details for ${classId}, attempt ${attempt} after ${delay}ms`);
-                await sleep(delay);
-            }
-            
-            const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source, 2);
-            
-            if (!result) {
-                debugLog(`No result for schedule details classId: ${classId}, attempt: ${attempt}`);
-                if (attempt < retries) continue;
-                return { error: true, message: 'No response from API', classId };
-            }
-            
-            if (!result.success) {
-                debugLog(`Failed schedule details for ${classId}: ${result.message}, attempt: ${attempt}`);
-                if (attempt < retries) continue;
-                return { error: true, message: result.message || 'API call failed', classId };
-            }
-            
-            if (!result.body || !Array.isArray(result.body) || result.body.length === 0) {
-                debugLog(`Empty schedule details for ${classId}, attempt: ${attempt}`);
-                if (attempt < retries) continue;
-                // Return empty array instead of error for empty schedules (this might be normal)
-                return [];
-            }
-            
-            debugLog(`Successfully got ${result.body.length} schedule details for classId: ${classId}`);
-            return result.body;
-            
-        } catch (error) {
-            debugLog(`Exception getting schedule details for ${classId}, attempt ${attempt}: ${error.message}`);
-            if (attempt === retries) {
-                return { error: true, message: error.message, classId };
-            }
-        }
-    }
-    
-    // Fallback - should not reach here
-    return { error: true, message: 'Max retries exceeded', classId };
-}
-
-
-// === MAIN HANDLER ===
-module.exports = async (req, res) => {
-    // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
-
-    const { action, payload } = req.body;
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
-
-    debugLog(`Handler called with action: ${action}`, payload);
-
-    try {
-        let result;
-        switch (action) {
-            case 'login': {
-                const { username, password } = payload;
-                result = await callApi('/user/login', 'POST', null, { username, password });
-                break;
-            }
-
-            case 'getInitialData': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                
-                const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                const dotsRes = await callApi(`/getDot`, 'GET', token);
-                
-                const latestDot = (dotsRes.success && dotsRes.body.length) 
-                    ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
-                    : null;
-                    
-                result = {
-                    success: profileRes.success && !!latestDot,
-                    profile: profileRes.body,
-                    dot: latestDot
-                };
-                break;
-            }
-
-            case 'clearCache': {
-                const { cacheType } = payload;
-                
-                if (cacheType === 'schedule') {
-                    let cleared = 0;
-                    cache.forEach((_, key) => {
-                        if (key.includes('fullSchedule') || key.includes('registeredClasses')) {
-                            cache.delete(key);
-                            cleared++;
-                        }
-                    });
-                    debugLog(`Cleared ${cleared} schedule cache entries`);
-                    result = { success: true, message: `Cleared ${cleared} schedule cache entries` };
-                } else {
-                    const cacheSize = cache.size;
-                    cache.clear();
-                    debugLog(`Cleared all cache (${cacheSize} entries)`);
-                    result = { success: true, message: `Cleared all cache (${cacheSize} entries)` };
-                }
-                break;
-            }
-
-            case 'getFullSchedule': {
-    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    
-    const { dotId, fetchPrerequisites, _forceRefresh } = payload;
-    
-    // Create unique cache key
-    const cacheKey = `fullSchedule_${dotId}_${fetchPrerequisites ? 'with_prereq' : 'no_prereq'}`;
-    
-    // Check cache only if not forcing refresh
-    if (!_forceRefresh) {
-        const cached = getCachedData(cacheKey);
-        if (cached) {
-            debugLog(`Returning cached fullSchedule: ${cached.schedule?.length || 0} classes`);
-            return res.status(200).json(cached);
-        }
-    }
-    
-    debugLog(`Fetching fresh fullSchedule data. dotId: ${dotId}, fetchPrerequisites: ${fetchPrerequisites}`);
-    
-    const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-    let allClassData = [];
-    let subjectTypeMap = {};
-    
-    debugLog(`Processing sources: ${sources.join(', ')}`);
-
-    // ===== IMPROVED: SEQUENTIAL PROCESSING WITH RETRIES =====
-    for (const source of sources) {
-        let sourceRetries = 0;
-        const maxSourceRetries = 2;
-        let sourceSuccess = false;
+    // === IMPROVED BACKEND COMMUNICATION ===
+    const backendRequest = async (action, payload = {}, retries = 2) => {
+        debugLog(`Backend request: ${action}`, payload);
         
-        while (!sourceSuccess && sourceRetries < maxSourceRetries) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
             try {
-                debugLog(`--- Processing source: ${source} (attempt ${sourceRetries + 1}) ---`);
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
                 
-                // Add delay for dkhpdk to avoid timing issues
-                if (source === 'dkhpdk' && sourceRetries === 0) {
-                    await sleep(1000); // 1 second delay for stability
-                }
-                
-                const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source, 3); // 3 retries
-                const validation = validateApiResponse(subjectsRes, `subjects for ${source}`);
-                
-                if (!validation.isValid) {
-                    debugLog(`Failed validation for ${source}: ${validation.message}`);
-                    sourceRetries++;
-                    if (sourceRetries < maxSourceRetries) {
-                        await sleep(2000 * sourceRetries); // Progressive delay
-                        continue;
-                    } else {
-                        break; // Skip this source after max retries
-                    }
-                }
-
-                if (validation.isEmpty) {
-                    debugLog(`Empty response for ${source} - this is normal if no data exists`);
-                    sourceSuccess = true; // Empty is still "success"
-                    break;
-                }
-
-                debugLog(`Found ${subjectsRes.body.length} subjects for ${source}`);
-
-                // Store subject types only from dkhp
-                if (source === 'dkhp') {
-                    subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                    debugLog(`Stored ${Object.keys(subjectTypeMap).length} subject types`);
-                }
-
-                const sourceClassData = [];
-
-                // Process subjects in smaller batches with longer delays
-                const subjectPromises = subjectsRes.body.map(async (subject) => {
-                    const classEndpoint = source === 'dkhpdk'
-                        ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                        : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                    
-                    const classRes = await callApi(classEndpoint, 'GET', token, null, source, 3); // 3 retries per call
-                    const classValidation = validateApiResponse(classRes, `classes for ${subject.maHocPhan} from ${source}`);
-                    
-                    if (!classValidation.isValid || classValidation.isEmpty) {
-                        return [];
-                    }
-                    
-                    const classPromises = classRes.body.map(async (cls) => {
-                        const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                        return { ...subject, ...cls, source, scheduleDetails };
-                    });
-                    
-                    // Smaller batches, longer delays for stability
-                    return await throttledPromiseAll(classPromises, 2, source === 'dkhpdk' ? 500 : 300);
+                const response = await fetch('/api/handler', { 
+                    method: 'POST', 
+                    headers, 
+                    body: JSON.stringify({ action, payload }),
+                    timeout: 30000
                 });
-
-                // Process with smaller batches and longer delays for dkhpdk
-                const batchSize = source === 'dkhpdk' ? 2 : 3;
-                const batchDelay = source === 'dkhpdk' ? 800 : 500;
                 
-                const batchResults = await throttledPromiseAll(subjectPromises, batchSize, batchDelay);
-                const flatResults = batchResults.flat();
+                if (!response.ok) {
+                    if (response.status === 429 && attempt < retries) {
+                        log(`Rate limited, retrying in ${attempt * 2} seconds...`, false);
+                        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                        continue;
+                    }
+                    const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
+                    log(`Lỗi '${action}': ${errorData.message}`, true);
+                    return null;
+                }
                 
-                allClassData.push(...flatResults);
-                debugLog(`Completed ${source}: ${flatResults.length} classes processed`);
-                sourceSuccess = true;
+                const result = await response.json();
+                debugLog(`Backend response for ${action}:`, { success: result.success, dataSize: result.schedule?.length || result.body?.length || 'N/A' });
+                return result;
                 
             } catch (error) {
-                debugLog(`Error processing source ${source} (attempt ${sourceRetries + 1}): ${error.message}`);
-                sourceRetries++;
-                if (sourceRetries < maxSourceRetries) {
-                    await sleep(3000 * sourceRetries); // Progressive delay on error
-                } else {
-                    debugLog(`Max retries reached for ${source}, skipping...`);
+                debugLog(`Network error on attempt ${attempt}: ${error.message}`);
+                if (attempt === retries) {
+                    log(`Lỗi mạng khi gọi backend: ${error.message}`, true);
+                    return null;
                 }
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
             }
         }
+    };
+
+    // --- UTILITY FUNCTIONS ---
+    const log = (message, isError = false) => {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement('p');
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.className = isError ? 'text-red-400' : 'text-green-300';
+        logOutput.appendChild(logEntry);
+        logOutput.scrollTop = logOutput.scrollHeight;
         
-        if (!sourceSuccess) {
-            debugLog(`WARNING: Failed to process source ${source} after ${maxSourceRetries} attempts`);
+        // Keep log size manageable
+        while (logOutput.children.length > 100) {
+            logOutput.removeChild(logOutput.firstChild);
         }
-    }
+    };
 
-    // Final counts
-    const dkhpCount = allClassData.filter(c => c.source === 'dkhp').length;
-    const dkhpdkCount = allClassData.filter(c => c.source === 'dkhpdk').length;
+    const toggleLoading = (button, isLoading) => {
+        if (!button) return;
+        if (isLoading) {
+            button.disabled = true;
+            button.innerHTML = `<div class="loader"></div>`;
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.originalHTML || button.textContent;
+        }
+    };
+
+    // Store original HTML for buttons
+    [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn].forEach(btn => {
+        if (btn) btn.originalHTML = btn.innerHTML;
+    });
     
-    debugLog(`Final result: ${allClassData.length} total classes`);
-    debugLog(`DKHP: ${dkhpCount}, DKHPDK: ${dkhpdkCount}`);
-
-    // Validation check for fetchPrerequisites
-    if (fetchPrerequisites && dkhpdkCount === 0) {
-        debugLog(`WARNING: fetchPrerequisites=true but got 0 dkhpdk classes - may indicate API issues`);
-    }
-
-    result = { 
-        success: true, 
-        schedule: allClassData, 
-        subjectTypes: subjectTypeMap,
-        debug: {
-            sources: sources,
-            counts: { dkhp: dkhpCount, dkhpdk: dkhpdkCount },
-            cacheKey: cacheKey,
-            fetchPrerequisites: fetchPrerequisites
+    // === ENHANCED SCHEDULE FORMATTING ===
+    const formatScheduleDetail = (details, className = '') => {
+        // Enhanced error handling and display
+        if (!details) {
+            debugLog(`No details provided for ${className}`);
+            return `<span class="text-red-500">Không thể tải lịch học</span>`;
+        }
+        
+        if (details.error) {
+            debugLog(`Schedule error for ${className}: ${details.message}`);
+            if (details.status === 403) {
+                return `<span class="text-red-500">Bị chặn truy cập (403)</span>`;
+            }
+            return `<span class="text-red-500">Lỗi: ${details.message}</span>`;
+        }
+        
+        if (!Array.isArray(details)) {
+            debugLog(`Invalid schedule data type for ${className}:`, typeof details);
+            return `<span class="text-orange-500">Dữ liệu lịch học không hợp lệ</span>`;
+        }
+        
+        if (details.length === 0) {
+            debugLog(`Empty schedule array for ${className}`);
+            return `<span class="text-yellow-600">Chưa có lịch học được công bố</span>`;
+        }
+        
+        try {
+            return details.map(d => {
+                if (!d.thu || !d.tietHoc) {
+                    debugLog(`Missing schedule fields for ${className}:`, d);
+                    return `<div class="font-medium text-orange-500">Thông tin lịch không đầy đủ</div>`;
+                }
+                
+                const startDate = d.ngayBatDau ? new Date(d.ngayBatDau).toLocaleDateString('vi-VN') : 'N/A';
+                const endDate = d.ngayKetThuc ? new Date(d.ngayKetThuc).toLocaleDateString('vi-VN') : 'N/A';
+                const room = d.phongHoc ? ` | ${d.phongHoc}` : '';
+                const teacher = d.tenGiangVien ? ` | GV: ${d.tenGiangVien}` : '';
+                
+                return `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${startDate} - ${endDate}${room}${teacher}</div>`;
+            }).join('<hr class="my-1 border-gray-200">');
+        } catch (error) {
+            debugLog(`Error formatting schedule for ${className}: ${error.message}`);
+            return `<span class="text-red-500">Lỗi hiển thị lịch học: ${error.message}</span>`;
         }
     };
     
-    // Cache the result
-    setCachedData(cacheKey, result);
+    const formatSelectedClassDetail = (cls, details) => {
+        if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
+        if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
+        return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${detail.thu} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+    };
     
-    break;
-}
-
-            
-            case 'getRegisteredClasses': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                
-                const { dotId, fetchPrerequisites } = payload;
-                const cacheKey = `registeredClasses_${dotId}_${fetchPrerequisites}`;
-                
-                const cached = getCachedData(cacheKey);
-                if (cached) {
-                    return res.status(200).json(cached);
-                }
-                
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let registeredData = [];
-
-                for (const source of sources) {
-                    try {
-                        const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                        const validation = validateApiResponse(regRes, `registered classes for ${source}`);
-                        
-                        if (!validation.isValid || validation.isEmpty) {
-                            continue;
-                        }
-
-                        const registrationPromises = regRes.body.map(async (reg) => {
-                            const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
-                            const detailValidation = validateApiResponse(detailRes, `schedule for registration ${reg.id}`);
-                            
-                            const scheduleDetails = detailValidation.isValid && !detailValidation.isEmpty
-                                ? detailRes.body 
-                                : { error: true, message: detailValidation.message };
-                                
-                            return { ...reg, source, scheduleDetails };
-                        });
-                        
-                        const batchResults = await throttledPromiseAll(registrationPromises, 3, 400);
-                        registeredData.push(...batchResults);
-                        
-                    } catch (error) {
-                        debugLog(`Error processing registered classes for ${source}: ${error.message}`);
-                    }
-                }
-                
-                result = { success: true, body: registeredData };
-                setCachedData(cacheKey, result);
-                
-                break;
-            }
-            
-            case 'checkClassStatus': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, maHocPhan, source } = payload;
-                const classEndpoint = source === 'dkhpdk'
-                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                result = await callApi(classEndpoint, 'GET', token, null, source);
-                break;
-            }
-
-            case 'register': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source } = payload;
-                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
-                
-                // Clear cache when registration happens
-                cache.forEach((_, key) => {
-                    if (key.includes('registeredClasses') || key.includes('fullSchedule')) {
-                        cache.delete(key);
-                    }
-                });
-                break;
-            }
-
-            case 'cancel': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { registrationId, source } = payload;
-                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
-                
-                // Clear cache when cancellation happens
-                cache.forEach((_, key) => {
-                    if (key.includes('registeredClasses') || key.includes('fullSchedule')) {
-                        cache.delete(key);
-                    }
-                });
-                break;
-            }
-
-            default:
-                return res.status(400).json({ success: false, message: 'Invalid action.' });
+    // === ENHANCED RETRY INDIVIDUAL CLASS SCHEDULE ===
+    const retryClassSchedule = async (classId, className, button) => {
+        if (!authToken) return;
+        
+        log(`🔄 Đang thử lại lấy lịch học cho lớp ${className}...`);
+        
+        // Update button state
+        if (button) {
+            button.innerHTML = '⏳ Loading...';
+            button.disabled = true;
+            button.style.opacity = '0.5';
         }
         
-        res.status(200).json(result);
+        try {
+            const result = await backendRequest('getClassSchedule', { classId }, 3); // 3 retries
+            
+            if (result && result.success) {
+                if (result.scheduleDetails && Array.isArray(result.scheduleDetails) && result.scheduleDetails.length > 0) {
+                    log(`✅ Đã tải lại lịch học cho ${className}`);
+                    
+                    // Update the specific class in allScheduleData
+                    const classIndex = allScheduleData.findIndex(c => c.id.toString() === classId);
+                    if (classIndex !== -1) {
+                        allScheduleData[classIndex].scheduleDetails = result.scheduleDetails;
+                        await renderScheduleTable();
+                        debugLog(`Updated schedule for ${className}`, result.scheduleDetails);
+                    } else {
+                        debugLog(`Could not find class ${classId} in allScheduleData`);
+                    }
+                    
+                    // Update button to success state
+                    if (button) {
+                        button.innerHTML = '✅ Thành công';
+                        button.style.backgroundColor = '#10b981';
+                        setTimeout(() => {
+                            button.style.display = 'none';
+                        }, 2000);
+                    }
+                    
+                } else if (result.scheduleDetails && Array.isArray(result.scheduleDetails) && result.scheduleDetails.length === 0) {
+                    log(`⚠️ Lớp ${className} không có lịch học (có thể chưa được phân công)`, false);
+                    
+                    // Update the class data
+                    const classIndex = allScheduleData.findIndex(c => c.id.toString() === classId);
+                    if (classIndex !== -1) {
+                        allScheduleData[classIndex].scheduleDetails = [];
+                        await renderScheduleTable();
+                    }
+                    
+                    if (button) {
+                        button.innerHTML = '⚠️ Không có lịch';
+                        button.style.backgroundColor = '#f59e0b';
+                    }
+                }
+            } else {
+                const errorMsg = result?.message || result?.error?.message || 'Unknown error';
+                
+                if (errorMsg.includes('403') || errorMsg.includes('Access denied')) {
+                    log(`❌ Lớp ${className}: Bị chặn truy cập (Rate limit hoặc không có quyền)`, true);
+                    if (button) {
+                        button.innerHTML = '🚫 Bị chặn';
+                        button.style.backgroundColor = '#ef4444';
+                    }
+                } else {
+                    log(`❌ Vẫn không thể tải lịch cho ${className}: ${errorMsg}`, true);
+                    if (button) {
+                        button.innerHTML = '❌ Thất bại';
+                        button.style.backgroundColor = '#ef4444';
+                    }
+                }
+            }
+        } catch (error) {
+            log(`❌ Lỗi khi thử lại: ${error.message}`, true);
+            if (button) {
+                button.innerHTML = '❌ Lỗi';
+                button.style.backgroundColor = '#ef4444';
+            }
+        }
+        
+        // Reset button state after delay if not success
+        if (button && button.innerHTML !== '✅ Thành công') {
+            setTimeout(() => {
+                button.innerHTML = '🔄 Thử lại';
+                button.disabled = false;
+                button.style.opacity = '1';
+                button.style.backgroundColor = '#3b82f6';
+            }, 3000);
+        }
+    };
+    
+    // --- UI UPDATE FUNCTIONS ---
+    const updateUIAfterLogin = (profile) => {
+        loginForm.style.display = 'none';
+        
+        // Create user panel if not exists
+        if (!document.getElementById('user-panel-content')) {
+            const panelContainer = document.createElement('div');
+            panelContainer.id = 'user-panel-content';
+            panelContainer.className = 'space-y-4';
+            panelContainer.innerHTML = `
+                <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
+                <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">
+                    <label for="prerequisite-toggle" class="flex items-center cursor-pointer toggle-off" id="toggle-label">
+                        <div class="relative">
+                            <input type="checkbox" id="prerequisite-toggle" class="sr-only">
+                            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                        </div>
+                        <div class="ml-3 text-gray-700 font-medium toggle-label">Lấy dữ liệu môn học điều kiện</div>
+                    </label>
+                </div>
+                <div id="progress-bar-container" class="my-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>
+                    <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
+                </div>
+                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" /></svg><span>Lấy dữ liệu</span></button>
+                <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
+            `;
+            loginForm.parentNode.insertBefore(panelContainer, loginForm.nextSibling);
 
-    } catch (error) {
-        debugLog('Handler Error: ' + error.message);
-        console.error('Handler Error:', error);
-        res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
-    }
-};
+            // Re-assign element variables
+            greetingMsg = document.getElementById('greeting-msg');
+            prerequisiteToggle = document.getElementById('prerequisite-toggle');
+            fetchBtn = document.getElementById('fetch-schedule-btn');
+            logoutBtn = document.getElementById('logout-btn');
+            progressBarContainer = document.getElementById('progress-bar-container');
+            progressBarElement = document.getElementById('progress-bar-element');
+            progressBarText = document.getElementById('progress-bar-text');
+
+            // Add event listeners
+            fetchBtn.originalHTML = fetchBtn.innerHTML;
+            logoutBtn.originalHTML = logoutBtn.innerHTML;
+            fetchBtn.addEventListener('click', fetchFullSchedule);
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+        
+        greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
+        document.getElementById('user-panel-content').style.display = 'block';
+    };
+    
+    const resetUI = () => {
+        loginForm.style.display = 'block';
+        const panel = document.getElementById('user-panel-content');
+        if (panel) panel.style.display = 'none';
+
+        scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem dữ liệu.</p>';
+        registeredContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Chưa có dữ liệu.</p>';
+        logOutput.innerHTML = '';
+        subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
+        searchInput.value = '';
+        allScheduleData = [];
+        selectedClasses.clear();
+        updateSelectedList();
+    };
+
+    const updateProgressBar = (current, total, message = '') => {
+        if (!progressBarContainer) return;
+        if (current === -1) {
+            progressBarContainer.classList.add('hidden');
+            return;
+        }
+        progressBarContainer.classList.remove('hidden');
+        const percentage = total > 0 ? (current / total) * 100 : 0;
+        progressBarElement.style.width = `${percentage}%`;
+        progressBarText.textContent = message;
+    };
+
+    // --- CORE LOGIC FUNCTIONS ---
+    const handleLogin = async () => {
+        toggleLoading(loginBtn, true);
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!username || !password) {
+            log("Vui lòng nhập tên đăng nhập và mật khẩu.", true);
+            toggleLoading(loginBtn, false);
+            return;
+        }
+
+        const tokenRes = await backendRequest('login', { username, password });
+
+        if (tokenRes && tokenRes.token) {
+            authToken = tokenRes.token;
+            log("✅ Đăng nhập thành công.");
+            const initialData = await backendRequest('getInitialData');
+            if (initialData && initialData.success) {
+                dotId = initialData.dot.id;
+                log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
+                updateUIAfterLogin(initialData.profile);
+                await fetchRegisteredClasses();
+            } else {
+                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
+                 authToken = null;
+            }
+        } else {
+            log(`❌ Đăng nhập thất bại: ${tokenRes?.message || 'Lỗi không xác định'}`, true);
+        }
+        toggleLoading(loginBtn, false);
+    };
+
+    const handleLogout = async () => {
+        await stopProcess();
+        authToken = null;
+        dotId = null;
+        resetUI();
+        log("Đã đăng xuất.");
+    };
+
+    const fetchFullSchedule = async () => {
+        if (!authToken) return log("Chưa đăng nhập.", true);
+        
+        if (fetchBtn.disabled) return;
+        
+        toggleLoading(fetchBtn, true);
+        isProcessStopped = false;
+        
+        const fetchPrerequisites = prerequisiteToggle?.checked || false;
+        log(`♻️ Bắt đầu lấy lịch học${fetchPrerequisites ? ' (bao gồm môn điều kiện)' : ''}...`);
+        
+        debugLog('Fetching schedule with params', { dotId, fetchPrerequisites });
+        
+        // Force refresh to avoid cache issues
+        const scheduleRes = await backendRequest('getFullSchedule', { 
+            dotId, 
+            fetchPrerequisites,
+            _forceRefresh: true
+        });
+
+        if (scheduleRes && scheduleRes.success) {
+            if (scheduleRes.schedule.length === 0) {
+                log("⚠️ Không có dữ liệu lịch học. Thử lại sau ít phút.");
+            } else {
+                allScheduleData = scheduleRes.schedule;
+                subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
+                
+                // Count by source and schedule status
+                const dkhpCount = scheduleRes.schedule.filter(c => c.source === 'dkhp').length;
+                const dkhpdkCount = scheduleRes.schedule.filter(c => c.source === 'dkhpdk').length;
+                const withScheduleCount = scheduleRes.schedule.filter(c => 
+                    c.scheduleDetails && Array.isArray(c.scheduleDetails) && c.scheduleDetails.length > 0
+                ).length;
+                const noScheduleCount = scheduleRes.schedule.filter(c => 
+                    !c.scheduleDetails || c.scheduleDetails.error || 
+                    (Array.isArray(c.scheduleDetails) && c.scheduleDetails.length === 0)
+                ).length;
+                
+                log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+                
+                if (fetchPrerequisites && (dkhpCount > 0 || dkhpdkCount > 0)) {
+                    log(`📚 Bao gồm: ${dkhpCount} lớp chính + ${dkhpdkCount} lớp điều kiện`);
+                }
+                
+                if (noScheduleCount > 0) {
+                    log(`⚠️ ${noScheduleCount} lớp chưa có lịch học, ${withScheduleCount} lớp có lịch đầy đủ`);
+                }
+                
+                if (fetchPrerequisites && dkhpdkCount === 0) {
+                    log(`⚠️ WARNING: Toggle bật nhưng không có lớp điều kiện nào! API có thể đang quá tải.`);
+                    log(`💡 TIP: Thử lại sau 30 giây hoặc tắt bật toggle để refresh.`);
+                }
+                
+                debugLog('Schedule breakdown', { 
+                    total: allScheduleData.length, 
+                    dkhp: dkhpCount, 
+                    dkhpdk: dkhpdkCount,
+                    withSchedule: withScheduleCount,
+                    noSchedule: noScheduleCount 
+                });
+                
+                await renderScheduleTable();
+            }
+        } else {
+            log(`❌ Lỗi khi tải lịch học: ${scheduleRes?.message || 'Server có thể bị quá tải, thử lại sau'}`, true);
+        }
+        
+        updateProgressBar(-1);
+        toggleLoading(fetchBtn, false);
+    };
+
+    const fetchRegisteredClasses = async () => {
+        if (!authToken) return;
+        toggleLoading(refreshRegisteredBtn, true);
+        const fetchPrerequisites = prerequisiteToggle?.checked || false;
+        
+        const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites });
+
+        if (registeredRes && registeredRes.success) {
+            if (registeredRes.body.length === 0) {
+                log("⚠️ Chưa đăng ký học phần nào.");
+            } else {
+                log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+            }
+            await renderRegisteredTable(registeredRes.body);
+        } else {
+            log(`❌ Lỗi khi tải danh sách đã đăng ký: ${registeredRes?.message || 'Không rõ'}`, true);
+        }
+        toggleLoading(refreshRegisteredBtn, false);
+    };
+
+    const cancelRegistration = async (registrationId, tenMonHoc, source) => {
+        if (!confirm(`Bạn có chắc muốn hủy môn "${tenMonHoc}" không?`)) return;
+        log(`Đang hủy môn ${tenMonHoc}...`);
+        
+        const result = await backendRequest('cancel', { registrationId, source });
+
+        if (result && result.success) {
+            log(`✅ Hủy thành công.`);
+            await fetchRegisteredClasses();
+        } else {
+            log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
+        }
+    };
+    
+    const startInsertion = () => {
+        if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để chèn.", true);
+        stopProcess();
+        isProcessStopped = false;
+        toggleActionButtons(true);
+        log("🚀 Bắt đầu quá trình chèn lớp...");
+
+        const classesBySubject = new Map();
+        selectedClasses.forEach(cls => {
+            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
+            classesBySubject.get(cls.maHocPhan).push(cls);
+        });
+        const delay = Math.max(parseInt(delayInput.value, 10) || 1000, 500);
+
+        classesBySubject.forEach((classes, maHocPhan) => {
+            const tenMonHoc = classes[0].tenMonHoc || maHocPhan;
+            const source = classes[0].source;
+
+            const intervalId = setInterval(async () => {
+                if (isProcessStopped) return;
+                
+                const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
+
+                if (!statusRes || !statusRes.success) return;
+
+                for (const availableClass of statusRes.body) {
+                    if (selectedClasses.has(availableClass.id.toString()) && availableClass.phanTramDangKy < 100) {
+                        log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
+                        const regResult = await backendRequest('register', { classId: availableClass.id, source });
+
+                        if (regResult && regResult.success) {
+                            log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
+                            clearInterval(registrationIntervals.get(maHocPhan));
+                            registrationIntervals.delete(maHocPhan);
+                            classes.forEach(c => selectedClasses.delete(c.id.toString()));
+                            await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                            if (registrationIntervals.size === 0) await stopProcess();
+                            return;
+                        } else {
+                             log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                        }
+                    }
+                }
+            }, delay);
+            registrationIntervals.set(maHocPhan, intervalId);
+        });
+    };
+    
+    const startRegistration = () => {
+        if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để đăng ký.", true);
+        stopProcess();
+        isProcessStopped = false;
+        toggleActionButtons(true);
+        log("🚀 Bắt đầu đăng ký liên tục...");
+    
+        const classesBySubject = new Map();
+        selectedClasses.forEach(cls => {
+            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
+            classesBySubject.get(cls.maHocPhan).push(cls);
+        });
+        const delay = Math.max(parseInt(delayInput.value, 10) || 1000, 500);
+    
+        classesBySubject.forEach((classes, maHocPhan) => {
+            const tenMonHoc = classes[0].tenMonHoc;
+            
+            const intervalId = setInterval(async () => {
+                if (isProcessStopped) return;
+                for (const cls of classes) {
+                    if (isProcessStopped) return;
+                    log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${cls.maLopHocPhan}...`);
+                    const result = await backendRequest('register', { classId: cls.id, source: cls.source });
+                    
+                    if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
+                        log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
+                        clearInterval(registrationIntervals.get(maHocPhan));
+                        registrationIntervals.delete(maHocPhan);
+                        classes.forEach(c => selectedClasses.delete(c.id.toString()));
+                        await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                        if (registrationIntervals.size === 0) await stopProcess();
+                        return;
+                    } else if (result) {
+                        log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
+                    }
+                }
+            }, delay);
+            registrationIntervals.set(maHocPhan, intervalId);
+        });
+    };
+    
+    const stopProcess = async () => {
+        isProcessStopped = true;
+        log("🛑 Đang dừng tất cả các quá trình...");
+        registrationIntervals.forEach(clearInterval);
+        registrationIntervals.clear();
+        toggleActionButtons(false);
+        log("🛑 Đã dừng tất cả quá trình.");
+    };
+
+    const toggleActionButtons = (isProcessing) => {
+        startInsertionBtn.classList.toggle('hidden', isProcessing);
+        startRegistrationBtn.classList.toggle('hidden', isProcessing);
+        stopBtn.classList.toggle('hidden', !isProcessing);
+    };
+    
+    // --- RENDER FUNCTIONS ---
+    const renderScheduleTable = async () => {
+        const query = searchInput.value.toLowerCase();
+        const selectedSubject = subjectFilter.value;
+        if (allScheduleData.length > 0) {
+            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
+            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
+        }
+        const filteredData = allScheduleData.filter(cls => 
+            (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
+            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
+        );
+        if (filteredData.length === 0) {
+            scheduleContainer.innerHTML = allScheduleData.length === 0 
+                ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy dữ liệu".</p>' 
+                : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-500';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>
+            </tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        filteredData.forEach(cls => {
+            const row = document.createElement('tr');
+            const isSelected = selectedClasses.has(cls.id.toString());
+            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
+            row.dataset.classId = cls.id;
+            const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
+            const typeHtml = cls.source === 'dkhpdk'
+              ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
+              : (isBatBuoc === undefined
+                  ? 'N/A'
+                  : (isBatBuoc
+                      ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
+                      : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+
+            // Enhanced schedule detail with retry button for errors
+            const hasScheduleError = cls.scheduleDetails?.error || 
+                (Array.isArray(cls.scheduleDetails) && cls.scheduleDetails.length === 0) ||
+                !cls.scheduleDetails;
+            
+            const scheduleDetailHtml = (hasScheduleError && DEBUG_MODE)
+                ? `${formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan)}<br><button class="retry-schedule-btn bg-blue-500 text-white hover:bg-blue-600" data-class-id="${cls.id}" data-class-name="${cls.maLopHocPhan}">🔄 Thử lại</button>`
+                : formatScheduleDetail(cls.scheduleDetails, cls.maLopHocPhan);
+
+            row.innerHTML = `
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${scheduleDetailHtml}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
+                <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
+                <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
+            tbody.appendChild(row);
+        });
+        scheduleContainer.innerHTML = '';
+        scheduleContainer.appendChild(table);
+    };
+
+    const renderRegisteredTable = async (data) => {
+        if (!data || data.length === 0) {
+            registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-500';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>
+                <th scope="col" class="px-6 py-3">Hành động</th>
+            </tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        data.forEach(reg => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
+            row.innerHTML = `
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails, reg.maLopHocPhan)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
+                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
+                <td class="px-6 py-4" data-label="Hành động">${
+          reg.isAllowCancel === false
+            ? ''
+            : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
+        }</td>`;
+            tbody.appendChild(row);
+        });
+        registeredContainer.innerHTML = '';
+        registeredContainer.appendChild(table);
+    };
+
+    const updateSelectedList = async () => {
+        if (selectedClasses.size === 0) {
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
+            registrationControls.classList.add('hidden');
+            return;
+        }
+        selectedList.innerHTML = [...selectedClasses.values()].map(cls => {
+             const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+             return `
+            <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
+                <div>
+                    <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
+                    <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
+                </div>
+                <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
+            </div>`
+        }).join('');
+        registrationControls.classList.remove('hidden');
+    };
+
+    // --- EVENT LISTENERS ---
+    loginBtn.addEventListener('click', handleLogin);
+    refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
+    startInsertionBtn.addEventListener('click', startInsertion);
+    startRegistrationBtn.addEventListener('click', startRegistration);
+    stopBtn.addEventListener('click', stopProcess);
+    searchInput.addEventListener('input', () => renderScheduleTable());
+    subjectFilter.addEventListener('change', () => renderScheduleTable());
+    passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+    // Toggle change event
+    document.addEventListener('change', (e) => {
+        if (e.target.id === 'prerequisite-toggle') {
+            const toggleLabel = document.getElementById('toggle-label');
+            
+            if (e.target.checked) {
+                toggleLabel.classList.remove('toggle-off');
+                toggleLabel.classList.add('toggle-on');
+                log('🟢 Đã bật chế độ lấy môn học điều kiện');
+            } else {
+                toggleLabel.classList.remove('toggle-on');
+                toggleLabel.classList.add('toggle-off');
+                log('🔴 Đã tắt chế độ lấy môn học điều kiện');
+            }
+            
+            // Clear data để force refresh
+            allScheduleData = [];
+            subjectTypeMap = new Map();
+            scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Nhấn "Lấy dữ liệu" để tải lại với cài đặt mới.</p>';
+            
+            // Clear selected classes để tránh conflict
+            selectedClasses.clear();
+            updateSelectedList();
+
+            // Clear backend cache
+            if (authToken) {
+                backendRequest('clearCache', { cacheType: 'schedule' });
+            }
+        }
+    });
+
+    // Enhanced click event handler
+    document.addEventListener('click', async (e) => {
+        // Handle schedule row clicks
+        const scheduleRow = e.target.closest('#schedule-container tr');
+        if (scheduleRow && !e.target.closest('.retry-schedule-btn')) {
+            const classId = scheduleRow.dataset.classId;
+            const cls = allScheduleData.find(c => c.id.toString() === classId);
+            if (!cls) return;
+            if (selectedClasses.has(classId)) selectedClasses.delete(classId);
+            else selectedClasses.set(classId, cls);
+            scheduleRow.classList.toggle('bg-yellow-200');
+            updateSelectedList();
+            return;
+        }
+
+        // Handle retry schedule button clicks
+        const retryBtn = e.target.closest('.retry-schedule-btn');
+        if (retryBtn && authToken) {
+            const classId = retryBtn.dataset.classId;
+            const className = retryBtn.dataset.className;
+            
+            // Pass button reference for state updates
+            await retryClassSchedule(classId, className, retryBtn);
+            return;
+        }
+
+        // Handle remove selected class button clicks
+        const removeBtn = e.target.closest('.remove-selected-btn');
+        if (removeBtn) {
+            const classId = removeBtn.dataset.classId;
+            selectedClasses.delete(classId);
+            const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
+            if (rowToUpdate) rowToUpdate.classList.remove('bg-yellow-200');
+            updateSelectedList();
+            return;
+        }
+
+        // Handle cancel registration button clicks
+        const cancelBtn = e.target.closest('.cancel-btn');
+        if (cancelBtn) {
+            const { regId, tenMon, source } = cancelBtn.dataset;
+            cancelRegistration(regId, tenMon, source);
+            return;
+        }
+    });
+});
