@@ -298,9 +298,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     debugLog('Schedule breakdown', { total: allScheduleData.length, dkhp: dkhpCount, dkhpdk: dkhpdkCount });
                 }
                 
-                if (fetchPrerequisites && dkhpdkCount === 0) {
-                    log(`⚠️ WARNING: Toggle bật nhưng không có lớp điều kiện nào!`);
-                }
+                if (fetchPrerequisites) {
+    if (dkhpdkCount === 0) {
+        log(`⚠️ WARNING: Toggle bật nhưng không có lớp điều kiện nào! API có thể đang quá tải.`);
+        log(`💡 TIP: Thử lại sau 30 giây hoặc tắt bật toggle để refresh.`);
+    } else {
+        log(`📚 Bao gồm: ${dkhpCount} lớp chính + ${dkhpdkCount} lớp điều kiện`);
+    }
+}
+
                 
                 await renderScheduleTable();
             }

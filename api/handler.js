@@ -93,19 +93,24 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
+    // Increase timeout especially for dkhpdk
+    const timeoutMs = source === 'dkhpdk' ? 45000 : 30000; // 45s for dkhpdk, 30s for others
+    
     const options = { 
         method, 
         headers, 
         body: body ? JSON.stringify(body) : null, 
-        timeout: 30000 
+        timeout: timeoutMs
     };
 
-    debugLog(`API Call: ${method} ${targetUrl} (source: ${source})`);
+    debugLog(`API Call: ${method} ${targetUrl} (source: ${source}, timeout: ${timeoutMs}ms)`);
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             if (attempt > 1) {
-                await sleep(1000 * attempt);
+                const delay = source === 'dkhpdk' ? 2000 * attempt : 1000 * attempt;
+                debugLog(`Retrying ${targetUrl} after ${delay}ms delay...`);
+                await sleep(delay);
             }
             
             const response = await fetch(targetUrl, options);
@@ -113,15 +118,18 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
             if (response.status === 429) {
                 debugLog(`Rate limited on attempt ${attempt} for ${targetUrl}`);
                 if (attempt < retries) {
-                    await sleep(2000 * attempt);
+                    const rateLimitDelay = source === 'dkhpdk' ? 3000 * attempt : 2000 * attempt;
+                    await sleep(rateLimitDelay);
                     continue;
                 }
             }
             
             if (!response.ok) {
+                const errorMessage = `API Error: Status ${response.status}`;
+                debugLog(`${errorMessage} for ${targetUrl}`);
                 return { 
                     success: false, 
-                    message: `API Error: Status ${response.status}`, 
+                    message: errorMessage, 
                     status: response.status 
                 };
             }
@@ -135,14 +143,20 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
             
             debugLog(`API Success: ${targetUrl} returned ${Array.isArray(result.body) ? result.body.length : 'non-array'} items`);
             return result;
+            
         } catch (error) {
             debugLog(`API Error on attempt ${attempt}: ${error.message}`);
+            if (error.name === 'AbortError' || error.message.includes('timeout')) {
+                debugLog(`Timeout detected for ${targetUrl} on attempt ${attempt}`);
+            }
+            
             if (attempt === retries) {
-                return { success: false, message: error.message };
+                return { success: false, message: `${error.message} (after ${retries} attempts)` };
             }
         }
     }
 }
+
 
 // === IMPROVED SCHEDULE DETAILS FUNCTION ===
 async function getScheduleDetails(classId, token, source) {
@@ -224,125 +238,154 @@ module.exports = async (req, res) => {
             }
 
             case 'getFullSchedule': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    
+    const { dotId, fetchPrerequisites, _forceRefresh } = payload;
+    
+    // Create unique cache key
+    const cacheKey = `fullSchedule_${dotId}_${fetchPrerequisites ? 'with_prereq' : 'no_prereq'}`;
+    
+    // Check cache only if not forcing refresh
+    if (!_forceRefresh) {
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            debugLog(`Returning cached fullSchedule: ${cached.schedule?.length || 0} classes`);
+            return res.status(200).json(cached);
+        }
+    }
+    
+    debugLog(`Fetching fresh fullSchedule data. dotId: ${dotId}, fetchPrerequisites: ${fetchPrerequisites}`);
+    
+    const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+    let allClassData = [];
+    let subjectTypeMap = {};
+    
+    debugLog(`Processing sources: ${sources.join(', ')}`);
+
+    // ===== IMPROVED: SEQUENTIAL PROCESSING WITH RETRIES =====
+    for (const source of sources) {
+        let sourceRetries = 0;
+        const maxSourceRetries = 2;
+        let sourceSuccess = false;
+        
+        while (!sourceSuccess && sourceRetries < maxSourceRetries) {
+            try {
+                debugLog(`--- Processing source: ${source} (attempt ${sourceRetries + 1}) ---`);
                 
-                const { dotId, fetchPrerequisites, _forceRefresh } = payload;
-                
-                // Create unique cache key
-                const cacheKey = `fullSchedule_${dotId}_${fetchPrerequisites ? 'with_prereq' : 'no_prereq'}`;
-                
-                // Check cache only if not forcing refresh
-                if (!_forceRefresh) {
-                    const cached = getCachedData(cacheKey);
-                    if (cached) {
-                        debugLog(`Returning cached fullSchedule: ${cached.schedule?.length || 0} classes`);
-                        return res.status(200).json(cached);
-                    }
+                // Add delay for dkhpdk to avoid timing issues
+                if (source === 'dkhpdk' && sourceRetries === 0) {
+                    await sleep(1000); // 1 second delay for stability
                 }
                 
-                debugLog(`Fetching fresh fullSchedule data. dotId: ${dotId}, fetchPrerequisites: ${fetchPrerequisites}`);
+                const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source, 3); // 3 retries
+                const validation = validateApiResponse(subjectsRes, `subjects for ${source}`);
                 
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let allClassData = [];
-                let subjectTypeMap = {};
-                
-                debugLog(`Processing sources: ${sources.join(', ')}`);
-
-                // Process each source independently and merge results
-                const sourceResults = {};
-                
-                for (const source of sources) {
-                    try {
-                        debugLog(`--- Processing source: ${source} ---`);
-                        
-                        const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
-                        const validation = validateApiResponse(subjectsRes, `subjects for ${source}`);
-                        
-                        if (!validation.isValid) {
-                            debugLog(`Failed validation for ${source}: ${validation.message}`);
-                            sourceResults[source] = [];
-                            continue;
-                        }
-
-                        if (validation.isEmpty) {
-                            debugLog(`Empty response for ${source}`);
-                            sourceResults[source] = [];
-                            continue;
-                        }
-
-                        debugLog(`Found ${subjectsRes.body.length} subjects for ${source}`);
-
-                        // Store subject types only from dkhp
-                        if (source === 'dkhp') {
-                            subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                            debugLog(`Stored ${Object.keys(subjectTypeMap).length} subject types`);
-                        }
-
-                        const sourceClassData = [];
-
-                        // Process subjects in batches
-                        const subjectPromises = subjectsRes.body.map(async (subject) => {
-                            const classEndpoint = source === 'dkhpdk'
-                                ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                                : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                            
-                            const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-                            const classValidation = validateApiResponse(classRes, `classes for ${subject.maHocPhan} from ${source}`);
-                            
-                            if (!classValidation.isValid || classValidation.isEmpty) {
-                                return [];
-                            }
-                            
-                            const classPromises = classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                return { ...subject, ...cls, source, scheduleDetails };
-                            });
-                            
-                            return await throttledPromiseAll(classPromises, 2, 300);
-                        });
-
-                        const batchResults = await throttledPromiseAll(subjectPromises, 3, 500);
-                        const flatResults = batchResults.flat();
-                        
-                        sourceResults[source] = flatResults;
-                        debugLog(`Completed ${source}: ${flatResults.length} classes processed`);
-                        
-                    } catch (error) {
-                        debugLog(`Error processing source ${source}: ${error.message}`);
-                        sourceResults[source] = [];
+                if (!validation.isValid) {
+                    debugLog(`Failed validation for ${source}: ${validation.message}`);
+                    sourceRetries++;
+                    if (sourceRetries < maxSourceRetries) {
+                        await sleep(2000 * sourceRetries); // Progressive delay
+                        continue;
+                    } else {
+                        break; // Skip this source after max retries
                     }
                 }
 
-                // Merge all source results
-                sources.forEach(source => {
-                    if (sourceResults[source]) {
-                        allClassData.push(...sourceResults[source]);
+                if (validation.isEmpty) {
+                    debugLog(`Empty response for ${source} - this is normal if no data exists`);
+                    sourceSuccess = true; // Empty is still "success"
+                    break;
+                }
+
+                debugLog(`Found ${subjectsRes.body.length} subjects for ${source}`);
+
+                // Store subject types only from dkhp
+                if (source === 'dkhp') {
+                    subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
+                    debugLog(`Stored ${Object.keys(subjectTypeMap).length} subject types`);
+                }
+
+                const sourceClassData = [];
+
+                // Process subjects in smaller batches with longer delays
+                const subjectPromises = subjectsRes.body.map(async (subject) => {
+                    const classEndpoint = source === 'dkhpdk'
+                        ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                        : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                    
+                    const classRes = await callApi(classEndpoint, 'GET', token, null, source, 3); // 3 retries per call
+                    const classValidation = validateApiResponse(classRes, `classes for ${subject.maHocPhan} from ${source}`);
+                    
+                    if (!classValidation.isValid || classValidation.isEmpty) {
+                        return [];
                     }
+                    
+                    const classPromises = classRes.body.map(async (cls) => {
+                        const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                        return { ...subject, ...cls, source, scheduleDetails };
+                    });
+                    
+                    // Smaller batches, longer delays for stability
+                    return await throttledPromiseAll(classPromises, 2, source === 'dkhpdk' ? 500 : 300);
                 });
 
-                // Final counts
-                const dkhpCount = allClassData.filter(c => c.source === 'dkhp').length;
-                const dkhpdkCount = allClassData.filter(c => c.source === 'dkhpdk').length;
+                // Process with smaller batches and longer delays for dkhpdk
+                const batchSize = source === 'dkhpdk' ? 2 : 3;
+                const batchDelay = source === 'dkhpdk' ? 800 : 500;
                 
-                debugLog(`Final result: ${allClassData.length} total classes`);
-                debugLog(`DKHP: ${dkhpCount}, DKHPDK: ${dkhpdkCount}`);
-
-                result = { 
-                    success: true, 
-                    schedule: allClassData, 
-                    subjectTypes: subjectTypeMap,
-                    debug: {
-                        sources: sources,
-                        counts: { dkhp: dkhpCount, dkhpdk: dkhpdkCount },
-                        cacheKey: cacheKey
-                    }
-                };
+                const batchResults = await throttledPromiseAll(subjectPromises, batchSize, batchDelay);
+                const flatResults = batchResults.flat();
                 
-                // Cache the result
-                setCachedData(cacheKey, result);
+                allClassData.push(...flatResults);
+                debugLog(`Completed ${source}: ${flatResults.length} classes processed`);
+                sourceSuccess = true;
                 
-                break;
+            } catch (error) {
+                debugLog(`Error processing source ${source} (attempt ${sourceRetries + 1}): ${error.message}`);
+                sourceRetries++;
+                if (sourceRetries < maxSourceRetries) {
+                    await sleep(3000 * sourceRetries); // Progressive delay on error
+                } else {
+                    debugLog(`Max retries reached for ${source}, skipping...`);
+                }
             }
+        }
+        
+        if (!sourceSuccess) {
+            debugLog(`WARNING: Failed to process source ${source} after ${maxSourceRetries} attempts`);
+        }
+    }
+
+    // Final counts
+    const dkhpCount = allClassData.filter(c => c.source === 'dkhp').length;
+    const dkhpdkCount = allClassData.filter(c => c.source === 'dkhpdk').length;
+    
+    debugLog(`Final result: ${allClassData.length} total classes`);
+    debugLog(`DKHP: ${dkhpCount}, DKHPDK: ${dkhpdkCount}`);
+
+    // Validation check for fetchPrerequisites
+    if (fetchPrerequisites && dkhpdkCount === 0) {
+        debugLog(`WARNING: fetchPrerequisites=true but got 0 dkhpdk classes - may indicate API issues`);
+    }
+
+    result = { 
+        success: true, 
+        schedule: allClassData, 
+        subjectTypes: subjectTypeMap,
+        debug: {
+            sources: sources,
+            counts: { dkhp: dkhpCount, dkhpdk: dkhpdkCount },
+            cacheKey: cacheKey,
+            fetchPrerequisites: fetchPrerequisites
+        }
+    };
+    
+    // Cache the result
+    setCachedData(cacheKey, result);
+    
+    break;
+}
+
             
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
