@@ -1,166 +1,65 @@
-// UTH Course Registration Tool - Enhanced Backend Handler
-// Enhanced with rate limiting, error handling, and request optimization
+// UTH Course Registration Tool - Backend Handler (Stable Enhanced Version)
+// Giữ nguyên logic gốc với cải tiến rate limiting cơ bản
 
 const fetch = require('node-fetch');
 
-// Enhanced Request Queue for Rate Limiting
-class RequestQueue {
+// Simple rate limiting với queue cơ bản
+class SimpleRequestQueue {
     constructor() {
-        this.queues = new Map(); // Separate queues per endpoint
-        this.globalDelay = 200; // Base delay between requests
-        this.maxConcurrent = 3; // Max concurrent requests per endpoint
-        this.requestCounts = new Map(); // Track request frequency
-        this.lastRequestTime = new Map(); // Track last request time per endpoint
+        this.queue = [];
+        this.processing = false;
+        this.baseDelay = 300; // 300ms delay cơ bản
+        this.requestCount = 0;
+        this.lastReset = Date.now();
     }
     
-    getQueueKey(endpoint, source) {
-        return `${source}_${endpoint.split('?')[0]}`;
-    }
-    
-    async enqueue(requestFunc, endpoint, source = 'dkhp') {
-        const queueKey = this.getQueueKey(endpoint, source);
-        
-        if (!this.queues.has(queueKey)) {
-            this.queues.set(queueKey, []);
-            this.requestCounts.set(queueKey, 0);
-            this.lastRequestTime.set(queueKey, 0);
-        }
-        
+    async add(requestFunc) {
         return new Promise((resolve, reject) => {
-            this.queues.get(queueKey).push({
-                requestFunc,
-                resolve,
-                reject,
-                timestamp: Date.now()
-            });
-            this.processQueue(queueKey);
+            this.queue.push({ requestFunc, resolve, reject });
+            if (!this.processing) {
+                this.process();
+            }
         });
     }
     
-    async processQueue(queueKey) {
-        const queue = this.queues.get(queueKey);
-        if (!queue || queue.length === 0) return;
+    async process() {
+        if (this.processing || this.queue.length === 0) return;
         
-        // Count active requests for this queue
-        const activeRequests = queue.filter(req => req.processing).length;
-        if (activeRequests >= this.maxConcurrent) return;
+        this.processing = true;
         
-        const request = queue.find(req => !req.processing);
-        if (!request) return;
-        
-        request.processing = true;
-        
-        try {
-            // Adaptive delay based on request frequency
-            const now = Date.now();
-            const lastRequest = this.lastRequestTime.get(queueKey);
-            const requestCount = this.requestCounts.get(queueKey);
+        while (this.queue.length > 0) {
+            const { requestFunc, resolve, reject } = this.queue.shift();
             
-            // Calculate dynamic delay
-            const timeSinceLastRequest = now - lastRequest;
-            const dynamicDelay = Math.max(
-                this.globalDelay,
-                100 + (requestCount * 50), // Increase delay with request count
-                500 - timeSinceLastRequest // Minimum time between requests
-            );
-            
-            if (timeSinceLastRequest < dynamicDelay) {
-                await new Promise(resolve => setTimeout(resolve, dynamicDelay - timeSinceLastRequest));
+            try {
+                // Reset counter mỗi phút
+                const now = Date.now();
+                if (now - this.lastReset > 60000) {
+                    this.requestCount = 0;
+                    this.lastReset = now;
+                }
+                
+                // Dynamic delay dựa trên số request
+                const dynamicDelay = this.baseDelay + (this.requestCount * 50);
+                await new Promise(r => setTimeout(r, Math.min(dynamicDelay, 2000)));
+                
+                const result = await requestFunc();
+                this.requestCount++;
+                resolve(result);
+                
+            } catch (error) {
+                reject(error);
             }
-            
-            // Update tracking
-            this.lastRequestTime.set(queueKey, Date.now());
-            this.requestCounts.set(queueKey, requestCount + 1);
-            
-            const result = await request.requestFunc();
-            request.resolve(result);
-            
-            // Reset counter periodically
-            if (requestCount > 50) {
-                setTimeout(() => {
-                    this.requestCounts.set(queueKey, Math.max(0, this.requestCounts.get(queueKey) - 10));
-                }, 30000);
-            }
-            
-        } catch (error) {
-            request.reject(error);
-        } finally {
-            // Remove completed request
-            const index = queue.indexOf(request);
-            if (index > -1) queue.splice(index, 1);
-            
-            // Continue processing queue
-            setImmediate(() => this.processQueue(queueKey));
         }
+        
+        this.processing = false;
     }
 }
 
-// Global request queue instance
-const requestQueue = new RequestQueue();
+// Global instance
+const requestQueue = new SimpleRequestQueue();
 
-// Enhanced Cache System
-class ResponseCache {
-    constructor(defaultTTL = 5 * 60 * 1000) { // 5 minutes default
-        this.cache = new Map();
-        this.defaultTTL = defaultTTL;
-        this.maxSize = 200;
-        
-        // Cleanup expired entries periodically
-        setInterval(() => this.cleanup(), 60000);
-    }
-    
-    generateKey(endpoint, token, source) {
-        // Generate cache key excluding sensitive data
-        const cleanEndpoint = endpoint.replace(/idDot=\d+/, 'idDot=X');
-        return `${source}_${cleanEndpoint}_${token ? 'auth' : 'noauth'}`;
-    }
-    
-    get(key) {
-        const entry = this.cache.get(key);
-        if (!entry) return null;
-        
-        if (Date.now() > entry.expires) {
-            this.cache.delete(key);
-            return null;
-        }
-        
-        return entry.data;
-    }
-    
-    set(key, data, ttl = this.defaultTTL) {
-        // Prevent cache overflow
-        if (this.cache.size >= this.maxSize) {
-            const oldestKey = this.cache.keys().next().value;
-            this.cache.delete(oldestKey);
-        }
-        
-        this.cache.set(key, {
-            data,
-            expires: Date.now() + ttl,
-            created: Date.now()
-        });
-    }
-    
-    cleanup() {
-        const now = Date.now();
-        for (const [key, entry] of this.cache.entries()) {
-            if (now > entry.expires) {
-                this.cache.delete(key);
-            }
-        }
-    }
-    
-    clear() {
-        this.cache.clear();
-    }
-}
-
-// Global cache instance
-const responseCache = new ResponseCache();
-
-// Enhanced API caller with comprehensive error handling and retry logic
+// Enhanced callApi function với retry đơn giản
 async function callApi(endpoint, method, token, body = null, source = 'dkhp', retries = 3) {
-    // Determine base URL
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
         baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
@@ -172,60 +71,40 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
     
     const targetUrl = baseApiUrl + endpoint;
     
-    // Check cache for GET requests
-    if (method === 'GET' && !body) {
-        const cacheKey = responseCache.generateKey(endpoint, token, source);
-        const cachedResult = responseCache.get(cacheKey);
-        if (cachedResult) {
-            return cachedResult;
-        }
-    }
-    
-    // Enhanced headers with more realistic browser simulation
-    const headers = {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-    };
-    
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    // Queue the request to prevent rate limiting
-    return requestQueue.enqueue(async () => {
+    return requestQueue.add(async () => {
         for (let attempt = 0; attempt < retries; attempt++) {
             try {
-                // Progressive backoff for retries
+                // Progressive delay cho retry
                 if (attempt > 0) {
-                    const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
                 }
                 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+                    'Cache-Control': 'no-cache',
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
                 
                 const options = {
                     method,
                     headers,
                     body: body ? JSON.stringify(body) : null,
-                    signal: controller.signal
                 };
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                options.signal = controller.signal;
                 
                 const response = await fetch(targetUrl, options);
                 clearTimeout(timeoutId);
                 
-                // Handle specific HTTP status codes
+                // Handle specific status codes
                 if (response.status === 429) {
                     console.warn(`Rate limited on ${endpoint}, attempt ${attempt + 1}`);
                     if (attempt < retries - 1) {
@@ -234,7 +113,7 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
                     }
                     return { 
                         success: false, 
-                        message: 'Tần suất request quá cao, vui lòng thử lại sau', 
+                        message: 'Request quá nhanh, vui lòng thử lại sau', 
                         status: 429 
                     };
                 }
@@ -247,22 +126,6 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
                     };
                 }
                 
-                if (response.status === 403) {
-                    return { 
-                        success: false, 
-                        message: 'Không có quyền truy cập', 
-                        status: 403 
-                    };
-                }
-                
-                if (response.status === 500) {
-                    return { 
-                        success: false, 
-                        message: 'Lỗi server nội bộ', 
-                        status: 500 
-                    };
-                }
-                
                 if (!response.ok) {
                     return { 
                         success: false, 
@@ -271,43 +134,27 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp', re
                     };
                 }
                 
-                const result = await response.json();
-                
-                // Cache successful GET responses
-                if (method === 'GET' && !body && result) {
-                    const cacheKey = responseCache.generateKey(endpoint, token, source);
-                    responseCache.set(cacheKey, result);
-                }
-                
-                return result;
+                return await response.json();
                 
             } catch (error) {
                 console.error(`API call failed (attempt ${attempt + 1}):`, error.message);
                 
                 if (error.name === 'AbortError') {
                     if (attempt === retries - 1) {
-                        return { success: false, message: 'Request timeout - server không phản hồi' };
+                        return { success: false, message: 'Request timeout' };
                     }
                     continue;
                 }
                 
-                if (error.code === 'ECONNRESET' || error.code === 'ENOTFOUND') {
-                    if (attempt === retries - 1) {
-                        return { success: false, message: 'Lỗi kết nối mạng' };
-                    }
-                    continue;
-                }
-                
-                // Final attempt failed
                 if (attempt === retries - 1) {
                     return { success: false, message: `Network error: ${error.message}` };
                 }
             }
         }
-    }, endpoint, source);
+    });
 }
 
-// Enhanced schedule details fetcher with better error handling
+// Enhanced schedule details function
 async function getScheduleDetails(classId, token, source) {
     try {
         const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
@@ -317,25 +164,9 @@ async function getScheduleDetails(classId, token, source) {
     }
 }
 
-// Enhanced batch processing function
-async function processBatch(items, processor, batchSize = 5, delay = 100) {
-    const results = [];
-    for (let i = 0; i < items.length; i += batchSize) {
-        const batch = items.slice(i, i + batchSize);
-        const batchResults = await Promise.all(batch.map(processor));
-        results.push(...batchResults);
-        
-        // Small delay between batches to prevent overwhelming
-        if (i + batchSize < items.length) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-    return results;
-}
-
-// Main handler function
+// Main handler - giữ nguyên logic gốc nhưng có cải tiến
 module.exports = async (req, res) => {
-    // Enhanced CORS headers
+    // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -352,7 +183,6 @@ module.exports = async (req, res) => {
         });
     }
     
-    // Request validation
     if (!req.body || !req.body.action) {
         return res.status(400).json({ 
             success: false, 
@@ -363,14 +193,13 @@ module.exports = async (req, res) => {
     const { action, payload = {} } = req.body;
     const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
     
-    // Request logging for debugging
     console.log(`[${new Date().toISOString()}] Action: ${action}, Has Token: ${!!token}`);
     
     try {
         let result;
         
         switch (action) {
-            // === AUTHENTICATION ACTIONS ===
+            // === AUTHENTICATION ===
             case 'login': {
                 const { username, password } = payload;
                 
@@ -409,7 +238,7 @@ module.exports = async (req, res) => {
                 break;
             }
             
-            // === DATA FETCHING ACTIONS ===
+            // === DATA FETCHING - Giữ nguyên logic gốc ===
             case 'getFullSchedule': {
                 if (!token) {
                     return res.status(401).json({ success: false, message: 'Token không hợp lệ' });
@@ -437,32 +266,42 @@ module.exports = async (req, res) => {
                             continue;
                         }
                         
-                        // Build subject type map for main source
+                        // Build subject type map cho main source
                         if (source === 'dkhp') {
                             subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                         }
                         
-                        // Process subjects in controlled batches
-                        await processBatch(subjectsRes.body, async (subject) => {
-                            const classEndpoint = source === 'dkhpdk'
-                                ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                                : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                        // Process subjects với controlled batching
+                        const batchSize = 5;
+                        for (let i = 0; i < subjectsRes.body.length; i += batchSize) {
+                            const batch = subjectsRes.body.slice(i, i + batchSize);
                             
-                            const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-                            
-                            if (classRes.success && Array.isArray(classRes.body)) {
-                                // Process classes sequentially to avoid overwhelming the server
-                                for (const cls of classRes.body) {
-                                    const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                    allClassData.push({ 
-                                        ...subject, 
-                                        ...cls, 
-                                        source, 
-                                        scheduleDetails 
-                                    });
+                            await Promise.all(batch.map(async (subject) => {
+                                const classEndpoint = source === 'dkhpdk'
+                                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                                
+                                const classRes = await callApi(classEndpoint, 'GET', token, null, source);
+                                
+                                if (classRes.success && Array.isArray(classRes.body)) {
+                                    // Process classes sequentially để tránh overwhelming server
+                                    for (const cls of classRes.body) {
+                                        const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                                        allClassData.push({ 
+                                            ...subject, 
+                                            ...cls, 
+                                            source, 
+                                            scheduleDetails 
+                                        });
+                                    }
                                 }
+                            }));
+                            
+                            // Small delay giữa các batch
+                            if (i + batchSize < subjectsRes.body.length) {
+                                await new Promise(resolve => setTimeout(resolve, 200));
                             }
-                        }, 3, 200); // Process 3 subjects at a time with 200ms delay
+                        }
                         
                     } catch (error) {
                         console.error(`Error processing source ${source}:`, error.message);
@@ -500,15 +339,25 @@ module.exports = async (req, res) => {
                         const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
                         
                         if (regRes.success && Array.isArray(regRes.body)) {
-                            // Process registered classes in batches
-                            await processBatch(regRes.body, async (reg) => {
-                                const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
-                                const scheduleDetails = (detailRes && detailRes.success) 
-                                    ? detailRes.body 
-                                    : { error: true, message: detailRes?.message || 'Lỗi lấy lịch học' };
+                            // Process registered classes với limited concurrency
+                            const batchSize = 3;
+                            for (let i = 0; i < regRes.body.length; i += batchSize) {
+                                const batch = regRes.body.slice(i, i + batchSize);
                                 
-                                registeredData.push({ ...reg, source, scheduleDetails });
-                            }, 5, 150);
+                                await Promise.all(batch.map(async (reg) => {
+                                    const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
+                                    const scheduleDetails = (detailRes && detailRes.success) 
+                                        ? detailRes.body 
+                                        : { error: true, message: detailRes?.message || 'Lỗi lấy lịch học' };
+                                    
+                                    registeredData.push({ ...reg, source, scheduleDetails });
+                                }));
+                                
+                                // Delay giữa batches
+                                if (i + batchSize < regRes.body.length) {
+                                    await new Promise(resolve => setTimeout(resolve, 150));
+                                }
+                            }
                         }
                     } catch (error) {
                         console.error(`Error fetching registered classes for source ${source}:`, error.message);
@@ -578,13 +427,6 @@ module.exports = async (req, res) => {
                 break;
             }
             
-            // === UTILITY ACTIONS ===
-            case 'clearCache': {
-                responseCache.clear();
-                result = { success: true, message: 'Cache đã được xóa' };
-                break;
-            }
-            
             default:
                 return res.status(400).json({ 
                     success: false, 
@@ -592,7 +434,7 @@ module.exports = async (req, res) => {
                 });
         }
         
-        // Enhanced response with metadata
+        // Response với timestamp
         const response = {
             ...result,
             timestamp: new Date().toISOString(),
