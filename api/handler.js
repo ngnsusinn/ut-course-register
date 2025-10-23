@@ -13,7 +13,7 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// Utility: Call internal API
+// Utility: Call internal UTH API
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -37,6 +37,32 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         return await response.json();
     } catch (error) {
         return { success: false, message: error.message };
+    }
+}
+
+// Utility: Call SePay API to check payment status
+async function checkSepayPaymentStatus(orderId) {
+    try {
+        const response = await fetch('https://api.sepay.vn/check-transaction', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.SEPAY_API_KEY}`
+            },
+            body: JSON.stringify({ orderId: `DH${orderId}` })
+        });
+        if (!response.ok) {
+            return { success: false, message: `SePay API Error: Status ${response.status}` };
+        }
+        const data = await response.json();
+        return {
+            success: true,
+            payment_status: data.status === 'success' ? 'Paid' : 'Unpaid',
+            amount: data.amount,
+            transactionId: data.transactionId
+        };
+    } catch (error) {
+        return { success: false, message: `SePay API Error: ${error.message}` };
     }
 }
 
@@ -70,15 +96,16 @@ module.exports = async (req, res) => {
                 if (result && result.token) {
                     connection = await pool.getConnection();
                     try {
-                        // Check if user exists
                         const [rows] = await connection.query('SELECT * FROM users WHERE username = ?', [username]);
                         if (rows.length === 0) {
-                            // Insert new user with role 'none'
                             await connection.query('INSERT INTO users (username, role) VALUES (?, ?)', [username, 'none']);
                             result.role = 'none';
                         } else {
                             result.role = rows[0].role;
                         }
+                    } catch (dbError) {
+                        console.error('DB Error in login:', dbError);
+                        return res.status(500).json({ success: false, message: `Database error: ${dbError.message}` });
                     } finally {
                         connection.release();
                     }
@@ -113,21 +140,31 @@ module.exports = async (req, res) => {
             // Create payment order
             case 'createPayment': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { amount, username } = payload;
+                let { amount, username } = payload;
                 if (!amount || !isNumeric(amount) || amount <= 0) {
                     return res.status(400).json({ success: false, message: 'Invalid amount' });
+                }
+
+                // If username is not provided in payload, fetch it from profile
+                if (!username) {
+                    const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
+                    if (!profileRes.success || !profileRes.body.username) {
+                        return res.status(400).json({ success: false, message: 'Unable to fetch username from profile' });
+                    }
+                    username = profileRes.body.username;
                 }
 
                 connection = await pool.getConnection();
                 try {
                     const name = "VIP Subscription";
                     const [result] = await connection.query(
-                        'INSERT INTO tb_orders (total, name, username) VALUES (?, ?, ?)',
-                        [amount, name, username]
+                        'INSERT INTO tb_orders (total, name, username, payment_status) VALUES (?, ?, ?, ?)',
+                        [amount, name, username, 'Unpaid']
                     );
                     const orderId = result.insertId;
                     res.status(200).json({ success: true, orderId });
                 } catch (error) {
+                    console.error('DB Error in createPayment:', error);
                     res.status(500).json({ success: false, message: `Database error: ${error.message}` });
                 } finally {
                     connection.release();
@@ -151,6 +188,55 @@ module.exports = async (req, res) => {
                     } else {
                         res.status(404).json({ success: false, payment_status: 'order_not_found' });
                     }
+                } finally {
+                    connection.release();
+                }
+                break;
+            }
+
+            // Check SePay payment status and update order
+            case 'checkSepayPayment': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                let { orderId, username } = payload;
+                if (!orderId || !isNumeric(orderId)) {
+                    return res.status(400).json({ success: false, message: 'Invalid order ID' });
+                }
+
+                // If username is not provided, fetch it from profile
+                if (!username) {
+                    const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
+                    if (!profileRes.success || !profileRes.body.username) {
+                        return res.status(400).json({ success: false, message: 'Unable to fetch username from profile' });
+                    }
+                    username = profileRes.body.username;
+                }
+
+                connection = await pool.getConnection();
+                try {
+                    const [orders] = await connection.query('SELECT total, payment_status FROM tb_orders WHERE id = ? AND username = ?', [orderId, username]);
+                    if (orders.length === 0) {
+                        return res.status(404).json({ success: false, message: 'Order not found' });
+                    }
+                    if (orders[0].payment_status === 'Paid') {
+                        return res.status(200).json({ success: true, payment_status: 'Paid' });
+                    }
+
+                    // Query SePay API
+                    const sepayResult = await checkSepayPaymentStatus(orderId);
+                    if (sepayResult.success && sepayResult.payment_status === 'Paid') {
+                        if (sepayResult.amount === orders[0].total) {
+                            await connection.query('UPDATE tb_orders SET payment_status = ? WHERE id = ?', ['Paid', orderId]);
+                            await connection.query('UPDATE users SET role = ? WHERE username = ?', ['vip', username]);
+                            res.status(200).json({ success: true, payment_status: 'Paid' });
+                        } else {
+                            res.status(400).json({ success: false, message: 'Payment amount mismatch' });
+                        }
+                    } else {
+                        res.status(200).json({ success: true, payment_status: 'Unpaid' });
+                    }
+                } catch (error) {
+                    console.error('DB Error in checkSepayPayment:', error);
+                    res.status(500).json({ success: false, message: `Error: ${error.message}` });
                 } finally {
                     connection.release();
                 }
@@ -282,60 +368,13 @@ module.exports = async (req, res) => {
                 break;
             }
 
-            // SePay webhook handler
-            case 'sepayWebhook': {
-                const data = req.body;
-                if (!data || !data.content) {
-                    return res.status(400).json({ success: false, message: 'No data' });
-                }
-
-                const { gateway, transactionDate, accountNumber, subAccount, transferType, transferAmount, accumulated, code, content, referenceCode, description } = data;
-                let amountIn = transferType === 'in' ? transferAmount : 0;
-                let amountOut = transferType === 'out' ? transferAmount : 0;
-
-                connection = await pool.getConnection();
-                try {
-                    // Insert transaction
-                    await connection.query(
-                        'INSERT INTO tb_transactions (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, accumulated, code, transaction_content, reference_number, body) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        [gateway, transactionDate, accountNumber, subAccount, amountIn, amountOut, accumulated, code, content, referenceCode, description]
-                    );
-
-                    // Extract order ID from content
-                    const regex = /DH(\d+)/;
-                    const matches = content.match(regex);
-                    if (!matches || !matches[1]) {
-                        return res.status(400).json({ success: false, message: `Order not found. Content: ${content}` });
-                    }
-                    const payOrderId = matches[1];
-
-                    // Find order and update user role
-                    const [orders] = await connection.query(
-                        'SELECT username FROM tb_orders WHERE id = ? AND total = ? AND payment_status = ?',
-                        [payOrderId, amountIn, 'Unpaid']
-                    );
-
-                    if (orders.length === 0) {
-                        return res.status(404).json({ success: false, message: `Order not found. Order_id: ${payOrderId}` });
-                    }
-
-                    await connection.query('UPDATE tb_orders SET payment_status = ? WHERE id = ?', ['Paid', payOrderId]);
-                    await connection.query('UPDATE users SET role = ? WHERE username = ?', ['vip', orders[0].username]);
-                    res.status(200).json({ success: true });
-                } catch (error) {
-                    res.status(500).json({ success: false, message: `Database error: ${error.message}` });
-                } finally {
-                    connection.release();
-                }
-                break;
-            }
-
             default:
                 return res.status(400).json({ success: false, message: 'Invalid action.' });
         }
         res.status(200).json(result);
 
     } catch (error) {
+        console.error('Handler Error:', error);
         res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
     }
 };
