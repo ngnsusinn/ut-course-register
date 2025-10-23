@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const logOutput = document.getElementById('log-output');
     const registrationControls = document.getElementById('registration-controls');
     const loginForm = document.getElementById('login-form');
-    
+
     // Dynamically created elements
-    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText;
+    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, roleDisplay, upgradeVipBtn;
 
     // State
     let authToken = null;
@@ -33,8 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
+    let userRole = 'none';
+    let username = '';
 
-    // === SINGLE BACKEND COMMUNICATION FUNCTION ===
+    // Backend communication
     const backendRequest = async (action, payload = {}) => {
         try {
             const headers = { 'Content-Type': 'application/json' };
@@ -52,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- UTILITY FUNCTIONS ---
+    // Utility functions
     const log = (message, isError = false) => {
         const timestamp = new Date().toLocaleTimeString();
         const logEntry = document.createElement('p');
@@ -76,31 +78,33 @@ document.addEventListener('DOMContentLoaded', () => {
     [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn].forEach(btn => {
         if (btn) btn.originalHTML = btn.innerHTML;
     });
-    
+
     const formatScheduleDetail = (details) => {
         if (!details || details.error || !Array.isArray(details) || details.length === 0) {
             return 'Không có thông tin lịch học';
         }
         return details.map(d => `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
     };
-    
+
     const formatSelectedClassDetail = (cls, details) => {
         if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
         if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
         return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${detail.thu} | Tiết ${detail.tietHoc}</span>`).join('<br>');
     };
-    
-    // --- UI UPDATE FUNCTIONS ---
-    const updateUIAfterLogin = (profile) => {
+
+    // UI updates
+    const updateUIAfterLogin = (profile, role) => {
         loginForm.style.display = 'none';
-        
-        // Create user panel if not exists
+        userRole = role;
+        username = profile.username;
+
         if (!document.getElementById('user-panel-content')) {
             const panelContainer = document.createElement('div');
             panelContainer.id = 'user-panel-content';
             panelContainer.className = 'space-y-4';
             panelContainer.innerHTML = `
                 <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
+                <div id="role-display" class="text-sm text-gray-600"></div>
                 <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">
                     <label for="prerequisite-toggle" class="flex items-center cursor-pointer">
                         <div class="relative">
@@ -111,35 +115,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện</div>
                     </label>
                 </div>
-                 <div id="progress-bar-container" class="my-4 hidden">
+                <div id="progress-bar-container" class="my-4 hidden">
                     <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div>
                     <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
                 </div>
-                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" /></svg><span>Lấy dữ liệu</span></button>
+                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2 ${role !== 'vip' ? 'hidden' : ''}"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" /></svg><span>Lấy dữ liệu</span></button>
+                <button id="upgrade-vip-btn" class="w-full bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600 transition duration-300 flex items-center justify-center space-x-2 ${role === 'vip' ? 'hidden' : ''}"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /></svg><span>Nâng cấp VIP</span></button>
                 <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
             `;
             loginForm.parentNode.insertBefore(panelContainer, loginForm.nextSibling);
 
-            // Re-assign element variables
             greetingMsg = document.getElementById('greeting-msg');
+            roleDisplay = document.getElementById('role-display');
             prerequisiteToggle = document.getElementById('prerequisite-toggle');
             fetchBtn = document.getElementById('fetch-schedule-btn');
+            upgradeVipBtn = document.getElementById('upgrade-vip-btn');
             logoutBtn = document.getElementById('logout-btn');
             progressBarContainer = document.getElementById('progress-bar-container');
             progressBarElement = document.getElementById('progress-bar-element');
             progressBarText = document.getElementById('progress-bar-text');
 
-            // Add event listeners
             fetchBtn.originalHTML = fetchBtn.innerHTML;
+            upgradeVipBtn.originalHTML = upgradeVipBtn.innerHTML;
             logoutBtn.originalHTML = logoutBtn.innerHTML;
             fetchBtn.addEventListener('click', fetchFullSchedule);
+            upgradeVipBtn.addEventListener('click', initiatePayment);
             logoutBtn.addEventListener('click', handleLogout);
         }
-        
+
         greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
+        roleDisplay.textContent = `Trạng thái: ${role === 'vip' ? 'VIP' : 'Thường'}`;
         document.getElementById('user-panel-content').style.display = 'block';
     };
-    
+
     const resetUI = () => {
         loginForm.style.display = 'block';
         const panel = document.getElementById('user-panel-content');
@@ -167,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         progressBarText.textContent = message;
     };
 
-    // --- CORE LOGIC FUNCTIONS ---
+    // Core logic
     const handleLogin = async () => {
         toggleLoading(loginBtn, true);
         const username = usernameInput.value.trim();
@@ -183,15 +191,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tokenRes && tokenRes.token) {
             authToken = tokenRes.token;
             log("✅ Đăng nhập thành công.");
-            const initialData = await backendRequest('getInitialData');
+            const initialData = await backendRequest('getInitialData', { username });
             if (initialData && initialData.success) {
                 dotId = initialData.dot.id;
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
-                updateUIAfterLogin(initialData.profile);
+                updateUIAfterLogin(initialData.profile, initialData.role);
                 await fetchRegisteredClasses();
             } else {
-                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
-                 authToken = null;
+                log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
+                authToken = null;
             }
         } else {
             log(`❌ Đăng nhập thất bại: ${tokenRes?.message || 'Lỗi không xác định'}`, true);
@@ -203,18 +211,50 @@ document.addEventListener('DOMContentLoaded', () => {
         await stopProcess();
         authToken = null;
         dotId = null;
+        userRole = 'none';
+        username = '';
         resetUI();
         log("Đã đăng xuất.");
     };
 
+    const initiatePayment = async () => {
+        if (!authToken) return log("Chưa đăng nhập.", true);
+        toggleLoading(upgradeVipBtn, true);
+        const amount = 50000; // Example amount (50,000 VND)
+        const paymentRes = await backendRequest('createPayment', { amount, username });
+
+        if (paymentRes && paymentRes.success) {
+            log("✅ Đã tạo đơn hàng thanh toán.");
+            const orderId = paymentRes.orderId;
+            window.open(`/payment.html?id=${orderId}`, '_blank');
+            // Start polling payment status
+            const checkPaymentInterval = setInterval(async () => {
+                const statusRes = await backendRequest('checkPaymentStatus', { orderId });
+                if (statusRes && statusRes.success && statusRes.payment_status === 'Paid') {
+                    clearInterval(checkPaymentInterval);
+                    log("🎉 Thanh toán thành công! Tài khoản đã được nâng cấp lên VIP.");
+                    userRole = 'vip';
+                    roleDisplay.textContent = `Trạng thái: VIP`;
+                    upgradeVipBtn.classList.add('hidden');
+                    fetchBtn.classList.remove('hidden');
+                    await fetchRegisteredClasses();
+                }
+            }, 1000);
+        } else {
+            log(`❌ Lỗi tạo đơn hàng: ${paymentRes?.message || 'Lỗi'}`, true);
+        }
+        toggleLoading(upgradeVipBtn, false);
+    };
+
     const fetchFullSchedule = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
+        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để lấy lịch học.", true);
         toggleLoading(fetchBtn, true);
         isProcessStopped = false;
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
-        
+
         const fetchPrerequisites = prerequisiteToggle?.checked || false;
-        const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites });
+        const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites, username });
 
         if (scheduleRes && scheduleRes.success) {
             allScheduleData = scheduleRes.schedule;
@@ -222,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
             await renderScheduleTable();
         } else {
-            log("❌ Lỗi khi tải lịch học từ server.", true);
+            log(`❌ Lỗi khi tải lịch học: ${scheduleRes?.message || 'Lỗi'}`, true);
         }
         updateProgressBar(-1);
         toggleLoading(fetchBtn, false);
@@ -232,14 +272,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!authToken) return;
         toggleLoading(refreshRegisteredBtn, true);
         const fetchPrerequisites = prerequisiteToggle?.checked || false;
-        
+
         const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites });
 
         if (registeredRes && registeredRes.success) {
-             await renderRegisteredTable(registeredRes.body);
-             log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+            await renderRegisteredTable(registeredRes.body);
+            log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
         } else {
-             log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
+            log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
         }
         toggleLoading(refreshRegisteredBtn, false);
     };
@@ -247,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelRegistration = async (registrationId, tenMonHoc, source) => {
         if (!confirm(`Bạn có chắc muốn hủy môn "${tenMonHoc}" không?`)) return;
         log(`Đang hủy môn ${tenMonHoc}...`);
-        
+
         const result = await backendRequest('cancel', { registrationId, source });
 
         if (result && result.success) {
@@ -257,8 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
             log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
         }
     };
-    
+
     const startInsertion = () => {
+        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để chèn lớp.", true);
         if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để chèn.", true);
         stopProcess();
         isProcessStopped = false;
@@ -278,14 +319,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const intervalId = setInterval(async () => {
                 if (isProcessStopped) return;
-                const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
+                const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source, username });
 
                 if (!statusRes || !statusRes.success) return;
 
                 for (const availableClass of statusRes.body) {
                     if (selectedClasses.has(availableClass.id.toString()) && availableClass.phanTramDangKy < 100) {
                         log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                        const regResult = await backendRequest('register', { classId: availableClass.id, source });
+                        const regResult = await backendRequest('register', { classId: availableClass.id, source, username });
 
                         if (regResult && regResult.success) {
                             log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
@@ -296,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (registrationIntervals.size === 0) await stopProcess();
                             return;
                         } else {
-                             log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                            log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
                         }
                     }
                 }
@@ -304,31 +345,32 @@ document.addEventListener('DOMContentLoaded', () => {
             registrationIntervals.set(maHocPhan, intervalId);
         });
     };
-    
+
     const startRegistration = () => {
+        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để đăng ký.", true);
         if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để đăng ký.", true);
         stopProcess();
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu đăng ký liên tục...");
-    
+
         const classesBySubject = new Map();
         selectedClasses.forEach(cls => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
             classesBySubject.get(cls.maHocPhan).push(cls);
         });
         const delay = parseInt(delayInput.value, 10) || 1000;
-    
+
         classesBySubject.forEach((classes, maHocPhan) => {
             const tenMonHoc = classes[0].tenMonHoc;
-            
+
             const intervalId = setInterval(async () => {
                 if (isProcessStopped) return;
                 for (const cls of classes) {
                     if (isProcessStopped) return;
                     log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${cls.maLopHocPhan}...`);
-                    const result = await backendRequest('register', { classId: cls.id, source: cls.source });
-                    
+                    const result = await backendRequest('register', { classId: cls.id, source: cls.source, username });
+
                     if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
                         log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
                         clearInterval(registrationIntervals.get(maHocPhan));
@@ -345,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
             registrationIntervals.set(maHocPhan, intervalId);
         });
     };
-    
+
     const stopProcess = async () => {
         isProcessStopped = true;
         log("🛑 Đang dừng tất cả các quá trình...");
@@ -356,12 +398,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const toggleActionButtons = (isProcessing) => {
-        startInsertionBtn.classList.toggle('hidden', isProcessing);
-        startRegistrationBtn.classList.toggle('hidden', isProcessing);
+        startInsertionBtn.classList.toggle('hidden', isProcessing || userRole !== 'vip');
+        startRegistrationBtn.classList.toggle('hidden', isProcessing || userRole !== 'vip');
         stopBtn.classList.toggle('hidden', !isProcessing);
     };
-    
-    // --- RENDER FUNCTIONS ---
+
     const renderScheduleTable = async () => {
         const query = searchInput.value.toLowerCase();
         const selectedSubject = subjectFilter.value;
@@ -369,12 +410,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
-        const filteredData = allScheduleData.filter(cls => 
+        const filteredData = allScheduleData.filter(cls =>
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
         if (filteredData.length === 0) {
-            scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
+            scheduleContainer.innerHTML = allScheduleData.length === 0 ? `<p class="text-gray-500 text-center py-8">${userRole === 'vip' ? 'Vui lòng nhấn "Lấy Lịch Học".' : 'Yêu cầu tài khoản VIP để xem lịch học.'}</p>` : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
             return;
         }
         const table = document.createElement('table');
@@ -393,12 +434,12 @@ document.addEventListener('DOMContentLoaded', () => {
             row.dataset.classId = cls.id;
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
-  ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
-  : (isBatBuoc === undefined
-      ? 'N/A'
-      : (isBatBuoc
-          ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
-          : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
+                : (isBatBuoc === undefined
+                    ? 'N/A'
+                    : (isBatBuoc
+                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
@@ -436,10 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
                 <td class="px-6 py-4" data-label="Hành động">${
-      reg.isAllowCancel === false
-        ? ''
-        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
-    }</td>`;
+                    reg.isAllowCancel === false
+                        ? ''
+                        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
+                }</td>`;
             tbody.appendChild(row);
         });
         registeredContainer.innerHTML = '';
@@ -453,20 +494,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         selectedList.innerHTML = [...selectedClasses.values()].map(cls => {
-             const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
-             return `
+            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            return `
             <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
                 <div>
                     <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
                     <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
                 </div>
                 <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
-            </div>`
+            </div>`;
         }).join('');
         registrationControls.classList.remove('hidden');
+        registrationControls.classList.toggle('hidden', userRole !== 'vip');
     };
 
-    // --- EVENT LISTENERS ---
+    // Event listeners
     loginBtn.addEventListener('click', handleLogin);
     refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
     startInsertionBtn.addEventListener('click', startInsertion);

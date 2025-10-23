@@ -16,6 +16,10 @@
       "dest": "/api/handler.js"
     },
     {
+      "src": "/sepay-webhook",
+      "dest": "/api/handler.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/public/$1"
     }
