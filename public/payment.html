@@ -33,8 +33,9 @@
                             <p class="fw-bold">Cách 1: Mở app ngân hàng và quét mã QR</p>
                             <div class="my-2">
                                 <img id="qr-code" src="" class="img-fluid">
-                                <span>Trạng thái: Chờ thanh toán... <div class="spinner-border" role="status"><span class="sr-only"></span></div></span>
+                                <span id="payment-status">Trạng thái: Chờ thanh toán... <div class="spinner-border" role="status"><span class="sr-only"></span></div></span>
                             </div>
+                            <button id="manual-check-btn" class="btn btn-primary mt-3">Kiểm tra thanh toán thủ công</button>
                         </div>
                         <div class="col-md-6 border p-2">
                             <p class="fw-bold">Cách 2: Chuyển khoản thủ công theo thông tin</p>
@@ -73,11 +74,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script>
-        // Get order ID from URL
+        // Get order ID and username from URL/localStorage
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('id');
-        if (!orderId || isNaN(orderId)) {
-            document.body.innerHTML = '<div class="text-center my-5"><h2>Lỗi: Mã đơn hàng không hợp lệ</h2></div>';
+        const username = localStorage.getItem('username') || '';
+        if (!orderId || isNaN(orderId) || !username) {
+            document.body.innerHTML = '<div class="text-center my-5"><h2>Lỗi: Mã đơn hàng hoặc thông tin người dùng không hợp lệ. Vui lòng đăng nhập lại.</h2></div>';
         }
 
         // Fetch order details
@@ -116,29 +118,42 @@
         }
 
         let pay_status = 'Unpaid';
-        function check_payment_status() {
+        async function check_payment_status() {
             if (pay_status === 'Unpaid') {
-                $.ajax({
-                    type: 'POST',
-                    data: JSON.stringify({ action: 'checkPaymentStatus', payload: { orderId } }),
-                    url: '/api/handler',
-                    contentType: 'application/json',
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('authToken') },
-                    success: function(data) {
-                        if (data.success && data.payment_status === 'Paid') {
-                            $('#checkout_box').hide();
-                            $('#success_pay_box').show();
-                            pay_status = 'Paid';
-                        }
+                try {
+                    const response = await fetch('/api/handler', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+                        },
+                        body: JSON.stringify({ action: 'checkSepayPayment', payload: { orderId, username } })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.payment_status === 'Paid') {
+                        $('#checkout_box').hide();
+                        $('#success_pay_box').show();
+                        $('#payment-status').text('Trạng thái: Đã thanh toán');
+                        pay_status = 'Paid';
+                    } else if (!data.success) {
+                        $('#payment-status').text(`Trạng thái: Lỗi kiểm tra thanh toán - ${data.message}`);
                     }
-                });
+                } catch (error) {
+                    $('#payment-status').text(`Trạng thái: Lỗi kiểm tra thanh toán - ${error.message}`);
+                }
             }
         }
+
+        // Manual check button
+        $('#manual-check-btn').click(async () => {
+            $('#payment-status').text('Trạng thái: Đang kiểm tra...');
+            await check_payment_status();
+        });
 
         // Initial fetch
         fetchOrderDetails();
         // Poll payment status
-        setInterval(check_payment_status, 1000);
+        setInterval(check_payment_status, 5000); // Increased to 5 seconds to reduce server load
     </script>
   </body>
 </html>

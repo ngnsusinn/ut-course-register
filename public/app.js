@@ -190,6 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (tokenRes && tokenRes.token) {
             authToken = tokenRes.token;
+            localStorage.setItem('authToken', authToken);
+            localStorage.setItem('username', username);
             log("✅ Đăng nhập thành công.");
             const initialData = await backendRequest('getInitialData', { username });
             if (initialData && initialData.success) {
@@ -200,6 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
                 authToken = null;
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('username');
             }
         } else {
             log(`❌ Đăng nhập thất bại: ${tokenRes?.message || 'Lỗi không xác định'}`, true);
@@ -213,12 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
         dotId = null;
         userRole = 'none';
         username = '';
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('username');
         resetUI();
         log("Đã đăng xuất.");
     };
 
     const initiatePayment = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
+        if (!username) return log("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.", true);
         toggleLoading(upgradeVipBtn, true);
         const amount = 50000; // Example amount (50,000 VND)
         const paymentRes = await backendRequest('createPayment', { amount, username });
@@ -229,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.open(`/payment.html?id=${orderId}`, '_blank');
             // Start polling payment status
             const checkPaymentInterval = setInterval(async () => {
-                const statusRes = await backendRequest('checkPaymentStatus', { orderId });
+                const statusRes = await backendRequest('checkSepayPayment', { orderId, username });
                 if (statusRes && statusRes.success && statusRes.payment_status === 'Paid') {
                     clearInterval(checkPaymentInterval);
                     log("🎉 Thanh toán thành công! Tài khoản đã được nâng cấp lên VIP.");
@@ -239,9 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     fetchBtn.classList.remove('hidden');
                     await fetchRegisteredClasses();
                 }
-            }, 1000);
+            }, 5000); // Increased to 5 seconds
         } else {
-            log(`❌ Lỗi tạo đơn hàng: ${paymentRes?.message || 'Lỗi'}`, true);
+            log(`❌ Lỗi tạo đơn hàng: ${paymentRes?.message || 'Lỗi không xác định'}`, true);
         }
         toggleLoading(upgradeVipBtn, false);
     };
@@ -277,270 +284,226 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (registeredRes && registeredRes.success) {
             await renderRegisteredTable(registeredRes.body);
-            log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+            log(`✅ Đã tải danh sách lớp đã đăng ký.`);
         } else {
-            log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
+            log(`❌ Lỗi khi tải lớp đã đăng ký: ${registeredRes?.message || 'Lỗi'}`, true);
         }
         toggleLoading(refreshRegisteredBtn, false);
     };
 
-    const cancelRegistration = async (registrationId, tenMonHoc, source) => {
-        if (!confirm(`Bạn có chắc muốn hủy môn "${tenMonHoc}" không?`)) return;
-        log(`Đang hủy môn ${tenMonHoc}...`);
+    const updateSelectedList = () => {
+        selectedList.innerHTML = '';
+        selectedClasses.forEach((cls, classId) => {
+            const li = document.createElement('li');
+            li.className = 'py-2 flex justify-between items-center';
+            li.innerHTML = `
+                <span>${cls.maHocPhan} - ${cls.tenHocPhan}</span>
+                <button class="text-red-500 hover:text-red-700 remove-class" data-class-id="${classId}">Xóa</button>
+            `;
+            selectedList.appendChild(li);
+        });
 
-        const result = await backendRequest('cancel', { registrationId, source });
+        document.querySelectorAll('.remove-class').forEach(button => {
+            button.addEventListener('click', () => {
+                selectedClasses.delete(button.dataset.classId);
+                updateSelectedList();
+            });
+        });
+    };
 
-        if (result && result.success) {
-            log(`✅ Hủy thành công.`);
-            await fetchRegisteredClasses();
-        } else {
-            log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
+    const renderScheduleTable = async () => {
+        scheduleContainer.innerHTML = '';
+        if (!allScheduleData.length) {
+            scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Không có dữ liệu lịch học.</p>';
+            return;
         }
-    };
 
-    const startInsertion = () => {
-        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để chèn lớp.", true);
-        if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để chèn.", true);
-        stopProcess();
-        isProcessStopped = false;
-        toggleActionButtons(true);
-        log("🚀 Bắt đầu quá trình chèn lớp...");
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-700';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3">Mã HP</th>
+                    <th class="px-6 py-3">Tên HP</th>
+                    <th class="px-6 py-3">Mã LHP</th>
+                    <th class="px-6 py-3">Lịch học</th>
+                    <th class="px-6 py-3">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${allScheduleData.map(cls => `
+                    <tr class="bg-white border-b">
+                        <td class="px-6 py-4">${cls.maHocPhan}</td>
+                        <td class="px-6 py-4">${cls.tenHocPhan}</td>
+                        <td class="px-6 py-4">${cls.maLopHocPhan}</td>
+                        <td class="px-6 py-4">${formatScheduleDetail(cls.scheduleDetails)}</td>
+                        <td class="px-6 py-4">
+                            <button class="add-class text-blue-600 hover:text-blue-800" data-class-id="${cls.id}">Thêm</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        scheduleContainer.appendChild(table);
 
-        const classesBySubject = new Map();
-        selectedClasses.forEach(cls => {
-            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
-            classesBySubject.get(cls.maHocPhan).push(cls);
-        });
-        const delay = parseInt(delayInput.value, 10) || 1000;
-
-        classesBySubject.forEach((classes, maHocPhan) => {
-            const tenMonHoc = classes[0].tenMonHoc || maHocPhan;
-            const source = classes[0].source;
-
-            const intervalId = setInterval(async () => {
-                if (isProcessStopped) return;
-                const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source, username });
-
-                if (!statusRes || !statusRes.success) return;
-
-                for (const availableClass of statusRes.body) {
-                    if (selectedClasses.has(availableClass.id.toString()) && availableClass.phanTramDangKy < 100) {
-                        log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                        const regResult = await backendRequest('register', { classId: availableClass.id, source, username });
-
-                        if (regResult && regResult.success) {
-                            log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
-                            clearInterval(registrationIntervals.get(maHocPhan));
-                            registrationIntervals.delete(maHocPhan);
-                            classes.forEach(c => selectedClasses.delete(c.id.toString()));
-                            await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
-                            if (registrationIntervals.size === 0) await stopProcess();
-                            return;
-                        } else {
-                            log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
-                        }
-                    }
-                }
-            }, delay);
-            registrationIntervals.set(maHocPhan, intervalId);
+        document.querySelectorAll('.add-class').forEach(button => {
+            button.addEventListener('click', () => {
+                const classId = button.dataset.classId;
+                const cls = allScheduleData.find(c => c.id === classId);
+                selectedClasses.set(classId, cls);
+                updateSelectedList();
+            });
         });
     };
 
-    const startRegistration = () => {
-        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để đăng ký.", true);
-        if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để đăng ký.", true);
-        stopProcess();
-        isProcessStopped = false;
-        toggleActionButtons(true);
-        log("🚀 Bắt đầu đăng ký liên tục...");
+    const renderRegisteredTable = async (registeredClasses) => {
+        registeredContainer.innerHTML = '';
+        if (!registeredClasses.length) {
+            registeredContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Chưa có lớp học nào được đăng ký.</p>';
+            return;
+        }
 
-        const classesBySubject = new Map();
-        selectedClasses.forEach(cls => {
-            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
-            classesBySubject.get(cls.maHocPhan).push(cls);
-        });
-        const delay = parseInt(delayInput.value, 10) || 1000;
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-700';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3">Mã HP</th>
+                    <th class="px-6 py-3">Tên HP</th>
+                    <th class="px-6 py-3">Mã LHP</th>
+                    <th class="px-6 py-3">Lịch học</th>
+                    <th class="px-6 py-3">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${registeredClasses.map(cls => `
+                    <tr class="bg-white border-b">
+                        <td class="px-6 py-4">${cls.maHocPhan}</td>
+                        <td class="px-6 py-4">${cls.tenHocPhan}</td>
+                        <td class="px-6 py-4">${cls.maLopHocPhan}</td>
+                        <td class="px-6 py-4">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</td>
+                        <td class="px-6 py-4">
+                            <button class="cancel-class text-red-600 hover:text-red-800" data-reg-id="${cls.id}" data-source="${cls.source}">Hủy</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        registeredContainer.appendChild(table);
 
-        classesBySubject.forEach((classes, maHocPhan) => {
-            const tenMonHoc = classes[0].tenMonHoc;
-
-            const intervalId = setInterval(async () => {
-                if (isProcessStopped) return;
-                for (const cls of classes) {
-                    if (isProcessStopped) return;
-                    log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${cls.maLopHocPhan}...`);
-                    const result = await backendRequest('register', { classId: cls.id, source: cls.source, username });
-
-                    if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
-                        log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
-                        clearInterval(registrationIntervals.get(maHocPhan));
-                        registrationIntervals.delete(maHocPhan);
-                        classes.forEach(c => selectedClasses.delete(c.id.toString()));
-                        await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
-                        if (registrationIntervals.size === 0) await stopProcess();
-                        return;
-                    } else if (result) {
-                        log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
-                    }
+        document.querySelectorAll('.cancel-class').forEach(button => {
+            button.addEventListener('click', async () => {
+                const regId = button.dataset.regId;
+                const source = button.dataset.source;
+                const cancelRes = await backendRequest('cancel', { registrationId: regId, source });
+                if (cancelRes && cancelRes.success) {
+                    log(`✅ Đã hủy đăng ký lớp ${regId}.`);
+                    await fetchRegisteredClasses();
+                } else {
+                    log(`❌ Lỗi khi hủy đăng ký: ${cancelRes?.message || 'Lỗi'}`, true);
                 }
-            }, delay);
-            registrationIntervals.set(maHocPhan, intervalId);
+            });
         });
     };
 
     const stopProcess = async () => {
         isProcessStopped = true;
-        log("🛑 Đang dừng tất cả các quá trình...");
-        registrationIntervals.forEach(clearInterval);
+        registrationIntervals.forEach(interval => clearInterval(interval));
         registrationIntervals.clear();
-        toggleActionButtons(false);
-        log("🛑 Đã dừng tất cả quá trình.");
+        log("⏹️ Đã dừng tất cả quy trình đăng ký.");
     };
 
-    const toggleActionButtons = (isProcessing) => {
-        startInsertionBtn.classList.toggle('hidden', isProcessing || userRole !== 'vip');
-        startRegistrationBtn.classList.toggle('hidden', isProcessing || userRole !== 'vip');
-        stopBtn.classList.toggle('hidden', !isProcessing);
-    };
-
-    const renderScheduleTable = async () => {
-        const query = searchInput.value.toLowerCase();
-        const selectedSubject = subjectFilter.value;
-        if (allScheduleData.length > 0) {
-            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
-            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
-        }
-        const filteredData = allScheduleData.filter(cls =>
-            (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
-            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
-        );
-        if (filteredData.length === 0) {
-            scheduleContainer.innerHTML = allScheduleData.length === 0 ? `<p class="text-gray-500 text-center py-8">${userRole === 'vip' ? 'Vui lòng nhấn "Lấy Lịch Học".' : 'Yêu cầu tài khoản VIP để xem lịch học.'}</p>` : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
-            return;
-        }
-        const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left text-gray-500';
-        table.innerHTML = `
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
-                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
-                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
-                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>
-            </tr></thead><tbody></tbody>`;
-        const tbody = table.querySelector('tbody');
-        filteredData.forEach(cls => {
-            const row = document.createElement('tr');
-            const isSelected = selectedClasses.has(cls.id.toString());
-            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
-            row.dataset.classId = cls.id;
-            const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
-            const typeHtml = cls.source === 'dkhpdk'
-                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
-                : (isBatBuoc === undefined
-                    ? 'N/A'
-                    : (isBatBuoc
-                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
-                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
-            row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
-                <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
-                <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
-                <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
-                <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
-                <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
-            tbody.appendChild(row);
-        });
-        scheduleContainer.innerHTML = '';
-        scheduleContainer.appendChild(table);
-    };
-
-    const renderRegisteredTable = async (data) => {
-        if (!data || data.length === 0) {
-            registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
-            return;
-        }
-        const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left text-gray-500';
-        table.innerHTML = `
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
-                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
-                <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>
-                <th scope="col" class="px-6 py-3">Hành động</th>
-            </tr></thead><tbody></tbody>`;
-        const tbody = table.querySelector('tbody');
-        data.forEach(reg => {
-            const row = document.createElement('tr');
-            row.className = 'bg-white border-b hover:bg-gray-50';
-            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
-            row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
-                <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
-                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
-                <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
-                <td class="px-6 py-4" data-label="Hành động">${
-                    reg.isAllowCancel === false
-                        ? ''
-                        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
-                }</td>`;
-            tbody.appendChild(row);
-        });
-        registeredContainer.innerHTML = '';
-        registeredContainer.appendChild(table);
-    };
-
-    const updateSelectedList = async () => {
-        if (selectedClasses.size === 0) {
-            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
-            registrationControls.classList.add('hidden');
-            return;
-        }
-        selectedList.innerHTML = [...selectedClasses.values()].map(cls => {
-            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
-            return `
-            <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
-                <div>
-                    <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
-                    <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
-                </div>
-                <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
-            </div>`;
-        }).join('');
-        registrationControls.classList.remove('hidden');
-        registrationControls.classList.toggle('hidden', userRole !== 'vip');
-    };
-
-    // Event listeners
     loginBtn.addEventListener('click', handleLogin);
-    refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
-    startInsertionBtn.addEventListener('click', startInsertion);
-    startRegistrationBtn.addEventListener('click', startRegistration);
-    stopBtn.addEventListener('click', stopProcess);
-    searchInput.addEventListener('input', () => renderScheduleTable());
-    subjectFilter.addEventListener('change', () => renderScheduleTable());
-    passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+    startInsertionBtn.addEventListener('click', async () => {
+        if (!authToken) return log("Chưa đăng nhập.", true);
+        if (!selectedClasses.size) return log("Chưa chọn lớp học nào.", true);
+        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để đăng ký.", true);
 
-    document.addEventListener('click', (e) => {
-        const scheduleRow = e.target.closest('#schedule-container tr');
-        if (scheduleRow) {
-            const classId = scheduleRow.dataset.classId;
-            const cls = allScheduleData.find(c => c.id.toString() === classId);
-            if (!cls) return;
-            if (selectedClasses.has(classId)) selectedClasses.delete(classId);
-            else selectedClasses.set(classId, cls);
-            scheduleRow.classList.toggle('bg-yellow-200');
-            updateSelectedList();
-        }
-        const removeBtn = e.target.closest('.remove-selected-btn');
-        if (removeBtn) {
-            const classId = removeBtn.dataset.classId;
-            selectedClasses.delete(classId);
-            const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
-            if (rowToUpdate) rowToUpdate.classList.remove('bg-yellow-200');
-            updateSelectedList();
-        }
-        const cancelBtn = e.target.closest('.cancel-btn');
-        if (cancelBtn) {
-            const { regId, tenMon, source } = cancelBtn.dataset;
-            cancelRegistration(regId, tenMon, source);
-        }
+        log("🚀 Bắt đầu quy trình đăng ký...");
+        isProcessStopped = false;
+        selectedClasses.forEach(async (cls, classId) => {
+            if (isProcessStopped) return;
+            const intervalId = setInterval(async () => {
+                if (isProcessStopped) {
+                    clearInterval(intervalId);
+                    registrationIntervals.delete(classId);
+                    return;
+                }
+                const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan: cls.maHocPhan, source: cls.source, username });
+                if (statusRes && statusRes.success && statusRes.body.length) {
+                    const classData = statusRes.body.find(c => c.id === classId);
+                    if (classData && classData.soLuongConLai > 0) {
+                        const regRes = await backendRequest('register', { classId, source: cls.source, username });
+                        if (regRes && regRes.success) {
+                            log(`✅ Đăng ký thành công lớp ${cls.maHocPhan} (${cls.maLopHocPhan}).`);
+                            clearInterval(intervalId);
+                            registrationIntervals.delete(classId);
+                            await fetchRegisteredClasses();
+                        } else {
+                            log(`⚠️ Thử đăng ký lớp ${cls.maHocPhan}: ${regRes?.message || 'Lỗi'}`, true);
+                        }
+                    } else {
+                        log(`⚠️ Lớp ${cls.maHocPhan} (${cls.maLopHocPhan}) không còn slot.`);
+                    }
+                } else {
+                    log(`⚠️ Lỗi kiểm tra trạng thái lớp ${cls.maHocPhan}: ${statusRes?.message || 'Lỗi'}`, true);
+                }
+            }, parseInt(delayInput.value) || 1000);
+            registrationIntervals.set(classId, intervalId);
+        });
     });
+
+    startRegistrationBtn.addEventListener('click', () => {
+        if (!authToken) return log("Chưa đăng nhập.", true);
+        if (!selectedClasses.size) return log("Chưa chọn lớp học nào.", true);
+        if (userRole !== 'vip') return log("Yêu cầu tài khoản VIP để đăng ký.", true);
+        log("🚀 Bắt đầu đăng ký tất cả lớp đã chọn...");
+        selectedClasses.forEach(async (cls, classId) => {
+            const regRes = await backendRequest('register', { classId, source: cls.source, username });
+            if (regRes && regRes.success) {
+                log(`✅ Đăng ký thành công lớp ${cls.maHocPhan} (${cls.maLopHocPhan}).`);
+                await fetchRegisteredClasses();
+            } else {
+                log(`❌ Lỗi đăng ký lớp ${cls.maHocPhan}: ${regRes?.message || 'Lỗi'}`, true);
+            }
+        });
+    });
+
+    stopBtn.addEventListener('click', stopProcess);
+    refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
+    searchInput.addEventListener('input', () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filteredData = allScheduleData.filter(cls =>
+            cls.maHocPhan.toLowerCase().includes(searchTerm) ||
+            cls.tenHocPhan.toLowerCase().includes(searchTerm) ||
+            cls.maLopHocPhan.toLowerCase().includes(searchTerm)
+        );
+        allScheduleData = filteredData;
+        renderScheduleTable();
+    });
+
+    subjectFilter.addEventListener('change', () => {
+        const filterValue = subjectFilter.value;
+        allScheduleData = allScheduleData.filter(cls => !filterValue || cls.maHocPhan === filterValue);
+        renderScheduleTable();
+    });
+
+    // Initialize
+    if (localStorage.getItem('authToken')) {
+        authToken = localStorage.getItem('authToken');
+        username = localStorage.getItem('username') || '';
+        backendRequest('getInitialData', { username }).then(initialData => {
+            if (initialData && initialData.success) {
+                dotId = initialData.dot.id;
+                log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
+                updateUIAfterLogin(initialData.profile, initialData.role);
+                fetchRegisteredClasses();
+            } else {
+                log("❌ Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.", true);
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('username');
+                resetUI();
+            }
+        });
+    }
 });
