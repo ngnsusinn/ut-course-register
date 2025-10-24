@@ -458,10 +458,9 @@ document.addEventListener('DOMContentLoaded', () => {
             allScheduleData = scheduleRes.schedule;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
-            
-            const fetchBtnSpan = fetchBtn.querySelector('span');
-            if(fetchBtnSpan) fetchBtnSpan.textContent = 'Tải lại lịch học';
-            fetchBtn.originalHTML = fetchBtn.innerHTML;
+
+            // Update button's originalHTML to its new state before toggling loading off
+            fetchBtn.originalHTML = fetchBtn.originalHTML.replace('Tải lịch học', 'Tải lại lịch học');
 
             await renderScheduleTable();
         } else {
