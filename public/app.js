@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     style.innerHTML = `
         input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
         input:checked~.block{background-color:#a7f3d0}
-        .vip-badge{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:600}
         .payment-modal{display:none;position:fixed;z-index:50;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4)}
         .payment-modal-content{background-color:#fff;margin:5% auto;padding:24px;border:none;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
         .close-modal{color:#6b7280;font-size:1.75rem;font-weight:700;cursor:pointer}
@@ -249,8 +248,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isVip) {
         vipStatusElement.innerHTML = `
-            <div class="vip-badge">⭐ VIP - Còn ${vipStatus.daysLeft} ngày</div>
-            <p class="text-xs text-gray-600 mt-1">Hết hạn: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            <div class="text-center">
+                <p class="font-bold text-blue-700 text-lg">⭐ Tài khoản VIP</p>
+                <p class="text-sm text-gray-700">Thời hạn còn lại: <span class="font-semibold text-blue-600">${vipStatus.daysLeft} ngày</span></p>
+                <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            </div>
         `;
         upgradeVipBtn.classList.add('hidden');
 
