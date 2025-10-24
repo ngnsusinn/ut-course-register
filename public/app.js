@@ -88,17 +88,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const formatDayOfWeek = (thu) => (thu === 8 ? 'Chủ nhật' : thu);
+
     const formatScheduleDetail = (details) => {
         if (!details || details.error || !Array.isArray(details) || details.length === 0) {
             return 'Không có thông tin lịch học';
         }
-        return details.map(d => `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
+        return details.map(d => `<div class="font-medium">Thứ ${formatDayOfWeek(d.thu)} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
     };
 
     const formatSelectedClassDetail = (cls, details) => {
         if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
         if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
-        return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${detail.thu} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+        return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${formatDayOfWeek(detail.thu)} | Tiết ${detail.tietHoc}</span>`).join('<br>');
     };
 
     // --- VIP FUNCTIONS ---
