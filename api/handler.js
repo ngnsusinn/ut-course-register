@@ -285,19 +285,27 @@ export default async (req, res) => {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
+                    const classPromises = subjectsRes.body.map(async (subject) => {
                         const classEndpoint = source === 'dkhpdk'
                             ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                             : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                         const classRes = await callApi(classEndpoint, 'GET', token, null, source);
 
                         if (classRes.success && Array.isArray(classRes.body)) {
-                            await Promise.all(classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
+                            return classRes.body.map(cls => ({ ...subject, ...cls, source }));
                         }
+                        return [];
+                    });
+
+                    const subjectClassesArray = await Promise.all(classPromises);
+                    const sourceClasses = subjectClassesArray.flat();
+                    
+                    const detailedClasses = await Promise.all(sourceClasses.map(async (cls) => {
+                        const scheduleDetails = await getScheduleDetails(cls.id, token, source);
+                        return { ...cls, scheduleDetails };
                     }));
+
+                    allClassData.push(...detailedClasses);
                 }
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
