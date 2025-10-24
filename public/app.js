@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
                             <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
                         </div>
-                        <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện <span class="text-xs text-purple-600">(VIP)</span></div>
+                        <div class="ml-3 text-gray-700 font-medium">Bao gồm môn điều kiện <span class="text-xs text-purple-600">(VIP)</span></div>
                     </label>
                 </div>
                 
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
                     </svg>
-                    <span>Lấy dữ liệu</span>
+                    <span>Tải lại lịch học</span>
                 </button>
                 
                 <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
                 <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
                 <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
-                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã đăng ký</th>
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
