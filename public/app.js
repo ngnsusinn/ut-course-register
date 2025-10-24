@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
                     </svg>
-                    <span>Tải lại lịch học</span>
+                    <span>Tải lịch học</span>
                 </button>
                 
                 <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
@@ -458,6 +458,11 @@ document.addEventListener('DOMContentLoaded', () => {
             allScheduleData = scheduleRes.schedule;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+            
+            const fetchBtnSpan = fetchBtn.querySelector('span');
+            if(fetchBtnSpan) fetchBtnSpan.textContent = 'Tải lại lịch học';
+            fetchBtn.originalHTML = fetchBtn.innerHTML;
+
             await renderScheduleTable();
         } else {
             log("❌ Lỗi khi tải lịch học từ server.", true);
