@@ -62,9 +62,10 @@ async function getScheduleDetails(classId, token, source) {
 
 // VIP Plans Configuration
 const VIP_PLANS = {
-    '1day': { price: 10000, duration: 1, name: '1 Ngày VIP' },
-    '3days': { price: 25000, duration: 3, name: '3 Ngày VIP' },
-    '7days': { price: 50000, duration: 7, name: '7 Ngày VIP' }
+    '1day': { price: 24000, duration: 1, name: '1 Ngày VIP' },
+    '3days': { price: 72000, duration: 3, name: '3 Ngày VIP' },
+    '7days': { price: 126000, duration: 7, name: '7 Ngày VIP' },
+    '30days': { price: 432000, duration: 30, name: '30 Ngày VIP' }
 };
 
 // SePay Configuration
