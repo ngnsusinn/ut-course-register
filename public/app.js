@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     style.innerHTML = `
         input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
         input:checked~.block{background-color:#a7f3d0}
-        .vip-badge{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:600}
         .payment-modal{display:none;position:fixed;z-index:50;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4)}
         .payment-modal-content{background-color:#fff;margin:5% auto;padding:24px;border:none;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
         .close-modal{color:#6b7280;font-size:1.75rem;font-weight:700;cursor:pointer}
@@ -89,17 +88,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const formatDayOfWeek = (thu) => {
+        if (thu === 8) return 'Chủ nhật';
+        return `Thứ ${thu}`;
+    };
+
     const formatScheduleDetail = (details) => {
         if (!details || details.error || !Array.isArray(details) || details.length === 0) {
             return 'Không có thông tin lịch học';
         }
-        return details.map(d => `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
+        return details.map(d => `<div class="font-medium">${formatDayOfWeek(d.thu)} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
     };
 
     const formatSelectedClassDetail = (cls, details) => {
         if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
         if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
-        return details.map(detail => `<span>${cls.maLopHocPhan} | Thứ ${detail.thu} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+        return details.map(detail => `<span>${cls.maLopHocPhan} | ${formatDayOfWeek(detail.thu)} | Tiết ${detail.tietHoc}</span>`).join('<br>');
     };
 
     // --- VIP FUNCTIONS ---
@@ -122,11 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">🌟 Nâng cấp VIP</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     ${Object.entries(plans).map(([key, plan]) => `
-                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-purple-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
                             <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
-                            <p class="text-2xl font-bold text-purple-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
+                            <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
                             <p class="text-gray-600 mb-4">${plan.duration} ngày</p>
-                            <button class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition duration-300 buy-plan-btn" data-plan="${key}">
+                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
                                 Chọn gói này
                             </button>
                         </div>
@@ -138,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
                             <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
                             <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
-                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div></p>
+                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div></p>
                         </div>
                         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                             <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
@@ -249,8 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isVip) {
         vipStatusElement.innerHTML = `
-            <div class="vip-badge">⭐ VIP - Còn ${vipStatus.daysLeft} ngày</div>
-            <p class="text-xs text-gray-600 mt-1">Hết hạn: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            <div class="text-center">
+                <p class="font-bold text-blue-700 text-lg">⭐ Tài khoản VIP</p>
+                <p class="text-sm text-gray-700">Thời hạn còn lại: <span class="font-semibold text-blue-600">${vipStatus.daysLeft} ngày</span></p>
+                <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            </div>
         `;
         upgradeVipBtn.classList.add('hidden');
 
@@ -259,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (fetchBtn) fetchBtn.classList.remove('hidden');
         if (selectedList) selectedList.classList.remove('hidden');
-        if (registrationControls) registrationControls.classList.remove('hidden');
     } else {
         vipStatusElement.innerHTML = `
             <div class="text-center p-3 bg-gray-100 rounded-lg">
@@ -276,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (fetchBtn) fetchBtn.classList.add('hidden');
         if (selectedList) selectedList.classList.add('hidden');
-        if (registrationControls) registrationControls.classList.add('hidden');
     }
 };
 
@@ -293,11 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
             panelContainer.innerHTML = `
                 <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
                 
-                <div id="vip-status-section" class="my-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                <div id="vip-status-section" class="my-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
                     <div id="vip-status"></div>
                 </div>
                 
-                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition duration-300 flex items-center justify-center space-x-2">
+                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition duration-300 flex items-center justify-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
@@ -311,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
                             <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
                         </div>
-                        <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn học điều kiện <span class="text-xs text-purple-600">(VIP)</span></div>
+                        <div class="ml-3 text-gray-700 font-medium">Bao gồm môn điều kiện</div>
                     </label>
                 </div>
                 
@@ -326,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
                     </svg>
-                    <span>Lấy dữ liệu</span>
+                    <span>Tải lịch học</span>
                 </button>
                 
                 <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
@@ -351,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', showVIPModal);
+            prerequisiteToggle.addEventListener('change', fetchRegisteredClasses);
         }
 
         greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
@@ -430,6 +436,16 @@ document.addEventListener('DOMContentLoaded', () => {
         dotId = null;
         userId = null;
         vipStatus = { hasVIP: false };
+
+        // Reset fetch button to its initial state for the next login
+        if (fetchBtn) {
+            const btnSpan = fetchBtn.querySelector('span');
+            if (btnSpan) {
+                btnSpan.textContent = 'Tải lịch học';
+            }
+            fetchBtn.originalHTML = fetchBtn.innerHTML;
+        }
+
         resetUI();
         log("Đã đăng xuất.");
     };
@@ -452,6 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
             allScheduleData = scheduleRes.schedule;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+
+            // Update button's originalHTML to its new state before toggling loading off
+            fetchBtn.originalHTML = fetchBtn.originalHTML.replace('Tải lịch học', 'Tải lại lịch học');
+
             await renderScheduleTable();
         } else {
             log("❌ Lỗi khi tải lịch học từ server.", true);
@@ -611,7 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
-        const filteredData = allScheduleData.filter(cls => 
+        const filteredData = allScheduleData.filter(cls =>
+            cls.tenTrangThai !== 'Đã khóa lớp' &&
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
@@ -625,13 +646,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
                 <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
                 <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
-                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã ĐK</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã đăng ký</th>
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
-            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
+            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer transition-colors duration-200 ${isSelected ? 'bg-blue-200' : ''}`;
             row.dataset.classId = cls.id;
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
@@ -735,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!cls) return;
             if (selectedClasses.has(classId)) selectedClasses.delete(classId);
             else selectedClasses.set(classId, cls);
-            scheduleRow.classList.toggle('bg-yellow-200');
+            scheduleRow.classList.toggle('bg-blue-200');
             updateSelectedList();
         }
         const removeBtn = e.target.closest('.remove-selected-btn');
@@ -747,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const classId = removeBtn.dataset.classId;
             selectedClasses.delete(classId);
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
-            if (rowToUpdate) rowToUpdate.classList.remove('bg-yellow-200');
+            if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
             updateSelectedList();
         }
         const cancelBtn = e.target.closest('.cancel-btn');
