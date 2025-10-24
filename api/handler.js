@@ -1,19 +1,27 @@
-require('dotenv').config();
 const fetch = require('node-fetch');
 const mysql = require('mysql2/promise');
 
-// Database connection pool
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+// Database configuration
+const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'your_db_user',
+    password: process.env.DB_PASSWORD || 'your_db_password',
+    database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-});
+};
 
-// Utility: Call internal UTH API
+// Create connection pool
+let pool;
+const getPool = () => {
+    if (!pool) {
+        pool = mysql.createPool(dbConfig);
+    }
+    return pool;
+};
+
+// Utility: Call internal university API
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
@@ -40,44 +48,133 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     }
 }
 
-// Utility: Call SePay API to check payment status
-async function checkSepayPaymentStatus(orderId) {
-    try {
-        const response = await fetch('https://api.sepay.vn/check-transaction', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.SEPAY_API_KEY}`
-            },
-            body: JSON.stringify({ orderId: `DH${orderId}` })
-        });
-        if (!response.ok) {
-            return { success: false, message: `SePay API Error: Status ${response.status}` };
-        }
-        const data = await response.json();
-        return {
-            success: true,
-            payment_status: data.status === 'success' ? 'Paid' : 'Unpaid',
-            amount: data.amount,
-            transactionId: data.transactionId
-        };
-    } catch (error) {
-        return { success: false, message: `SePay API Error: ${error.message}` };
-    }
-}
-
-// Utility: Get schedule details
+// Utility: Get schedule details for a class
 async function getScheduleDetails(classId, token, source) {
     const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
-// Main handler
+// VIP Plans Configuration
+const VIP_PLANS = {
+    '1day': { price: 10000, duration: 1, name: '1 Ngày VIP' },
+    '3days': { price: 25000, duration: 3, name: '3 Ngày VIP' },
+    '7days': { price: 50000, duration: 7, name: '7 Ngày VIP' }
+};
+
+// SePay Configuration
+const SEPAY_CONFIG = {
+    bankName: process.env.SEPAY_BANK_NAME || 'MBBank',
+    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '0903252427',
+    accountName: process.env.SEPAY_ACCOUNT_NAME || 'BÙI TẤN VIỆT'
+};
+
+// Helper: Check if user has active VIP
+async function checkVIPStatus(userId) {
+    try {
+        const connection = await getPool().getConnection();
+        
+        const [rows] = await connection.execute(
+            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            [userId]
+        );
+        
+        connection.release();
+        
+        if (rows.length === 0) {
+            return { hasVIP: false };
+        }
+        
+        const vipData = rows[0];
+        const expiryDate = new Date(vipData.expiry_date);
+        const now = new Date();
+        const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        
+        return { 
+            hasVIP: true, 
+            expiryDate: vipData.expiry_date,
+            plan: vipData.plan_type,
+            daysLeft: daysLeft
+        };
+    } catch (error) {
+        console.error('Error checking VIP status:', error);
+        return { hasVIP: false };
+    }
+}
+
+// Helper: Create order
+async function createOrder(userId, plan) {
+    const planConfig = VIP_PLANS[plan];
+    if (!planConfig) return null;
+    
+    try {
+        const connection = await getPool().getConnection();
+        
+        const [result] = await connection.execute(
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
+            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
+        );
+        
+        connection.release();
+        
+        return {
+            id: result.insertId,
+            userId,
+            amount: planConfig.price,
+            status: 'Unpaid',
+            plan,
+            planName: planConfig.name,
+            createdAt: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Error creating order:', error);
+        return null;
+    }
+}
+
+// Helper: Check order status
+async function getOrderStatus(orderId) {
+    try {
+        const connection = await getPool().getConnection();
+        
+        const [rows] = await connection.execute(
+            'SELECT * FROM orders WHERE id = ?',
+            [orderId]
+        );
+        
+        connection.release();
+        
+        if (rows.length === 0) {
+            return null;
+        }
+        
+        const order = rows[0];
+        return {
+            id: order.id,
+            userId: order.user_id,
+            amount: parseFloat(order.amount),
+            status: order.payment_status,
+            plan: order.plan_type,
+            planName: order.plan_name,
+            createdAt: order.created_at,
+            paidAt: order.paid_at,
+            transactionRef: order.transaction_ref
+        };
+    } catch (error) {
+        console.error('Error getting order status:', error);
+        return null;
+    }
+}
+
+// === MAIN HANDLER ===
 module.exports = async (req, res) => {
+    // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     if (req.method === 'OPTIONS') return res.status(200).end();
+    
+    // Regular API handler
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 
     const { action, payload } = req.body;
@@ -85,31 +182,11 @@ module.exports = async (req, res) => {
 
     try {
         let result;
-        let connection;
-
         switch (action) {
-            // Login action with role management
+            // --- AUTHENTICATION ACTIONS ---
             case 'login': {
                 const { username, password } = payload;
                 result = await callApi('/user/login', 'POST', null, { username, password });
-
-                if (result && result.token) {
-                    connection = await pool.getConnection();
-                    try {
-                        const [rows] = await connection.query('SELECT * FROM users WHERE username = ?', [username]);
-                        if (rows.length === 0) {
-                            await connection.query('INSERT INTO users (username, role) VALUES (?, ?)', [username, 'none']);
-                            result.role = 'none';
-                        } else {
-                            result.role = rows[0].role;
-                        }
-                    } catch (dbError) {
-                        console.error('DB Error in login:', dbError);
-                        return res.status(500).json({ success: false, message: `Database error: ${dbError.message}` });
-                    } finally {
-                        connection.release();
-                    }
-                }
                 break;
             }
 
@@ -117,166 +194,80 @@ module.exports = async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
                 const dotsRes = await callApi(`/getDot`, 'GET', token);
-                const latestDot = (dotsRes.success && dotsRes.body.length)
+                const latestDot = (dotsRes.success && dotsRes.body.length) 
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
-
-                // Get user role
-                connection = await pool.getConnection();
-                try {
-                    const [rows] = await connection.query('SELECT role FROM users WHERE username = ?', [profileRes.body.username]);
-                    result = {
-                        success: profileRes.success && !!latestDot,
-                        profile: profileRes.body,
-                        dot: latestDot,
-                        role: rows.length > 0 ? rows[0].role : 'none'
-                    };
-                } finally {
-                    connection.release();
-                }
+                
+                // Check VIP status
+                const userId = profileRes.body?.maSinhVien || profileRes.body?.username;
+                const vipStatus = await checkVIPStatus(userId);
+                
+                result = {
+                    success: profileRes.success && !!latestDot,
+                    profile: profileRes.body,
+                    dot: latestDot,
+                    vip: vipStatus
+                };
                 break;
             }
 
-            // Create payment order
-            case 'createPayment': {
+            // --- VIP ACTIONS ---
+            case 'checkVIPStatus': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                let { amount, username } = payload;
-                if (!amount || !isNumeric(amount) || amount <= 0) {
-                    return res.status(400).json({ success: false, message: 'Invalid amount' });
-                }
-
-                // If username is not provided in payload, fetch it from profile
-                if (!username) {
-                    const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                    if (!profileRes.success || !profileRes.body.username) {
-                        return res.status(400).json({ success: false, message: 'Unable to fetch username from profile' });
-                    }
-                    username = profileRes.body.username;
-                }
-
-                connection = await pool.getConnection();
-                try {
-                    const name = "VIP Subscription";
-                    const [result] = await connection.query(
-                        'INSERT INTO tb_orders (total, name, username, payment_status) VALUES (?, ?, ?, ?)',
-                        [amount, name, username, 'Unpaid']
-                    );
-                    const orderId = result.insertId;
-                    res.status(200).json({ success: true, orderId });
-                } catch (error) {
-                    console.error('DB Error in createPayment:', error);
-                    res.status(500).json({ success: false, message: `Database error: ${error.message}` });
-                } finally {
-                    connection.release();
-                }
+                const { userId } = payload;
+                result = { success: true, vip: await checkVIPStatus(userId) };
                 break;
             }
 
-            // Check payment status
-            case 'checkPaymentStatus': {
+            case 'createVIPOrder': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { userId, plan } = payload;
+                
+                if (!VIP_PLANS[plan]) {
+                    return res.status(400).json({ success: false, message: 'Invalid plan' });
+                }
+                
+                const order = await createOrder(userId, plan);
+                
+                if (!order) {
+                    return res.status(500).json({ success: false, message: 'Failed to create order' });
+                }
+                
+                result = { success: true, order };
+                break;
+            }
+
+            case 'checkOrderStatus': {
                 const { orderId } = payload;
-                if (!orderId || !isNumeric(orderId)) {
-                    return res.status(400).json({ success: false, message: 'Invalid order ID' });
+                const order = await getOrderStatus(parseInt(orderId));
+                
+                if (!order) {
+                    return res.status(404).json({ success: false, message: 'Order not found' });
                 }
-
-                connection = await pool.getConnection();
-                try {
-                    const [rows] = await connection.query('SELECT payment_status FROM tb_orders WHERE id = ?', [orderId]);
-                    if (rows.length > 0) {
-                        res.status(200).json({ success: true, payment_status: rows[0].payment_status });
-                    } else {
-                        res.status(404).json({ success: false, payment_status: 'order_not_found' });
-                    }
-                } finally {
-                    connection.release();
-                }
+                
+                result = { success: true, order };
                 break;
             }
 
-            // Check SePay payment status and update order
-            case 'checkSepayPayment': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                let { orderId, username } = payload;
-                if (!orderId || !isNumeric(orderId)) {
-                    return res.status(400).json({ success: false, message: 'Invalid order ID' });
-                }
-
-                // If username is not provided, fetch it from profile
-                if (!username) {
-                    const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                    if (!profileRes.success || !profileRes.body.username) {
-                        return res.status(400).json({ success: false, message: 'Unable to fetch username from profile' });
-                    }
-                    username = profileRes.body.username;
-                }
-
-                connection = await pool.getConnection();
-                try {
-                    const [orders] = await connection.query('SELECT total, payment_status FROM tb_orders WHERE id = ? AND username = ?', [orderId, username]);
-                    if (orders.length === 0) {
-                        return res.status(404).json({ success: false, message: 'Order not found' });
-                    }
-                    if (orders[0].payment_status === 'Paid') {
-                        return res.status(200).json({ success: true, payment_status: 'Paid' });
-                    }
-
-                    // Query SePay API
-                    const sepayResult = await checkSepayPaymentStatus(orderId);
-                    if (sepayResult.success && sepayResult.payment_status === 'Paid') {
-                        if (sepayResult.amount === orders[0].total) {
-                            await connection.query('UPDATE tb_orders SET payment_status = ? WHERE id = ?', ['Paid', orderId]);
-                            await connection.query('UPDATE users SET role = ? WHERE username = ?', ['vip', username]);
-                            res.status(200).json({ success: true, payment_status: 'Paid' });
-                        } else {
-                            res.status(400).json({ success: false, message: 'Payment amount mismatch' });
-                        }
-                    } else {
-                        res.status(200).json({ success: true, payment_status: 'Unpaid' });
-                    }
-                } catch (error) {
-                    console.error('DB Error in checkSepayPayment:', error);
-                    res.status(500).json({ success: false, message: `Error: ${error.message}` });
-                } finally {
-                    connection.release();
-                }
+            case 'getVIPPlans': {
+                result = { 
+                    success: true, 
+                    plans: VIP_PLANS,
+                    sepayConfig: SEPAY_CONFIG
+                };
                 break;
             }
 
-            // Get order details for payment page
-            case 'getOrderDetails': {
-                const { orderId } = payload;
-                if (!orderId || !isNumeric(orderId)) {
-                    return res.status(400).json({ success: false, message: 'Invalid order ID' });
-                }
-
-                connection = await pool.getConnection();
-                try {
-                    const [rows] = await connection.query('SELECT id, total, name, payment_status FROM tb_orders WHERE id = ?', [orderId]);
-                    if (rows.length > 0) {
-                        res.status(200).json({ success: true, order: rows[0] });
-                    } else {
-                        res.status(404).json({ success: false, message: 'Order not found' });
-                    }
-                } finally {
-                    connection.release();
-                }
-                break;
-            }
-
+            // --- DATA RETRIEVAL ACTIONS ---
             case 'getFullSchedule': {
-                connection = await pool.getConnection();
-                try {
-                    const [rows] = await connection.query('SELECT role FROM users WHERE username = ?', [payload.username]);
-                    if (rows.length === 0 || rows[0].role !== 'vip') {
-                        return res.status(403).json({ success: false, message: 'VIP role required' });
-                    }
-                } finally {
-                    connection.release();
-                }
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, fetchPrerequisites } = payload;
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                
+                // Check VIP status for prerequisite courses
+                const { dotId, fetchPrerequisites, userId } = payload;
+                const vipStatus = await checkVIPStatus(userId);
+                
+                // Only allow prerequisite courses for VIP users
+                const sources = (fetchPrerequisites && vipStatus.hasVIP) ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
 
@@ -305,11 +296,12 @@ module.exports = async (req, res) => {
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
             }
-
+            
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, fetchPrerequisites } = payload;
-                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                const { dotId, fetchPrerequisites, userId } = payload;
+                const vipStatus = await checkVIPStatus(userId);
+                const sources = (fetchPrerequisites && vipStatus.hasVIP) ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
 
                 for (const source of sources) {
@@ -325,17 +317,8 @@ module.exports = async (req, res) => {
                 result = { success: true, body: registeredData };
                 break;
             }
-
+            
             case 'checkClassStatus': {
-                connection = await pool.getConnection();
-                try {
-                    const [rows] = await connection.query('SELECT role FROM users WHERE username = ?', [payload.username]);
-                    if (rows.length === 0 || rows[0].role !== 'vip') {
-                        return res.status(403).json({ success: false, message: 'VIP role required' });
-                    }
-                } finally {
-                    connection.release();
-                }
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, maHocPhan, source } = payload;
                 const classEndpoint = source === 'dkhpdk'
@@ -345,16 +328,8 @@ module.exports = async (req, res) => {
                 break;
             }
 
+            // --- WRITE ACTIONS (REGISTER/CANCEL) ---
             case 'register': {
-                connection = await pool.getConnection();
-                try {
-                    const [rows] = await connection.query('SELECT role FROM users WHERE username = ?', [payload.username]);
-                    if (rows.length === 0 || rows[0].role !== 'vip') {
-                        return res.status(403).json({ success: false, message: 'VIP role required' });
-                    }
-                } finally {
-                    connection.release();
-                }
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source } = payload;
                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
@@ -374,12 +349,7 @@ module.exports = async (req, res) => {
         res.status(200).json(result);
 
     } catch (error) {
-        console.error('Handler Error:', error);
+        console.error('Handler error:', error);
         res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
     }
 };
-
-// Utility to check if a value is numeric
-function isNumeric(value) {
-    return !isNaN(parseFloat(value)) && isFinite(value);
-}

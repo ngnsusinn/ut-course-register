@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/sepay-webhook.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -16,8 +20,8 @@
       "dest": "/api/handler.js"
     },
     {
-      "src": "/sepay-webhook",
-      "dest": "/api/handler.js"
+      "src": "/api/sepay-webhook",
+      "dest": "/api/sepay-webhook.js"
     },
     {
       "src": "/(.*)",
