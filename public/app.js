@@ -611,7 +611,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
-        const filteredData = allScheduleData.filter(cls => 
+        const filteredData = allScheduleData.filter(cls =>
+            cls.tenTrangThai !== 'Đã khoá lớp' &&
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
@@ -631,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredData.forEach(cls => {
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
-            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer ${isSelected ? 'bg-yellow-200' : ''}`;
+            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer transition-colors duration-200 ${isSelected ? 'bg-blue-200' : ''}`;
             row.dataset.classId = cls.id;
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
@@ -735,7 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!cls) return;
             if (selectedClasses.has(classId)) selectedClasses.delete(classId);
             else selectedClasses.set(classId, cls);
-            scheduleRow.classList.toggle('bg-yellow-200');
+            scheduleRow.classList.toggle('bg-blue-200');
             updateSelectedList();
         }
         const removeBtn = e.target.closest('.remove-selected-btn');
@@ -747,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const classId = removeBtn.dataset.classId;
             selectedClasses.delete(classId);
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
-            if (rowToUpdate) rowToUpdate.classList.remove('bg-yellow-200');
+            if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
             updateSelectedList();
         }
         const cancelBtn = e.target.closest('.cancel-btn');
