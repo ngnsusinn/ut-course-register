@@ -436,6 +436,16 @@ document.addEventListener('DOMContentLoaded', () => {
         dotId = null;
         userId = null;
         vipStatus = { hasVIP: false };
+
+        // Reset fetch button to its initial state for the next login
+        if (fetchBtn) {
+            const btnSpan = fetchBtn.querySelector('span');
+            if (btnSpan) {
+                btnSpan.textContent = 'Tải lịch học';
+            }
+            fetchBtn.originalHTML = fetchBtn.innerHTML;
+        }
+
         resetUI();
         log("Đã đăng xuất.");
     };
