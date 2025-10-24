@@ -122,11 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">🌟 Nâng cấp VIP</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     ${Object.entries(plans).map(([key, plan]) => `
-                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-purple-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
                             <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
-                            <p class="text-2xl font-bold text-purple-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
+                            <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
                             <p class="text-gray-600 mb-4">${plan.duration} ngày</p>
-                            <button class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition duration-300 buy-plan-btn" data-plan="${key}">
+                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
                                 Chọn gói này
                             </button>
                         </div>
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
                             <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
                             <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
-                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div></p>
+                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div></p>
                         </div>
                         <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                             <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
@@ -291,11 +291,11 @@ document.addEventListener('DOMContentLoaded', () => {
             panelContainer.innerHTML = `
                 <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
                 
-                <div id="vip-status-section" class="my-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                <div id="vip-status-section" class="my-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
                     <div id="vip-status"></div>
                 </div>
                 
-                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition duration-300 flex items-center justify-center space-x-2">
+                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition duration-300 flex items-center justify-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
