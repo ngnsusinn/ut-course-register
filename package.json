@@ -1,9 +1,34 @@
 {
   "name": "uth-secure-tool",
-  "version": "1.0.0",
-  "description": "Secure UTH Course Registration Tool with backend logic on Vercel.",
+  "version": "2.0.0",
+  "description": "Secure UTH Course Registration Tool with VIP features and SePay payment integration",
   "main": "api/handler.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "test:db": "node scripts/test-connection.js",
+    "migrate": "node scripts/migrate.js",
+    "postinstall": "echo '✅ Dependencies installed. Run npm run migrate to setup database.'"
+  },
   "dependencies": {
-    "node-fetch": "^2.6.7" 
-  }
+    "node-fetch": "^2.6.7",
+    "mysql2": "^3.6.5",
+    "abort-controller": "^3.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=14.x"
+  },
+  "keywords": [
+    "uth",
+    "course-registration",
+    "sepay",
+    "payment",
+    "vip"
+  ],
+  "author": "",
+  "license": "MIT"
 }
