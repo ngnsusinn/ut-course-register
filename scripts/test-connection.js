@@ -1,17 +1,19 @@
-require('dotenv').config();
-const db = require('../database/db_connect');
+import dotenv from 'dotenv';
+import { dbConfig, testConnection, executeQuery, closePool } from '../database/db_connect.js';
+
+dotenv.config();
 
 async function testDatabaseConnection() {
     console.log('Testing database connection...\n');
     console.log('Configuration:');
-    console.log('- Host:', db.dbConfig.host);
-    console.log('- User:', db.dbConfig.user);
-    console.log('- Database:', db.dbConfig.database);
+    console.log('- Host:', dbConfig.host);
+    console.log('- User:', dbConfig.user);
+    console.log('- Database:', dbConfig.database);
     console.log('\n');
 
     try {
         // Test connection
-        const isConnected = await db.testConnection();
+        const isConnected = await testConnection();
         
         if (!isConnected) {
             console.error('❌ Connection failed!');
@@ -22,7 +24,7 @@ async function testDatabaseConnection() {
 
         // Test query - Get table list
         console.log('Checking database tables...');
-        const tables = await db.executeQuery('SHOW TABLES');
+        const tables = await executeQuery('SHOW TABLES');
         
         console.log('\nFound tables:');
         tables.forEach((table, index) => {
@@ -52,18 +54,18 @@ async function testDatabaseConnection() {
             // Show record counts
             console.log('\nRecord counts:');
             for (const tableName of requiredTables) {
-                const [result] = await db.executeQuery(`SELECT COUNT(*) as count FROM ${tableName}`);
+                const [result] = await executeQuery(`SELECT COUNT(*) as count FROM ${tableName}`);
                 console.log(`- ${tableName}: ${result.count} records`);
             }
         }
 
-        await db.closePool();
+        await closePool();
         console.log('\n✅ Test completed successfully!');
         process.exit(0);
 
     } catch (error) {
         console.error('\n❌ Error:', error.message);
-        await db.closePool();
+        await closePool();
         process.exit(1);
     }
 }

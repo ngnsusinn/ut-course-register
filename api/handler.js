@@ -1,6 +1,5 @@
-const fetch = require('node-fetch');
-const mysql = require('mysql2/promise');
-const AbortController = require('abort-controller');
+import fetch from 'node-fetch';
+import mysql from 'mysql2/promise';
 
 // Database configuration
 const dbConfig = {
@@ -12,6 +11,12 @@ const dbConfig = {
     connectionLimit: 10,
     queueLimit: 0
 };
+
+// Validate environment variables
+if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+    console.error('Missing required database environment variables');
+    throw new Error('Database configuration is incomplete');
+}
 
 // Create connection pool
 let pool;
@@ -36,23 +41,15 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, signal: controller.signal };
+    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
 
     try {
         const response = await fetch(targetUrl, options);
-        clearTimeout(timeoutId);
         if (!response.ok) {
             return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
         }
         return await response.json();
     } catch (error) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-            return { success: false, message: 'Request timeout after 30s' };
-        }
         return { success: false, message: error.message };
     }
 }
@@ -73,8 +70,8 @@ const VIP_PLANS = {
 // SePay Configuration
 const SEPAY_CONFIG = {
     bankName: process.env.SEPAY_BANK_NAME || 'MBBank',
-    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '01006022006',
-    accountName: process.env.SEPAY_ACCOUNT_NAME || 'NGUYỄN SUN SIN'
+    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '0903252427',
+    accountName: process.env.SEPAY_ACCOUNT_NAME || 'BÙI TẤN VIỆT'
 };
 
 // Helper: Check if user has active VIP
@@ -113,7 +110,7 @@ async function checkVIPStatus(userId) {
 // Helper: Create order
 async function createOrder(userId, plan) {
     const planConfig = VIP_PLANS[plan];
-    if (!planConfig || !userId) return null; // Validation
+    if (!planConfig) return null;
     
     try {
         const connection = await getPool().getConnection();
@@ -140,9 +137,8 @@ async function createOrder(userId, plan) {
     }
 }
 
-// Helper: Get order status
+// Helper: Check order status
 async function getOrderStatus(orderId) {
-    if (isNaN(parseInt(orderId))) return null; // Validation
     try {
         const connection = await getPool().getConnection();
         
@@ -176,9 +172,9 @@ async function getOrderStatus(orderId) {
 }
 
 // === MAIN HANDLER ===
-module.exports = async (req, res) => {
+export default async (req, res) => {
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://your-domain.com');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
@@ -289,32 +285,19 @@ module.exports = async (req, res) => {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    const classPromises = subjectsRes.body.map(async (subject) => {
+                    await Promise.all(subjectsRes.body.map(async (subject) => {
                         const classEndpoint = source === 'dkhpdk'
                             ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                             : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                         const classRes = await callApi(classEndpoint, 'GET', token, null, source);
 
                         if (classRes.success && Array.isArray(classRes.body)) {
-                            const detailPromises = classRes.body.map(async (cls) => {
+                            await Promise.all(classRes.body.map(async (cls) => {
                                 const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                return { ...subject, ...cls, source, scheduleDetails };
-                            });
-                            return Promise.allSettled(detailPromises).then(results => 
-                                results.filter(r => r.status === 'fulfilled').map(r => r.value)
-                            );
+                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
+                            }));
                         }
-                        return [];
-                    });
-
-                    const classResults = await Promise.allSettled(classPromises);
-                    classResults.forEach(result => {
-                        if (result.status === 'fulfilled') {
-                            allClassData.push(...result.value);
-                        } else {
-                            console.error('Error fetching class data:', result.reason);
-                        }
-                    });
+                    }));
                 }
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
@@ -330,19 +313,11 @@ module.exports = async (req, res) => {
                 for (const source of sources) {
                     const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
                     if (regRes.success && Array.isArray(regRes.body)) {
-                        const detailPromises = regRes.body.map(async (reg) => {
+                        await Promise.all(regRes.body.map(async (reg) => {
                             const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
                             const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
-                            return { ...reg, source, scheduleDetails };
-                        });
-                        const detailResults = await Promise.allSettled(detailPromises);
-                        detailResults.forEach(result => {
-                            if (result.status === 'fulfilled') {
-                                registeredData.push(result.value);
-                            } else {
-                                console.error('Error fetching registered class details:', result.reason);
-                            }
-                        });
+                            registeredData.push({ ...reg, source, scheduleDetails });
+                        }));
                     }
                 }
                 result = { success: true, body: registeredData };

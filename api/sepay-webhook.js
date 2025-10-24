@@ -1,4 +1,4 @@
-const mysql = require('mysql2/promise');
+import mysql from 'mysql2/promise';
 
 // Database configuration
 const dbConfig = {
@@ -10,6 +10,12 @@ const dbConfig = {
     connectionLimit: 10,
     queueLimit: 0
 };
+
+// Validate environment variables
+if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+    console.error('Missing required database environment variables');
+    throw new Error('Database configuration is incomplete');
+}
 
 // Create connection pool
 let pool;
@@ -112,9 +118,9 @@ async function processVIPPayment(orderId, transactionData) {
 }
 
 // Main webhook handler
-module.exports = async (req, res) => {
+export default async (req, res) => {
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://your-domain.com');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
@@ -130,8 +136,8 @@ module.exports = async (req, res) => {
         const webhookData = req.body;
         
         // Validate webhook data
-        if (!webhookData || !webhookData.content || !webhookData.referenceCode || !webhookData.transferAmount) {
-            return res.status(400).json({ success: false, message: 'Invalid or incomplete webhook data' });
+        if (!webhookData || !webhookData.content) {
+            return res.status(400).json({ success: false, message: 'Invalid webhook data' });
         }
         
         const connection = await getPool().getConnection();

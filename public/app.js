@@ -1,14 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // CSS Toggle Switch
+    // CSS Toggle Switch (đã được tối ưu với Tailwind)
     const style = document.createElement('style');
     style.innerHTML = `
         input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
         input:checked~.block{background-color:#a7f3d0}
         .vip-badge{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:600}
         .payment-modal{display:none;position:fixed;z-index:50;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4)}
-        .payment-modal-content{background-color:#fefefe;margin:5% auto;padding:20px;border:1px solid #888;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
-        .close-modal{color:#aaa;float:right;font-size:28px;font-weight:bold;cursor:pointer}
-        .close-modal:hover,.close-modal:focus{color:#000}
+        .payment-modal-content{background-color:#fff;margin:5% auto;padding:24px;border:none;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+        .close-modal{color:#6b7280;font-size:1.75rem;font-weight:700;cursor:pointer}
+        .close-modal:hover,.close-modal:focus{color:#1f2937}
     `;
     document.head.appendChild(style);
 
@@ -29,9 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const logOutput = document.getElementById('log-output');
     const registrationControls = document.getElementById('registration-controls');
     const loginForm = document.getElementById('login-form');
-    
+
     // Dynamically created elements
-    let userPanel, greetingMsg, prerequisiteToggle, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, vipStatusElement, upgradeVipBtn;
+    let userPanel, greetingMsg, prerequisiteToggle, prerequisiteToggleContainer, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, vipStatusElement, upgradeVipBtn;
 
     // State
     let authToken = null;
@@ -88,14 +88,14 @@ document.addEventListener('DOMContentLoaded', () => {
             button.innerHTML = button.originalHTML;
         }
     };
-    
+
     const formatScheduleDetail = (details) => {
         if (!details || details.error || !Array.isArray(details) || details.length === 0) {
             return 'Không có thông tin lịch học';
         }
         return details.map(d => `<div class="font-medium">Thứ ${d.thu} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
     };
-    
+
     const formatSelectedClassDetail = (cls, details) => {
         if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
         if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
@@ -112,60 +112,60 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.createElement('div');
         modal.className = 'payment-modal';
         modal.id = 'vip-modal';
-        
+
         const plans = plansRes.plans;
         const sepayConfig = plansRes.sepayConfig;
-        
+
         modal.innerHTML = `
-            <div class="payment-modal-content">
-                <span class="close-modal" onclick="document.getElementById('vip-modal').remove()">&times;</span>
-                <h2 class="text-2xl font-bold mb-4 text-center">🌟 Nâng cấp VIP</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="payment-modal-content bg-white rounded-xl shadow-md p-6">
+                <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">🌟 Nâng cấp VIP</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     ${Object.entries(plans).map(([key, plan]) => `
-                        <div class="border-2 rounded-lg p-4 text-center hover:border-purple-500 cursor-pointer plan-card" data-plan="${key}">
-                            <h3 class="font-bold text-lg mb-2">${plan.name}</h3>
-                            <p class="text-3xl font-bold text-purple-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
+                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-purple-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                            <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
+                            <p class="text-2xl font-bold text-purple-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
                             <p class="text-gray-600 mb-4">${plan.duration} ngày</p>
-                            <button class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 buy-plan-btn" data-plan="${key}">
+                            <button class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition duration-300 buy-plan-btn" data-plan="${key}">
                                 Chọn gói này
                             </button>
                         </div>
                     `).join('')}
                 </div>
-                <div id="payment-section" style="display:none">
-                    <h3 class="text-xl font-bold mb-4 border-t pt-4">Thông tin thanh toán</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="border rounded-lg p-4 text-center">
-                            <p class="font-bold mb-2">Cách 1: Quét mã QR</p>
-                            <img id="qr-code" class="mx-auto mb-2" style="max-width:250px">
+                <div id="payment-section" class="hidden">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 border-t pt-4">Thông tin thanh toán</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
+                            <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
+                            <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
                             <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div></p>
                         </div>
-                        <div class="border rounded-lg p-4">
-                            <p class="font-bold mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
-                            <div class="text-center mb-2">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
+                            <div class="text-center mb-4">
                                 <img src="https://qr.sepay.vn/assets/img/banklogo/MB.png" class="inline-block" style="max-height:50px">
-                                <p class="font-bold">Ngân hàng ${sepayConfig.bankName}</p>
+                                <p class="font-bold text-gray-800">Ngân hàng ${sepayConfig.bankName}</p>
                             </div>
-                            <table class="w-full text-sm">
+                            <table class="w-full text-sm text-gray-600">
                                 <tbody>
-                                    <tr><td class="py-1">Chủ TK:</td><td class="font-bold">${sepayConfig.accountName}</td></tr>
-                                    <tr><td class="py-1">Số TK:</td><td class="font-bold">${sepayConfig.accountNumber}</td></tr>
-                                    <tr><td class="py-1">Số tiền:</td><td class="font-bold" id="amount-display"></td></tr>
-                                    <tr><td class="py-1">Nội dung:</td><td class="font-bold" id="content-display"></td></tr>
+                                    <tr><td class="py-1 font-medium">Chủ TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountName}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountNumber}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số tiền:</td><td class="font-bold text-gray-800" id="amount-display"></td></tr>
+                                    <tr><td class="py-1 font-medium">Nội dung:</td><td class="font-bold text-gray-800" id="content-display"></td></tr>
                                 </tbody>
                             </table>
-                            <p class="bg-yellow-50 p-2 rounded mt-2 text-xs">⚠️ Lưu ý: Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận</p>
+                            <p class="bg-yellow-50 p-2 rounded mt-4 text-xs text-gray-600">⚠️ Lưu ý: Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận</p>
                         </div>
                     </div>
-                    <div class="text-center mt-4">
-                        <button id="cancel-payment-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                    <div class="text-center mt-6">
+                        <button id="cancel-payment-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
                             Hủy thanh toán
                         </button>
                     </div>
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
         modal.style.display = 'block';
 
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const createVIPOrder = async (planKey, planData, sepayConfig) => {
         const orderRes = await backendRequest('createVIPOrder', { userId, plan: planKey });
-        
+
         if (!orderRes || !orderRes.success) {
             return log('Không thể tạo đơn hàng', true);
         }
@@ -196,8 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
         log(`✅ Tạo đơn hàng #DH${currentOrder.id} thành công`);
 
         // Show payment section
-        document.getElementById('payment-section').style.display = 'block';
-        document.querySelectorAll('.plan-card').forEach(card => card.style.opacity = '0.5');
+        document.getElementById('payment-section').classList.remove('hidden');
+        document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
         document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
 
         // Update payment info
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const startPaymentCheck = () => {
         if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-        
+
         paymentCheckInterval = setInterval(async () => {
             if (!currentOrder) {
                 clearInterval(paymentCheckInterval);
@@ -220,12 +220,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
-            
+
             if (statusRes && statusRes.success && statusRes.order.status === 'Paid') {
                 clearInterval(paymentCheckInterval);
                 document.getElementById('payment-status').innerHTML = '<span class="text-green-600 font-bold">✅ Thanh toán thành công!</span>';
                 log('🎉 Thanh toán VIP thành công!');
-                
+
                 setTimeout(async () => {
                     document.getElementById('vip-modal')?.remove();
                     await checkAndUpdateVIPStatus();
@@ -250,26 +250,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="vip-badge">⭐ VIP - Còn ${vipStatus.daysLeft} ngày</div>
                 <p class="text-xs text-gray-600 mt-1">Hết hạn: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
             `;
-            upgradeVipBtn.style.display = 'none';
-            if (prerequisiteToggle) prerequisiteToggle.disabled = false;
+            upgradeVipBtn.classList.add('hidden');
+            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
+            if (fetchBtn) fetchBtn.classList.remove('hidden');
+            if (selectedList) selectedList.classList.remove('hidden');
+            if (registrationControls) registrationControls.classList.remove('hidden');
         } else {
             vipStatusElement.innerHTML = `
                 <div class="text-center p-3 bg-gray-100 rounded-lg">
-                    <p class="text-sm text-gray-600">Bạn chưa có VIP</p>
+                    <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
                 </div>
             `;
-            upgradeVipBtn.style.display = 'block';
-            if (prerequisiteToggle) {
-                prerequisiteToggle.checked = false;
-                prerequisiteToggle.disabled = true;
-            }
+            upgradeVipBtn.classList.remove('hidden');
+            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
+            if (fetchBtn) fetchBtn.classList.add('hidden');
+            if (selectedList) selectedList.classList.add('hidden');
+            if (registrationControls) registrationControls.classList.add('hidden');
         }
     };
-    
+
     // --- UI UPDATE FUNCTIONS ---
     const updateUIAfterLogin = (profile) => {
-        loginForm.style.display = 'none';
-        
+        loginForm.classList.add('hidden');
+
         // Create user panel if not exists
         if (!document.getElementById('user-panel-content')) {
             const panelContainer = document.createElement('div');
@@ -323,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
             vipStatusElement = document.getElementById('vip-status');
             upgradeVipBtn = document.getElementById('upgrade-vip-btn');
             prerequisiteToggle = document.getElementById('prerequisite-toggle');
+            prerequisiteToggleContainer = document.getElementById('prerequisite-toggle-container');
             fetchBtn = document.getElementById('fetch-schedule-btn');
             logoutBtn = document.getElementById('logout-btn');
             progressBarContainer = document.getElementById('progress-bar-container');
@@ -336,18 +340,18 @@ document.addEventListener('DOMContentLoaded', () => {
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', showVIPModal);
         }
-        
+
         greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
-        document.getElementById('user-panel-content').style.display = 'block';
-        
+        document.getElementById('user-panel-content').classList.remove('hidden');
+
         // Update VIP display
         updateVIPDisplay();
     };
-    
+
     const resetUI = () => {
-        loginForm.style.display = 'block';
+        loginForm.classList.remove('hidden');
         const panel = document.getElementById('user-panel-content');
-        if (panel) panel.style.display = 'none';
+        if (panel) panel.classList.add('hidden');
 
         scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem dữ liệu.</p>';
         registeredContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Chưa có dữ liệu.</p>';
@@ -357,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         allScheduleData = [];
         selectedClasses.clear();
         updateSelectedList();
-        
+
         if (paymentCheckInterval) clearInterval(paymentCheckInterval);
         currentOrder = null;
     };
@@ -399,8 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateUIAfterLogin(initialData.profile);
                 await fetchRegisteredClasses();
             } else {
-                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
-                 authToken = null;
+                log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
+                authToken = null;
             }
         } else {
             log(`❌ Đăng nhập thất bại: ${tokenRes?.message || 'Lỗi không xác định'}`, true);
@@ -420,18 +424,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fetchFullSchedule = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
+        if (!vipStatus.hasVIP) {
+            log("⚠️ Bạn cần nâng cấp VIP để lấy dữ liệu lịch học.", true);
+            return;
+        }
         toggleLoading(fetchBtn, true);
         isProcessStopped = false;
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
-        
+
         const fetchPrerequisites = prerequisiteToggle?.checked || false;
-        
-        if (fetchPrerequisites && !vipStatus.hasVIP) {
-            log("⚠️ Chỉ tài khoản VIP mới có thể lấy môn học điều kiện", true);
-            toggleLoading(fetchBtn, false);
-            return;
-        }
-        
+
         const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites, userId });
 
         if (scheduleRes && scheduleRes.success) {
@@ -449,15 +451,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchRegisteredClasses = async () => {
         if (!authToken) return;
         toggleLoading(refreshRegisteredBtn, true);
-        const fetchPrerequisites = prerequisiteToggle?.checked || false;
-        
+        const fetchPrerequisites = vipStatus.hasVIP && prerequisiteToggle?.checked || false;
+
         const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites, userId });
 
         if (registeredRes && registeredRes.success) {
-             await renderRegisteredTable(registeredRes.body);
-             log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+            await renderRegisteredTable(registeredRes.body);
+            log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
         } else {
-             log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
+            log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
         }
         toggleLoading(refreshRegisteredBtn, false);
     };
@@ -465,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelRegistration = async (registrationId, tenMonHoc, source) => {
         if (!confirm(`Bạn có chắc muốn hủy môn "${tenMonHoc}" không?`)) return;
         log(`Đang hủy môn ${tenMonHoc}...`);
-        
+
         const result = await backendRequest('cancel', { registrationId, source });
 
         if (result && result.success) {
@@ -475,8 +477,12 @@ document.addEventListener('DOMContentLoaded', () => {
             log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
         }
     };
-    
+
     const startInsertion = () => {
+        if (!vipStatus.hasVIP) {
+            log("⚠️ Bạn cần nâng cấp VIP để thực hiện chèn lớp.", true);
+            return;
+        }
         if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để chèn.", true);
         stopProcess();
         isProcessStopped = false;
@@ -514,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (registrationIntervals.size === 0) await stopProcess();
                             return;
                         } else {
-                             log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                            log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
                         }
                     }
                 }
@@ -522,31 +528,35 @@ document.addEventListener('DOMContentLoaded', () => {
             registrationIntervals.set(maHocPhan, intervalId);
         });
     };
-    
+
     const startRegistration = () => {
+        if (!vipStatus.hasVIP) {
+            log("⚠️ Bạn cần nâng cấp VIP để thực hiện đăng ký.", true);
+            return;
+        }
         if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để đăng ký.", true);
         stopProcess();
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu đăng ký liên tục...");
-    
+
         const classesBySubject = new Map();
         selectedClasses.forEach(cls => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
             classesBySubject.get(cls.maHocPhan).push(cls);
         });
         const delay = parseInt(delayInput.value, 10) || 1000;
-    
+
         classesBySubject.forEach((classes, maHocPhan) => {
             const tenMonHoc = classes[0].tenMonHoc;
-            
+
             const intervalId = setInterval(async () => {
                 if (isProcessStopped) return;
                 for (const cls of classes) {
                     if (isProcessStopped) return;
                     log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${cls.maLopHocPhan}...`);
                     const result = await backendRequest('register', { classId: cls.id, source: cls.source });
-                    
+
                     if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
                         log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
                         clearInterval(registrationIntervals.get(maHocPhan));
@@ -563,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
             registrationIntervals.set(maHocPhan, intervalId);
         });
     };
-    
+
     const stopProcess = async () => {
         isProcessStopped = true;
         log("🛑 Đang dừng tất cả các quá trình...");
@@ -574,11 +584,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const toggleActionButtons = (isProcessing) => {
-        startInsertionBtn.classList.toggle('hidden', isProcessing);
-        startRegistrationBtn.classList.toggle('hidden', isProcessing);
+        if (vipStatus.hasVIP) {
+            startInsertionBtn.classList.toggle('hidden', isProcessing);
+            startRegistrationBtn.classList.toggle('hidden', isProcessing);
+        }
         stopBtn.classList.toggle('hidden', !isProcessing);
     };
-    
+
     // --- RENDER FUNCTIONS ---
     const renderScheduleTable = async () => {
         const query = searchInput.value.toLowerCase();
@@ -611,12 +623,12 @@ document.addEventListener('DOMContentLoaded', () => {
             row.dataset.classId = cls.id;
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
-  ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
-  : (isBatBuoc === undefined
-      ? 'N/A'
-      : (isBatBuoc
-          ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
-          : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
+                : (isBatBuoc === undefined
+                    ? 'N/A'
+                    : (isBatBuoc
+                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
@@ -654,10 +666,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
                 <td class="px-6 py-4" data-label="Hành động">${
-      reg.isAllowCancel === false
-        ? ''
-        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
-    }</td>`;
+                    reg.isAllowCancel === false
+                        ? ''
+                        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
+                }</td>`;
             tbody.appendChild(row);
         });
         registeredContainer.innerHTML = '';
@@ -665,21 +677,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateSelectedList = async () => {
+        if (!vipStatus.hasVIP) {
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn. Nâng cấp VIP để chọn lớp.</p>`;
+            registrationControls.classList.add('hidden');
+            return;
+        }
         if (selectedClasses.size === 0) {
             selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
             registrationControls.classList.add('hidden');
             return;
         }
         selectedList.innerHTML = [...selectedClasses.values()].map(cls => {
-             const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
-             return `
-            <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
-                <div>
-                    <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
-                    <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
-                </div>
-                <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
-            </div>`
+            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            return `
+                <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
+                    <div>
+                        <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
+                        <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
+                    </div>
+                    <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
+                </div>`;
         }).join('');
         registrationControls.classList.remove('hidden');
     };
@@ -697,6 +714,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
         const scheduleRow = e.target.closest('#schedule-container tr');
         if (scheduleRow) {
+            if (!vipStatus.hasVIP) {
+                log("⚠️ Bạn cần nâng cấp VIP để chọn lớp.", true);
+                return;
+            }
             const classId = scheduleRow.dataset.classId;
             const cls = allScheduleData.find(c => c.id.toString() === classId);
             if (!cls) return;
@@ -707,6 +728,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const removeBtn = e.target.closest('.remove-selected-btn');
         if (removeBtn) {
+            if (!vipStatus.hasVIP) {
+                log("⚠️ Bạn cần nâng cấp VIP để chỉnh sửa danh sách lớp.", true);
+                return;
+            }
             const classId = removeBtn.dataset.classId;
             selectedClasses.delete(classId);
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);

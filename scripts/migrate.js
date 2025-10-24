@@ -1,7 +1,9 @@
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-const db = require('../database/db_connect');
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { testConnection, executeQuery, closePool } from '../database/db_connect.js';
+
+dotenv.config();
 
 async function runMigration() {
     console.log('🚀 Starting database migration...\n');
@@ -26,7 +28,7 @@ async function runMigration() {
         console.log(`Found ${queries.length} SQL statements\n`);
 
         // Test connection
-        const isConnected = await db.testConnection();
+        const isConnected = await testConnection();
         if (!isConnected) {
             throw new Error('Cannot connect to database');
         }
@@ -36,7 +38,7 @@ async function runMigration() {
         for (let i = 0; i < queries.length; i++) {
             const query = queries[i];
             try {
-                await db.executeQuery(query);
+                await executeQuery(query);
                 
                 // Extract table name for better logging
                 const tableMatch = query.match(/CREATE TABLE (?:IF NOT EXISTS )?`?(\w+)`?/i);
@@ -55,19 +57,19 @@ async function runMigration() {
         
         // Verify tables
         console.log('\nVerifying tables...');
-        const tables = await db.executeQuery('SHOW TABLES');
+        const tables = await executeQuery('SHOW TABLES');
         console.log(`\nFound ${tables.length} tables:`);
         tables.forEach((table, index) => {
             const tableName = Object.values(table)[0];
             console.log(`${index + 1}. ${tableName}`);
         });
 
-        await db.closePool();
+        await closePool();
         process.exit(0);
 
     } catch (error) {
         console.error('\n❌ Migration failed:', error.message);
-        await db.closePool();
+        await closePool();
         process.exit(1);
     }
 }
@@ -76,9 +78,9 @@ async function runMigration() {
 console.log('Database Migration Tool');
 console.log('======================\n');
 console.log('Configuration:');
-console.log('- Host:', db.dbConfig.host);
-console.log('- Database:', db.dbConfig.database);
-console.log('- User:', db.dbConfig.user);
+console.log('- Host:', process.env.DB_HOST || 'localhost');
+console.log('- Database:', process.env.DB_NAME || 'uth_registration');
+console.log('- User:', process.env.DB_USER || 'your_db_user');
 console.log('\n');
 
 runMigration();
