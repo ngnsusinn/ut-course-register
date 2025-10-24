@@ -250,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
                 </div>`;
         }).join('');
-        // Only show registration controls if user has VIP and classes are selected
         registrationControls.classList.toggle('hidden', !vipStatus.hasVIP || selectedClasses.size === 0);
     };
 
@@ -269,11 +268,22 @@ document.addEventListener('DOMContentLoaded', () => {
             log('Đăng nhập thất bại: ' + (res?.message || 'Lỗi không xác định'), true);
             return;
         }
-        authToken = res.body?.token;
+        // Debug login response
+        log(`Login response: ${JSON.stringify(res)}`);
+        // Handle different token structures
+        authToken = res.body?.token || res.body?.accessToken || res.body;
+        if (!authToken || typeof authToken !== 'string') {
+            log('Lỗi: Token không hợp lệ hoặc không được trả về', true);
+            return;
+        }
         userId = res.body?.maSinhVien || res.body?.username;
-        const initialData = await backendRequest('getInitialData');
+        if (!userId) {
+            log('Lỗi: Không tìm thấy mã sinh viên hoặc tên người dùng', true);
+            return;
+        }
+        const initialData = await backendRequest('getInitialData', { userId });
         if (!initialData || !initialData.success) {
-            log('Không thể tải dữ liệu ban đầu', true);
+            log('Không thể tải dữ liệu ban đầu: ' + (initialData?.message || 'Lỗi không xác định'), true);
             return;
         }
         dotId = initialData.dot?.id;

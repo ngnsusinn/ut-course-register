@@ -1,201 +1,60 @@
-import fetch from 'node-fetch';
-import mysql from 'mysql2/promise';
+const db = require('./db');
+const fetch = require('node-fetch');
 
-// Database configuration
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'your_db_user',
-    password: process.env.DB_PASSWORD || 'your_db_password',
-    database: process.env.DB_NAME || 'uth_registration',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-};
-
-// Validate environment variables
-if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
-    console.error('Missing required database environment variables');
-    throw new Error('Database configuration is incomplete');
-}
-
-// Create connection pool
-let pool;
-const getPool = () => {
-    if (!pool) {
-        pool = mysql.createPool(dbConfig);
-    }
-    return pool;
-};
-
-// Utility: Call internal university API
-async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
-    let baseApiUrl;
-    if (endpoint.startsWith('/user/')) {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
-    } else if (source === 'dkhpdk') {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhpdk';
-    } else {
-        baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhp';
-    }
-    const targetUrl = baseApiUrl + endpoint;
+const callApi = async (endpoint, method, token, body) => {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
-
     try {
-        const response = await fetch(targetUrl, options);
-        if (!response.ok) {
-            return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
-        }
-        return await response.json();
+        const response = await fetch(`https://portal.ut.edu.vn/api/v1${endpoint}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : undefined
+        });
+        const data = await response.json();
+        return { success: response.ok, status: response.status, body: data };
     } catch (error) {
+        console.error(`Error calling ${endpoint}:`, error);
         return { success: false, message: error.message };
     }
-}
-
-// Utility: Get schedule details for a class
-async function getScheduleDetails(classId, token, source) {
-    const result = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
-    return (result && result.success) ? result.body : { error: true, message: result.message };
-}
-
-// VIP Plans Configuration
-const VIP_PLANS = {
-    '1day': { price: 10000, duration: 1, name: '1 Ngày VIP' },
-    '3days': { price: 25000, duration: 3, name: '3 Ngày VIP' },
-    '7days': { price: 50000, duration: 7, name: '7 Ngày VIP' }
 };
 
-// SePay Configuration
-const SEPAY_CONFIG = {
-    bankName: process.env.SEPAY_BANK_NAME || 'MBBank',
-    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '01006022006',
-    accountName: process.env.SEPAY_ACCOUNT_NAME || 'NGUYỄN SUN SIN'
+const checkVIPStatus = async (userId) => {
+    const [rows] = await db.query('SELECT * FROM vip_users WHERE user_id = ? AND expiry_date > NOW()', [userId]);
+    return rows.length > 0 ? { hasVIP: true, expiryDate: rows[0].expiry_date } : { hasVIP: false };
 };
 
-// Helper: Check if user has active VIP
-async function checkVIPStatus(userId) {
-    try {
-        const connection = await getPool().getConnection();
-        
-        const [rows] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
-            [userId]
-        );
-        
-        connection.release();
-        
-        if (rows.length === 0) {
-            return { hasVIP: false };
-        }
-        
-        const vipData = rows[0];
-        const expiryDate = new Date(vipData.expiry_date);
-        const now = new Date();
-        const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-        
-        return { 
-            hasVIP: true, 
-            expiryDate: vipData.expiry_date,
-            plan: vipData.plan_type,
-            daysLeft: daysLeft
-        };
-    } catch (error) {
-        console.error('Error checking VIP status:', error);
-        return { hasVIP: false };
-    }
-}
-
-// Helper: Create order
-async function createOrder(userId, plan) {
-    const planConfig = VIP_PLANS[plan];
-    if (!planConfig) return null;
-    
-    try {
-        const connection = await getPool().getConnection();
-        
-        const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
-            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
-        );
-        
-        connection.release();
-        
-        return {
-            id: result.insertId,
-            userId,
-            amount: planConfig.price,
-            status: 'Unpaid',
-            plan,
-            planName: planConfig.name,
-            createdAt: new Date().toISOString()
-        };
-    } catch (error) {
-        console.error('Error creating order:', error);
-        return null;
-    }
-}
-
-// Helper: Check order status
-async function getOrderStatus(orderId) {
-    try {
-        const connection = await getPool().getConnection();
-        
-        const [rows] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ?',
-            [orderId]
-        );
-        
-        connection.release();
-        
-        if (rows.length === 0) {
-            return null;
-        }
-        
-        const order = rows[0];
-        return {
-            id: order.id,
-            userId: order.user_id,
-            amount: parseFloat(order.amount),
-            status: order.payment_status,
-            plan: order.plan_type,
-            planName: order.plan_name,
-            createdAt: order.created_at,
-            paidAt: order.paid_at,
-            transactionRef: order.transaction_ref
-        };
-    } catch (error) {
-        console.error('Error getting order status:', error);
-        return null;
-    }
-}
-
-// === MAIN HANDLER ===
-export default async (req, res) => {
-    // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://your-domain.com');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    
-    // Regular API handler
-    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
-
+module.exports = async (req, res) => {
     const { action, payload } = req.body;
-    const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    let result = { success: false };
 
     try {
-        let result;
         switch (action) {
-            // --- AUTHENTICATION ACTIONS ---
             case 'login': {
                 const { username, password } = payload;
-                result = await callApi('/user/login', 'POST', null, { username, password });
+                if (!username || !password) {
+                    return res.status(400).json({ success: false, message: 'Missing username or password' });
+                }
+                const loginRes = await callApi('/user/login', 'POST', null, { username, password });
+                if (!loginRes.success || !loginRes.body) {
+                    return res.status(loginRes.status || 500).json({ success: false, message: loginRes.message || 'Login failed' });
+                }
+                // Ensure token is returned in a consistent format
+                const loginToken = loginRes.body.token || loginRes.body.accessToken || loginRes.body;
+                if (!loginToken || typeof loginToken !== 'string') {
+                    console.error('Invalid token in login response:', loginRes.body);
+                    return res.status(500).json({ success: false, message: 'Invalid token received from login API' });
+                }
+                result = {
+                    success: true,
+                    body: {
+                        token: loginToken,
+                        maSinhVien: loginRes.body.maSinhVien || username,
+                        username
+                    }
+                };
                 break;
             }
-
             case 'getInitialData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
@@ -203,11 +62,8 @@ export default async (req, res) => {
                 const latestDot = (dotsRes.success && dotsRes.body.length) 
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
-                
-                // Check VIP status
                 const userId = profileRes.body?.maSinhVien || profileRes.body?.username;
                 const vipStatus = await checkVIPStatus(userId);
-                
                 result = {
                     success: profileRes.success && !!latestDot,
                     profile: profileRes.body,
@@ -216,146 +72,128 @@ export default async (req, res) => {
                 };
                 break;
             }
-
-            // --- VIP ACTIONS ---
-            case 'checkVIPStatus': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { userId } = payload;
-                result = { success: true, vip: await checkVIPStatus(userId) };
-                break;
-            }
-
-            case 'createVIPOrder': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { userId, plan } = payload;
-                
-                if (!VIP_PLANS[plan]) {
-                    return res.status(400).json({ success: false, message: 'Invalid plan' });
-                }
-                
-                const order = await createOrder(userId, plan);
-                
-                if (!order) {
-                    return res.status(500).json({ success: false, message: 'Failed to create order' });
-                }
-                
-                result = { success: true, order };
-                break;
-            }
-
-            case 'checkOrderStatus': {
-                const { orderId } = payload;
-                const order = await getOrderStatus(parseInt(orderId));
-                
-                if (!order) {
-                    return res.status(404).json({ success: false, message: 'Order not found' });
-                }
-                
-                result = { success: true, order };
-                break;
-            }
-
-            case 'getVIPPlans': {
-                result = { 
-                    success: true, 
-                    plans: VIP_PLANS,
-                    sepayConfig: SEPAY_CONFIG
-                };
-                break;
-            }
-
-            // --- DATA RETRIEVAL ACTIONS ---
             case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                
-                // Check VIP status for prerequisite courses
                 const { dotId, fetchPrerequisites, userId } = payload;
                 const vipStatus = await checkVIPStatus(userId);
-                
-                // Only allow prerequisite courses for VIP users
-                const sources = (fetchPrerequisites && vipStatus.hasVIP) ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let allClassData = [];
-                let subjectTypeMap = {};
-
+                const sources = ['dkhp'];
+                if (fetchPrerequisites && vipStatus.hasVIP) sources.push('dkhpdk');
+                const schedule = [];
+                const subjectTypes = {};
                 for (const source of sources) {
-                    const subjectsRes = await callApi(`/getHocPhanHocMoi?idDot=${dotId}`, 'GET', token, null, source);
-                    if (!subjectsRes.success || !Array.isArray(subjectsRes.body)) continue;
-
-                    if (source === 'dkhp') {
-                        subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
-                    }
-
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
-                        const classEndpoint = source === 'dkhpdk'
-                            ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                            : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                        const classRes = await callApi(classEndpoint, 'GET', token, null, source);
-
-                        if (classRes.success && Array.isArray(classRes.body)) {
-                            await Promise.all(classRes.body.map(async (cls) => {
-                                const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
+                    const res = await callApi(`/class?dotId=${dotId}&source=${source}`, 'GET', token);
+                    if (res.success) {
+                        schedule.push(...res.body.map(cls => ({ ...cls, source })));
+                        const subjectRes = await callApi(`/subject?dotId=${dotId}&source=${source}`, 'GET', token);
+                        if (subjectRes.success) {
+                            subjectRes.body.forEach(s => {
+                                subjectTypes[s.maHocPhan] = s.isBatBuoc;
+                            });
                         }
-                    }));
+                    }
                 }
-                result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
+                for (const cls of schedule) {
+                    const detailsRes = await callApi(`/class/${cls.id}/schedule?dotId=${dotId}&source=${cls.source}`, 'GET', token);
+                    cls.scheduleDetails = detailsRes.success ? detailsRes.body : [];
+                }
+                result = { success: true, schedule, subjectTypes };
                 break;
             }
-            
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites, userId } = payload;
                 const vipStatus = await checkVIPStatus(userId);
-                const sources = (fetchPrerequisites && vipStatus.hasVIP) ? ['dkhp', 'dkhpdk'] : ['dkhp'];
-                let registeredData = [];
-
+                const sources = ['dkhp'];
+                if (fetchPrerequisites && vipStatus.hasVIP) sources.push('dkhpdk');
+                const registrations = [];
                 for (const source of sources) {
-                    const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
-                    if (regRes.success && Array.isArray(regRes.body)) {
-                        await Promise.all(regRes.body.map(async (reg) => {
-                            const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
-                            const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
-                            registeredData.push({ ...reg, source, scheduleDetails });
-                        }));
+                    const res = await callApi(`/registration?dotId=${dotId}&source=${source}`, 'GET', token);
+                    if (res.success) {
+                        registrations.push(...res.body.map(reg => ({ ...reg, source })));
                     }
                 }
-                result = { success: true, body: registeredData };
+                for (const reg of registrations) {
+                    const detailsRes = await callApi(`/class/${reg.lopHocPhanId}/schedule?dotId=${dotId}&source=${reg.source}`, 'GET', token);
+                    reg.scheduleDetails = detailsRes.success ? detailsRes.body : [];
+                }
+                result = { success: true, body: registrations };
                 break;
             }
-            
-            case 'checkClassStatus': {
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, maHocPhan, source } = payload;
-                const classEndpoint = source === 'dkhpdk'
-                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
-                result = await callApi(classEndpoint, 'GET', token, null, source);
-                break;
-            }
-
-            // --- WRITE ACTIONS (REGISTER/CANCEL) ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source } = payload;
-                result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
+                const res = await callApi(`/registration?source=${source}`, 'POST', token, { lopHocPhanId: classId });
+                result = res;
                 break;
             }
-
             case 'cancel': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { registrationId, source } = payload;
-                result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
+                const res = await callApi(`/registration/${registrationId}?source=${source}`, 'DELETE', token);
+                result = res;
                 break;
             }
-
+            case 'checkClassStatus': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { dotId, maHocPhan, source } = payload;
+                const res = await callApi(`/class?dotId=${dotId}&maHocPhan=${maHocPhan}&source=${source}`, 'GET', token);
+                result = res;
+                break;
+            }
+            case 'getVIPPlans': {
+                result = {
+                    success: true,
+                    plans: {
+                        basic: { name: 'Gói Cơ Bản', price: 50000, duration: 30 },
+                        premium: { name: 'Gói Cao Cấp', price: 100000, duration: 90 },
+                        ultimate: { name: 'Gói Tối Ưu', price: 180000, duration: 180 }
+                    },
+                    sepayConfig: {
+                        bankName: process.env.SEPAY_BANK_NAME,
+                        accountNumber: process.env.SEPAY_ACCOUNT_NUMBER,
+                        accountName: process.env.SEPAY_ACCOUNT_NAME
+                    }
+                };
+                break;
+            }
+            case 'createVIPOrder': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { userId, plan } = payload;
+                const plans = {
+                    basic: { price: 50000, duration: 30 },
+                    premium: { price: 100000, duration: 90 },
+                    ultimate: { price: 180000, duration: 180 }
+                };
+                const selectedPlan = plans[plan];
+                if (!selectedPlan) return res.status(400).json({ success: false, message: 'Invalid plan' });
+                const [result] = await db.query(
+                    'INSERT INTO vip_orders (user_id, plan, amount, status) VALUES (?, ?, ?, ?)',
+                    [userId, plan, selectedPlan.price, 'Pending']
+                );
+                result = { success: true, order: { id: result.insertId, amount: selectedPlan.price } };
+                break;
+            }
+            case 'checkOrderStatus': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { orderId } = payload;
+                const [rows] = await db.query('SELECT * FROM vip_orders WHERE id = ?', [orderId]);
+                if (rows.length === 0) return res.status(404).json({ success: false, message: 'Order not found' });
+                result = { success: true, order: rows[0] };
+                break;
+            }
+            case 'checkVIPStatus': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { userId } = payload;
+                const vipStatus = await checkVIPStatus(userId);
+                result = { success: true, vip: vipStatus };
+                break;
+            }
             default:
-                return res.status(400).json({ success: false, message: 'Invalid action.' });
+                return res.status(400).json({ success: false, message: 'Invalid action' });
         }
-        res.status(200).json(result);
-
+        res.json(result);
     } catch (error) {
-        console.error('Handler error:', error);
-        res.status(500).json({ success: false, message: 'Handler Error: ' + error.message });
+        console.error(`Error handling ${action}:`, error);
+        res.status(500).json({ success: false, message: error.message });
     }
 };
