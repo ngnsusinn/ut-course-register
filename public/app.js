@@ -46,6 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentOrder = null;
     let paymentCheckInterval = null;
 
+    // Assign originalHTML safely
+    const buttons = [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn];
+    buttons.forEach(btn => { if (btn) btn.originalHTML = btn.innerHTML; });
+
     // === BACKEND COMMUNICATION ===
     const backendRequest = async (action, payload = {}) => {
         try {
@@ -84,10 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
             button.innerHTML = button.originalHTML;
         }
     };
-
-    [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn].forEach(btn => {
-        if (btn) btn.originalHTML = btn.innerHTML;
-    });
     
     const formatScheduleDetail = (details) => {
         if (!details || details.error || !Array.isArray(details) || details.length === 0) {
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="border rounded-lg p-4 text-center">
                             <p class="font-bold mb-2">Cách 1: Quét mã QR</p>
                             <img id="qr-code" class="mx-auto mb-2" style="max-width:250px">
-                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="spinner-border inline-block" role="status"></div></p>
+                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-purple-500"></div></p>
                         </div>
                         <div class="border rounded-lg p-4">
                             <p class="font-bold mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
@@ -330,8 +330,8 @@ document.addEventListener('DOMContentLoaded', () => {
             progressBarText = document.getElementById('progress-bar-text');
 
             // Add event listeners
-            fetchBtn.originalHTML = fetchBtn.innerHTML;
-            logoutBtn.originalHTML = logoutBtn.innerHTML;
+            if (fetchBtn) fetchBtn.originalHTML = fetchBtn.innerHTML;
+            if (logoutBtn) logoutBtn.originalHTML = logoutBtn.innerHTML;
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', showVIPModal);

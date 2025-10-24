@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const mysql = require('mysql2/promise');
+const AbortController = require('abort-controller');
 
 // Database configuration
 const dbConfig = {
@@ -35,15 +36,23 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+    const options = { method, headers, body: body ? JSON.stringify(body) : null, signal: controller.signal };
 
     try {
         const response = await fetch(targetUrl, options);
+        clearTimeout(timeoutId);
         if (!response.ok) {
             return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
         }
         return await response.json();
     } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            return { success: false, message: 'Request timeout after 30s' };
+        }
         return { success: false, message: error.message };
     }
 }
@@ -104,7 +113,7 @@ async function checkVIPStatus(userId) {
 // Helper: Create order
 async function createOrder(userId, plan) {
     const planConfig = VIP_PLANS[plan];
-    if (!planConfig) return null;
+    if (!planConfig || !userId) return null; // Validation
     
     try {
         const connection = await getPool().getConnection();
@@ -131,8 +140,9 @@ async function createOrder(userId, plan) {
     }
 }
 
-// Helper: Check order status
+// Helper: Get order status
 async function getOrderStatus(orderId) {
+    if (isNaN(parseInt(orderId))) return null; // Validation
     try {
         const connection = await getPool().getConnection();
         
@@ -279,19 +289,32 @@ module.exports = async (req, res) => {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    await Promise.all(subjectsRes.body.map(async (subject) => {
+                    const classPromises = subjectsRes.body.map(async (subject) => {
                         const classEndpoint = source === 'dkhpdk'
                             ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                             : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                         const classRes = await callApi(classEndpoint, 'GET', token, null, source);
 
                         if (classRes.success && Array.isArray(classRes.body)) {
-                            await Promise.all(classRes.body.map(async (cls) => {
+                            const detailPromises = classRes.body.map(async (cls) => {
                                 const scheduleDetails = await getScheduleDetails(cls.id, token, source);
-                                allClassData.push({ ...subject, ...cls, source, scheduleDetails });
-                            }));
+                                return { ...subject, ...cls, source, scheduleDetails };
+                            });
+                            return Promise.allSettled(detailPromises).then(results => 
+                                results.filter(r => r.status === 'fulfilled').map(r => r.value)
+                            );
                         }
-                    }));
+                        return [];
+                    });
+
+                    const classResults = await Promise.allSettled(classPromises);
+                    classResults.forEach(result => {
+                        if (result.status === 'fulfilled') {
+                            allClassData.push(...result.value);
+                        } else {
+                            console.error('Error fetching class data:', result.reason);
+                        }
+                    });
                 }
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
@@ -307,11 +330,19 @@ module.exports = async (req, res) => {
                 for (const source of sources) {
                     const regRes = await callApi(`/getLHPDaDangKy?idDot=${dotId}`, 'GET', token, null, source);
                     if (regRes.success && Array.isArray(regRes.body)) {
-                        await Promise.all(regRes.body.map(async (reg) => {
+                        const detailPromises = regRes.body.map(async (reg) => {
                             const detailRes = await callApi(`/getLichHoc?idDangKy=${reg.id}`, 'GET', token, null, 'dkhp');
                             const scheduleDetails = (detailRes && detailRes.success) ? detailRes.body : { error: true, message: detailRes.message };
-                            registeredData.push({ ...reg, source, scheduleDetails });
-                        }));
+                            return { ...reg, source, scheduleDetails };
+                        });
+                        const detailResults = await Promise.allSettled(detailPromises);
+                        detailResults.forEach(result => {
+                            if (result.status === 'fulfilled') {
+                                registeredData.push(result.value);
+                            } else {
+                                console.error('Error fetching registered class details:', result.reason);
+                            }
+                        });
                     }
                 }
                 result = { success: true, body: registeredData };

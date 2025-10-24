@@ -130,8 +130,8 @@ module.exports = async (req, res) => {
         const webhookData = req.body;
         
         // Validate webhook data
-        if (!webhookData || !webhookData.content) {
-            return res.status(400).json({ success: false, message: 'Invalid webhook data' });
+        if (!webhookData || !webhookData.content || !webhookData.referenceCode || !webhookData.transferAmount) {
+            return res.status(400).json({ success: false, message: 'Invalid or incomplete webhook data' });
         }
         
         const connection = await getPool().getConnection();

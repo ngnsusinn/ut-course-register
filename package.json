@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "node-fetch": "^2.6.7",
-    "mysql2": "^3.6.5"
+    "mysql2": "^3.6.5",
+    "abort-controller": "^3.0.0"
   },
   "devDependencies": {
     "vercel": "^33.0.0",
