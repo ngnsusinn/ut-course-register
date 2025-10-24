@@ -243,43 +243,31 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateVIPDisplay = () => {
-    if (!vipStatusElement) return;
+        if (!vipStatusElement) return;
 
-    const isVip = !!vipStatus.hasVIP;
-
-    if (isVip) {
-        vipStatusElement.innerHTML = `
-            <div class="vip-badge">⭐ VIP - Còn ${vipStatus.daysLeft} ngày</div>
-            <p class="text-xs text-gray-600 mt-1">Hết hạn: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
-        `;
-        upgradeVipBtn.classList.add('hidden');
-
-        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
-        if (prerequisiteToggle) prerequisiteToggle.disabled = false; // <-- enable checkbox for VIP
-
-        if (fetchBtn) fetchBtn.classList.remove('hidden');
-        if (selectedList) selectedList.classList.remove('hidden');
-        if (registrationControls) registrationControls.classList.remove('hidden');
-    } else {
-        vipStatusElement.innerHTML = `
-            <div class="text-center p-3 bg-gray-100 rounded-lg">
-                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
-            </div>
-        `;
-        upgradeVipBtn.classList.remove('hidden');
-
-        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
-        if (prerequisiteToggle) {
-            prerequisiteToggle.disabled = true; // <-- disable for non-VIP
-            prerequisiteToggle.checked = false; // optional: reset check state
+        if (vipStatus.hasVIP) {
+            vipStatusElement.innerHTML = `
+                <div class="vip-badge">⭐ VIP - Còn ${vipStatus.daysLeft} ngày</div>
+                <p class="text-xs text-gray-600 mt-1">Hết hạn: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            `;
+            upgradeVipBtn.classList.add('hidden');
+            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
+            if (fetchBtn) fetchBtn.classList.remove('hidden');
+            if (selectedList) selectedList.classList.remove('hidden');
+            if (registrationControls) registrationControls.classList.remove('hidden');
+        } else {
+            vipStatusElement.innerHTML = `
+                <div class="text-center p-3 bg-gray-100 rounded-lg">
+                    <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
+                </div>
+            `;
+            upgradeVipBtn.classList.remove('hidden');
+            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
+            if (fetchBtn) fetchBtn.classList.add('hidden');
+            if (selectedList) selectedList.classList.add('hidden');
+            if (registrationControls) registrationControls.classList.add('hidden');
         }
-
-        if (fetchBtn) fetchBtn.classList.add('hidden');
-        if (selectedList) selectedList.classList.add('hidden');
-        if (registrationControls) registrationControls.classList.add('hidden');
-    }
-};
-
+    };
 
     // --- UI UPDATE FUNCTIONS ---
     const updateUIAfterLogin = (profile) => {
@@ -757,3 +745,107 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function updateSelectedList() {
+  const items = Array.from(selectedList ? selectedList.querySelectorAll('li') : []);
+  const totalSelected = items.length;
+
+  // Show/hide selected list
+  if (selectedList) {
+    if (totalSelected > 0) {
+      selectedList.classList.remove('hidden');
+    } else {
+      selectedList.classList.add('hidden');
+    }
+  }
+
+  // Check if at least one selected item comes from the detailed schedule (source === 'detail')
+  const anyFromDetail = items.some(item => item.dataset.selectedFrom === 'detail');
+
+  // Show registration controls ONLY when user has VIP and there's at least one from detail
+  const shouldShowRegistration = (window.vipStatus && window.vipStatus.hasVIP) && anyFromDetail;
+
+  if (registrationControls) {
+    if (shouldShowRegistration) {
+      registrationControls.classList.remove('hidden');
+    } else {
+      registrationControls.classList.add('hidden');
+    }
+  }
+}
+
+
+function addSelectedClassToList(classObj, source = 'other') {
+  if (!selectedList) return;
+  const existing = selectedList.querySelector(`li[data-class-id="${classObj.id}"]`);
+  if (existing) {
+    existing.dataset.selectedFrom = source;
+    updateSelectedList();
+    return;
+  }
+
+  const li = document.createElement('li');
+  li.className = 'selected-class-item';
+  li.dataset.classId = classObj.id;
+  li.dataset.selectedFrom = source;
+  li.innerHTML = `
+    <div class="flex justify-between items-center">
+      <span>${classObj.name}</span>
+      <button class="remove-selected-btn" data-class-id="${classObj.id}">Xóa</button>
+    </div>
+  `;
+  selectedList.appendChild(li);
+
+  li.querySelector('.remove-selected-btn')?.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.classId;
+    removeSelectedClassById(id);
+  });
+
+  updateSelectedList();
+}
+
+function removeSelectedClassById(classId) {
+  if (!selectedList) return;
+  const el = selectedList.querySelector(`li[data-class-id="${classId}"]`);
+  if (el) el.remove();
+  updateSelectedList();
+}
+
+// updateVIPDisplay implementation
+function updateVIPDisplay() {
+    if (!vipStatusElement) return;
+
+    const isVip = !!(window.vipStatus && window.vipStatus.hasVIP);
+
+    if (isVip) {
+        vipStatusElement.innerHTML = `
+            <div class="vip-badge">⭐ VIP - Còn ${window.vipStatus.daysLeft || 0} ngày</div>
+            <p class="text-xs text-gray-600 mt-1">Hết hạn: ${new Date(window.vipStatus.expiryDate || Date.now()).toLocaleDateString('vi-VN')}</p>
+        `;
+        if (typeof upgradeVipBtn !== 'undefined' && upgradeVipBtn) upgradeVipBtn.classList.add('hidden');
+
+        if (typeof prerequisiteToggleContainer !== 'undefined' && prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
+        if (typeof prerequisiteToggle !== 'undefined' && prerequisiteToggle) prerequisiteToggle.disabled = false;
+
+        if (typeof fetchBtn !== 'undefined' && fetchBtn) fetchBtn.classList.remove('hidden');
+        if (typeof selectedList !== 'undefined' && selectedList) selectedList.classList.remove('hidden');
+        if (typeof registrationControls !== 'undefined' && registrationControls) registrationControls.classList.remove('hidden');
+    } else {
+        vipStatusElement.innerHTML = `
+            <div class="text-center p-3 bg-gray-100 rounded-lg">
+                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
+            </div>
+        `;
+        if (typeof upgradeVipBtn !== 'undefined' && upgradeVipBtn) upgradeVipBtn.classList.remove('hidden');
+
+        if (typeof prerequisiteToggleContainer !== 'undefined' && prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
+        if (typeof prerequisiteToggle !== 'undefined' && prerequisiteToggle) {
+            prerequisiteToggle.disabled = true;
+            prerequisiteToggle.checked = false;
+        }
+
+        if (typeof fetchBtn !== 'undefined' && fetchBtn) fetchBtn.classList.add('hidden');
+        if (typeof selectedList !== 'undefined' && selectedList) selectedList.classList.add('hidden');
+        if (typeof registrationControls !== 'undefined' && registrationControls) registrationControls.classList.add('hidden');
+    }
+}
