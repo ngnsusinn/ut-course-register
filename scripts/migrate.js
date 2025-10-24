@@ -10,7 +10,7 @@ async function runMigration() {
 
     try {
         // Read schema file
-        const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');
+        const schemaPath = path.join(process.cwd(), 'database', 'schema.sql');
         
         if (!fs.existsSync(schemaPath)) {
             throw new Error('Schema file not found: database/schema.sql');

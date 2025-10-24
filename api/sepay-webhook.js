@@ -26,88 +26,86 @@ const getPool = () => {
     return pool;
 };
 
-// Helper: Process VIP payment
-async function processVIPPayment(orderId, transactionData) {
+// Helper: Process VIP payment with the new schema
+async function processVIPPayment(orderId, webhookData) {
     const connection = await getPool().getConnection();
-    
     try {
+        // 1. Log the raw webhook payload for auditing
+        const [logResult] = await connection.execute(
+            'INSERT INTO payment_gateway_logs (gateway_name, raw_payload) VALUES (?, ?)',
+            [`Sepay_${webhookData.gateway || 'Unknown'}`, JSON.stringify(webhookData)]
+        );
+        const logId = logResult.insertId;
+
         await connection.beginTransaction();
-        
-        // Get order details
+
+        // 2. Get order details and lock the row to prevent race conditions
         const [orders] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ? AND payment_status = "Unpaid"',
+            `SELECT o.id, o.user_id, o.amount, p.duration_days 
+             FROM vip_orders o
+             JOIN vip_packages p ON o.package_id = p.id
+             WHERE o.id = ? AND o.status = 'pending' FOR UPDATE`,
             [orderId]
         );
-        
+
         if (orders.length === 0) {
             await connection.rollback();
-            return { success: false, message: 'Order not found or already paid' };
+            return { success: false, message: 'Order not found or already processed' };
         }
-        
         const order = orders[0];
-        
-        // Verify amount matches
-        if (parseFloat(transactionData.amount_in) !== parseFloat(order.amount)) {
-            await connection.rollback();
-            return { success: false, message: 'Amount mismatch' };
+
+        // 3. Verify amount matches
+        const amountIn = webhookData.transferType === 'in' ? parseFloat(webhookData.transferAmount) : 0;
+        if (amountIn !== parseFloat(order.amount)) {
+            await connection.execute('UPDATE vip_orders SET status = ? WHERE id = ?', ['failed', orderId]);
+            await connection.commit();
+            return { success: false, message: `Amount mismatch: expected ${order.amount}, got ${amountIn}` };
         }
-        
-        // Update order status
-        await connection.execute(
-            'UPDATE orders SET payment_status = "Paid", paid_at = NOW(), transaction_ref = ? WHERE id = ?',
-            [transactionData.reference_number, orderId]
+
+        // 4. Create a transaction record
+        const [txnResult] = await connection.execute(
+            `INSERT INTO vip_transactions (order_id, gateway_txn_id, payment_gateway, amount_paid, status) 
+             VALUES (?, ?, ?, ?, 'completed')`,
+            [orderId, webhookData.referenceCode, `Sepay_${webhookData.gateway}`, amountIn]
         );
+        const transactionId = txnResult.insertId;
         
-        // Calculate VIP expiry date
-        const planDurations = {
-            '1day': 1,
-            '3days': 3,
-            '7days': 7
-        };
-        
-        const daysToAdd = planDurations[order.plan_type] || 1;
-        
-        // Check if user already has VIP
+        // Link the log to the transaction now that we have the ID
+        await connection.execute('UPDATE payment_gateway_logs SET transaction_id = ? WHERE id = ?', [transactionId, logId]);
+
+        // 5. Update order status to 'paid'
+        await connection.execute('UPDATE vip_orders SET status = ? WHERE id = ?', ['paid', orderId]);
+
+        // 6. Grant VIP by creating a subscription record
+        // Check if user has an existing, active subscription to extend the date
         const [existingVIP] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            'SELECT expires_at FROM vip_subscriptions WHERE user_id = ? AND expires_at > NOW() ORDER BY expires_at DESC LIMIT 1',
             [order.user_id]
         );
-        
-        let expiryDate;
+
+        const now = new Date();
+        let startDate = now;
         if (existingVIP.length > 0) {
-            // Extend existing VIP
-            expiryDate = new Date(existingVIP[0].expiry_date);
-            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
-            
-            await connection.execute(
-                'UPDATE vip_subscriptions SET expiry_date = ?, plan_type = ?, updated_at = NOW() WHERE user_id = ? AND expiry_date > NOW()',
-                [expiryDate, order.plan_type, order.user_id]
-            );
-        } else {
-            // Create new VIP subscription
-            expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
-            
-            await connection.execute(
-                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date) VALUES (?, ?, ?)',
-                [order.user_id, order.plan_type, expiryDate]
-            );
+            // Start the new subscription period after the old one ends
+            startDate = new Date(existingVIP[0].expires_at);
         }
         
-        // Log activity
+        const expiryDate = new Date(startDate);
+        expiryDate.setDate(expiryDate.getDate() + order.duration_days);
+
         await connection.execute(
-            'INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)',
-            [order.user_id, 'VIP_PURCHASE', `Purchased ${order.plan_name} - Order #${orderId}`]
+            'INSERT INTO vip_subscriptions (user_id, order_id, started_at, expires_at) VALUES (?, ?, ?, ?)',
+            [order.user_id, orderId, (existingVIP.length > 0 ? startDate : now), expiryDate]
         );
-        
+
         await connection.commit();
-        
+
         return {
             success: true,
             message: 'Payment processed successfully',
             expiryDate: expiryDate.toISOString()
         };
-        
+
     } catch (error) {
         await connection.rollback();
         console.error('Error processing payment:', error);
@@ -123,91 +121,48 @@ export default async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://your-domain.com');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
+
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    
+
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
-    
+
     try {
         const webhookData = req.body;
-        
-        // Validate webhook data
-        if (!webhookData || !webhookData.content) {
+
+        // Basic validation
+        if (!webhookData || !webhookData.content || !webhookData.referenceCode) {
             return res.status(400).json({ success: false, message: 'Invalid webhook data' });
         }
-        
-        const connection = await getPool().getConnection();
-        
-        try {
-            // Save transaction to database
-            const {
-                gateway,
-                transactionDate,
-                accountNumber,
-                subAccount,
-                transferType,
-                transferAmount,
-                accumulated,
-                code,
-                content,
-                referenceCode,
-                description
-            } = webhookData;
-            
-            const amountIn = transferType === 'in' ? transferAmount : 0;
-            const amountOut = transferType === 'out' ? transferAmount : 0;
-            
-            await connection.execute(
-                `INSERT INTO transactions 
-                (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
-                accumulated, code, transaction_content, reference_number, body) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [gateway, transactionDate, accountNumber, subAccount || '', amountIn, amountOut,
-                 accumulated, code, content, referenceCode, description || '']
-            );
-            
-            connection.release();
-            
-            // Extract order ID from transaction content
-            const regex = /DH(\d+)/i;
-            const match = content.match(regex);
-            
-            if (!match || !match[1]) {
-                return res.status(200).json({
-                    success: false,
-                    message: 'Order ID not found in transaction content'
-                });
-            }
-            
-            const orderId = parseInt(match[1]);
-            
-            // Process the payment
-            const result = await processVIPPayment(orderId, {
-                amount_in: amountIn,
-                reference_number: referenceCode
-            });
-            
-            // Update transaction with order_id
+
+        // Extract order ID from transaction content (e.g., "DH123")
+        const regex = /DH(\d+)/i;
+        const match = webhookData.content.match(regex);
+
+        if (!match || !match[1]) {
+            console.log('Webhook received, but no Order ID found in content:', webhookData.content);
+            // Still save the log for manual checking
             const conn = await getPool().getConnection();
             await conn.execute(
-                'UPDATE transactions SET order_id = ? WHERE reference_number = ?',
-                [orderId, referenceCode]
+                'INSERT INTO payment_gateway_logs (gateway_name, raw_payload) VALUES (?, ?)',
+                [`Sepay_${webhookData.gateway || 'Unknown'}`, JSON.stringify(webhookData)]
             );
             conn.release();
-            
-            return res.status(200).json(result);
-            
-        } catch (error) {
-            connection.release();
-            throw error;
+            return res.status(200).json({ success: false, message: 'Order ID not found in transaction content' });
         }
-        
+
+        const orderId = parseInt(match[1], 10);
+
+        // Process the payment using the new, robust function
+        const result = await processVIPPayment(orderId, webhookData);
+
+        return res.status(200).json(result);
+
     } catch (error) {
-        console.error('Webhook error:', error);
+        console.error('Webhook handler error:', error);
         return res.status(500).json({
             success: false,
             message: 'Internal server error: ' + error.message

@@ -125,12 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
                 <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">🌟 Nâng cấp VIP</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    ${Object.entries(plans).map(([key, plan]) => `
-                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                    ${plans.map(plan => `
+                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${plan.planCode}">
                             <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
                             <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
-                            <p class="text-gray-600 mb-4">${plan.duration} ngày</p>
-                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
+                            <p class="text-gray-600 mb-4">${plan.duration_days} ngày</p>
+                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${plan.planCode}">
                                 Chọn gói này
                             </button>
                         </div>
@@ -176,8 +176,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle plan selection
         modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const plan = e.target.dataset.plan;
-                await createVIPOrder(plan, plans[plan], sepayConfig);
+                const planCode = e.target.dataset.plan;
+                const plan = plans.find(p => p.planCode === planCode);
+                await createVIPOrder(plan.planCode, plan, sepayConfig);
             });
         });
 
@@ -189,8 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const createVIPOrder = async (planKey, planData, sepayConfig) => {
-        const orderRes = await backendRequest('createVIPOrder', { userId, plan: planKey });
+    const createVIPOrder = async (planCode, planData, sepayConfig) => {
+        const orderRes = await backendRequest('createVIPOrder', { userId, plan: planCode });
 
         if (!orderRes || !orderRes.success) {
             return log('Không thể tạo đơn hàng', true);
