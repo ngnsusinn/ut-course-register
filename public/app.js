@@ -259,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (fetchBtn) fetchBtn.classList.remove('hidden');
         if (selectedList) selectedList.classList.remove('hidden');
-        if (registrationControls) registrationControls.classList.remove('hidden');
     } else {
         vipStatusElement.innerHTML = `
             <div class="text-center p-3 bg-gray-100 rounded-lg">
@@ -276,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (fetchBtn) fetchBtn.classList.add('hidden');
         if (selectedList) selectedList.classList.add('hidden');
-        if (registrationControls) registrationControls.classList.add('hidden');
     }
 };
 
