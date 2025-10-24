@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
         const filteredData = allScheduleData.filter(cls =>
-            cls.tenTrangThai !== 'Đã khoá lớp' &&
+            cls.tenTrangThai !== 'Đã khóa lớp' &&
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
