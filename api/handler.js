@@ -11,6 +11,7 @@ const callApi = async (endpoint, method, token, body) => {
             body: body ? JSON.stringify(body) : undefined
         });
         const data = await response.json();
+        console.log(`API response for ${endpoint}:`, JSON.stringify(data, null, 2));
         return { success: response.ok, status: response.status, body: data };
     } catch (error) {
         console.error(`Error calling ${endpoint}:`, error);
@@ -19,8 +20,13 @@ const callApi = async (endpoint, method, token, body) => {
 };
 
 const checkVIPStatus = async (userId) => {
-    const [rows] = await db.query('SELECT * FROM vip_users WHERE user_id = ? AND expiry_date > NOW()', [userId]);
-    return rows.length > 0 ? { hasVIP: true, expiryDate: rows[0].expiry_date } : { hasVIP: false };
+    try {
+        const [rows] = await db.query('SELECT * FROM vip_users WHERE user_id = ? AND expiry_date > NOW()', [userId]);
+        return rows.length > 0 ? { hasVIP: true, expiryDate: rows[0].expiry_date } : { hasVIP: false };
+    } catch (error) {
+        console.error('Error checking VIP status:', error);
+        return { hasVIP: false };
+    }
 };
 
 module.exports = async (req, res) => {
@@ -37,9 +43,9 @@ module.exports = async (req, res) => {
                 }
                 const loginRes = await callApi('/user/login', 'POST', null, { username, password });
                 if (!loginRes.success || !loginRes.body) {
+                    console.error('Login API failed:', loginRes);
                     return res.status(loginRes.status || 500).json({ success: false, message: loginRes.message || 'Login failed' });
                 }
-                // Ensure token is returned in a consistent format
                 const loginToken = loginRes.body.token || loginRes.body.accessToken || loginRes.body;
                 if (!loginToken || typeof loginToken !== 'string') {
                     console.error('Invalid token in login response:', loginRes.body);
@@ -149,9 +155,9 @@ module.exports = async (req, res) => {
                         ultimate: { name: 'Gói Tối Ưu', price: 180000, duration: 180 }
                     },
                     sepayConfig: {
-                        bankName: process.env.SEPAY_BANK_NAME,
-                        accountNumber: process.env.SEPAY_ACCOUNT_NUMBER,
-                        accountName: process.env.SEPAY_ACCOUNT_NAME
+                        bankName: process.env.SEPAY_BANK_NAME || 'YourBank',
+                        accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || 'YourAccountNumber',
+                        accountName: process.env.SEPAY_ACCOUNT_NAME || 'YourAccountName'
                     }
                 };
                 break;
@@ -166,11 +172,11 @@ module.exports = async (req, res) => {
                 };
                 const selectedPlan = plans[plan];
                 if (!selectedPlan) return res.status(400).json({ success: false, message: 'Invalid plan' });
-                const [result] = await db.query(
+                const [resultDb] = await db.query(
                     'INSERT INTO vip_orders (user_id, plan, amount, status) VALUES (?, ?, ?, ?)',
                     [userId, plan, selectedPlan.price, 'Pending']
                 );
-                result = { success: true, order: { id: result.insertId, amount: selectedPlan.price } };
+                result = { success: true, order: { id: resultDb.insertId, amount: selectedPlan.price } };
                 break;
             }
             case 'checkOrderStatus': {
