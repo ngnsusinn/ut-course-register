@@ -73,8 +73,8 @@ const VIP_PLANS = {
 // SePay Configuration
 const SEPAY_CONFIG = {
     bankName: process.env.SEPAY_BANK_NAME || 'MBBank',
-    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '0903252427',
-    accountName: process.env.SEPAY_ACCOUNT_NAME || 'BÙI TẤN VIỆT'
+    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '01006022006',
+    accountName: process.env.SEPAY_ACCOUNT_NAME || 'NGUYỄN SUN SIN'
 };
 
 // Helper: Check if user has active VIP
