@@ -1,216 +1,93 @@
-import mysql from 'mysql2/promise';
+import { executeTransaction, logActivity } from '../database/db_utils.js';
 
-// Database configuration
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'your_db_user',
-    password: process.env.DB_PASSWORD || 'your_db_password',
-    database: process.env.DB_NAME || 'uth_registration',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-};
-
-// Validate environment variables
-if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
-    console.error('Missing required database environment variables');
-    throw new Error('Database configuration is incomplete');
-}
-
-// Create connection pool
-let pool;
-const getPool = () => {
-    if (!pool) {
-        pool = mysql.createPool(dbConfig);
-    }
-    return pool;
-};
-
-// Helper: Process VIP payment
-async function processVIPPayment(orderId, transactionData) {
-    const connection = await getPool().getConnection();
-    
-    try {
-        await connection.beginTransaction();
-        
-        // Get order details
-        const [orders] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ? AND payment_status = "Unpaid"',
-            [orderId]
-        );
-        
-        if (orders.length === 0) {
-            await connection.rollback();
-            return { success: false, message: 'Order not found or already paid' };
-        }
-        
-        const order = orders[0];
-        
-        // Verify amount matches
-        if (parseFloat(transactionData.amount_in) !== parseFloat(order.amount)) {
-            await connection.rollback();
-            return { success: false, message: 'Amount mismatch' };
-        }
-        
-        // Update order status
-        await connection.execute(
-            'UPDATE orders SET payment_status = "Paid", paid_at = NOW(), transaction_ref = ? WHERE id = ?',
-            [transactionData.reference_number, orderId]
-        );
-        
-        // Calculate VIP expiry date
-        const planDurations = {
-            '1day': 1,
-            '3days': 3,
-            '7days': 7
-        };
-        
-        const daysToAdd = planDurations[order.plan_type] || 1;
-        
-        // Check if user already has VIP
-        const [existingVIP] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
-            [order.user_id]
-        );
-        
-        let expiryDate;
-        if (existingVIP.length > 0) {
-            // Extend existing VIP
-            expiryDate = new Date(existingVIP[0].expiry_date);
-            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
-            
-            await connection.execute(
-                'UPDATE vip_subscriptions SET expiry_date = ?, plan_type = ?, updated_at = NOW() WHERE user_id = ? AND expiry_date > NOW()',
-                [expiryDate, order.plan_type, order.user_id]
-            );
-        } else {
-            // Create new VIP subscription
-            expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
-            
-            await connection.execute(
-                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date) VALUES (?, ?, ?)',
-                [order.user_id, order.plan_type, expiryDate]
-            );
-        }
-        
-        // Log activity
-        await connection.execute(
-            'INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)',
-            [order.user_id, 'VIP_PURCHASE', `Purchased ${order.plan_name} - Order #${orderId}`]
-        );
-        
-        await connection.commit();
-        
-        return {
-            success: true,
-            message: 'Payment processed successfully',
-            expiryDate: expiryDate.toISOString()
-        };
-        
-    } catch (error) {
-        await connection.rollback();
-        console.error('Error processing payment:', error);
-        return { success: false, message: error.message };
-    } finally {
-        connection.release();
-    }
-}
-
-// Main webhook handler
+// Main webhook handler for SEPay
 export default async (req, res) => {
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://your-domain.com');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    
-    if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, message: 'Method Not Allowed' });
-    }
-    
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+
     try {
         const webhookData = req.body;
-        
-        // Validate webhook data
         if (!webhookData || !webhookData.content) {
             return res.status(400).json({ success: false, message: 'Invalid webhook data' });
         }
-        
-        const connection = await getPool().getConnection();
-        
-        try {
-            // Save transaction to database
-            const {
-                gateway,
-                transactionDate,
-                accountNumber,
-                subAccount,
-                transferType,
-                transferAmount,
-                accumulated,
-                code,
-                content,
-                referenceCode,
-                description
-            } = webhookData;
-            
-            const amountIn = transferType === 'in' ? transferAmount : 0;
-            const amountOut = transferType === 'out' ? transferAmount : 0;
-            
+
+        const {
+            gateway,
+            transactionDate,
+            accountNumber,
+            subAccount,
+            transferType,
+            transferAmount,
+            accumulated,
+            code,
+            content,
+            referenceCode,
+            description
+        } = webhookData;
+
+        const amountIn = transferType === 'in' ? transferAmount : 0;
+
+        // Use transaction to process payment + subscription creation
+        const result = await executeTransaction(async (connection) => {
+            // persist incoming transaction
             await connection.execute(
-                `INSERT INTO transactions 
-                (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
-                accumulated, code, transaction_content, reference_number, body) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [gateway, transactionDate, accountNumber, subAccount || '', amountIn, amountOut,
-                 accumulated, code, content, referenceCode, description || '']
+                `INSERT INTO transactions (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, accumulated, code, transaction_content, reference_number, body)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [gateway, transactionDate, accountNumber, subAccount || '', amountIn, 0, accumulated, code, content, referenceCode, description || '']
             );
-            
-            connection.release();
-            
-            // Extract order ID from transaction content
+
+            // extract order id from content, expecting 'DH<id>' pattern
             const regex = /DH(\d+)/i;
-            const match = content.match(regex);
-            
+            const match = String(content).match(regex);
             if (!match || !match[1]) {
-                return res.status(200).json({
-                    success: false,
-                    message: 'Order ID not found in transaction content'
-                });
+                return { success: false, message: 'Order ID not found in transaction content' };
             }
-            
-            const orderId = parseInt(match[1]);
-            
-            // Process the payment
-            const result = await processVIPPayment(orderId, {
-                amount_in: amountIn,
-                reference_number: referenceCode
-            });
-            
-            // Update transaction with order_id
-            const conn = await getPool().getConnection();
-            await conn.execute(
-                'UPDATE transactions SET order_id = ? WHERE reference_number = ?',
-                [orderId, referenceCode]
+            const orderId = parseInt(match[1], 10);
+
+            // fetch order and ensure pending
+            const [orders] = await connection.execute('SELECT * FROM orders WHERE id = ? AND payment_status IN ("Pending","Unpaid")', [orderId]);
+            if (!orders || orders.length === 0) return { success: false, message: 'Order not found or already processed' };
+            const order = orders[0];
+
+            // verify amount
+            if (parseFloat(amountIn) !== parseFloat(order.amount)) {
+                return { success: false, message: 'Amount mismatch' };
+            }
+
+            // update order
+            await connection.execute(
+                `UPDATE orders SET payment_status = 'Paid', transaction_ref = ?, paid_at = NOW(), updated_at = NOW() WHERE id = ?`,
+                [referenceCode, orderId]
             );
-            conn.release();
-            
-            return res.status(200).json(result);
-            
-        } catch (error) {
-            connection.release();
-            throw error;
-        }
-        
+
+            // insert transaction with order_id (update previously inserted row by reference)
+            await connection.execute('UPDATE transactions SET order_id = ? WHERE reference_number = ?', [orderId, referenceCode]);
+
+            // create subscription based on plan
+            const [plans] = await connection.execute('SELECT * FROM subscription_plans WHERE id = ?', [order.plan_id || order.plan_type]);
+            const duration = (plans && plans[0] && plans[0].duration_days) ? plans[0].duration_days : 1;
+
+            await connection.execute(
+                `INSERT INTO vip_subscriptions (user_id, plan_id, order_id, start_date, expiry_date, status, created_at, updated_at)
+                 VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), 'Active', NOW(), NOW())`,
+                [order.user_id, order.plan_id || order.plan_type, orderId, duration]
+            );
+
+            // activity log
+            await logActivity(order.user_id, 'PAYMENT_RECEIVED', 'order', String(orderId), `Payment received for order #${orderId}`, null);
+
+            return { success: true, message: 'Payment processed successfully' };
+        });
+
+        return res.status(result.success ? 200 : 400).json(result);
+
     } catch (error) {
         console.error('Webhook error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal server error: ' + error.message
-        });
+        return res.status(500).json({ success: false, message: 'Internal server error: ' + error.message });
     }
 };

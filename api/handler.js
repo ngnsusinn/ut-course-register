@@ -1,31 +1,5 @@
 import fetch from 'node-fetch';
-import mysql from 'mysql2/promise';
-
-// Database configuration
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'your_db_user',
-    password: process.env.DB_PASSWORD || 'your_db_password',
-    database: process.env.DB_NAME || 'uth_registration',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-};
-
-// Validate environment variables
-if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
-    console.error('Missing required database environment variables');
-    throw new Error('Database configuration is incomplete');
-}
-
-// Create connection pool
-let pool;
-const getPool = () => {
-    if (!pool) {
-        pool = mysql.createPool(dbConfig);
-    }
-    return pool;
-};
+import { executeQuery, executeTransaction, logActivity, getActiveSubscription, createOrder as createOrderDb } from '../database/db_utils.js';
 
 // Utility: Call internal university API
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
@@ -75,32 +49,24 @@ const SEPAY_CONFIG = {
     accountName: process.env.SEPAY_ACCOUNT_NAME || 'NGUYỄN SUN SIN'
 };
 
-// Helper: Check if user has active VIP
+// Helper: Check if user has active VIP (uses db_utils.executeQuery)
 async function checkVIPStatus(userId) {
     try {
-        const connection = await getPool().getConnection();
-        
-        const [rows] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+        const rows = await executeQuery(
+            'SELECT vs.*, sp.name as plan_name, sp.duration_days, vs.plan_id FROM vip_subscriptions vs JOIN subscription_plans sp ON vs.plan_id = sp.id WHERE vs.user_id = ? AND vs.status = "Active" AND vs.expiry_date > NOW() ORDER BY vs.expiry_date DESC LIMIT 1',
             [userId]
         );
-        
-        connection.release();
-        
-        if (rows.length === 0) {
-            return { hasVIP: false };
-        }
-        
+
+        if (!rows || rows.length === 0) return { hasVIP: false };
         const vipData = rows[0];
         const expiryDate = new Date(vipData.expiry_date);
         const now = new Date();
         const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-        
-        return { 
-            hasVIP: true, 
+        return {
+            hasVIP: true,
             expiryDate: vipData.expiry_date,
-            plan: vipData.plan_type,
-            daysLeft: daysLeft
+            plan: vipData.plan_id || vipData.plan_type,
+            daysLeft
         };
     } catch (error) {
         console.error('Error checking VIP status:', error);
@@ -108,28 +74,17 @@ async function checkVIPStatus(userId) {
     }
 }
 
-// Helper: Create order
+// Helper: Create order (delegates to db_utils.createOrder)
 async function createOrder(userId, plan) {
-    const planConfig = VIP_PLANS[plan];
-    if (!planConfig) return null;
-    
     try {
-        const connection = await getPool().getConnection();
-        
-        const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
-            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
-        );
-        
-        connection.release();
-        
+        const result = await createOrderDb(userId, plan);
+        if (!result) return null;
         return {
-            id: result.insertId,
+            id: result.orderId,
             userId,
-            amount: planConfig.price,
+            amount: result.amount,
             status: 'Unpaid',
             plan,
-            planName: planConfig.name,
             createdAt: new Date().toISOString()
         };
     } catch (error) {
@@ -141,26 +96,15 @@ async function createOrder(userId, plan) {
 // Helper: Check order status
 async function getOrderStatus(orderId) {
     try {
-        const connection = await getPool().getConnection();
-        
-        const [rows] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ?',
-            [orderId]
-        );
-        
-        connection.release();
-        
-        if (rows.length === 0) {
-            return null;
-        }
-        
+        const rows = await executeQuery('SELECT * FROM orders WHERE id = ?', [orderId]);
+        if (!rows || rows.length === 0) return null;
         const order = rows[0];
         return {
             id: order.id,
             userId: order.user_id,
             amount: parseFloat(order.amount),
             status: order.payment_status,
-            plan: order.plan_type,
+            plan: order.plan_id || order.plan_type,
             planName: order.plan_name,
             createdAt: order.created_at,
             paidAt: order.paid_at,
