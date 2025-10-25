@@ -312,6 +312,21 @@
     <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
             <h3 class="text-lg font-bold mb-4 text-gray-800">⭐ Thêm VIP Subscription</h3>
+            <div class="space-y-4">
+                <input type="text" id="vipUserId" placeholder="User ID (ví dụ: 054206005638)" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="vipPlanType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="1day">1 Day VIP - 24,000đ</option>
+                    <option value="3days">3 Days VIP - 72,000đ</option>
+                    <option value="7days">7 Days VIP - 126,000đ</option>
+                    <option value="30days">30 Days VIP - 432,000đ</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeAddVIPModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                <button onclick="submitAddVIP()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Thêm VIP</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Confirm Action Modal -->
     <div id="confirmModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[60]">
@@ -532,11 +547,14 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm" data-label="Expiry">
-                        ${expiryDate ? expiryDate.toLocaleString('vi-VN') : 'N/A'}
+                        ${expiryDate ? formatDateTime(expiryDate) : 'N/A'}
                     </td>
-                    <td class="px-6 py-4" data-label="Actions">
+                    <td class="px-6 py-4 flex gap-2" data-label="Actions">
                         <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-900 font-medium text-sm">
                             ➕ Thêm VIP
+                        </button>
+                        <button onclick="showConfirmModal('Xóa User', 'Bạn có chắc muốn xóa user này không? Mọi dữ liệu liên quan sẽ bị xóa.', () => deleteUser('${user.user_id}'))" class="text-red-600 hover:text-red-900 font-medium text-sm">
+                            🗑️ Xóa
                         </button>
                     </td>
                 </tr>
@@ -780,6 +798,37 @@
 
         function closeConfirmModal() {
             document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        async function deleteUser(userId) {
+            const deleteBtn = document.querySelector(`button[onclick*="deleteUser('${userId}')"]`);
+            const originalHTML = deleteBtn.innerHTML;
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<div class="loader"></div>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'deleteUser', 
+                        payload: { userId } 
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('✅ Đã xóa user thành công!', 'success');
+                    await Promise.all([refreshData('users'), refreshData('subscriptions')]);
+                } else {
+                    showToast('Lỗi: ' + data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Lỗi kết nối: ' + error.message, 'error');
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHTML;
+            }
         }
 
         async function deleteSubscription(subId) {

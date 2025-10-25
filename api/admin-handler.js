@@ -1,5 +1,12 @@
 import mysql from 'mysql2/promise';
 
+// Utility function to convert UTC to UTC+7
+function getUTCPlus7Date() {
+    const now = new Date();
+    now.setHours(now.getHours() + 7);
+    return now.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -7,7 +14,8 @@ const dbConfig = {
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    timezone: '+07:00' // Set MySQL connection timezone to UTC+7
 };
 
 let pool;
@@ -39,6 +47,7 @@ export default async function handler(req, res) {
             case 'getAllLogs': result = await getAllLogs(); break;
             case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
             case 'deleteSubscription': result = await deleteSubscription(payload); break;
+            case 'deleteUser': result = await deleteUser(payload); break;
             default: return res.status(400).json({ success: false, message: 'Unknown action' });
         }
         return res.status(200).json(result);
@@ -61,7 +70,7 @@ async function adminLogin(payload) {
         
         if (admins.length === 0) return { success: false, message: 'Invalid credentials' };
 
-        await connection.query('UPDATE admins SET last_login = NOW() WHERE id = ?', [admins[0].id]);
+        await connection.query('UPDATE admins SET last_login = CONVERT_TZ(NOW(), "+00:00", "+07:00") WHERE id = ?', [admins[0].id]);
         
         return { success: true, admin: admins[0] };
     } finally {
@@ -78,7 +87,7 @@ async function getAllUsers() {
                 u.full_name,
                 u.email,
                 MAX(vs.expiry_date) as expiry_date,
-                CASE WHEN MAX(vs.expiry_date) > NOW() THEN 1 ELSE 0 END as is_vip
+                CASE WHEN MAX(vs.expiry_date) > CONVERT_TZ(NOW(), '+00:00', '+07:00') THEN 1 ELSE 0 END as is_vip
             FROM users u
             LEFT JOIN vip_subscriptions vs ON u.username = vs.user_id
             GROUP BY u.username, u.full_name, u.email
@@ -157,12 +166,12 @@ async function addVIPSubscription(payload) {
         // Check if user exists
         const [existingUser] = await connection.query('SELECT id FROM users WHERE username = ?', [userId]);
         if (existingUser.length === 0) {
-            await connection.query('INSERT INTO users (username, created_at) VALUES (?, NOW())', [userId]);
+            await connection.query('INSERT INTO users (username, created_at) VALUES (?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))', [userId]);
         }
 
         // Check for active VIP subscription
         const [activeVIP] = await connection.query(
-            'SELECT expiry_date FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            'SELECT expiry_date FROM vip_subscriptions WHERE user_id = ? AND expiry_date > CONVERT_TZ(NOW(), "+00:00", "+07:00") ORDER BY expiry_date DESC LIMIT 1',
             [userId]
         );
 
@@ -185,7 +194,7 @@ async function addVIPSubscription(payload) {
 
         // Insert new VIP subscription
         await connection.query(
-            'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
+            'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
             [userId, planType, expiryDate]
         );
 
@@ -195,7 +204,7 @@ async function addVIPSubscription(payload) {
             : `Admin added ${planType} VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
 
         await connection.query(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, NOW())',
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
             [userId, logDetails]
         );
 
@@ -218,6 +227,37 @@ async function addVIPSubscription(payload) {
     }
 }
 
+async function deleteUser(payload) {
+    const { userId } = payload;
+    if (!userId) return { success: false, message: 'userId required' };
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // First delete all VIP subscriptions
+        await connection.query('DELETE FROM vip_subscriptions WHERE user_id = ?', [userId]);
+        
+        // Then delete user
+        await connection.query('DELETE FROM users WHERE username = ?', [userId]);
+
+        // Log activity
+        await connection.query(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_USER", ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
+            [userId, `Admin deleted user ${userId} and all related data`]
+        );
+
+        await connection.commit();
+        return { success: true, message: 'User deleted successfully' };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error deleting user:', error);
+        return { success: false, message: 'Failed to delete user', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
 async function deleteSubscription(payload) {
     const { subscriptionId } = payload;
     if (!subscriptionId) return { success: false, message: 'subscriptionId required' };
@@ -235,7 +275,7 @@ async function deleteSubscription(payload) {
         const userId = subscription[0].user_id;
         await connection.query('DELETE FROM vip_subscriptions WHERE id = ?', [subscriptionId]);
         await connection.query(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_VIP", ?, NOW())',
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_VIP", ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
             [userId, `Admin deleted VIP subscription #${subscriptionId}`]
         );
 
