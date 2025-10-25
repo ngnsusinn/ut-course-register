@@ -75,11 +75,13 @@ async function getAllUsers() {
         const [users] = await connection.query(`
             SELECT 
                 u.username as user_id,
+                u.full_name,
+                u.email,
                 MAX(vs.expiry_date) as expiry_date,
                 CASE WHEN MAX(vs.expiry_date) > NOW() THEN 1 ELSE 0 END as is_vip
             FROM users u
             LEFT JOIN vip_subscriptions vs ON u.username = vs.user_id
-            GROUP BY u.username
+            GROUP BY u.username, u.full_name, u.email
             ORDER BY u.username ASC
         `);
         return { success: true, users };
@@ -152,28 +154,64 @@ async function addVIPSubscription(payload) {
     try {
         await connection.beginTransaction();
 
+        // Check if user exists
         const [existingUser] = await connection.query('SELECT id FROM users WHERE username = ?', [userId]);
         if (existingUser.length === 0) {
             await connection.query('INSERT INTO users (username, created_at) VALUES (?, NOW())', [userId]);
         }
 
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + days);
+        // Check for active VIP subscription
+        const [activeVIP] = await connection.query(
+            'SELECT expiry_date FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            [userId]
+        );
 
+        let expiryDate;
+        let addType = 'new';
+
+        if (activeVIP.length > 0) {
+            // User has active VIP - add days to existing expiry date
+            expiryDate = new Date(activeVIP[0].expiry_date);
+            expiryDate.setDate(expiryDate.getDate() + days);
+            addType = 'cumulative';
+            console.log(`✅ Adding ${days} days to existing VIP. New expiry: ${expiryDate}`);
+        } else {
+            // User has no active VIP - start from now
+            expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + days);
+            addType = 'new';
+            console.log(`✅ Creating new VIP for ${days} days. Expiry: ${expiryDate}`);
+        }
+
+        // Insert new VIP subscription
         await connection.query(
             'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
             [userId, planType, expiryDate]
         );
 
+        // Log activity
+        const logDetails = addType === 'cumulative' 
+            ? `Admin added ${planType} VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
+            : `Admin added ${planType} VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
+
         await connection.query(
             'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, NOW())',
-            [userId, `Admin added ${planType} VIP`]
+            [userId, logDetails]
         );
 
         await connection.commit();
-        return { success: true, message: 'VIP added successfully', expiryDate };
+        
+        return { 
+            success: true, 
+            message: addType === 'cumulative' 
+                ? `Đã cộng thêm ${days} ngày VIP (cộng dồn)` 
+                : `Đã thêm VIP ${days} ngày mới`,
+            expiryDate,
+            addType
+        };
     } catch (error) {
         await connection.rollback();
+        console.error('Error adding VIP:', error);
         return { success: false, message: 'Failed to add VIP', error: error.message };
     } finally {
         connection.release();
@@ -188,7 +226,7 @@ async function deleteSubscription(payload) {
     try {
         await connection.beginTransaction();
 
-        const [subscription] = await connection.query('SELECT user_id FROM vip_subscriptions WHERE id = ?', [subscriptionId]);
+        const [subscription] = await connection.query('SELECT user_id, plan_type FROM vip_subscriptions WHERE id = ?', [subscriptionId]);
         if (subscription.length === 0) {
             await connection.rollback();
             return { success: false, message: 'Subscription not found' };
@@ -198,7 +236,7 @@ async function deleteSubscription(payload) {
         await connection.query('DELETE FROM vip_subscriptions WHERE id = ?', [subscriptionId]);
         await connection.query(
             'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_VIP", ?, NOW())',
-            [userId, `Admin deleted subscription #${subscriptionId}`]
+            [userId, `Admin deleted VIP subscription #${subscriptionId}`]
         );
 
         await connection.commit();

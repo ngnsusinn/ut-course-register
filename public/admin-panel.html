@@ -350,8 +350,6 @@
                 showToast('Vui lòng nhập đầy đủ thông tin!', 'error');
                 errorDiv.classList.remove('hidden');
                 errorDiv.textContent = 'Vui lòng nhập đầy đủ thông tin!';
-                errorDiv.classList.add('error-animation');
-                setTimeout(() => errorDiv.classList.remove('error-animation'), 500);
                 return;
             }
 
@@ -374,27 +372,20 @@
                     document.getElementById('adminUsername').textContent = currentUser.username;
                     showToast('Đăng nhập thành công!', 'success');
                     
-                    // Smooth transition
-                    setTimeout(() => {
-                        document.getElementById('loginScreen').classList.add('hidden');
-                        document.getElementById('adminDashboard').classList.remove('hidden');
-                        document.getElementById('adminDashboard').classList.add('fade-in');
-                    }, 500);
+                    // Direct transition
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
                     
                     await refreshData('users');
                 } else {
                     showToast(data.message || 'Đăng nhập thất bại!', 'error');
                     errorDiv.textContent = data.message || 'Đăng nhập thất bại!';
                     errorDiv.classList.remove('hidden');
-                    errorDiv.classList.add('error-animation');
-                    setTimeout(() => errorDiv.classList.remove('error-animation'), 500);
                 }
             } catch (error) {
                 showToast('Lỗi kết nối: ' + error.message, 'error');
                 errorDiv.textContent = 'Lỗi kết nối: ' + error.message;
                 errorDiv.classList.remove('hidden');
-                errorDiv.classList.add('error-animation');
-                setTimeout(() => errorDiv.classList.remove('error-animation'), 500);
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.innerHTML = originalHTML;
@@ -402,25 +393,28 @@
         }
 
         function showToast(message, type = 'info') {
+            // Remove existing toast if any
+            const existingToast = document.getElementById('inPageToast');
+            if (existingToast) existingToast.remove();
+            
+            // Create in-page toast (not popup)
             const toast = document.createElement('div');
-            toast.className = `toast ${type === 'success' ? 'bg-green-100 border-l-4 border-green-500 text-green-700' : 
-                                     type === 'error' ? 'bg-red-100 border-l-4 border-red-500 text-red-700' : 
-                                     'bg-blue-100 border-l-4 border-blue-500 text-blue-700'}`;
+            toast.id = 'inPageToast';
+            toast.className = `fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
             
             const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
             toast.innerHTML = `
-                <div class="flex items-center">
-                    <span class="text-2xl mr-3">${icon}</span>
-                    <span class="font-medium">${message}</span>
-                </div>
+                <span class="text-lg">${icon}</span>
+                <span class="font-medium">${message}</span>
             `;
             
             document.body.appendChild(toast);
             
-            setTimeout(() => {
-                toast.classList.add('removing');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => toast.remove(), 3000);
         }
 
         function logout() {
@@ -472,13 +466,6 @@
                 if (data.success) {
                     allData[type] = data[type] || [];
                     renderTable(type);
-                    
-                    // Success animation on table
-                    const tableContainer = document.querySelector(`#${type}Tab .bg-white`);
-                    if (tableContainer) {
-                        tableContainer.classList.add('success-animation');
-                        setTimeout(() => tableContainer.classList.remove('success-animation'), 600);
-                    }
                 } else {
                     console.error(`Error fetching ${type}:`, data.message);
                     showToast(`Lỗi tải dữ liệu: ${data.message}`, 'error');
@@ -728,8 +715,6 @@
             
             if (!userId) {
                 showToast('Vui lòng nhập User ID!', 'error');
-                document.getElementById('vipUserId').classList.add('error-animation');
-                setTimeout(() => document.getElementById('vipUserId').classList.remove('error-animation'), 500);
                 return;
             }
 
