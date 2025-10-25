@@ -27,6 +27,51 @@ const getPool = () => {
     return pool;
 };
 
+// NEW: Helper function to save/update user info in database
+async function saveUserInfo(profile) {
+    try {
+        const connection = await getPool().getConnection();
+        
+        const username = profile.maSinhVien || profile.username;
+        const email = profile.email || null;
+        const fullName = `${profile.hoDem || ''} ${profile.ten || ''}`.trim();
+        
+        // Check if user exists
+        const [existingUsers] = await connection.execute(
+            'SELECT id FROM users WHERE username = ?',
+            [username]
+        );
+        
+        if (existingUsers.length === 0) {
+            // Insert new user
+            await connection.execute(
+                'INSERT INTO users (username, email, full_name, created_at) VALUES (?, ?, ?, NOW())',
+                [username, email, fullName]
+            );
+            console.log(`✅ Created new user in database: ${username}`);
+        } else {
+            // Update existing user
+            await connection.execute(
+                'UPDATE users SET email = ?, full_name = ?, updated_at = NOW() WHERE username = ?',
+                [email, fullName, username]
+            );
+            console.log(`✅ Updated existing user: ${username}`);
+        }
+        
+        // Log login activity
+        await connection.execute(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
+            [username, 'USER_LOGIN', `User logged in from web interface`]
+        );
+        
+        connection.release();
+        return true;
+    } catch (error) {
+        console.error('Error saving user info:', error);
+        return false;
+    }
+}
+
 // Utility: Call internal university API
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
@@ -204,6 +249,11 @@ export default async (req, res) => {
                 const latestDot = (dotsRes.success && dotsRes.body.length) 
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
+                
+                // NEW: Save user info to database
+                if (profileRes.success && profileRes.body) {
+                    await saveUserInfo(profileRes.body);
+                }
                 
                 // Check VIP status
                 const userId = profileRes.body?.maSinhVien || profileRes.body?.username;
