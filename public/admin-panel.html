@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔐 UTH Admin Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>UTH Admin Panel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14,37 +13,515 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #10b981; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-        .status-active { background: #d1fae5; color: #065f46; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-expired { background: #fee2e2; color: #991b1b; }
-        .status-completed { background: #dbeafe; color: #1e40af; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        :root {
+            --color-blue-50: #eff6ff;
+            --color-blue-100: #dbeafe;
+            --color-blue-600: #2563eb;
+            --color-blue-700: #1d4ed8;
+            --color-gray-50: #f9fafb;
+            --color-gray-100: #f3f4f6;
+            --color-gray-200: #e5e7eb;
+            --color-gray-300: #d1d5db;
+            --color-gray-400: #9ca3af;
+            --color-gray-500: #6b7280;
+            --color-gray-600: #4b5563;
+            --color-gray-700: #374151;
+            --color-gray-800: #1f2937;
+            --color-gray-900: #111827;
+            --color-green-50: #f0fdf4;
+            --color-green-600: #16a34a;
+            --color-green-700: #15803d;
+            --color-yellow-50: #fef3c7;
+            --color-yellow-600: #ca8a04;
+            --color-red-50: #fee2e2;
+            --color-red-400: #f87171;
+            --color-red-500: #ef4444;
+            --color-red-600: #dc2626;
+            
+            --color-background: var(--color-gray-50);
+            --color-surface: #ffffff;
+            --color-text: var(--color-gray-900);
+            --color-text-secondary: var(--color-gray-600);
+            --color-primary: var(--color-blue-600);
+            --color-primary-hover: var(--color-blue-700);
+            --color-secondary: var(--color-gray-100);
+            --color-secondary-hover: var(--color-gray-200);
+            --color-border: var(--color-gray-300);
+            --color-card-border: var(--color-gray-200);
+            --color-error: var(--color-red-500);
+            --color-success: var(--color-green-600);
+            --color-btn-primary-text: #ffffff;
+            
+            --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-size-sm: 12px;
+            --font-size-base: 14px;
+            --font-size-lg: 16px;
+            --font-size-xl: 18px;
+            --font-size-2xl: 20px;
+            --font-size-3xl: 24px;
+            --space-2: 2px;
+            --space-4: 4px;
+            --space-8: 8px;
+            --space-12: 12px;
+            --space-16: 16px;
+            --space-20: 20px;
+            --space-24: 24px;
+            --radius-base: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 var(--space-16);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-8) var(--space-16);
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn--primary {
+            background: var(--color-primary);
+            color: var(--color-btn-primary-text);
+        }
+
+        .btn--primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn--secondary {
+            background: var(--color-secondary);
+            color: var(--color-text);
+        }
+
+        .btn--secondary:hover {
+            background: var(--color-secondary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: var(--space-12);
+            font-size: var(--font-size-base);
+            color: var(--color-text);
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .card {
+            background-color: var(--color-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-card-border);
+            box-shadow: var(--shadow-sm);
+            padding: var(--space-24);
+            margin-bottom: var(--space-16);
+        }
+
+        .loader {
+            border: 3px solid var(--color-secondary);
+            border-top: 3px solid var(--color-primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+        }
+
+        .status-vip {
+            background: var(--color-green-50);
+            color: var(--color-green-700);
+            border: 1px solid var(--color-green-600);
+        }
+
+        .status-free {
+            background: var(--color-gray-100);
+            color: var(--color-gray-600);
+            border: 1px solid var(--color-gray-300);
+        }
+
+        .status-paid {
+            background: var(--color-blue-50);
+            color: var(--color-blue-700);
+            border: 1px solid var(--color-primary);
+        }
+
+        .status-unpaid {
+            background: var(--color-yellow-50);
+            color: var(--color-yellow-600);
+            border: 1px solid var(--color-yellow-600);
+        }
+
+        #login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-16);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .login-card h1 {
+            font-size: var(--font-size-3xl);
+            font-weight: 700;
+            margin-bottom: var(--space-8);
+            text-align: center;
+            color: var(--color-slate-900);
+        }
+
+        .login-card p {
+            text-align: center;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-24);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-16);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-8);
+            font-weight: 500;
+            font-size: var(--font-size-sm);
+        }
+
+        .error-msg {
+            padding: var(--space-12);
+            background: rgba(var(--color-brown-600-rgb), 0.1);
+            color: var(--color-error);
+            border: 1px solid var(--color-error);
+            border-radius: var(--radius-base);
+            margin-bottom: var(--space-16);
+            font-size: var(--font-size-sm);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: var(--space-16) 0;
+            margin-bottom: var(--space-24);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-title h1 {
+            color: var(--color-text);
+        }
+
+        .header-title p {
+            color: var(--color-text-secondary);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title h1 {
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+        }
+
+        .header-title p {
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+            margin-top: var(--space-4);
+        }
+
+        .tabs {
+            background: var(--color-surface);
+            border-bottom: 2px solid var(--color-border);
+            margin-bottom: var(--space-24);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tabs nav {
+            display: flex;
+            gap: var(--space-8);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: var(--space-12) var(--space-16);
+            font-size: var(--font-size-base);
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--color-text);
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-16);
+        }
+
+        .card-header h2 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+        }
+
+        .search-box {
+            margin-bottom: var(--space-16);
+            padding: var(--space-12);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--font-size-sm);
+        }
+
+        thead {
+            background: var(--color-secondary);
+        }
+
+        th {
+            padding: var(--space-12);
+            text-align: left;
+            font-weight: 600;
+            color: var(--color-text);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        td {
+            padding: var(--space-12);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        tbody tr:hover {
+            background: var(--color-secondary);
+        }
+
+        .action-btn {
+            padding: var(--space-4) var(--space-12);
+            font-size: var(--font-size-sm);
+            border-radius: var(--radius-base);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .action-btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .action-btn-primary:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .action-btn-danger {
+            background: transparent;
+            color: var(--color-error);
+            border: 1px solid var(--color-error);
+        }
+
+        .action-btn-danger:hover {
+            background: rgba(var(--color-brown-600-rgb), 0.1);
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: var(--space-24);
+        }
+
+        .loading-container p {
+            margin-top: var(--space-12);
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: var(--space-24);
+            color: var(--color-text-secondary);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-24);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-md);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-16);
+        }
+
+        .modal-header h3 {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: var(--font-size-2xl);
+            cursor: pointer;
+            color: var(--color-text-secondary);
+        }
+
+        .modal-close:hover {
+            color: var(--color-text);
+        }
+
+        .modal-body {
+            margin-bottom: var(--space-16);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: var(--space-8);
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-12);
+            }
+
+            table {
+                font-size: 11px;
+            }
+
+            th, td {
+                padding: var(--space-8);
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: var(--space-12);
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-900">
+<body>
     <!-- Login Container -->
-    <div id="login-container" class="min-h-screen flex items-center justify-center p-4 vip-gradient">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-            <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">🔐 Admin Panel</h1>
-                <p class="text-gray-600 text-sm">Đăng nhập để quản lý hệ thống</p>
-            </div>
-            
-            <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 text-sm"></div>
-            
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tên đăng nhập</label>
-                    <input type="text" id="admin-username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="admin" required>
+    <div id="login-container" class="vip-gradient">
+        <div class="card login-card">
+            <h1>🎓 UTH Admin Panel</h1>
+            <p>Đăng nhập để quản lý hệ thống</p>
+            <div id="error-msg" class="error-msg hidden"></div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Tên đăng nhập</label>
+                    <input type="text" id="admin-username" class="form-control" placeholder="admin" required>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu</label>
-                    <input type="password" id="admin-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="••••••••" required>
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu</label>
+                    <input type="password" id="admin-password" class="form-control" placeholder="••••••••" required>
                 </div>
-                <button type="submit" id="login-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                <button type="submit" class="btn btn--primary" style="width: 100%;">
                     <span>Đăng nhập</span>
                 </button>
             </form>
@@ -54,150 +531,176 @@
     <!-- Admin Dashboard -->
     <div id="admin-dashboard" class="hidden">
         <!-- Header -->
-        <header class="bg-gray-800 shadow-lg border-b border-gray-700">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">🔐 Admin Dashboard</h1>
-                        <p class="text-gray-400 text-sm mt-1">Quản lý hệ thống UTH Course Registration</p>
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <div class="header-title">
+                        <h1>🎓 Admin Dashboard</h1>
+                        <p>Quản lý hệ thống UTH Course Registration</p>
                     </div>
-                    <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
-                        Đăng xuất
-                    </button>
+                    <button id="logout-btn" class="btn btn--secondary">Đăng xuất</button>
                 </div>
             </div>
         </header>
 
         <!-- Navigation Tabs -->
-        <div class="bg-gray-800 border-b border-gray-700">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <nav class="flex space-x-4 overflow-x-auto">
-                    <button class="tab-btn px-4 py-3 text-sm font-medium text-green-400 border-b-2 border-green-400 whitespace-nowrap" data-tab="users">👥 Users</button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="subscriptions">💎 VIP Subscriptions</button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="orders">🛒 Đơn hàng</button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="transactions">💳 Giao dịch</button>
-                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="logs">📋 Logs</button>
+        <div class="tabs">
+            <div class="container">
+                <nav>
+                    <button class="tab-btn active" data-tab="users">Users</button>
+                    <button class="tab-btn" data-tab="subscriptions">VIP Subscriptions</button>
+                    <button class="tab-btn" data-tab="orders">Đơn hàng</button>
+                    <button class="tab-btn" data-tab="transactions">Giao dịch</button>
+                    <button class="tab-btn" data-tab="logs">Logs</button>
                 </nav>
             </div>
         </div>
 
         <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-gray-900 min-h-screen">
+        <main class="container">
             <!-- Users Tab -->
-            <div id="users-tab" class="tab-content">
-                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-white">👥 Quản lý Users</h2>
-                        <button onclick="loadUsers()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
-                            🔄 Làm mới
-                        </button>
+            <div id="users-tab" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Quản lý Users</h2>
+                        <button onclick="loadUsers()" class="btn btn--primary">Làm mới</button>
                     </div>
-                    <div id="users-loading" class="text-center py-8 hidden">
-                        <div class="loader mx-auto"></div>
-                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
+                    <input type="text" id="users-search" class="search-box" placeholder="Tìm kiếm theo username hoặc email...">
+                    <div id="users-loading" class="loading-container hidden">
+                        <div class="loader"></div>
+                        <p>Đang tải dữ liệu...</p>
                     </div>
-                    <div id="users-table" class="overflow-x-auto"></div>
+                    <div id="users-table"></div>
                 </div>
             </div>
 
             <!-- VIP Subscriptions Tab -->
-            <div id="subscriptions-tab" class="tab-content hidden">
-                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-white">💎 VIP Subscriptions</h2>
-                        <button onclick="loadSubscriptions()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
-                            🔄 Làm mới
-                        </button>
+            <div id="subscriptions-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>VIP Subscriptions</h2>
+                        <button onclick="loadSubscriptions()" class="btn btn--primary">Làm mới</button>
                     </div>
-                    <div id="subscriptions-loading" class="text-center py-8 hidden">
-                        <div class="loader mx-auto"></div>
-                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
+                    <input type="text" id="subscriptions-search" class="search-box" placeholder="Tìm kiếm theo User ID...">
+                    <div id="subscriptions-loading" class="loading-container hidden">
+                        <div class="loader"></div>
+                        <p>Đang tải dữ liệu...</p>
                     </div>
-                    <div id="subscriptions-table" class="overflow-x-auto"></div>
+                    <div id="subscriptions-table"></div>
                 </div>
             </div>
 
             <!-- Orders Tab -->
-            <div id="orders-tab" class="tab-content hidden">
-                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-white">🛒 Quản lý Đơn hàng</h2>
-                        <button onclick="loadOrders()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
-                            🔄 Làm mới
-                        </button>
+            <div id="orders-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Quản lý Đơn hàng</h2>
+                        <button onclick="loadOrders()" class="btn btn--primary">Làm mới</button>
                     </div>
-                    <div id="orders-loading" class="text-center py-8 hidden">
-                        <div class="loader mx-auto"></div>
-                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
+                    <input type="text" id="orders-search" class="search-box" placeholder="Tìm kiếm theo User ID hoặc Order ID...">
+                    <div id="orders-loading" class="loading-container hidden">
+                        <div class="loader"></div>
+                        <p>Đang tải dữ liệu...</p>
                     </div>
-                    <div id="orders-table" class="overflow-x-auto"></div>
+                    <div id="orders-table"></div>
                 </div>
             </div>
 
             <!-- Transactions Tab -->
-            <div id="transactions-tab" class="tab-content hidden">
-                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-white">💳 Giao dịch SePay</h2>
-                        <button onclick="loadTransactions()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
-                            🔄 Làm mới
-                        </button>
+            <div id="transactions-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Giao dịch SePay</h2>
+                        <button onclick="loadTransactions()" class="btn btn--primary">Làm mới</button>
                     </div>
-                    <div id="transactions-loading" class="text-center py-8 hidden">
-                        <div class="loader mx-auto"></div>
-                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
+                    <input type="text" id="transactions-search" class="search-box" placeholder="Tìm kiếm theo nội dung hoặc reference...">
+                    <div id="transactions-loading" class="loading-container hidden">
+                        <div class="loader"></div>
+                        <p>Đang tải dữ liệu...</p>
                     </div>
-                    <div id="transactions-table" class="overflow-x-auto"></div>
+                    <div id="transactions-table"></div>
                 </div>
             </div>
 
             <!-- Logs Tab -->
-            <div id="logs-tab" class="tab-content hidden">
-                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-white">📋 Nhật ký hoạt động</h2>
-                        <button onclick="loadLogs()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
-                            🔄 Làm mới
-                        </button>
+            <div id="logs-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Nhật ký hoạt động</h2>
+                        <button onclick="loadLogs()" class="btn btn--primary">Làm mới</button>
                     </div>
-                    <div id="logs-loading" class="text-center py-8 hidden">
-                        <div class="loader mx-auto"></div>
-                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
+                    <input type="text" id="logs-search" class="search-box" placeholder="Tìm kiếm theo User ID hoặc action...">
+                    <div id="logs-loading" class="loading-container hidden">
+                        <div class="loader"></div>
+                        <p>Đang tải dữ liệu...</p>
                     </div>
-                    <div id="logs-table" class="overflow-x-auto"></div>
+                    <div id="logs-table"></div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Add VIP Modal -->
+    <div id="add-vip-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cấp VIP cho User</h3>
+                <button class="modal-close" onclick="closeAddVIPModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">User ID</label>
+                    <input type="text" id="vip-user-id" class="form-control" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gói VIP</label>
+                    <select id="vip-plan-type" class="form-control">
+                        <option value="1day">1 Ngày VIP</option>
+                        <option value="3days">3 Ngày VIP</option>
+                        <option value="7days">7 Ngày VIP</option>
+                        <option value="30days">30 Ngày VIP</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--secondary" onclick="closeAddVIPModal()">Hủy</button>
+                <button class="btn btn--primary" onclick="confirmAddVIP()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const API_BASE = '';
-        let adminToken = localStorage.getItem('admin_token');
+        const API_BASE = window.location.origin;
+        let adminData = null;
+        let allUsers = [];
+        let allSubscriptions = [];
+        let allOrders = [];
+        let allTransactions = [];
+        let allLogs = [];
 
         // Login Handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('admin-username').value;
             const password = document.getElementById('admin-password').value;
-            const loginBtn = document.getElementById('login-btn');
             const errorMsg = document.getElementById('error-msg');
+            const loginBtn = e.target.querySelector('button');
 
             loginBtn.disabled = true;
             loginBtn.innerHTML = '<div class="loader"></div>';
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/login`, {
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ action: 'login', payload: { username, password } })
                 });
 
                 const data = await response.json();
 
-                if (response.ok && data.token) {
-                    adminToken = data.token;
-                    localStorage.setItem('admin_token', adminToken);
+                if (data.success && data.admin) {
+                    adminData = data.admin;
                     document.getElementById('login-container').classList.add('hidden');
                     document.getElementById('admin-dashboard').classList.remove('hidden');
                     loadUsers();
@@ -216,8 +719,7 @@
 
         // Logout Handler
         document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('admin_token');
-            adminToken = null;
+            adminData = null;
             document.getElementById('admin-dashboard').classList.add('hidden');
             document.getElementById('login-container').classList.remove('hidden');
             document.getElementById('login-form').reset();
@@ -227,20 +729,14 @@
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tabName = btn.dataset.tab;
-                
+
                 // Update tab buttons
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    b.classList.remove('text-green-400', 'border-green-400');
-                    b.classList.add('text-gray-400', 'border-transparent');
-                });
-                btn.classList.add('text-green-400', 'border-green-400');
-                btn.classList.remove('text-gray-400', 'border-transparent');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
 
                 // Update tab content
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`${tabName}-tab`).classList.add('active');
 
                 // Load data for the tab
                 switch(tabName) {
@@ -253,6 +749,20 @@
             });
         });
 
+        // Search functionality
+        function setupSearch(searchId, dataArray, renderFunction) {
+            const searchInput = document.getElementById(searchId);
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = dataArray.filter(item => 
+                    JSON.stringify(item).toLowerCase().includes(query)
+                );
+                renderFunction(filtered);
+            });
+        }
+
         // Load Users
         async function loadUsers() {
             const loading = document.getElementById('users-loading');
@@ -262,61 +772,69 @@
             table.innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/users`, {
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getAllUsers' })
                 });
 
-                if (!response.ok) throw new Error('Unauthorized');
-
                 const data = await response.json();
-                
-                if (data.users && data.users.length > 0) {
-                    table.innerHTML = `
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead class="bg-gray-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User Info</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">VIP Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ngày hết hạn</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-gray-800 divide-y divide-gray-700">
-                                ${data.users.map(user => `
-                                    <tr class="hover:bg-gray-750">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-white">${user.username || 'N/A'}</div>
-                                            <div class="text-sm text-gray-400">${user.email || 'No email'}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="status-badge ${user.is_vip ? 'status-active' : 'status-expired'}">
-                                                ${user.is_vip ? '✓ VIP' : '✗ Free'}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                            ${user.vip_expires_at ? new Date(user.vip_expires_at).toLocaleString('vi-VN') : 'N/A'}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button onclick="toggleVIP('${user._id}')" class="text-green-400 hover:text-green-300 font-medium mr-3">
-                                                ${user.is_vip ? 'Hủy VIP' : 'Cấp VIP'}
-                                            </button>
-                                            <button onclick="deleteUser('${user._id}')" class="text-red-400 hover:text-red-300 font-medium">
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+
+                if (data.success && data.users) {
+                    allUsers = data.users;
+                    renderUsers(allUsers);
+                    setupSearch('users-search', allUsers, renderUsers);
                 } else {
-                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                    table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
                 }
             } catch (error) {
-                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+                table.innerHTML = '<div class="empty-state" style="color: var(--color-error);">Lỗi: ' + error.message + '</div>';
             } finally {
                 loading.classList.add('hidden');
             }
+        }
+
+        function renderUsers(users) {
+            const table = document.getElementById('users-table');
+            if (users.length === 0) {
+                table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
+                return;
+            }
+
+            table.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User Info</th>
+                            <th>VIP Status</th>
+                            <th>Ngày hết hạn</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 500;">${user.userid || 'N/A'}</div>
+                                    <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">${user.email || 'No email'}</div>
+                                    <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">${user.fullname || ''}</div>
+                                </td>
+                                <td>
+                                    <span class="status-badge ${user.isvip ? 'status-vip' : 'status-free'}">
+                                        ${user.isvip ? 'VIP' : 'Free'}
+                                    </span>
+                                </td>
+                                <td>${user.expirydate ? new Date(user.expirydate).toLocaleString('vi-VN') : 'N/A'}</td>
+                                <td>
+                                    <button onclick="openAddVIPModal('${user.userid}')" class="action-btn action-btn-primary">
+                                        Cấp VIP
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         // Load Subscriptions
@@ -328,59 +846,71 @@
             table.innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/subscriptions`, {
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getAllSubscriptions' })
                 });
 
-                if (!response.ok) throw new Error('Unauthorized');
-
                 const data = await response.json();
-                
-                if (data.subscriptions && data.subscriptions.length > 0) {
-                    table.innerHTML = `
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead class="bg-gray-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Trạng thái</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Hết hạn</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tạo lúc</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-gray-800 divide-y divide-gray-700">
-                                ${data.subscriptions.map(sub => `
-                                    <tr class="hover:bg-gray-750">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${sub._id.slice(-6)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${sub.user_id?.username || sub.user_id}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">${sub.plan_type}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="status-badge ${sub.status === 'active' ? 'status-active' : sub.status === 'expired' ? 'status-expired' : 'status-pending'}">
-                                                ${sub.status}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${new Date(sub.expires_at).toLocaleString('vi-VN')}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(sub.created_at).toLocaleString('vi-VN')}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button onclick="deleteSubscription('${sub._id}')" class="text-red-400 hover:text-red-300 font-medium">
-                                                Xóa
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+
+                if (data.success && data.subscriptions) {
+                    allSubscriptions = data.subscriptions;
+                    renderSubscriptions(allSubscriptions);
+                    setupSearch('subscriptions-search', allSubscriptions, renderSubscriptions);
                 } else {
-                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                    table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
                 }
             } catch (error) {
-                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+                table.innerHTML = '<div class="empty-state" style="color: var(--color-error);">Lỗi: ' + error.message + '</div>';
             } finally {
                 loading.classList.add('hidden');
             }
+        }
+
+        function renderSubscriptions(subscriptions) {
+            const table = document.getElementById('subscriptions-table');
+            if (subscriptions.length === 0) {
+                table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
+                return;
+            }
+
+            table.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Plan Type</th>
+                            <th>Hết hạn</th>
+                            <th>Tạo lúc</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${subscriptions.map(sub => {
+                            const isActive = new Date(sub.expirydate) > new Date();
+                            return `
+                            <tr>
+                                <td>${sub.id}</td>
+                                <td>${sub.userid}</td>
+                                <td><strong>${sub.plantype}</strong></td>
+                                <td>
+                                    <span class="status-badge ${isActive ? 'status-vip' : 'status-free'}">
+                                        ${new Date(sub.expirydate).toLocaleString('vi-VN')}
+                                    </span>
+                                </td>
+                                <td>${new Date(sub.createdat).toLocaleString('vi-VN')}</td>
+                                <td>
+                                    <button onclick="deleteSubscription(${sub.id})" class="action-btn action-btn-danger">
+                                        Xóa
+                                    </button>
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         // Load Orders
@@ -392,53 +922,65 @@
             table.innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/orders`, {
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getAllOrders' })
                 });
 
-                if (!response.ok) throw new Error('Unauthorized');
-
                 const data = await response.json();
-                
-                if (data.orders && data.orders.length > 0) {
-                    table.innerHTML = `
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead class="bg-gray-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Số tiền</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Trạng thái</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Thời gian tạo</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-gray-800 divide-y divide-gray-700">
-                                ${data.orders.map(order => `
-                                    <tr class="hover:bg-gray-750">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">${order._id.slice(-8)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${order.user_id?.username || order.user_id}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">${order.plan_type}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-semibold">${order.amount.toLocaleString('vi-VN')} ₫</td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="status-badge ${order.status === 'completed' ? 'status-completed' : order.status === 'pending' ? 'status-pending' : 'status-expired'}">
-                                                ${order.status}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(order.created_at).toLocaleString('vi-VN')}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+
+                if (data.success && data.orders) {
+                    allOrders = data.orders;
+                    renderOrders(allOrders);
+                    setupSearch('orders-search', allOrders, renderOrders);
                 } else {
-                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                    table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
                 }
             } catch (error) {
-                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+                table.innerHTML = '<div class="empty-state" style="color: var(--color-error);">Lỗi: ' + error.message + '</div>';
             } finally {
                 loading.classList.add('hidden');
             }
+        }
+
+        function renderOrders(orders) {
+            const table = document.getElementById('orders-table');
+            if (orders.length === 0) {
+                table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
+                return;
+            }
+
+            table.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Plan</th>
+                            <th>Số tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Thời gian tạo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${orders.map(order => `
+                            <tr>
+                                <td>${order.id}</td>
+                                <td>${order.userid}</td>
+                                <td><strong>${order.planname}</strong></td>
+                                <td style="color: var(--color-primary); font-weight: 600;">${Number(order.amount).toLocaleString('vi-VN')}đ</td>
+                                <td>
+                                    <span class="status-badge ${order.paymentstatus === 'Paid' ? 'status-paid' : 'status-unpaid'}">
+                                        ${order.paymentstatus}
+                                    </span>
+                                </td>
+                                <td>${new Date(order.createdat).toLocaleString('vi-VN')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         // Load Transactions
@@ -450,49 +992,61 @@
             table.innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/transactions`, {
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getAllTransactions' })
                 });
 
-                if (!response.ok) throw new Error('Unauthorized');
-
                 const data = await response.json();
-                
-                if (data.transactions && data.transactions.length > 0) {
-                    table.innerHTML = `
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead class="bg-gray-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Gateway</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Số tiền</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nội dung</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Reference</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Thời gian</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-gray-800 divide-y divide-gray-700">
-                                ${data.transactions.map(tx => `
-                                    <tr class="hover:bg-gray-750">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">${tx.transaction_id?.slice(-8) || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${tx.gateway || 'SePay'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-semibold">${(tx.amount || 0).toLocaleString('vi-VN')} ₫</td>
-                                        <td class="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">${tx.description || tx.content || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">${tx.reference_number || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(tx.transaction_date || tx.created_at).toLocaleString('vi-VN')}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+
+                if (data.success && data.transactions) {
+                    allTransactions = data.transactions;
+                    renderTransactions(allTransactions);
+                    setupSearch('transactions-search', allTransactions, renderTransactions);
                 } else {
-                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                    table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
                 }
             } catch (error) {
-                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+                table.innerHTML = '<div class="empty-state" style="color: var(--color-error);">Lỗi: ' + error.message + '</div>';
             } finally {
                 loading.classList.add('hidden');
             }
+        }
+
+        function renderTransactions(transactions) {
+            const table = document.getElementById('transactions-table');
+            if (transactions.length === 0) {
+                table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
+                return;
+            }
+
+            table.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Gateway</th>
+                            <th>Số tiền</th>
+                            <th>Nội dung</th>
+                            <th>Reference</th>
+                            <th>Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(tx => `
+                            <tr>
+                                <td>${tx.id}</td>
+                                <td>${tx.gateway || 'SePay'}</td>
+                                <td style="color: var(--color-primary); font-weight: 600;">${Number(tx.amountin || 0).toLocaleString('vi-VN')}đ</td>
+                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${tx.transactioncontent || 'N/A'}</td>
+                                <td>${tx.referencenumber || 'N/A'}</td>
+                                <td>${new Date(tx.receivedat).toLocaleString('vi-VN')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         // Load Logs
@@ -504,85 +1058,94 @@
             table.innerHTML = '';
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/logs`, {
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getAllLogs' })
                 });
 
-                if (!response.ok) throw new Error('Unauthorized');
-
                 const data = await response.json();
-                
-                if (data.logs && data.logs.length > 0) {
-                    table.innerHTML = `
-                        <table class="min-w-full divide-y divide-gray-700">
-                            <thead class="bg-gray-700">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Hành động</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Chi tiết</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Thời gian</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-gray-800 divide-y divide-gray-700">
-                                ${data.logs.map(log => `
-                                    <tr class="hover:bg-gray-750">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">${log._id.slice(-6)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${log.user_id?.username || log.user_id || 'System'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">${log.action}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-300 max-w-md truncate">${log.details || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(log.created_at).toLocaleString('vi-VN')}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
+
+                if (data.success && data.logs) {
+                    allLogs = data.logs;
+                    renderLogs(allLogs);
+                    setupSearch('logs-search', allLogs, renderLogs);
                 } else {
-                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                    table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
                 }
             } catch (error) {
-                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+                table.innerHTML = '<div class="empty-state" style="color: var(--color-error);">Lỗi: ' + error.message + '</div>';
             } finally {
                 loading.classList.add('hidden');
             }
         }
 
-        // Toggle VIP Status
-        async function toggleVIP(userId) {
-            if (!confirm('Bạn có chắc muốn thay đổi trạng thái VIP?')) return;
-
-            try {
-                const response = await fetch(`${API_BASE}/api/admin/users/${userId}/toggle-vip`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
-                });
-
-                if (response.ok) {
-                    alert('Cập nhật thành công!');
-                    loadUsers();
-                } else {
-                    alert('Lỗi khi cập nhật');
-                }
-            } catch (error) {
-                alert('Lỗi kết nối: ' + error.message);
+        function renderLogs(logs) {
+            const table = document.getElementById('logs-table');
+            if (logs.length === 0) {
+                table.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
+                return;
             }
+
+            table.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Hành động</th>
+                            <th>Chi tiết</th>
+                            <th>Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(log => `
+                            <tr>
+                                <td>${log.id}</td>
+                                <td>${log.userid || 'System'}</td>
+                                <td><strong>${log.action}</strong></td>
+                                <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.details || 'N/A'}</td>
+                                <td>${new Date(log.createdat).toLocaleString('vi-VN')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
-        // Delete User
-        async function deleteUser(userId) {
-            if (!confirm('Bạn có chắc muốn xóa user này?')) return;
+        // Add VIP Modal Functions
+        function openAddVIPModal(userId) {
+            document.getElementById('vip-user-id').value = userId;
+            document.getElementById('add-vip-modal').classList.remove('hidden');
+        }
+
+        function closeAddVIPModal() {
+            document.getElementById('add-vip-modal').classList.add('hidden');
+        }
+
+        async function confirmAddVIP() {
+            const userId = document.getElementById('vip-user-id').value;
+            const planType = document.getElementById('vip-plan-type').value;
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'addVIPSubscription', 
+                        payload: { userId, planType } 
+                    })
                 });
 
-                if (response.ok) {
-                    alert('Xóa thành công!');
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message || 'Cấp VIP thành công!');
+                    closeAddVIPModal();
                     loadUsers();
+                    loadSubscriptions();
                 } else {
-                    alert('Lỗi khi xóa');
+                    alert('Lỗi: ' + (data.message || 'Không thể cấp VIP'));
                 }
             } catch (error) {
                 alert('Lỗi kết nối: ' + error.message);
@@ -590,32 +1153,39 @@
         }
 
         // Delete Subscription
-        async function deleteSubscription(subId) {
+        async function deleteSubscription(subscriptionId) {
             if (!confirm('Bạn có chắc muốn xóa subscription này?')) return;
 
             try {
-                const response = await fetch(`${API_BASE}/api/admin/subscriptions/${subId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                const response = await fetch(`${API_BASE}/api/admin-handler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'deleteSubscription', 
+                        payload: { subscriptionId } 
+                    })
                 });
 
-                if (response.ok) {
+                const data = await response.json();
+
+                if (data.success) {
                     alert('Xóa thành công!');
                     loadSubscriptions();
                 } else {
-                    alert('Lỗi khi xóa');
+                    alert('Lỗi: ' + (data.message || 'Không thể xóa'));
                 }
             } catch (error) {
                 alert('Lỗi kết nối: ' + error.message);
             }
         }
 
-        // Check if already logged in
-        if (adminToken) {
-            document.getElementById('login-container').classList.add('hidden');
-            document.getElementById('admin-dashboard').classList.remove('hidden');
-            loadUsers();
-        }
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('add-vip-modal');
+            if (e.target === modal) {
+                closeAddVIPModal();
+            }
+        });
     </script>
 </body>
 </html>
