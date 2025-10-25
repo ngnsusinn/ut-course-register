@@ -103,6 +103,15 @@ export async function createOrder(userId, planId) {
             plan[0] = newPlanRows[0];
         }
 
+        // Ensure user exists (to satisfy FK). If not, create a minimal user record.
+        const [userRows] = await connection.execute('SELECT id FROM users WHERE id = ?', [userId]);
+        if (!userRows || userRows.length === 0) {
+            await connection.execute(
+                `INSERT INTO users (id, username, status, created_at, updated_at) VALUES (?, ?, 'active', NOW(), NOW())`,
+                [userId, userId]
+            );
+        }
+
         // Create order
         const [result] = await connection.execute(
             `INSERT INTO orders (user_id, plan_id, amount) 
