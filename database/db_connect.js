@@ -7,13 +7,8 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'your_db_password',
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
-    connectionLimit: 20,
-    queueLimit: 0,
-    timezone: '+07:00', // Vietnam timezone
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
-    multipleStatements: true, // Enable multiple statements for transactions
-    dateStrings: true // Return dates as strings to avoid timezone issues
+    connectionLimit: 10,
+    queueLimit: 0
 };
 
 // Create connection pool
@@ -56,4 +51,4 @@ async function closePool() {
     }
 }
 
-export { dbConfig, testConnection, executeQuery, closePool, getPool };
+export { dbConfig, testConnection, executeQuery, closePool };
