@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTH Admin Panel - Quản lý hệ thống</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+            <h1 class="text-2xl font-bold text-center mb-6">🔐 Admin Panel Login</h1>
+            <div id="loginError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
+            <input type="text" id="username" placeholder="Username" class="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="password" placeholder="Password" class="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="login()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Đăng nhập</button>
+            <p class="text-xs text-gray-500 mt-4 text-center">Default: admin/admin123 hoặc sunsin/password123</p>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">🎯 UTH Admin Panel</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-600">👤 <span id="adminUsername"></span></span>
+                    <button onclick="logout()" class="text-sm bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Đăng xuất</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white border-b">
+            <div class="max-w-7xl mx-auto px-4">
+                <nav class="flex space-x-8">
+                    <button onclick="switchTab('users')" class="tab-btn tab-active py-4 text-sm font-medium" data-tab="users">👥 Users</button>
+                    <button onclick="switchTab('subscriptions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="subscriptions">⭐ VIP Subscriptions</button>
+                    <button onclick="switchTab('orders')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="orders">📦 Orders</button>
+                    <button onclick="switchTab('transactions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="transactions">💳 Transactions</button>
+                    <button onclick="switchTab('logs')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="logs">📋 Activity Logs</button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6">
+            <!-- Users Tab -->
+            <div id="usersTab" class="tab-content">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Quản lý Users</h2>
+                        <button onclick="refreshData('users')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">VIP Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIP Subscriptions Tab -->
+            <div id="subscriptionsTab" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">VIP Subscriptions</h2>
+                        <button onclick="refreshData('subscriptions')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Tab -->
+            <div id="ordersTab" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Orders Management</h2>
+                        <button onclick="refreshData('orders')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div id="transactionsTab" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">SePay Transactions</h2>
+                        <button onclick="refreshData('transactions')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gateway</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Content</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Logs Tab -->
+            <div id="logsTab" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Activity Logs</h2>
+                        <button onclick="refreshData('logs')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add VIP Modal -->
+    <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-bold mb-4">Thêm VIP Subscription</h3>
+            <input type="text" id="vipUserId" placeholder="User ID" class="w-full px-3 py-2 border rounded mb-3">
+            <select id="vipPlanType" class="w-full px-3 py-2 border rounded mb-4">
+                <option value="1day">1 Day VIP</option>
+                <option value="3days">3 Days VIP</option>
+                <option value="7days">7 Days VIP</option>
+                <option value="30days">30 Days VIP</option>
+            </select>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAddVIPModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
+                <button onclick="submitAddVIP()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Thêm VIP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/admin-handler';
+        let currentUser = null;
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Vui lòng nhập đầy đủ thông tin!';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'login', 
+                        payload: { username, password } 
+                    })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUser = data.admin;
+                    document.getElementById('adminUsername').textContent = currentUser.username;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    errorDiv.classList.add('hidden');
+                    refreshData('users');
+                } else {
+                    errorDiv.textContent = data.message || 'Sai username hoặc password!';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Lỗi kết nối server!';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('text-gray-600');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('tab-active');
+            document.getElementById(`${tab}Tab`).classList.remove('hidden');
+            
+            refreshData(tab);
+        }
+
+        async function refreshData(type) {
+            const action = `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    switch(type) {
+                        case 'users': renderUsers(data.users); break;
+                        case 'subscriptions': renderSubscriptions(data.subscriptions); break;
+                        case 'orders': renderOrders(data.orders); break;
+                        case 'transactions': renderTransactions(data.transactions); break;
+                        case 'logs': renderLogs(data.logs); break;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${user.user_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded ${user.is_vip ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                            ${user.is_vip ? '✅ Active' : '❌ Expired'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${user.expiry_date ? new Date(user.expiry_date).toLocaleString('vi-VN') : 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-900">➕ Add VIP</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSubscriptions(subs) {
+            const tbody = document.getElementById('subscriptionsTableBody');
+            tbody.innerHTML = subs.map(sub => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${sub.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${sub.user_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${sub.plan_type}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${new Date(sub.expiry_date).toLocaleString('vi-VN')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${new Date(sub.created_at).toLocaleString('vi-VN')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="deleteSubscription(${sub.id})" class="text-red-600 hover:text-red-900">🗑️ Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderOrders(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${order.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${order.user_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${order.plan_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${order.amount.toLocaleString('vi-VN')} đ</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded ${order.payment_status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                            ${order.payment_status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${new Date(order.created_at).toLocaleString('vi-VN')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTransactions(trans) {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = trans.map(t => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${t.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${t.gateway}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${t.amount_in.toLocaleString('vi-VN')} đ</td>
+                    <td class="px-6 py-4">${t.transaction_content}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${t.reference_number}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${new Date(t.received_at).toLocaleString('vi-VN')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderLogs(logs) {
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">${log.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${log.user_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${log.action}</td>
+                    <td class="px-6 py-4">${log.details || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${new Date(log.created_at).toLocaleString('vi-VN')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddVIPModal(userId = '') {
+            document.getElementById('vipUserId').value = userId;
+            document.getElementById('addVIPModal').classList.remove('hidden');
+        }
+
+        function closeAddVIPModal() {
+            document.getElementById('addVIPModal').classList.add('hidden');
+        }
+
+        async function submitAddVIP() {
+            const userId = document.getElementById('vipUserId').value;
+            const planType = document.getElementById('vipPlanType').value;
+            
+            if (!userId) {
+                alert('Vui lòng nhập User ID!');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'addVIPSubscription', payload: { userId, planType } })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Đã thêm VIP thành công!');
+                    closeAddVIPModal();
+                    refreshData('users');
+                    refreshData('subscriptions');
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối: ' + error.message);
+            }
+        }
+
+        async function deleteSubscription(subId) {
+            if (!confirm('Bạn có chắc muốn xóa subscription này?')) return;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'deleteSubscription', payload: { subscriptionId: subId } })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Đã xóa subscription!');
+                    refreshData('subscriptions');
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
