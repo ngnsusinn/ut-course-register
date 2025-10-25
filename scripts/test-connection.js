@@ -33,7 +33,7 @@ async function testDatabaseConnection() {
         });
 
         // Check if required tables exist
-        const requiredTables = ['users', 'vip_packages', 'vip_orders', 'vip_transactions', 'payment_gateway_logs', 'vip_subscriptions'];
+        const requiredTables = ['users', 'vip_subscriptions', 'orders', 'transactions', 'activity_logs'];
         const existingTables = tables.map(t => Object.values(t)[0]);
         
         console.log('\nRequired tables status:');

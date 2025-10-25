@@ -60,6 +60,14 @@ async function getScheduleDetails(classId, token, source) {
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
+// VIP Plans Configuration
+const VIP_PLANS = {
+    '1day': { price: 24000, duration: 1, name: '1 Ngày VIP' },
+    '3days': { price: 72000, duration: 3, name: '3 Ngày VIP' },
+    '7days': { price: 126000, duration: 7, name: '7 Ngày VIP' },
+    '30days': { price: 432000, duration: 30, name: '30 Ngày VIP' }
+};
+
 // SePay Configuration
 const SEPAY_CONFIG = {
     bankName: process.env.SEPAY_BANK_NAME || 'MBBank',
@@ -69,22 +77,11 @@ const SEPAY_CONFIG = {
 
 // Helper: Check if user has active VIP
 async function checkVIPStatus(userId) {
-    const connection = await getPool().getConnection();
     try {
-        // First, ensure the user exists in the users table
-        const [userRows] = await connection.execute('SELECT id FROM users WHERE id = ?', [userId]);
-        if (userRows.length === 0) {
-            // If user does not exist, create them
-            await connection.execute('INSERT INTO users (id, username) VALUES (?, ?)', [userId, userId]);
-        }
-
+        const connection = await getPool().getConnection();
+        
         const [rows] = await connection.execute(
-            `SELECT s.expires_at, p.name as plan_name, p.plan_code 
-             FROM vip_subscriptions s
-             JOIN vip_orders o ON s.order_id = o.id
-             JOIN vip_packages p ON o.package_id = p.id
-             WHERE s.user_id = ? AND s.expires_at > NOW() 
-             ORDER BY s.expires_at DESC LIMIT 1`,
+            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
             [userId]
         );
         
@@ -95,51 +92,33 @@ async function checkVIPStatus(userId) {
         }
         
         const vipData = rows[0];
-        const expiryDate = new Date(vipData.expires_at);
+        const expiryDate = new Date(vipData.expiry_date);
         const now = new Date();
         const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
         
         return { 
             hasVIP: true, 
-            expiryDate: vipData.expires_at,
-            plan: vipData.plan_code,
-            planName: vipData.plan_name,
+            expiryDate: vipData.expiry_date,
+            plan: vipData.plan_type,
             daysLeft: daysLeft
         };
     } catch (error) {
-        connection.release();
         console.error('Error checking VIP status:', error);
         return { hasVIP: false };
     }
 }
 
 // Helper: Create order
-async function createOrder(userId, planCode) {
-    const connection = await getPool().getConnection();
+async function createOrder(userId, plan) {
+    const planConfig = VIP_PLANS[plan];
+    if (!planConfig) return null;
+    
     try {
-        // First, ensure the user exists in the users table
-        const [userRows] = await connection.execute('SELECT id FROM users WHERE id = ?', [userId]);
-        if (userRows.length === 0) {
-            // If user does not exist, create them
-            await connection.execute('INSERT INTO users (id, username) VALUES (?, ?)', [userId, userId]);
-        }
-
-        // First, find the package to ensure it exists and is active
-        const [packages] = await connection.execute(
-            'SELECT id, price FROM vip_packages WHERE plan_code = ? AND is_active = 1',
-            [planCode]
-        );
-
-        if (packages.length === 0) {
-            connection.release();
-            return null; // Plan not found or is not active
-        }
-        const vipPackage = packages[0];
-
-        // Create the order
+        const connection = await getPool().getConnection();
+        
         const [result] = await connection.execute(
-            'INSERT INTO vip_orders (user_id, package_id, amount, status) VALUES (?, ?, ?, ?)',
-            [userId, vipPackage.id, vipPackage.price, 'pending']
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
+            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
         );
         
         connection.release();
@@ -147,13 +126,13 @@ async function createOrder(userId, planCode) {
         return {
             id: result.insertId,
             userId,
-            amount: vipPackage.price,
-            status: 'pending',
-            plan: planCode,
+            amount: planConfig.price,
+            status: 'Unpaid',
+            plan,
+            planName: planConfig.name,
             createdAt: new Date().toISOString()
         };
     } catch (error) {
-        connection.release();
         console.error('Error creating order:', error);
         return null;
     }
@@ -165,10 +144,7 @@ async function getOrderStatus(orderId) {
         const connection = await getPool().getConnection();
         
         const [rows] = await connection.execute(
-            `SELECT o.id, o.user_id, o.amount, o.status, p.plan_code, p.name as plan_name, o.created_at 
-             FROM vip_orders o
-             JOIN vip_packages p ON o.package_id = p.id
-             WHERE o.id = ?`,
+            'SELECT * FROM orders WHERE id = ?',
             [orderId]
         );
         
@@ -183,10 +159,12 @@ async function getOrderStatus(orderId) {
             id: order.id,
             userId: order.user_id,
             amount: parseFloat(order.amount),
-            status: order.status,
-            plan: order.plan_code,
+            status: order.payment_status,
+            plan: order.plan_type,
             planName: order.plan_name,
-            createdAt: order.created_at
+            createdAt: order.created_at,
+            paidAt: order.paid_at,
+            transactionRef: order.transaction_ref
         };
     } catch (error) {
         console.error('Error getting order status:', error);
@@ -250,16 +228,16 @@ export default async (req, res) => {
 
             case 'createVIPOrder': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { userId, plan } = payload; // 'plan' is now planCode, e.g., '1day'
+                const { userId, plan } = payload;
                 
-                if (!plan) {
+                if (!VIP_PLANS[plan]) {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
                 
                 const order = await createOrder(userId, plan);
                 
                 if (!order) {
-                    return res.status(500).json({ success: false, message: 'Failed to create order or plan is invalid' });
+                    return res.status(500).json({ success: false, message: 'Failed to create order' });
                 }
                 
                 result = { success: true, order };
@@ -279,22 +257,11 @@ export default async (req, res) => {
             }
 
             case 'getVIPPlans': {
-                const connection = await getPool().getConnection();
-                try {
-                    const [plans] = await connection.execute(
-                        'SELECT plan_code, name, price, duration_days FROM vip_packages WHERE is_active = 1 ORDER BY price ASC'
-                    );
-                    connection.release();
-                    result = { 
-                        success: true, 
-                        plans: plans.map(p => ({ ...p, plan_code: undefined, planCode: p.plan_code })), // frontend might expect planCode
-                        sepayConfig: SEPAY_CONFIG
-                    };
-                } catch (error) {
-                    connection.release();
-                    console.error('Error fetching VIP plans:', error);
-                    return res.status(500).json({ success: false, message: 'Could not fetch VIP plans' });
-                }
+                result = { 
+                    success: true, 
+                    plans: VIP_PLANS,
+                    sepayConfig: SEPAY_CONFIG
+                };
                 break;
             }
 
@@ -371,7 +338,6 @@ export default async (req, res) => {
                 const { dotId, maHocPhan, source } = payload;
                 const classEndpoint = source === 'dkhpdk'
                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
-                    // eslint-disable-next-line max-len
                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                 result = await callApi(classEndpoint, 'GET', token, null, source);
                 break;
