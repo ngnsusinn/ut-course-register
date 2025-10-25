@@ -4,688 +4,617 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🔐 UTH Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Be Vietnam Pro', sans-serif; background: #f9fafb; color: #111827; }
-        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
-        .login-box h1 { font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 0.5rem; color: #1f2937; }
-        .login-box p { text-align: center; color: #6b7280; font-size: 0.875rem; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; }
-        .form-group input { width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; transition: all 0.2s; }
-        .form-group input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        .btn { width: 100%; padding: 0.75rem 1rem; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn:hover { background: #1d4ed8; }
-        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
-        .error-msg { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 0.75rem; border-radius: 8px; font-size: 0.875rem; margin-bottom: 1rem; }
-        .hidden { display: none !important; }
-        
-        /* Dashboard */
-        .dashboard { display: none; }
-        .dashboard.active { display: block; }
-        .header { background: white; border-bottom: 1px solid #e5e7eb; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 1.5rem; font-weight: 700; color: #1f2937; }
-        .header .user-info { display: flex; align-items: center; gap: 1rem; }
-        .header .user-name { font-size: 0.875rem; color: #6b7280; }
-        .btn-logout { background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; }
-        .btn-logout:hover { background: #dc2626; }
-        
-        /* Tabs */
-        .tabs { background: white; border-bottom: 1px solid #e5e7eb; padding: 0 2rem; }
-        .tabs-nav { display: flex; gap: 2rem; overflow-x: auto; }
-        .tab-btn { padding: 1rem 0; font-size: 0.875rem; font-weight: 500; color: #6b7280; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
-        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
-        .tab-btn:hover { color: #1f2937; }
-        
-        /* Content */
-        .content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; }
-        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1.5rem; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-        .card-header h2 { font-size: 1.25rem; font-weight: 600; color: #1f2937; }
-        .btn-refresh { background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; }
-        .btn-refresh:hover { background: #1d4ed8; }
-        
-        /* Search */
-        .search-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .search-bar input, .search-bar select { padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; }
-        .search-bar input { flex: 1; min-width: 200px; }
-        .search-bar select { min-width: 150px; }
-        
-        /* Table */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        thead { background: #f9fafb; }
-        th { padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
-        td { padding: 0.75rem 1rem; font-size: 0.875rem; color: #1f2937; border-bottom: 1px solid #e5e7eb; }
-        tbody tr:hover { background: #f9fafb; }
-        .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-        .badge-success { background: #dcfce7; color: #16a34a; }
-        .badge-error { background: #fee2e2; color: #dc2626; }
-        .badge-warning { background: #fef3c7; color: #d97706; }
-        .badge-info { background: #dbeafe; color: #2563eb; }
-        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: #2563eb; color: white; }
-        .btn-primary:hover { background: #1d4ed8; }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
-        
-        /* Modal */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: white; border-radius: 12px; padding: 2rem; width: 90%; max-width: 500px; }
-        .modal-header { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; color: #1f2937; }
-        .modal-body { margin-bottom: 1.5rem; }
-        .modal-footer { display: flex; gap: 1rem; justify-content: flex-end; }
-        
-        /* Toast */
-        .toast-container { position: fixed; bottom: 1rem; right: 1rem; z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; }
-        .toast { background: white; padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.75rem; min-width: 300px; animation: slideIn 0.3s ease; }
-        .toast-success { border-left: 4px solid #16a34a; }
-        .toast-error { border-left: 4px solid #dc2626; }
-        .toast-info { border-left: 4px solid #2563eb; }
-        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        
-        /* Loading */
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        .vip-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #10b981; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* Confirm Dialog */
-        .confirm-dialog { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; align-items: center; justify-content: center; }
-        .confirm-dialog.active { display: flex; }
-        .confirm-content { background: white; border-radius: 12px; padding: 2rem; width: 90%; max-width: 400px; text-align: center; }
-        .confirm-content .icon { font-size: 3rem; margin-bottom: 1rem; }
-        .confirm-content h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #1f2937; }
-        .confirm-content p { color: #6b7280; font-size: 0.875rem; margin-bottom: 1.5rem; }
-        .confirm-buttons { display: flex; gap: 0.75rem; justify-content: center; }
-        .btn-confirm { padding: 0.5rem 1.5rem; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; }
-        .btn-confirm-cancel { background: #f3f4f6; color: #374151; }
-        .btn-confirm-cancel:hover { background: #e5e7eb; }
-        .btn-confirm-ok { background: #ef4444; color: white; }
-        .btn-confirm-ok:hover { background: #dc2626; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-expired { background: #fee2e2; color: #991b1b; }
+        .status-completed { background: #dbeafe; color: #1e40af; }
     </style>
 </head>
-<body>
-    <!-- Login Screen -->
-    <div id="loginScreen" class="login-container">
-        <div class="login-box">
-            <h1>🔐 UTH Admin Panel</h1>
-            <p>Hệ thống quản lý tài khoản và VIP</p>
-            <div id="loginError" class="error-msg hidden"></div>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="username">Tên đăng nhập</label>
-                    <input type="text" id="username" placeholder="admin" autocomplete="username" required>
+<body class="bg-gray-900">
+    <!-- Login Container -->
+    <div id="login-container" class="min-h-screen flex items-center justify-center p-4 vip-gradient">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">🔐 Admin Panel</h1>
+                <p class="text-gray-600 text-sm">Đăng nhập để quản lý hệ thống</p>
+            </div>
+            
+            <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 text-sm"></div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tên đăng nhập</label>
+                    <input type="text" id="admin-username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="admin" required>
                 </div>
-                <div class="form-group">
-                    <label for="password">Mật khẩu</label>
-                    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu</label>
+                    <input type="password" id="admin-password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn" id="loginBtn">
-                    <span id="loginBtnText">Đăng nhập</span>
+                <button type="submit" id="login-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                    <span>Đăng nhập</span>
                 </button>
             </form>
-            <p style="margin-top: 1rem; font-size: 0.75rem; color: #9ca3af;">Default: admin/admin123 hoặc sunsin/password123</p>
         </div>
     </div>
 
-    <!-- Dashboard -->
-    <div id="dashboard" class="dashboard">
-        <div class="header">
-            <h1>🎯 UTH Admin Panel</h1>
-            <div class="user-info">
-                <span class="user-name">👤 <span id="adminUsername"></span></span>
-                <button class="btn-logout" onclick="logout()">Đăng xuất</button>
+    <!-- Admin Dashboard -->
+    <div id="admin-dashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-lg border-b border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">🔐 Admin Dashboard</h1>
+                        <p class="text-gray-400 text-sm mt-1">Quản lý hệ thống UTH Course Registration</p>
+                    </div>
+                    <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
+                        Đăng xuất
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-gray-800 border-b border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="flex space-x-4 overflow-x-auto">
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-green-400 border-b-2 border-green-400 whitespace-nowrap" data-tab="users">👥 Users</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="subscriptions">💎 VIP Subscriptions</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="orders">🛒 Đơn hàng</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="transactions">💳 Giao dịch</button>
+                    <button class="tab-btn px-4 py-3 text-sm font-medium text-gray-400 hover:text-gray-300 border-b-2 border-transparent hover:border-gray-600 whitespace-nowrap" data-tab="logs">📋 Logs</button>
+                </nav>
             </div>
         </div>
 
-        <div class="tabs">
-            <div class="tabs-nav">
-                <button class="tab-btn active" data-tab="users">👥 Quản lý Users</button>
-                <button class="tab-btn" data-tab="subscriptions">⭐ VIP Subscriptions</button>
-                <button class="tab-btn" data-tab="orders">📦 Đơn hàng</button>
-                <button class="tab-btn" data-tab="transactions">💳 Giao dịch</button>
-                <button class="tab-btn" data-tab="logs">📋 Nhật ký</button>
-            </div>
-        </div>
-
-        <div class="content">
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-gray-900 min-h-screen">
             <!-- Users Tab -->
-            <div id="usersTab" class="tab-pane active">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Quản lý Users</h2>
-                        <button class="btn-refresh" onclick="refreshData('users')">🔄 Refresh</button>
+            <div id="users-tab" class="tab-content">
+                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">👥 Quản lý Users</h2>
+                        <button onclick="loadUsers()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
+                            🔄 Làm mới
+                        </button>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="searchUsers" placeholder="Tìm theo User ID...">
+                    <div id="users-loading" class="text-center py-8 hidden">
+                        <div class="loader mx-auto"></div>
+                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>User Info</th>
-                                    <th>VIP Status</th>
-                                    <th>Ngày hết hạn</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div id="users-table" class="overflow-x-auto"></div>
                 </div>
             </div>
 
-            <!-- Subscriptions Tab -->
-            <div id="subscriptionsTab" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>VIP Subscriptions</h2>
-                        <button class="btn-refresh" onclick="refreshData('subscriptions')">🔄 Refresh</button>
+            <!-- VIP Subscriptions Tab -->
+            <div id="subscriptions-tab" class="tab-content hidden">
+                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">💎 VIP Subscriptions</h2>
+                        <button onclick="loadSubscriptions()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
+                            🔄 Làm mới
+                        </button>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="searchSubscriptions" placeholder="Tìm theo User ID hoặc Plan...">
-                        <select id="filterSubStatus">
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="active">Active</option>
-                            <option value="expired">Expired</option>
-                        </select>
+                    <div id="subscriptions-loading" class="text-center py-8 hidden">
+                        <div class="loader mx-auto"></div>
+                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>User ID</th>
-                                    <th>Plan Type</th>
-                                    <th>Trạng thái</th>
-                                    <th>Hết hạn</th>
-                                    <th>Tạo lúc</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="subscriptionsTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div id="subscriptions-table" class="overflow-x-auto"></div>
                 </div>
             </div>
 
             <!-- Orders Tab -->
-            <div id="ordersTab" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Quản lý Đơn hàng</h2>
-                        <button class="btn-refresh" onclick="refreshData('orders')">🔄 Refresh</button>
+            <div id="orders-tab" class="tab-content hidden">
+                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">🛒 Quản lý Đơn hàng</h2>
+                        <button onclick="loadOrders()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
+                            🔄 Làm mới
+                        </button>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="searchOrders" placeholder="Tìm theo User ID hoặc Plan...">
-                        <select id="filterOrderStatus">
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="Paid">Đã thanh toán</option>
-                            <option value="Unpaid">Chưa thanh toán</option>
-                            <option value="Cancelled">Đã hủy</option>
-                        </select>
+                    <div id="orders-loading" class="text-center py-8 hidden">
+                        <div class="loader mx-auto"></div>
+                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>User ID</th>
-                                    <th>Plan</th>
-                                    <th>Số tiền</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thời gian tạo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div id="orders-table" class="overflow-x-auto"></div>
                 </div>
             </div>
 
             <!-- Transactions Tab -->
-            <div id="transactionsTab" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Giao dịch SePay</h2>
-                        <button class="btn-refresh" onclick="refreshData('transactions')">🔄 Refresh</button>
+            <div id="transactions-tab" class="tab-content hidden">
+                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">💳 Giao dịch SePay</h2>
+                        <button onclick="loadTransactions()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
+                            🔄 Làm mới
+                        </button>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="searchTransactions" placeholder="Tìm theo Reference hoặc Nội dung...">
+                    <div id="transactions-loading" class="text-center py-8 hidden">
+                        <div class="loader mx-auto"></div>
+                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Gateway</th>
-                                    <th>Số tiền</th>
-                                    <th>Nội dung</th>
-                                    <th>Reference</th>
-                                    <th>Thời gian</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactionsTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div id="transactions-table" class="overflow-x-auto"></div>
                 </div>
             </div>
 
             <!-- Logs Tab -->
-            <div id="logsTab" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Nhật ký hoạt động</h2>
-                        <button class="btn-refresh" onclick="refreshData('logs')">🔄 Refresh</button>
+            <div id="logs-tab" class="tab-content hidden">
+                <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white">📋 Nhật ký hoạt động</h2>
+                        <button onclick="loadLogs()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition duration-200">
+                            🔄 Làm mới
+                        </button>
                     </div>
-                    <div class="search-bar">
-                        <input type="text" id="searchLogs" placeholder="Tìm theo User ID hoặc Action...">
-                        <select id="filterLogAction">
-                            <option value="">Tất cả hành động</option>
-                            <option value="USER_LOGIN">Đăng nhập</option>
-                            <option value="VIP_PURCHASE">Mua VIP</option>
-                            <option value="ADMIN_ADD_VIP">Admin thêm VIP</option>
-                            <option value="ADMIN_DELETE_VIP">Admin xóa VIP</option>
-                        </select>
+                    <div id="logs-loading" class="text-center py-8 hidden">
+                        <div class="loader mx-auto"></div>
+                        <p class="text-gray-400 mt-3">Đang tải dữ liệu...</p>
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>User ID</th>
-                                    <th>Hành động</th>
-                                    <th>Chi tiết</th>
-                                    <th>Thời gian</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logsTableBody"></tbody>
-                        </table>
-                    </div>
+                    <div id="logs-table" class="overflow-x-auto"></div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
-
-    <!-- Add VIP Modal -->
-    <div id="addVIPModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">⭐ Thêm VIP Subscription</div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="vipUserId">User ID</label>
-                    <input type="text" id="vipUserId" placeholder="Nhập User ID...">
-                </div>
-                <div class="form-group">
-                    <label for="vipPlanType">Chọn gói VIP</label>
-                    <select id="vipPlanType">
-                        <option value="1day">1 Day VIP - 24,000đ</option>
-                        <option value="3days">3 Days VIP - 72,000đ</option>
-                        <option value="7days">7 Days VIP - 126,000đ</option>
-                        <option value="30days">30 Days VIP - 432,000đ</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" style="background: #6b7280;" onclick="closeAddVIPModal()">Hủy</button>
-                <button class="btn" onclick="submitAddVIP()" id="addVIPBtn">
-                    <span id="addVIPBtnText">Thêm VIP</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirm Dialog -->
-    <div id="confirmDialog" class="confirm-dialog">
-        <div class="confirm-content">
-            <div class="icon">⚠️</div>
-            <h3 id="confirmTitle">Xác nhận xóa</h3>
-            <p id="confirmMessage">Bạn có chắc muốn xóa subscription này không?</p>
-            <div class="confirm-buttons">
-                <button class="btn-confirm btn-confirm-cancel" onclick="closeConfirmDialog()">Hủy</button>
-                <button class="btn-confirm btn-confirm-ok" id="confirmOkBtn">Xóa</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toastContainer" class="toast-container"></div>
 
     <script>
-        const API_URL = '/api/admin-handler';
-        let currentUser = null;
-        let allUsers = [], allSubscriptions = [], allOrders = [], allTransactions = [], allLogs = [];
+        const API_BASE = 'https://anhembe-api.vercel.app';
+        let adminToken = localStorage.getItem('admin_token');
 
-        // Login
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        // Login Handler
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const loginBtnText = document.getElementById('loginBtnText');
-            const errorDiv = document.getElementById('loginError');
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('error-msg');
 
             loginBtn.disabled = true;
-            loginBtnText.innerHTML = '<span class="spinner"></span> Đang xử lý...';
-            errorDiv.classList.add('hidden');
+            loginBtn.innerHTML = '<div class="loader"></div>';
+            errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch(`${API_BASE}/api/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'login', payload: { username, password } })
+                    body: JSON.stringify({ username, password })
                 });
+
                 const data = await response.json();
 
-                if (data.success) {
-                    currentUser = data.admin;
-                    document.getElementById('adminUsername').textContent = currentUser.username;
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('dashboard').classList.add('active');
-                    refreshData('users');
+                if (response.ok && data.token) {
+                    adminToken = data.token;
+                    localStorage.setItem('admin_token', adminToken);
+                    document.getElementById('login-container').classList.add('hidden');
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    loadUsers();
                 } else {
-                    errorDiv.textContent = data.message || 'Sai tên đăng nhập hoặc mật khẩu!';
-                    errorDiv.classList.remove('hidden');
+                    errorMsg.textContent = data.message || 'Đăng nhập thất bại';
+                    errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
-                errorDiv.textContent = 'Lỗi kết nối đến server!';
-                errorDiv.classList.remove('hidden');
+                errorMsg.textContent = 'Lỗi kết nối server';
+                errorMsg.classList.remove('hidden');
             } finally {
                 loginBtn.disabled = false;
-                loginBtnText.textContent = 'Đăng nhập';
+                loginBtn.innerHTML = '<span>Đăng nhập</span>';
             }
         });
 
-        function logout() {
-            currentUser = null;
-            document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-        }
+        // Logout Handler
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('admin_token');
+            adminToken = null;
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('login-container').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+        });
 
-        // Tab switching
+        // Tab Switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(tab + 'Tab').classList.add('active');
-                refreshData(tab);
+                const tabName = btn.dataset.tab;
+                
+                // Update tab buttons
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('text-green-400', 'border-green-400');
+                    b.classList.add('text-gray-400', 'border-transparent');
+                });
+                btn.classList.add('text-green-400', 'border-green-400');
+                btn.classList.remove('text-gray-400', 'border-transparent');
+
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+
+                // Load data for the tab
+                switch(tabName) {
+                    case 'users': loadUsers(); break;
+                    case 'subscriptions': loadSubscriptions(); break;
+                    case 'orders': loadOrders(); break;
+                    case 'transactions': loadTransactions(); break;
+                    case 'logs': loadLogs(); break;
+                }
             });
         });
 
-        // Toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
-                <span>${message}</span>
-            `;
-            document.getElementById('toastContainer').appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        // Confirm Dialog
-        let confirmCallback = null;
-        function showConfirmDialog(title, message, onConfirm) {
-            document.getElementById('confirmTitle').textContent = title;
-            document.getElementById('confirmMessage').textContent = message;
-            document.getElementById('confirmDialog').classList.add('active');
-            confirmCallback = onConfirm;
-        }
-
-        function closeConfirmDialog() {
-            document.getElementById('confirmDialog').classList.remove('active');
-            confirmCallback = null;
-        }
-
-        document.getElementById('confirmOkBtn').addEventListener('click', () => {
-            if (confirmCallback) confirmCallback();
-            closeConfirmDialog();
-        });
-
-        // Refresh data
-        async function refreshData(type) {
-            const action = `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    switch(type) {
-                        case 'users': allUsers = data.users; renderUsers(data.users); break;
-                        case 'subscriptions': allSubscriptions = data.subscriptions; renderSubscriptions(data.subscriptions); break;
-                        case 'orders': allOrders = data.orders; renderOrders(data.orders); break;
-                        case 'transactions': allTransactions = data.transactions; renderTransactions(data.transactions); break;
-                        case 'logs': allLogs = data.logs; renderLogs(data.logs); break;
-                    }
-                }
-            } catch (error) {
-                showToast('Lỗi tải dữ liệu: ' + error.message, 'error');
-            }
-        }
-
-        // Render functions
-        function renderUsers(users) {
-            const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = users.map(user => `
-                <tr>
-                    <td>
-                        <div style="font-weight: 600;">${user.user_id}</div>
-                        ${user.full_name ? `<div style="font-size: 0.75rem; color: #6b7280;">${user.full_name}</div>` : ''}
-                        ${user.email ? `<div style="font-size: 0.75rem; color: #6b7280;">${user.email}</div>` : ''}
-                    </td>
-                    <td><span class="badge ${user.is_vip ? 'badge-success' : 'badge-error'}">${user.is_vip ? '✅ Active' : '❌ Expired'}</span></td>
-                    <td>${user.expiry_date ? new Date(user.expiry_date).toLocaleString('vi-VN') : 'N/A'}</td>
-                    <td><button class="btn-sm btn-primary" onclick="openAddVIPModal('${user.user_id}')">➕ Add VIP</button></td>
-                </tr>
-            `).join('');
-        }
-
-        function renderSubscriptions(subs) {
-            const tbody = document.getElementById('subscriptionsTableBody');
-            tbody.innerHTML = subs.map(sub => {
-                const isActive = new Date(sub.expiry_date) > new Date();
-                return `
-                    <tr>
-                        <td>${sub.id}</td>
-                        <td>${sub.user_id}</td>
-                        <td>${sub.plan_type}</td>
-                        <td><span class="badge ${isActive ? 'badge-success' : 'badge-error'}">${isActive ? 'Active' : 'Expired'}</span></td>
-                        <td>${new Date(sub.expiry_date).toLocaleString('vi-VN')}</td>
-                        <td>${new Date(sub.created_at).toLocaleString('vi-VN')}</td>
-                        <td><button class="btn-sm btn-danger" onclick="deleteSubscription(${sub.id})">🗑️ Xóa</button></td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderOrders(orders) {
-            const tbody = document.getElementById('ordersTableBody');
-            tbody.innerHTML = orders.map(order => `
-                <tr>
-                    <td>${order.id}</td>
-                    <td>${order.user_id}</td>
-                    <td>${order.plan_name}</td>
-                    <td>${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
-                    <td><span class="badge ${order.payment_status === 'Paid' ? 'badge-success' : order.payment_status === 'Unpaid' ? 'badge-warning' : 'badge-error'}">${order.payment_status}</span></td>
-                    <td>${new Date(order.created_at).toLocaleString('vi-VN')}</td>
-                </tr>
-            `).join('');
-        }
-
-        function renderTransactions(trans) {
-            const tbody = document.getElementById('transactionsTableBody');
-            tbody.innerHTML = trans.map(t => `
-                <tr>
-                    <td>${t.id}</td>
-                    <td>${t.gateway}</td>
-                    <td>${parseFloat(t.amount_in).toLocaleString('vi-VN')}đ</td>
-                    <td>${t.transaction_content}</td>
-                    <td>${t.reference_number}</td>
-                    <td>${new Date(t.received_at).toLocaleString('vi-VN')}</td>
-                </tr>
-            `).join('');
-        }
-
-        function renderLogs(logs) {
-            const tbody = document.getElementById('logsTableBody');
-            tbody.innerHTML = logs.map(log => `
-                <tr>
-                    <td>${log.id}</td>
-                    <td>${log.user_id}</td>
-                    <td><span class="badge badge-info">${log.action}</span></td>
-                    <td>${log.details || ''}</td>
-                    <td>${new Date(log.created_at).toLocaleString('vi-VN')}</td>
-                </tr>
-            `).join('');
-        }
-
-        // Search filters
-        document.getElementById('searchUsers').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = allUsers.filter(u => u.user_id.toLowerCase().includes(query));
-            renderUsers(filtered);
-        });
-
-        document.getElementById('searchSubscriptions').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const status = document.getElementById('filterSubStatus').value;
-            let filtered = allSubscriptions.filter(s => 
-                s.user_id.toLowerCase().includes(query) || s.plan_type.toLowerCase().includes(query)
-            );
-            if (status === 'active') filtered = filtered.filter(s => new Date(s.expiry_date) > new Date());
-            if (status === 'expired') filtered = filtered.filter(s => new Date(s.expiry_date) <= new Date());
-            renderSubscriptions(filtered);
-        });
-
-        document.getElementById('filterSubStatus').addEventListener('change', () => {
-            document.getElementById('searchSubscriptions').dispatchEvent(new Event('input'));
-        });
-
-        document.getElementById('searchOrders').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const status = document.getElementById('filterOrderStatus').value;
-            let filtered = allOrders.filter(o => 
-                o.user_id.toLowerCase().includes(query) || o.plan_name.toLowerCase().includes(query)
-            );
-            if (status) filtered = filtered.filter(o => o.payment_status === status);
-            renderOrders(filtered);
-        });
-
-        document.getElementById('filterOrderStatus').addEventListener('change', () => {
-            document.getElementById('searchOrders').dispatchEvent(new Event('input'));
-        });
-
-        document.getElementById('searchTransactions').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = allTransactions.filter(t => 
-                t.reference_number.toLowerCase().includes(query) || 
-                t.transaction_content.toLowerCase().includes(query)
-            );
-            renderTransactions(filtered);
-        });
-
-        document.getElementById('searchLogs').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const action = document.getElementById('filterLogAction').value;
-            let filtered = allLogs.filter(l => 
-                l.user_id.toLowerCase().includes(query) || l.action.toLowerCase().includes(query)
-            );
-            if (action) filtered = filtered.filter(l => l.action === action);
-            renderLogs(filtered);
-        });
-
-        document.getElementById('filterLogAction').addEventListener('change', () => {
-            document.getElementById('searchLogs').dispatchEvent(new Event('input'));
-        });
-
-        // Add VIP Modal
-        function openAddVIPModal(userId = '') {
-            document.getElementById('vipUserId').value = userId;
-            document.getElementById('addVIPModal').classList.add('active');
-        }
-
-        function closeAddVIPModal() {
-            document.getElementById('addVIPModal').classList.remove('active');
-        }
-
-        async function submitAddVIP() {
-            const userId = document.getElementById('vipUserId').value.trim();
-            const planType = document.getElementById('vipPlanType').value;
-            const addVIPBtn = document.getElementById('addVIPBtn');
-            const addVIPBtnText = document.getElementById('addVIPBtnText');
-
-            if (!userId) {
-                showToast('Vui lòng nhập User ID!', 'error');
-                return;
-            }
-
-            addVIPBtn.disabled = true;
-            addVIPBtnText.innerHTML = '<span class="spinner"></span> Đang xử lý...';
+        // Load Users
+        async function loadUsers() {
+            const loading = document.getElementById('users-loading');
+            const table = document.getElementById('users-table');
+            
+            loading.classList.remove('hidden');
+            table.innerHTML = '';
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'addVIPSubscription', payload: { userId, planType } })
+                const response = await fetch(`${API_BASE}/api/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
                 });
+
+                if (!response.ok) throw new Error('Unauthorized');
+
                 const data = await response.json();
                 
-                if (data.success) {
-                    showToast(data.message || 'Đã thêm VIP thành công!', 'success');
-                    closeAddVIPModal();
-                    refreshData('users');
-                    refreshData('subscriptions');
+                if (data.users && data.users.length > 0) {
+                    table.innerHTML = `
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User Info</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">VIP Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ngày hết hạn</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-gray-800 divide-y divide-gray-700">
+                                ${data.users.map(user => `
+                                    <tr class="hover:bg-gray-750">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-white">${user.username || 'N/A'}</div>
+                                            <div class="text-sm text-gray-400">${user.email || 'No email'}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="status-badge ${user.is_vip ? 'status-active' : 'status-expired'}">
+                                                ${user.is_vip ? '✓ VIP' : '✗ Free'}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                            ${user.vip_expires_at ? new Date(user.vip_expires_at).toLocaleString('vi-VN') : 'N/A'}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="toggleVIP('${user._id}')" class="text-green-400 hover:text-green-300 font-medium mr-3">
+                                                ${user.is_vip ? 'Hủy VIP' : 'Cấp VIP'}
+                                            </button>
+                                            <button onclick="deleteUser('${user._id}')" class="text-red-400 hover:text-red-300 font-medium">
+                                                Xóa
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
                 } else {
-                    showToast('Lỗi: ' + (data.message || 'Không thể thêm VIP'), 'error');
+                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
                 }
             } catch (error) {
-                showToast('Lỗi kết nối: ' + error.message, 'error');
+                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
             } finally {
-                addVIPBtn.disabled = false;
-                addVIPBtnText.textContent = 'Thêm VIP';
+                loading.classList.add('hidden');
             }
         }
 
-        // Delete Subscription with custom confirm
-        async function deleteSubscription(subId) {
-            showConfirmDialog(
-                'Xác nhận xóa subscription',
-                `Bạn có chắc muốn xóa subscription #${subId} không?`,
-                async () => {
-                    try {
-                        const response = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'deleteSubscription', payload: { subscriptionId: subId } })
-                        });
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            showToast('Đã xóa subscription!', 'success');
-                            refreshData('subscriptions');
-                        } else {
-                            showToast('Lỗi: ' + (data.message || 'Không thể xóa'), 'error');
-                        }
-                    } catch (error) {
-                        showToast('Lỗi kết nối: ' + error.message, 'error');
-                    }
+        // Load Subscriptions
+        async function loadSubscriptions() {
+            const loading = document.getElementById('subscriptions-loading');
+            const table = document.getElementById('subscriptions-table');
+            
+            loading.classList.remove('hidden');
+            table.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/subscriptions`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (!response.ok) throw new Error('Unauthorized');
+
+                const data = await response.json();
+                
+                if (data.subscriptions && data.subscriptions.length > 0) {
+                    table.innerHTML = `
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Trạng thái</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Hết hạn</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tạo lúc</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-gray-800 divide-y divide-gray-700">
+                                ${data.subscriptions.map(sub => `
+                                    <tr class="hover:bg-gray-750">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${sub._id.slice(-6)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${sub.user_id?.username || sub.user_id}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">${sub.plan_type}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="status-badge ${sub.status === 'active' ? 'status-active' : sub.status === 'expired' ? 'status-expired' : 'status-pending'}">
+                                                ${sub.status}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${new Date(sub.expires_at).toLocaleString('vi-VN')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(sub.created_at).toLocaleString('vi-VN')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <button onclick="deleteSubscription('${sub._id}')" class="text-red-400 hover:text-red-300 font-medium">
+                                                Xóa
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
                 }
-            );
+            } catch (error) {
+                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Load Orders
+        async function loadOrders() {
+            const loading = document.getElementById('orders-loading');
+            const table = document.getElementById('orders-table');
+            
+            loading.classList.remove('hidden');
+            table.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/orders`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (!response.ok) throw new Error('Unauthorized');
+
+                const data = await response.json();
+                
+                if (data.orders && data.orders.length > 0) {
+                    table.innerHTML = `
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Plan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Số tiền</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Trạng thái</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Thời gian tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-gray-800 divide-y divide-gray-700">
+                                ${data.orders.map(order => `
+                                    <tr class="hover:bg-gray-750">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">${order._id.slice(-8)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${order.user_id?.username || order.user_id}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">${order.plan_type}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-semibold">${order.amount.toLocaleString('vi-VN')} ₫</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="status-badge ${order.status === 'completed' ? 'status-completed' : order.status === 'pending' ? 'status-pending' : 'status-expired'}">
+                                                ${order.status}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(order.created_at).toLocaleString('vi-VN')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                }
+            } catch (error) {
+                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Load Transactions
+        async function loadTransactions() {
+            const loading = document.getElementById('transactions-loading');
+            const table = document.getElementById('transactions-table');
+            
+            loading.classList.remove('hidden');
+            table.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/transactions`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (!response.ok) throw new Error('Unauthorized');
+
+                const data = await response.json();
+                
+                if (data.transactions && data.transactions.length > 0) {
+                    table.innerHTML = `
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Gateway</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Số tiền</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nội dung</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Reference</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-gray-800 divide-y divide-gray-700">
+                                ${data.transactions.map(tx => `
+                                    <tr class="hover:bg-gray-750">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">${tx.transaction_id?.slice(-8) || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${tx.gateway || 'SePay'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-semibold">${(tx.amount || 0).toLocaleString('vi-VN')} ₫</td>
+                                        <td class="px-6 py-4 text-sm text-gray-300 max-w-xs truncate">${tx.description || tx.content || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">${tx.reference_number || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(tx.transaction_date || tx.created_at).toLocaleString('vi-VN')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                }
+            } catch (error) {
+                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Load Logs
+        async function loadLogs() {
+            const loading = document.getElementById('logs-loading');
+            const table = document.getElementById('logs-table');
+            
+            loading.classList.remove('hidden');
+            table.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/logs`, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (!response.ok) throw new Error('Unauthorized');
+
+                const data = await response.json();
+                
+                if (data.logs && data.logs.length > 0) {
+                    table.innerHTML = `
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Hành động</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Chi tiết</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-gray-800 divide-y divide-gray-700">
+                                ${data.logs.map(log => `
+                                    <tr class="hover:bg-gray-750">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-300">${log._id.slice(-6)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${log.user_id?.username || log.user_id || 'System'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">${log.action}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-300 max-w-md truncate">${log.details || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${new Date(log.created_at).toLocaleString('vi-VN')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                } else {
+                    table.innerHTML = '<p class="text-gray-400 text-center py-8">Không có dữ liệu</p>';
+                }
+            } catch (error) {
+                table.innerHTML = `<p class="text-red-400 text-center py-8">Lỗi: ${error.message}</p>`;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Toggle VIP Status
+        async function toggleVIP(userId) {
+            if (!confirm('Bạn có chắc muốn thay đổi trạng thái VIP?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users/${userId}/toggle-vip`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (response.ok) {
+                    alert('Cập nhật thành công!');
+                    loadUsers();
+                } else {
+                    alert('Lỗi khi cập nhật');
+                }
+            } catch (error) {
+                alert('Lỗi kết nối: ' + error.message);
+            }
+        }
+
+        // Delete User
+        async function deleteUser(userId) {
+            if (!confirm('Bạn có chắc muốn xóa user này?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (response.ok) {
+                    alert('Xóa thành công!');
+                    loadUsers();
+                } else {
+                    alert('Lỗi khi xóa');
+                }
+            } catch (error) {
+                alert('Lỗi kết nối: ' + error.message);
+            }
+        }
+
+        // Delete Subscription
+        async function deleteSubscription(subId) {
+            if (!confirm('Bạn có chắc muốn xóa subscription này?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/subscriptions/${subId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+
+                if (response.ok) {
+                    alert('Xóa thành công!');
+                    loadSubscriptions();
+                } else {
+                    alert('Lỗi khi xóa');
+                }
+            } catch (error) {
+                alert('Lỗi kết nối: ' + error.message);
+            }
+        }
+
+        // Check if already logged in
+        if (adminToken) {
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            loadUsers();
         }
     </script>
 </body>
