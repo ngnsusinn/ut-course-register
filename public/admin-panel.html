@@ -312,6 +312,18 @@
     <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
             <h3 class="text-lg font-bold mb-4 text-gray-800">⭐ Thêm VIP Subscription</h3>
+
+    <!-- Confirm Action Modal -->
+    <div id="confirmModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[60]">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
+            <h3 class="text-lg font-bold mb-4 text-gray-800" id="confirmTitle">Xác nhận</h3>
+            <p class="text-gray-600 mb-6" id="confirmMessage"></p>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                <button id="confirmActionBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">Xác nhận</button>
+            </div>
+        </div>
+    </div>
             <div class="space-y-4">
                 <input type="text" id="vipUserId" placeholder="User ID (ví dụ: 054206005638)" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <select id="vipPlanType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -673,7 +685,7 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm" data-label="Details">${log.details || 'N/A'}</td>
-                    <td class="px-6 py-4 text-sm" data-label="Time">${new Date(log.created_at).toLocaleString('vi-VN')}</td>
+                    <td class="px-6 py-4 text-sm" data-label="Time">${formatDateTime(log.created_at)}</td>
                 </tr>
             `).join('');
         }
