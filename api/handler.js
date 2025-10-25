@@ -76,21 +76,15 @@ async function checkVIPStatus(userId) {
 
 // Helper: Create order (delegates to db_utils.createOrder)
 async function createOrder(userId, plan) {
-    try {
-        const result = await createOrderDb(userId, plan);
-        if (!result) return null;
-        return {
-            id: result.orderId,
-            userId,
-            amount: result.amount,
-            status: 'Unpaid',
-            plan,
-            createdAt: new Date().toISOString()
-        };
-    } catch (error) {
-        console.error('Error creating order:', error);
-        return null;
-    }
+    const result = await createOrderDb(userId, plan);
+    return {
+        id: result.orderId,
+        userId,
+        amount: result.amount,
+        status: 'Unpaid',
+        plan,
+        createdAt: new Date().toISOString()
+    };
 }
 
 // Helper: Check order status
@@ -177,14 +171,13 @@ export default async (req, res) => {
                 if (!VIP_PLANS[plan]) {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
-                
-                const order = await createOrder(userId, plan);
-                
-                if (!order) {
-                    return res.status(500).json({ success: false, message: 'Failed to create order' });
+                try {
+                    const order = await createOrder(userId, plan);
+                    result = { success: true, order };
+                } catch (err) {
+                    console.error('Create order failed:', err);
+                    return res.status(500).json({ success: false, message: 'Failed to create order: ' + (err.message || String(err)) });
                 }
-                
-                result = { success: true, order };
                 break;
             }
 

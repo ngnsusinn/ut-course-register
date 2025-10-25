@@ -75,8 +75,32 @@ export async function createOrder(userId, planId) {
             [planId]
         );
 
+        // If plan not present in DB, try to create it from a default mapping (fallback)
+        const DEFAULT_PLANS = {
+            '1day': { name: '1 Ngày VIP', duration_days: 1, price: 24000.00 },
+            '3days': { name: '3 Ngày VIP', duration_days: 3, price: 72000.00 },
+            '7days': { name: '7 Ngày VIP', duration_days: 7, price: 126000.00 },
+            '30days': { name: '30 Ngày VIP', duration_days: 30, price: 432000.00 }
+        };
+
         if (!plan.length) {
-            throw new Error('Invalid plan ID');
+            // try fallback
+            const fallback = DEFAULT_PLANS[planId];
+            if (!fallback) {
+                throw new Error('Invalid plan ID: ' + planId);
+            }
+
+            // insert fallback plan into subscription_plans so DB is consistent
+            await connection.execute(
+                `INSERT INTO subscription_plans (id, name, duration_days, price, status, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, 'active', NOW(), NOW())`,
+                [planId, fallback.name, fallback.duration_days, fallback.price]
+            );
+
+            // re-query plan
+            const [newPlanRows] = await connection.execute('SELECT * FROM subscription_plans WHERE id = ?', [planId]);
+            if (!newPlanRows.length) throw new Error('Failed to create fallback plan record for ' + planId);
+            plan[0] = newPlanRows[0];
         }
 
         // Create order
