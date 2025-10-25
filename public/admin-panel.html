@@ -5,92 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UTH Admin Panel - Quản lý hệ thống</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .tab-active { 
+            border-bottom: 3px solid #2563eb; 
+            color: #2563eb; 
+            font-weight: 600;
+        }
         .hidden { display: none; }
+        .search-highlight { background-color: #fef3c7; }
+        
+        @media screen and (max-width: 768px) {
+            .responsive-table table thead { display: none; }
+            .responsive-table table tr { display: block; margin-bottom: 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+            .responsive-table table th[scope="row"] { display: block; font-size: 1.1rem; padding: 0.75rem; background-color: #f7fafc; border-bottom: 1px solid #e2e8f0; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
+            .responsive-table table td { display: flex; justify-content: space-between; align-items: center; text-align: right; padding: 0.75rem; border-bottom: 1px solid #edf2f7; }
+            .responsive-table table td:last-child { border-bottom: none; }
+            .responsive-table table td::before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 1rem; }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     <!-- Login Screen -->
     <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4">
-        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-            <h1 class="text-2xl font-bold text-center mb-6">🔐 Admin Panel Login</h1>
-            <div id="loginError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"></div>
-            <input type="text" id="username" placeholder="Username" class="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="password" id="password" placeholder="Password" class="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button onclick="login()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Đăng nhập</button>
+        <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">🔐 UTH Admin Panel</h1>
+                <p class="text-gray-600">Hệ thống quản lý tài khoản và VIP</p>
+            </div>
+            <div id="loginError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4"></div>
+            <div class="space-y-4">
+                <input type="text" id="username" placeholder="Tên đăng nhập" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="password" id="password" placeholder="Mật khẩu" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="login()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">Đăng nhập</button>
+            </div>
             <p class="text-xs text-gray-500 mt-4 text-center">Default: admin/admin123 hoặc sunsin/password123</p>
         </div>
     </div>
 
     <!-- Admin Dashboard -->
-    <div id="adminDashboard" class="hidden">
+    <div id="adminDashboard" class="hidden min-h-screen bg-gray-50">
         <!-- Header -->
         <header class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-800">🎯 UTH Admin Panel</h1>
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-600">👤 <span id="adminUsername"></span></span>
-                    <button onclick="logout()" class="text-sm bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Đăng xuất</button>
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-3xl font-bold text-blue-600">UTH Admin Panel</h1>
+                        <p class="text-gray-600 mt-1">Hệ thống quản lý tài khoản và VIP</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <span class="text-sm text-gray-600">👤 Admin:</span>
+                            <span id="adminUsername" class="font-semibold text-blue-600"></span>
+                        </div>
+                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition font-semibold">Đăng xuất</button>
+                    </div>
                 </div>
             </div>
         </header>
 
         <!-- Tabs Navigation -->
-        <div class="bg-white border-b">
-            <div class="max-w-7xl mx-auto px-4">
-                <nav class="flex space-x-8">
-                    <button onclick="switchTab('users')" class="tab-btn tab-active py-4 text-sm font-medium" data-tab="users">👥 Users</button>
-                    <button onclick="switchTab('subscriptions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="subscriptions">⭐ VIP Subscriptions</button>
-                    <button onclick="switchTab('orders')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="orders">📦 Orders</button>
-                    <button onclick="switchTab('transactions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="transactions">💳 Transactions</button>
-                    <button onclick="switchTab('logs')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="logs">📋 Activity Logs</button>
+        <div class="bg-white border-b shadow-sm">
+            <div class="container mx-auto px-4">
+                <nav class="flex space-x-8 overflow-x-auto">
+                    <button onclick="switchTab('users')" class="tab-btn tab-active py-4 text-sm font-medium whitespace-nowrap" data-tab="users">👥 Quản lý Users</button>
+                    <button onclick="switchTab('subscriptions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="subscriptions">⭐ VIP Subscriptions</button>
+                    <button onclick="switchTab('orders')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="orders">📦 Đơn hàng</button>
+                    <button onclick="switchTab('transactions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="transactions">💳 Giao dịch</button>
+                    <button onclick="switchTab('logs')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="logs">📋 Nhật ký</button>
                 </nav>
             </div>
         </div>
 
         <!-- Content -->
-        <main class="max-w-7xl mx-auto px-4 py-6">
+        <main class="container mx-auto px-4 py-8">
             <!-- Users Tab -->
             <div id="usersTab" class="tab-content">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Quản lý Users</h2>
-                        <button onclick="refreshData('users')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">Quản lý Users</h2>
+                        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <button onclick="refreshData('users')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center">
+                                🔄 Refresh
+                            </button>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="overflow-x-auto responsive-table">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">VIP Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    <th class="px-6 py-3">User Info</th>
+                                    <th class="px-6 py-3">VIP Status</th>
+                                    <th class="px-6 py-3">Ngày hết hạn</th>
+                                    <th class="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <div id="usersStats" class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm"></div>
                 </div>
             </div>
 
             <!-- VIP Subscriptions Tab -->
             <div id="subscriptionsTab" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">VIP Subscriptions</h2>
-                        <button onclick="refreshData('subscriptions')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">VIP Subscriptions</h2>
+                        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="subscriptionsFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                            </select>
+                            <button onclick="refreshData('subscriptions')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="overflow-x-auto responsive-table">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                    <th class="px-6 py-3">ID</th>
+                                    <th class="px-6 py-3">User ID</th>
+                                    <th class="px-6 py-3">Plan Type</th>
+                                    <th class="px-6 py-3">Trạng thái</th>
+                                    <th class="px-6 py-3">Hết hạn</th>
+                                    <th class="px-6 py-3">Tạo lúc</th>
+                                    <th class="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="subscriptionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -101,21 +153,30 @@
 
             <!-- Orders Tab -->
             <div id="ordersTab" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Orders Management</h2>
-                        <button onclick="refreshData('orders')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">Quản lý Đơn hàng</h2>
+                        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="ordersFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="Paid">Đã thanh toán</option>
+                                <option value="Unpaid">Chưa thanh toán</option>
+                                <option value="Cancelled">Đã hủy</option>
+                            </select>
+                            <button onclick="refreshData('orders')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="overflow-x-auto responsive-table">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                    <th class="px-6 py-3">ID</th>
+                                    <th class="px-6 py-3">User ID</th>
+                                    <th class="px-6 py-3">Plan</th>
+                                    <th class="px-6 py-3">Số tiền</th>
+                                    <th class="px-6 py-3">Trạng thái</th>
+                                    <th class="px-6 py-3">Thời gian tạo</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -126,21 +187,25 @@
 
             <!-- Transactions Tab -->
             <div id="transactionsTab" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">SePay Transactions</h2>
-                        <button onclick="refreshData('transactions')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">Giao dịch SePay</h2>
+                        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <input type="number" id="amountFilter" placeholder="Số tiền..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                            <button onclick="refreshData('transactions')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="overflow-x-auto responsive-table">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gateway</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Content</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received At</th>
+                                    <th class="px-6 py-3">ID</th>
+                                    <th class="px-6 py-3">Gateway</th>
+                                    <th class="px-6 py-3">Số tiền</th>
+                                    <th class="px-6 py-3">Nội dung</th>
+                                    <th class="px-6 py-3">Reference</th>
+                                    <th class="px-6 py-3">Thời gian</th>
                                 </tr>
                             </thead>
                             <tbody id="transactionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -151,20 +216,30 @@
 
             <!-- Activity Logs Tab -->
             <div id="logsTab" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Activity Logs</h2>
-                        <button onclick="refreshData('logs')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">🔄 Refresh</button>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800">Nhật ký hoạt động</h2>
+                        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="logsFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Tất cả hành động</option>
+                                <option value="USER_LOGIN">Đăng nhập</option>
+                                <option value="VIP_PURCHASE">Mua VIP</option>
+                                <option value="ADMIN_ADD_VIP">Admin thêm VIP</option>
+                                <option value="ADMIN_DELETE_VIP">Admin xóa VIP</option>
+                            </select>
+                            <button onclick="refreshData('logs')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="overflow-x-auto responsive-table">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
+                                    <th class="px-6 py-3">ID</th>
+                                    <th class="px-6 py-3">User ID</th>
+                                    <th class="px-6 py-3">Hành động</th>
+                                    <th class="px-6 py-3">Chi tiết</th>
+                                    <th class="px-6 py-3">Thời gian</th>
                                 </tr>
                             </thead>
                             <tbody id="logsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -176,19 +251,21 @@
     </div>
 
     <!-- Add VIP Modal -->
-    <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 class="text-lg font-bold mb-4">Thêm VIP Subscription</h3>
-            <input type="text" id="vipUserId" placeholder="User ID" class="w-full px-3 py-2 border rounded mb-3">
-            <select id="vipPlanType" class="w-full px-3 py-2 border rounded mb-4">
-                <option value="1day">1 Day VIP</option>
-                <option value="3days">3 Days VIP</option>
-                <option value="7days">7 Days VIP</option>
-                <option value="30days">30 Days VIP</option>
-            </select>
-            <div class="flex justify-end gap-2">
-                <button onclick="closeAddVIPModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Hủy</button>
-                <button onclick="submitAddVIP()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Thêm VIP</button>
+    <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">⭐ Thêm VIP Subscription</h3>
+            <div class="space-y-4">
+                <input type="text" id="vipUserId" placeholder="User ID (ví dụ: 054206005638)" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select id="vipPlanType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="1day">1 Day VIP - 24,000đ</option>
+                    <option value="3days">3 Days VIP - 72,000đ</option>
+                    <option value="7days">7 Days VIP - 126,000đ</option>
+                    <option value="30days">30 Days VIP - 432,000đ</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeAddVIPModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                <button onclick="submitAddVIP()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Thêm VIP</button>
             </div>
         </div>
     </div>
@@ -196,15 +273,22 @@
     <script>
         const API_URL = '/api/admin-handler';
         let currentUser = null;
+        let allData = {
+            users: [],
+            subscriptions: [],
+            orders: [],
+            transactions: [],
+            logs: []
+        };
 
+        // Login functionality
         async function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
             const errorDiv = document.getElementById('loginError');
 
             if (!username || !password) {
-                errorDiv.textContent = 'Vui lòng nhập đầy đủ thông tin!';
-                errorDiv.classList.remove('hidden');
+                showError('Vui lòng nhập đầy đủ thông tin!');
                 return;
             }
 
@@ -212,28 +296,29 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'login', 
-                        payload: { username, password } 
-                    })
+                    body: JSON.stringify({ action: 'login', payload: { username, password } })
                 });
-                const data = await response.json();
 
+                const data = await response.json();
+                
                 if (data.success) {
                     currentUser = data.admin;
                     document.getElementById('adminUsername').textContent = currentUser.username;
                     document.getElementById('loginScreen').classList.add('hidden');
                     document.getElementById('adminDashboard').classList.remove('hidden');
-                    errorDiv.classList.add('hidden');
-                    refreshData('users');
+                    await refreshData('users');
                 } else {
-                    errorDiv.textContent = data.message || 'Sai username hoặc password!';
-                    errorDiv.classList.remove('hidden');
+                    showError(data.message || 'Đăng nhập thất bại!');
                 }
             } catch (error) {
-                errorDiv.textContent = 'Lỗi kết nối server!';
-                errorDiv.classList.remove('hidden');
+                showError('Lỗi kết nối: ' + error.message);
             }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
 
         function logout() {
@@ -242,21 +327,28 @@
             document.getElementById('adminDashboard').classList.add('hidden');
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
+            document.getElementById('loginError').classList.add('hidden');
         }
 
+        // Tab functionality
         function switchTab(tab) {
+            // Update tab buttons
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('tab-active');
                 btn.classList.add('text-gray-600');
             });
             document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
             
+            // Activate selected tab
             document.querySelector(`[data-tab="${tab}"]`).classList.add('tab-active');
+            document.querySelector(`[data-tab="${tab}"]`).classList.remove('text-gray-600');
             document.getElementById(`${tab}Tab`).classList.remove('hidden');
             
+            // Load data if not loaded
             refreshData(tab);
         }
 
+        // Data fetching
         async function refreshData(type) {
             const action = `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
             try {
@@ -268,98 +360,231 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    switch(type) {
-                        case 'users': renderUsers(data.users); break;
-                        case 'subscriptions': renderSubscriptions(data.subscriptions); break;
-                        case 'orders': renderOrders(data.orders); break;
-                        case 'transactions': renderTransactions(data.transactions); break;
-                        case 'logs': renderLogs(data.logs); break;
-                    }
+                    allData[type] = data[type] || [];
+                    renderTable(type);
+                } else {
+                    console.error(`Error fetching ${type}:`, data.message);
                 }
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error(`Error fetching ${type}:`, error);
             }
         }
 
-        function renderUsers(users) {
+        // Render functions
+        function renderTable(type) {
+            switch(type) {
+                case 'users': renderUsers(); break;
+                case 'subscriptions': renderSubscriptions(); break;
+                case 'orders': renderOrders(); break;
+                case 'transactions': renderTransactions(); break;
+                case 'logs': renderLogs(); break;
+            }
+        }
+
+        function renderUsers() {
             const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = users.map(user => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">${user.user_id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 rounded ${user.is_vip ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                            ${user.is_vip ? '✅ Active' : '❌ Expired'}
+            const searchTerm = document.getElementById('usersSearch').value.toLowerCase();
+            
+            const filteredUsers = allData.users.filter(user => 
+                user.user_id.toLowerCase().includes(searchTerm)
+            );
+
+            tbody.innerHTML = filteredUsers.map(user => {
+                const isVip = user.is_vip;
+                const expiryDate = user.expiry_date ? new Date(user.expiry_date) : null;
+                const isExpired = expiryDate && expiryDate < new Date();
+                
+                return `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-6 py-4" data-label="User Info">
+                        <div class="font-medium text-gray-900">${user.user_id}</div>
+                        ${user.full_name ? `<div class="text-sm text-gray-500">${user.full_name}</div>` : ''}
+                    </td>
+                    <td class="px-6 py-4" data-label="VIP Status">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${isVip && !isExpired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                            ${isVip && !isExpired ? '✅ VIP Active' : '❌ No VIP'}
                         </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">${user.expiry_date ? new Date(user.expiry_date).toLocaleString('vi-VN') : 'N/A'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-900">➕ Add VIP</button>
+                    <td class="px-6 py-4 text-sm" data-label="Expiry">
+                        ${expiryDate ? expiryDate.toLocaleString('vi-VN') : 'N/A'}
+                    </td>
+                    <td class="px-6 py-4" data-label="Actions">
+                        <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-900 font-medium text-sm">
+                            ➕ Thêm VIP
+                        </button>
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
+
+            // Update stats
+            const totalUsers = filteredUsers.length;
+            const vipUsers = filteredUsers.filter(u => u.is_vip && new Date(u.expiry_date) > new Date()).length;
+            const expiredUsers = filteredUsers.filter(u => u.expiry_date && new Date(u.expiry_date) < new Date()).length;
+            
+            document.getElementById('usersStats').innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-blue-600">${totalUsers}</div>
+                    <div class="text-sm text-gray-600">Tổng Users</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-green-600">${vipUsers}</div>
+                    <div class="text-sm text-gray-600">VIP Active</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-red-600">${expiredUsers}</div>
+                    <div class="text-sm text-gray-600">VIP Expired</div>
+                </div>
+            `;
         }
 
-        function renderSubscriptions(subs) {
+        function renderSubscriptions() {
             const tbody = document.getElementById('subscriptionsTableBody');
-            tbody.innerHTML = subs.map(sub => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">${sub.id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${sub.user_id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${sub.plan_type}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${new Date(sub.expiry_date).toLocaleString('vi-VN')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${new Date(sub.created_at).toLocaleString('vi-VN')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button onclick="deleteSubscription(${sub.id})" class="text-red-600 hover:text-red-900">🗑️ Delete</button>
+            const searchTerm = document.getElementById('subscriptionsSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('subscriptionsFilter').value;
+            
+            const filteredSubs = allData.subscriptions.filter(sub => {
+                const matchesSearch = sub.user_id.toLowerCase().includes(searchTerm) || 
+                                    sub.plan_type.toLowerCase().includes(searchTerm);
+                const isActive = new Date(sub.expiry_date) > new Date();
+                const matchesStatus = !statusFilter || 
+                                    (statusFilter === 'active' && isActive) ||
+                                    (statusFilter === 'expired' && !isActive);
+                return matchesSearch && matchesStatus;
+            });
+
+            tbody.innerHTML = filteredSubs.map(sub => {
+                const isActive = new Date(sub.expiry_date) > new Date();
+                return `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-6 py-4 font-medium" data-label="ID">${sub.id}</td>
+                    <td class="px-6 py-4" data-label="User">${sub.user_id}</td>
+                    <td class="px-6 py-4" data-label="Plan">
+                        <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${sub.plan_type}</span>
+                    </td>
+                    <td class="px-6 py-4" data-label="Status">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${isActive ? '✅ Active' : '❌ Expired'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm" data-label="Expiry">${new Date(sub.expiry_date).toLocaleString('vi-VN')}</td>
+                    <td class="px-6 py-4 text-sm" data-label="Created">${new Date(sub.created_at).toLocaleString('vi-VN')}</td>
+                    <td class="px-6 py-4" data-label="Actions">
+                        <button onclick="deleteSubscription(${sub.id})" class="text-red-600 hover:text-red-900 font-medium text-sm">
+                            🗑️ Xóa
+                        </button>
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function renderOrders(orders) {
+        function renderOrders() {
             const tbody = document.getElementById('ordersTableBody');
-            tbody.innerHTML = orders.map(order => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">${order.id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${order.user_id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${order.plan_name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${order.amount.toLocaleString('vi-VN')} đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 rounded ${order.payment_status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+            const searchTerm = document.getElementById('ordersSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('ordersFilter').value;
+            
+            const filteredOrders = allData.orders.filter(order => {
+                const matchesSearch = order.user_id.toLowerCase().includes(searchTerm) || 
+                                    order.plan_name.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || order.payment_status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            tbody.innerHTML = filteredOrders.map(order => `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-6 py-4 font-medium" data-label="ID">#${order.id}</td>
+                    <td class="px-6 py-4" data-label="User">${order.user_id}</td>
+                    <td class="px-6 py-4" data-label="Plan">${order.plan_name}</td>
+                    <td class="px-6 py-4 font-semibold" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
+                    <td class="px-6 py-4" data-label="Status">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                            order.payment_status === 'Paid' ? 'bg-green-100 text-green-800' :
+                            order.payment_status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }">
                             ${order.payment_status}
                         </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">${new Date(order.created_at).toLocaleString('vi-VN')}</td>
+                    <td class="px-6 py-4 text-sm" data-label="Created">${new Date(order.created_at).toLocaleString('vi-VN')}</td>
                 </tr>
             `).join('');
         }
 
-        function renderTransactions(trans) {
+        function renderTransactions() {
             const tbody = document.getElementById('transactionsTableBody');
-            tbody.innerHTML = trans.map(t => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">${t.id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${t.gateway}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${t.amount_in.toLocaleString('vi-VN')} đ</td>
-                    <td class="px-6 py-4">${t.transaction_content}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${t.reference_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${new Date(t.received_at).toLocaleString('vi-VN')}</td>
+            const searchTerm = document.getElementById('transactionsSearch').value.toLowerCase();
+            const amountFilter = document.getElementById('amountFilter').value;
+            
+            const filteredTrans = allData.transactions.filter(trans => {
+                const matchesSearch = trans.reference_number?.toLowerCase().includes(searchTerm) || 
+                                    trans.transaction_content?.toLowerCase().includes(searchTerm);
+                const matchesAmount = !amountFilter || parseFloat(trans.amount_in) === parseFloat(amountFilter);
+                return matchesSearch && matchesAmount;
+            });
+
+            tbody.innerHTML = filteredTrans.map(trans => `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-6 py-4 font-medium" data-label="ID">${trans.id}</td>
+                    <td class="px-6 py-4" data-label="Gateway">
+                        <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-medium">${trans.gateway}</span>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-green-600" data-label="Amount">${parseFloat(trans.amount_in).toLocaleString('vi-VN')}đ</td>
+                    <td class="px-6 py-4 text-sm" data-label="Content">${trans.transaction_content || 'N/A'}</td>
+                    <td class="px-6 py-4 text-sm font-mono" data-label="Reference">${trans.reference_number || 'N/A'}</td>
+                    <td class="px-6 py-4 text-sm" data-label="Time">${new Date(trans.received_at).toLocaleString('vi-VN')}</td>
                 </tr>
             `).join('');
         }
 
-        function renderLogs(logs) {
+        function renderLogs() {
             const tbody = document.getElementById('logsTableBody');
-            tbody.innerHTML = logs.map(log => `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap">${log.id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${log.user_id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${log.action}</td>
-                    <td class="px-6 py-4">${log.details || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${new Date(log.created_at).toLocaleString('vi-VN')}</td>
+            const searchTerm = document.getElementById('logsSearch').value.toLowerCase();
+            const actionFilter = document.getElementById('logsFilter').value;
+            
+            const filteredLogs = allData.logs.filter(log => {
+                const matchesSearch = log.user_id?.toLowerCase().includes(searchTerm) || 
+                                    log.action?.toLowerCase().includes(searchTerm);
+                const matchesAction = !actionFilter || log.action === actionFilter;
+                return matchesSearch && matchesAction;
+            });
+
+            tbody.innerHTML = filteredLogs.map(log => `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-6 py-4 font-medium" data-label="ID">${log.id}</td>
+                    <td class="px-6 py-4" data-label="User">${log.user_id || 'N/A'}</td>
+                    <td class="px-6 py-4" data-label="Action">
+                        <span class="px-2 py-1 rounded text-xs font-medium ${getActionColor(log.action)}">
+                            ${getActionText(log.action)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm" data-label="Details">${log.details || 'N/A'}</td>
+                    <td class="px-6 py-4 text-sm" data-label="Time">${new Date(log.created_at).toLocaleString('vi-VN')}</td>
                 </tr>
             `).join('');
         }
 
+        function getActionColor(action) {
+            switch(action) {
+                case 'USER_LOGIN': return 'bg-blue-100 text-blue-800';
+                case 'VIP_PURCHASE': return 'bg-green-100 text-green-800';
+                case 'ADMIN_ADD_VIP': return 'bg-purple-100 text-purple-800';
+                case 'ADMIN_DELETE_VIP': return 'bg-red-100 text-red-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getActionText(action) {
+            switch(action) {
+                case 'USER_LOGIN': return '🔐 Đăng nhập';
+                case 'VIP_PURCHASE': return '💳 Mua VIP';
+                case 'ADMIN_ADD_VIP': return '⭐ Admin thêm VIP';
+                case 'ADMIN_DELETE_VIP': return '🗑️ Admin xóa VIP';
+                default: return action;
+            }
+        }
+
+        // VIP Management
         function openAddVIPModal(userId = '') {
             document.getElementById('vipUserId').value = userId;
             document.getElementById('addVIPModal').classList.remove('hidden');
@@ -370,7 +595,7 @@
         }
 
         async function submitAddVIP() {
-            const userId = document.getElementById('vipUserId').value;
+            const userId = document.getElementById('vipUserId').value.trim();
             const planType = document.getElementById('vipPlanType').value;
             
             if (!userId) {
@@ -382,43 +607,99 @@
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'addVIPSubscription', payload: { userId, planType } })
+                    body: JSON.stringify({ 
+                        action: 'addVIPSubscription', 
+                        payload: { userId, planType } 
+                    })
                 });
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Đã thêm VIP thành công!');
+                    alert('✅ Đã thêm VIP thành công!');
                     closeAddVIPModal();
                     refreshData('users');
                     refreshData('subscriptions');
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    alert('❌ Lỗi: ' + data.message);
                 }
             } catch (error) {
-                alert('Lỗi kết nối: ' + error.message);
+                alert('❌ Lỗi kết nối: ' + error.message);
             }
         }
 
         async function deleteSubscription(subId) {
-            if (!confirm('Bạn có chắc muốn xóa subscription này?')) return;
+            if (!confirm('Bạn có chắc muốn xóa subscription này không?')) return;
 
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'deleteSubscription', payload: { subscriptionId: subId } })
+                    body: JSON.stringify({ 
+                        action: 'deleteSubscription', 
+                        payload: { subscriptionId: subId } 
+                    })
                 });
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Đã xóa subscription!');
+                    alert('✅ Đã xóa subscription!');
                     refreshData('subscriptions');
+                    refreshData('users');
                 } else {
-                    alert('Lỗi: ' + data.message);
+                    alert('❌ Lỗi: ' + data.message);
                 }
             } catch (error) {
-                alert('Lỗi kết nối: ' + error.message);
+                alert('❌ Lỗi kết nối: ' + error.message);
             }
+        }
+
+        // Search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add search event listeners
+            const searchInputs = ['usersSearch', 'subscriptionsSearch', 'ordersSearch', 'transactionsSearch', 'logsSearch'];
+            const filters = ['subscriptionsFilter', 'ordersFilter', 'logsFilter', 'amountFilter'];
+            
+            searchInputs.forEach(inputId => {
+                const element = document.getElementById(inputId);
+                if (element) {
+                    element.addEventListener('input', debounce(() => {
+                        const tabName = inputId.replace('Search', '');
+                        renderTable(tabName);
+                    }, 300));
+                }
+            });
+            
+            filters.forEach(filterId => {
+                const element = document.getElementById(filterId);
+                if (element) {
+                    element.addEventListener('change', () => {
+                        let tabName = filterId.replace('Filter', '');
+                        if (filterId === 'amountFilter') tabName = 'transactions';
+                        renderTable(tabName);
+                    });
+                }
+            });
+
+            // Login on Enter key
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') login();
+                });
+            }
+        });
+
+        // Utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
     </script>
 </body>
