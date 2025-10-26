@@ -216,6 +216,8 @@ async function getOrderStatus(orderId) {
     }
 }
 
+
+// Helper: Cancel order
 // Helper: Cancel order
 async function cancelOrder(orderId) {
     try {
@@ -251,6 +253,46 @@ async function cancelOrder(orderId) {
         return null;
     }
 }
+
+// Helper: Auto-cancel expired orders (call this periodically)
+async function autoCancelExpiredOrders() {
+    try {
+        const connection = await getPool().getConnection();
+        
+        // Cancel orders that are Unpaid for more than 15 minutes
+        const [result] = await connection.execute(
+            `UPDATE orders 
+             SET payment_status = "Cancelled", updated_at = NOW() 
+             WHERE payment_status = "Unpaid" 
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) > 15`
+        );
+        
+        if (result.affectedRows > 0) {
+            console.log(`Auto-cancelled ${result.affectedRows} expired orders`);
+            
+            // Log activity for cancelled orders
+            await connection.execute(
+                `INSERT INTO activity_logs (user_id, action, details, created_at)
+                 SELECT user_id, "ORDER_AUTO_CANCELLED", CONCAT("Auto-cancelled order ", id, " (timeout)"), NOW()
+                 FROM orders 
+                 WHERE payment_status = "Cancelled" 
+                 AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`
+            );
+        }
+        
+        connection.release();
+        return result.affectedRows;
+    } catch (error) {
+        console.error('Error auto-cancelling orders:', error);
+        return 0;
+    }
+}
+
+// Run auto-cancel every 5 minutes
+setInterval(async () => {
+    await autoCancelExpiredOrders();
+}, 5 * 60 * 1000); // 5 minutes
+
 
 // Helper: Auto-cancel expired orders (call this periodically)
 async function autoCancelExpiredOrders() {
@@ -379,6 +421,18 @@ export default async (req, res) => {
                 result = { success: true, order };
                 break;
             }
+
+		case 'cancelOrder': {
+    const { orderId } = payload;
+    const cancelResult = await cancelOrder(parseInt(orderId));
+    
+    if (!cancelResult) {
+        return res.status(404).json({ success: false, message: 'Order not found or already processed' });
+    }
+    
+    result = { success: true, message: 'Order cancelled successfully' };
+    break;
+}
 
             case 'cancelOrder': {
                 const { orderId } = payload;
