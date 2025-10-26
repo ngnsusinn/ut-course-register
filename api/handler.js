@@ -211,33 +211,42 @@ async function checkVIPStatus(userId) {
 
 // Helper: Create order
 async function createOrder(userId, plan) {
-    const planConfig = VIP_PLANS[plan];
-    if (!planConfig) return null;
+  const planConfig = VIP_PLANS[plan];
+  if (!planConfig) {
+    console.error('Invalid plan:', plan);
+    return null;
+  }
+  
+  try {
+    const connection = await getPool().getConnection();
     
-    try {
-        const connection = await getPool().getConnection();
-        
-        const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
-        );
-        
-        connection.release();
-        
-        return {
-            id: result.insertId,
-            userId,
-            amount: planConfig.price,
-            status: 'Unpaid',
-            plan,
-            planName: planConfig.name,
-            createdAt: order.createdat
-        };
-    } catch (error) {
-        console.error('Error creating order:', error);
-        return null;
+    const [result] = await connection.execute(
+      'INSERT INTO orders (userid, plantype, planname, amount, paymentstatus) VALUES (?, ?, ?, ?, ?)',
+      [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
+    );
+    
+    connection.release();
+    
+    if (!result.insertId) {
+      console.error('Failed to get insertId from database');
+      return null;
     }
+    
+    return {
+      id: result.insertId,
+      userId,
+      amount: planConfig.price,
+      status: 'Unpaid',
+      plan,
+      planName: planConfig.name,
+      createdAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error creating order:', error);
+    return null;
+  }
 }
+
 
 // Helper: Check order status
 async function getOrderStatus(orderId) {
