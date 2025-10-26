@@ -63,7 +63,7 @@ async function saveUserInfo(profile) {
         if (existingUsers.length === 0) {
             // Insert new user
             await connection.execute(
-                'INSERT INTO users (username, email, full_name, created_at) VALUES (?, ?, ?, NOW())',
+                'INSERT INTO users (username, email, full_name, created_at) VALUES (?, ?, ?, CONVERT_TZ(NOW(), "UTC", "+07:00"))',
                 [username, email, fullName]
             );
             console.log(`✅ Created new user in database: ${username}`);
@@ -183,7 +183,7 @@ async function checkVIPStatus(userId) {
         const connection = await getPool().getConnection();
         
         const [rows] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            'SELECT *, TIMESTAMPDIFF(DAY, NOW(), expiry_date) as days_left FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
             [userId]
         );
         
@@ -194,9 +194,7 @@ async function checkVIPStatus(userId) {
         }
         
         const vipData = rows[0];
-        const expiryDate = new Date(vipData.expiry_date);
-        const now = new Date();
-        const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        const daysLeft = vipData.days_left;
         
         return { 
             hasVIP: true, 
@@ -320,9 +318,9 @@ async function autoCancelExpiredOrders() {
         // Cancel orders that are Unpaid for more than 15 minutes
         const [result] = await connection.execute(
             `UPDATE orders 
-             SET payment_status = "Cancelled", updated_at = NOW() 
+             SET payment_status = "Cancelled", updated_at = CONVERT_TZ(NOW(), "UTC", "+07:00") 
              WHERE payment_status = "Unpaid" 
-             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) > 15`
+             AND TIMESTAMPDIFF(MINUTE, created_at, CONVERT_TZ(NOW(), "UTC", "+07:00")) > 15`
         );
         
         if (result.affectedRows > 0) {

@@ -171,9 +171,9 @@ export default async (req, res) => {
             await connection.execute(
                 `INSERT INTO transactions 
                 (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
-                accumulated, code, transaction_content, reference_number, body, received_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-                [gateway, transactionDate, accountNumber, subAccount || '', amountIn, amountOut,
+                accumulated, code, transaction_content, reference_number, body, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CONVERT_TZ(NOW(), "UTC", "+07:00"))`,
+                [gateway, CONVERT_TZ(transactionDate, "UTC", "+07:00"), accountNumber, subAccount || '', amountIn, amountOut,
                  accumulated, code, content, referenceCode, description || '']
             );
             
