@@ -8,7 +8,8 @@ const dbConfig = {
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    timezone: '+07:00'
 };
 
 // Validate environment variables
@@ -46,6 +47,12 @@ async function processVIPPayment(orderId, transactionData) {
         
         const order = orders[0];
         
+        // Check if order has been cancelled
+        if (order.payment_status === 'Cancelled') {
+            await connection.rollback();
+            return { success: false, message: 'Order has been cancelled' };
+        }
+        
         // Verify amount matches
         if (parseFloat(transactionData.amount_in) !== parseFloat(order.amount)) {
             await connection.rollback();
@@ -54,7 +61,7 @@ async function processVIPPayment(orderId, transactionData) {
         
         // Update order status
         await connection.execute(
-            'UPDATE orders SET payment_status = "Paid", paid_at = NOW(), transaction_ref = ? WHERE id = ?',
+            'UPDATE orders SET payment_status = "Paid", paid_at = NOW(), transaction_ref = ?, updated_at = NOW() WHERE id = ?',
             [transactionData.reference_number, orderId]
         );
         
@@ -62,7 +69,8 @@ async function processVIPPayment(orderId, transactionData) {
         const planDurations = {
             '1day': 1,
             '3days': 3,
-            '7days': 7
+            '7days': 7,
+            '30days': 30
         };
         
         const daysToAdd = planDurations[order.plan_type] || 1;
@@ -89,14 +97,14 @@ async function processVIPPayment(orderId, transactionData) {
             expiryDate.setDate(expiryDate.getDate() + daysToAdd);
             
             await connection.execute(
-                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date) VALUES (?, ?, ?)',
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
                 [order.user_id, order.plan_type, expiryDate]
             );
         }
         
         // Log activity
         await connection.execute(
-            'INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)',
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
             [order.user_id, 'VIP_PURCHASE', `Purchased ${order.plan_name} - Order #${orderId}`]
         );
         
@@ -164,9 +172,9 @@ export default async (req, res) => {
             await connection.execute(
                 `INSERT INTO transactions 
                 (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
-                accumulated, code, transaction_content, reference_number, body) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [gateway, transactionDate, accountNumber, subAccount || '', amountIn, amountOut,
+                accumulated, code, transaction_content, reference_number, body, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+                [gateway, CONVERT_TZ(transactionDate, "UTC", "+07:00"), accountNumber, subAccount || '', amountIn, amountOut,
                  accumulated, code, content, referenceCode, description || '']
             );
             

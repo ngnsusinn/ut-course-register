@@ -7,8 +7,9 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'your_db_password',
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    connectionLimit: 100,
+    queueLimit: 0,
+    timezone: '+07:00'
 };
 
 // Create connection pool
