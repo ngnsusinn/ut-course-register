@@ -195,7 +195,7 @@ async function checkVIPStatus(userId) {
         }
         
         const vipData = rows[0];
-        const daysLeft = vipData.days_left;
+        const daysLeft = vipData.days_left + 1;
         
         return { 
             hasVIP: true, 
