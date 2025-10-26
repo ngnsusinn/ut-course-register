@@ -9,7 +9,8 @@ const dbConfig = {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    timezone: '+07:00'
+    timezone: '+07:00',
+    dateStrings: true
 };
 
 // Validate environment variables

@@ -231,7 +231,7 @@ async function createOrder(userId, plan) {
             status: 'Unpaid',
             plan,
             planName: planConfig.name,
-            createdAt: new Date().toISOString()
+            createdAt: order.createdat
         };
     } catch (error) {
         console.error('Error creating order:', error);
@@ -263,7 +263,7 @@ async function getOrderStatus(orderId) {
             status: order.payment_status,
             plan: order.plan_type,
             planName: order.plan_name,
-            createdAt: order.created_at,
+            createdAt: order.createdat,
             paidAt: order.paid_at,
             transactionRef: order.transaction_ref
         };

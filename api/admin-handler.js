@@ -15,7 +15,8 @@ const dbConfig = {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    timezone: '+07:00' // Set MySQL connection timezone to UTC+7
+    timezone: '+07:00', // Set MySQL connection timezone to UTC+7
+    dateStrings: true
 };
 
 let pool;
