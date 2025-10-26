@@ -1,11 +1,5 @@
+// File: New folder/api/admin-handler.js
 import mysql from 'mysql2/promise';
-
-// Utility function to convert UTC to UTC+7
-function getUTCPlus7Date() {
-    const now = new Date();
-    now.setHours(now.getHours() + 7);
-    return now.toISOString().slice(0, 19).replace('T', ' ');
-}
 
 const dbConfig = {
     host: process.env.DB_HOST,
@@ -15,8 +9,7 @@ const dbConfig = {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    timezone: '+07:00', // Set MySQL connection timezone to UTC+7
-    dateStrings: true
+    timezone: '+07:00' // phiên DB ở UTC+7
 };
 
 let pool;
@@ -68,11 +61,12 @@ async function adminLogin(payload) {
             'SELECT id, username, full_name, role FROM admins WHERE username = ? AND password_hash = ? AND is_active = 1',
             [username, password]
         );
-        
+
         if (admins.length === 0) return { success: false, message: 'Invalid credentials' };
 
-        await connection.query('UPDATE admins SET last_login = CONVERT_TZ(NOW(), "+00:00", "+07:00") WHERE id = ?', [admins[0].id]);
-        
+        // FIX: dùng NOW() theo session UTC+7
+        await connection.query('UPDATE admins SET last_login = NOW() WHERE id = ?', [admins[0].id]);
+
         return { success: true, admin: admins[0] };
     } finally {
         connection.release();
@@ -88,7 +82,7 @@ async function getAllUsers() {
                 u.full_name,
                 u.email,
                 MAX(vs.expiry_date) as expiry_date,
-                CASE WHEN MAX(vs.expiry_date) > CONVERT_TZ(NOW(), '+00:00', '+07:00') THEN 1 ELSE 0 END as is_vip
+                CASE WHEN MAX(vs.expiry_date) > NOW() THEN 1 ELSE 0 END as is_vip
             FROM users u
             LEFT JOIN vip_subscriptions vs ON u.username = vs.user_id
             GROUP BY u.username, u.full_name, u.email
@@ -167,12 +161,13 @@ async function addVIPSubscription(payload) {
         // Check if user exists
         const [existingUser] = await connection.query('SELECT id FROM users WHERE username = ?', [userId]);
         if (existingUser.length === 0) {
-            await connection.query('INSERT INTO users (username, created_at) VALUES (?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))', [userId]);
+            // FIX: NOW() theo phiên
+            await connection.query('INSERT INTO users (username, created_at) VALUES (?, NOW())', [userId]);
         }
 
         // Check for active VIP subscription
         const [activeVIP] = await connection.query(
-            'SELECT expiry_date FROM vip_subscriptions WHERE user_id = ? AND expiry_date > CONVERT_TZ(NOW(), "+00:00", "+07:00") ORDER BY expiry_date DESC LIMIT 1',
+            'SELECT expiry_date FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
             [userId]
         );
 
@@ -180,37 +175,36 @@ async function addVIPSubscription(payload) {
         let addType = 'new';
 
         if (activeVIP.length > 0) {
-            // User has active VIP - add days to existing expiry date
+            // extend
             expiryDate = new Date(activeVIP[0].expiry_date);
             expiryDate.setDate(expiryDate.getDate() + days);
             addType = 'cumulative';
-            console.log(`✅ Adding ${days} days to existing VIP. New expiry: ${expiryDate}`);
         } else {
-            // User has no active VIP - start from now
+            // start from now
             expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + days);
             addType = 'new';
-            console.log(`✅ Creating new VIP for ${days} days. Expiry: ${expiryDate}`);
         }
 
         // Insert new VIP subscription
+        // FIX: created_at = NOW()
         await connection.query(
-            'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
+            'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
             [userId, planType, expiryDate]
         );
 
-        // Log activity
         const logDetails = addType === 'cumulative' 
             ? `Admin added ${planType} VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
             : `Admin added ${planType} VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
 
+        // FIX: created_at = NOW()
         await connection.query(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, NOW())',
             [userId, logDetails]
         );
 
         await connection.commit();
-        
+
         return { 
             success: true, 
             message: addType === 'cumulative' 
@@ -236,15 +230,12 @@ async function deleteUser(payload) {
     try {
         await connection.beginTransaction();
 
-        // First delete all VIP subscriptions
         await connection.query('DELETE FROM vip_subscriptions WHERE user_id = ?', [userId]);
-        
-        // Then delete user
         await connection.query('DELETE FROM users WHERE username = ?', [userId]);
 
-        // Log activity
+        // FIX: created_at = NOW()
         await connection.query(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_USER", ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_USER", ?, NOW())',
             [userId, `Admin deleted user ${userId} and all related data`]
         );
 
@@ -275,8 +266,10 @@ async function deleteSubscription(payload) {
 
         const userId = subscription[0].user_id;
         await connection.query('DELETE FROM vip_subscriptions WHERE id = ?', [subscriptionId]);
+
+        // FIX: created_at = NOW()
         await connection.query(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_VIP", ?, CONVERT_TZ(NOW(), "+00:00", "+07:00"))',
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_DELETE_VIP", ?, NOW())',
             [userId, `Admin deleted VIP subscription #${subscriptionId}`]
         );
 

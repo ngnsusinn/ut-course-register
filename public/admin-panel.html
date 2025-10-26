@@ -765,10 +765,9 @@
 
         // Format datetime to UTC+7
         function formatDateTime(dateStr) {
-            const date = new Date(dateStr);
-            date.setHours(date.getHours() + 7); // Convert to UTC+7
-            return date.toLocaleString('vi-VN', { timeZone: 'Asia/Bangkok' });
-        }
+        const date = new Date(dateStr);
+        return date.toLocaleString('vi-VN', { timeZone: 'Asia/Bangkok' });
+    }
 
         // Confirm Modal Functions
         function showConfirmModal(title, message, onConfirm) {

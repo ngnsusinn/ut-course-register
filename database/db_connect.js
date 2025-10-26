@@ -9,8 +9,7 @@ const dbConfig = {
     waitForConnections: true,
     connectionLimit: 100,
     queueLimit: 0,
-    timezone: '+07:00',
-    dateStrings: true
+    timezone: '+07:00'
 };
 
 // Create connection pool

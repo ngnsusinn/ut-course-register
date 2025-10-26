@@ -8,8 +8,8 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'your_db_password',
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    timezone: '+07:00'
 };
 
 // Validate environment variables
@@ -21,18 +21,37 @@ if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || 
 // Create connection pool
 let pool;
 const getPool = () => {
-    if (!pool) {
-        pool = mysql.createPool(dbConfig);
+    try {
+        if (!pool) {
+            pool = mysql.createPool(dbConfig);
+            // Test connection
+            pool.getConnection().then(conn => {
+                console.log('Database connection established');
+                conn.release();
+            }).catch(err => {
+                console.error('Database connection failed:', err);
+                pool = null;
+                throw err;
+            });
+        }
+        return pool;
+    } catch (error) {
+        console.error('Error creating pool:', error);
+        throw new Error('Database connection failed');
     }
-    return pool;
 };
 
 // NEW: Helper function to save/update user info in database
 async function saveUserInfo(profile) {
+    let connection;
     try {
-        const connection = await getPool().getConnection();
+        connection = await getPool().getConnection();
         
         const username = profile.maSinhVien || profile.username;
+        if (!username) {
+            throw new Error('Missing username in profile');
+        }
+        
         const email = profile.email || null;
         const fullName = `${profile.hoDem || ''} ${profile.ten || ''}`.trim();
         
@@ -64,11 +83,18 @@ async function saveUserInfo(profile) {
             [username, 'USER_LOGIN', `User logged in from web interface`]
         );
         
-        connection.release();
         return true;
     } catch (error) {
         console.error('Error saving user info:', error);
         return false;
+    } finally {
+        if (connection) {
+            try {
+                connection.release();
+            } catch (releaseError) {
+                console.error('Error releasing connection:', releaseError);
+            }
+        }
     }
 }
 
@@ -83,19 +109,51 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         baseApiUrl = 'https://portal.ut.edu.vn/api/v1/dkhp';
     }
     const targetUrl = baseApiUrl + endpoint;
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const options = { method, headers, body: body ? JSON.stringify(body) : null, timeout: 30000 };
+    const options = { 
+        method, 
+        headers, 
+        body: body ? JSON.stringify(body) : null, 
+        timeout: 30000 
+    };
 
     try {
         const response = await fetch(targetUrl, options);
-        if (!response.ok) {
-            return { success: false, message: `API Error: Status ${response.status}`, status: response.status };
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Response is not JSON');
         }
-        return await response.json();
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            return { 
+                success: false, 
+                message: data.message || `API Error: Status ${response.status}`, 
+                status: response.status,
+                error: data.error || null
+            };
+        }
+        
+        return data;
     } catch (error) {
-        return { success: false, message: error.message };
+        console.error('API call failed:', {
+            url: targetUrl,
+            method,
+            error: error.message
+        });
+        return { 
+            success: false, 
+            message: error.message,
+            status: error.status || 500
+        };
     }
 }
 
@@ -126,7 +184,7 @@ async function checkVIPStatus(userId) {
         const connection = await getPool().getConnection();
         
         const [rows] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            'SELECT *, TIMESTAMPDIFF(DAY, NOW(), expiry_date) as days_left FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
             [userId]
         );
         
@@ -137,9 +195,7 @@ async function checkVIPStatus(userId) {
         }
         
         const vipData = rows[0];
-        const expiryDate = new Date(vipData.expiry_date);
-        const now = new Date();
-        const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        const daysLeft = vipData.days_left;
         
         return { 
             hasVIP: true, 
@@ -156,26 +212,17 @@ async function checkVIPStatus(userId) {
 // Helper: Create order
 async function createOrder(userId, plan) {
     const planConfig = VIP_PLANS[plan];
-    if (!planConfig) {
-        console.error('Invalid plan:', plan);
-        return null;
-    }
+    if (!planConfig) return null;
     
     try {
         const connection = await getPool().getConnection();
         
-        // SỬA: Đổi tên cột cho khớp với database (thêm dấu gạch dưới)
         const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
             [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
         );
         
         connection.release();
-        
-        if (!result.insertId) {
-            console.error('Failed to get insertId from database');
-            return null;
-        }
         
         return {
             id: result.insertId,
@@ -197,7 +244,6 @@ async function getOrderStatus(orderId) {
     try {
         const connection = await getPool().getConnection();
         
-        // SỬA: Đổi tên cột cho khớp với database
         const [rows] = await connection.execute(
             'SELECT * FROM orders WHERE id = ?',
             [orderId]
@@ -226,6 +272,83 @@ async function getOrderStatus(orderId) {
         return null;
     }
 }
+
+
+// Helper: Cancel order
+// Helper: Cancel order
+async function cancelOrder(orderId) {
+    try {
+        const connection = await getPool().getConnection();
+        
+        // Check if order exists and is Unpaid
+        const [rows] = await connection.execute(
+            'SELECT * FROM orders WHERE id = ? AND payment_status = "Unpaid"',
+            [orderId]
+        );
+        
+        if (rows.length === 0) {
+            connection.release();
+            return null;
+        }
+        
+        // Update order status to Cancelled
+        await connection.execute(
+            'UPDATE orders SET payment_status = "Cancelled", updated_at = NOW() WHERE id = ?',
+            [orderId]
+        );
+        
+        // Log activity
+        await connection.execute(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ORDER_CANCELLED", ?, NOW())',
+            [rows[0].user_id, `User cancelled order ${orderId}`]
+        );
+        
+        connection.release();
+        return true;
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        return null;
+    }
+}
+
+// Helper: Auto-cancel expired orders (call this periodically)
+async function autoCancelExpiredOrders() {
+    try {
+        const connection = await getPool().getConnection();
+        
+        // Cancel orders that are Unpaid for more than 15 minutes
+        const [result] = await connection.execute(
+            `UPDATE orders 
+             SET payment_status = "Cancelled", updated_at = NOW() 
+             WHERE payment_status = "Unpaid" 
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) > 15`
+        );
+        
+        if (result.affectedRows > 0) {
+            console.log(`Auto-cancelled ${result.affectedRows} expired orders`);
+            
+            // Log activity for cancelled orders
+            await connection.execute(
+                `INSERT INTO activity_logs (user_id, action, details, created_at)
+                 SELECT user_id, "ORDER_AUTO_CANCELLED", CONCAT("Auto-cancelled order ", id, " (timeout)"), NOW()
+                 FROM orders 
+                 WHERE payment_status = "Cancelled" 
+                 AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`
+            );
+        }
+        
+        connection.release();
+        return result.affectedRows;
+    } catch (error) {
+        console.error('Error auto-cancelling orders:', error);
+        return 0;
+    }
+}
+
+// Run auto-cancel every 5 minutes
+setInterval(async () => {
+    await autoCancelExpiredOrders();
+}, 5 * 60 * 1000); // 5 minutes
 
 // === MAIN HANDLER ===
 export default async (req, res) => {
@@ -313,6 +436,18 @@ export default async (req, res) => {
                 }
                 
                 result = { success: true, order };
+                break;
+            }
+
+            case 'cancelOrder': {
+                const { orderId } = payload;
+                const cancelResult = await cancelOrder(parseInt(orderId));
+                
+                if (!cancelResult) {
+                    return res.status(404).json({ success: false, message: 'Order not found or already processed' });
+                }
+                
+                result = { success: true, message: 'Order cancelled successfully' };
                 break;
             }
 
