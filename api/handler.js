@@ -220,8 +220,9 @@ async function createOrder(userId, plan) {
   try {
     const connection = await getPool().getConnection();
     
+    // SỬA TÊN CỘT CHO KHỚP VỚI DATABASE (thêm dấu gạch dưới)
     const [result] = await connection.execute(
-      'INSERT INTO orders (userid, plantype, planname, amount, paymentstatus) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
       [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
     );
     
