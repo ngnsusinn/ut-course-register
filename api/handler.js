@@ -8,7 +8,6 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'your_db_password',
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
-    connectionLimit: 10,
     queueLimit: 0
 };
 
@@ -162,7 +161,7 @@ async function createOrder(userId, plan) {
         const connection = await getPool().getConnection();
         
         const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
             [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
         );
         
@@ -216,6 +215,81 @@ async function getOrderStatus(orderId) {
         return null;
     }
 }
+
+// Helper: Cancel order
+async function cancelOrder(orderId) {
+    try {
+        const connection = await getPool().getConnection();
+        
+        // Check if order exists and is Unpaid
+        const [rows] = await connection.execute(
+            'SELECT * FROM orders WHERE id = ? AND payment_status = "Unpaid"',
+            [orderId]
+        );
+        
+        if (rows.length === 0) {
+            connection.release();
+            return null;
+        }
+        
+        // Update order status to Cancelled
+        await connection.execute(
+            'UPDATE orders SET payment_status = "Cancelled", updated_at = NOW() WHERE id = ?',
+            [orderId]
+        );
+        
+        // Log activity
+        await connection.execute(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ORDER_CANCELLED", ?, NOW())',
+            [rows[0].user_id, `User cancelled order ${orderId}`]
+        );
+        
+        connection.release();
+        return true;
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        return null;
+    }
+}
+
+// Helper: Auto-cancel expired orders (call this periodically)
+async function autoCancelExpiredOrders() {
+    try {
+        const connection = await getPool().getConnection();
+        
+        // Cancel orders that are Unpaid for more than 15 minutes
+        const [result] = await connection.execute(
+            `UPDATE orders 
+             SET payment_status = "Cancelled", updated_at = NOW() 
+             WHERE payment_status = "Unpaid" 
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) > 15`
+        );
+        
+        if (result.affectedRows > 0) {
+            console.log(`Auto-cancelled ${result.affectedRows} expired orders`);
+            
+            // Log activity for cancelled orders
+            await connection.execute(
+                `INSERT INTO activity_logs (user_id, action, details, created_at)
+                 SELECT user_id, "ORDER_AUTO_CANCELLED", CONCAT("Auto-cancelled order ", id, " (timeout)"), NOW()
+                 FROM orders 
+                 WHERE payment_status = "Cancelled" 
+                 AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`
+            );
+        }
+        
+        connection.release();
+        return result.affectedRows;
+    } catch (error) {
+        console.error('Error auto-cancelling orders:', error);
+        return 0;
+    }
+}
+
+// Run auto-cancel every 5 minutes
+setInterval(async () => {
+    await autoCancelExpiredOrders();
+}, 5 * 60 * 1000); // 5 minutes
 
 // === MAIN HANDLER ===
 export default async (req, res) => {
@@ -303,6 +377,18 @@ export default async (req, res) => {
                 }
                 
                 result = { success: true, order };
+                break;
+            }
+
+            case 'cancelOrder': {
+                const { orderId } = payload;
+                const cancelResult = await cancelOrder(parseInt(orderId));
+                
+                if (!cancelResult) {
+                    return res.status(404).json({ success: false, message: 'Order not found or already processed' });
+                }
+                
+                result = { success: true, message: 'Order cancelled successfully' };
                 break;
             }
 

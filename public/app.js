@@ -182,11 +182,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Handle cancel payment
-        modal.querySelector('#cancel-payment-btn')?.addEventListener('click', () => {
-            if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+        // Handle cancel payment - CẬP NHẬT MỚI
+modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
+    if (!currentOrder) return;
+    
+    if (confirm('Bạn có chắc muốn hủy thanh toán này không?')) {
+        // Call backend to cancel order
+        const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
+        
+        if (cancelRes && cancelRes.success) {
+            log('Đã hủy đơn hàng thành công');
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+            }
             currentOrder = null;
             modal.remove();
-        });
+        } else {
+            log('Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
+        }
+    }
+});
+
     };
 
     const createVIPOrder = async (planKey, planData, sepayConfig) => {
@@ -215,28 +231,61 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const startPaymentCheck = () => {
-        if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-
-        paymentCheckInterval = setInterval(async () => {
-            if (!currentOrder) {
+    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    
+    const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
+    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    
+    paymentCheckInterval = setInterval(async () => {
+        if (!currentOrder) {
+            clearInterval(paymentCheckInterval);
+            return;
+        }
+        
+        // Check if order has timed out
+        const now = new Date().getTime();
+        if (now - orderCreatedTime > TIMEOUT_MS) {
+            clearInterval(paymentCheckInterval);
+            document.getElementById('payment-status').innerHTML = 
+                '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
+            log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
+            
+            setTimeout(() => {
+                document.getElementById('vip-modal')?.remove();
+                currentOrder = null;
+            }, 3000);
+            return;
+        }
+        
+        // Check payment status
+        const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
+        
+        if (statusRes && statusRes.success) {
+            if (statusRes.order.status === 'Paid') {
                 clearInterval(paymentCheckInterval);
-                return;
-            }
-
-            const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
-
-            if (statusRes && statusRes.success && statusRes.order.status === 'Paid') {
-                clearInterval(paymentCheckInterval);
-                document.getElementById('payment-status').innerHTML = '<span class="text-green-600 font-bold">✅ Thanh toán thành công!</span>';
-                log('🎉 Thanh toán VIP thành công!');
-
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
+                log('Thanh toán VIP thành công!');
+                
                 setTimeout(async () => {
                     document.getElementById('vip-modal')?.remove();
                     await checkAndUpdateVIPStatus();
                 }, 2000);
+            } else if (statusRes.order.status === 'Cancelled') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
+                log('Đơn hàng đã bị hủy', true);
+                
+                setTimeout(() => {
+                    document.getElementById('vip-modal')?.remove();
+                    currentOrder = null;
+                }, 2000);
             }
-        }, 2000); // Check every 2 seconds
-    };
+        }
+    }, 2000); // Check every 2 seconds
+};
+
 
     const checkAndUpdateVIPStatus = async () => {
         const vipRes = await backendRequest('checkVIPStatus', { userId });
@@ -245,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateVIPDisplay();
         }
     };
-
+	
     const updateVIPDisplay = () => {
     if (!vipStatusElement) return;
 
