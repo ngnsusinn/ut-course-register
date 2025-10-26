@@ -150,7 +150,7 @@ async function addVIPSubscription(payload) {
     const { userId, planType } = payload;
     if (!userId || !planType) return { success: false, message: 'userId and planType required' };
 
-    const planDurations = { '1day': 1, '3days': 3, '7days': 7, '30days': 30 };
+    const planDurations = { '1day': 1, '3days': 3, '7days': 7, '30days': 30, 'infinite': 36500 };
     const days = planDurations[planType];
     if (!days) return { success: false, message: 'Invalid plan type' };
 
