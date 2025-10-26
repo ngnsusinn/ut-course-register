@@ -723,45 +723,39 @@
             document.getElementById('addVIPModal').classList.add('hidden');
         }
 
-        async function submitAddVIP() {
-            const userId = document.getElementById('vipUserId').value.trim();
-            const planType = document.getElementById('vipPlanType').value;
-            const submitBtn = document.querySelector('#addVIPModal button[onclick="submitAddVIP()"]');
-            
-            if (!userId) {
-                showToast('Vui lòng nhập User ID!', 'error');
-                return;
-            }
+        async function submitAddVIP(e) {
+  const userId = document.getElementById('vipUserId')?.value?.trim();
+  const planType = document.getElementById('vipPlanType')?.value;
+  const submitBtn = e?.currentTarget || document.getElementById('addVipConfirm');
+  if (!userId) { showToast('Vui lòng nhập User ID!', 'error'); return; }
+  if (!submitBtn) { showToast('Không tìm thấy nút xác nhận.', 'error'); return; }
 
-            const originalHTML = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<div class="loader"></div> Đang xử lý...';
+  const originalHTML = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<div class="loader"></div> Đang xử lý...';
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        action: 'addVIPSubscription', 
-                        payload: { userId, planType } 
-                    })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast('✅ Đã thêm VIP thành công!', 'success');
-                    closeAddVIPModal();
-                    await Promise.all([refreshData('users'), refreshData('subscriptions')]);
-                } else {
-                    showToast('Lỗi: ' + data.message, 'error');
-                }
-            } catch (error) {
-                showToast('Lỗi kết nối: ' + error.message, 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalHTML;
-            }
-        }
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action: 'addVIPSubscription', payload: { userId, planType } })
+    });
+    const data = await response.json();
+    if (data.success) {
+      showToast('Thêm VIP thành công!', 'success');
+      closeAddVIPModal();
+      await Promise.all([refreshData('users'), refreshData('subscriptions')]);
+    } else {
+      showToast(`Lỗi: ${data.message}`, 'error');
+    }
+  } catch (err) {
+    showToast(`Lỗi kết nối: ${err.message}`, 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalHTML;
+  }
+}
+
 
         // Format datetime to UTC+7
         function formatDateTime(dateStr) {
