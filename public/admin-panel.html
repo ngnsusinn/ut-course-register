@@ -324,7 +324,7 @@
             </div>
             <div class="flex justify-end gap-2 mt-6">
                 <button onclick="closeAddVIPModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
-                <button onclick="submitAddVIP()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Thêm VIP</button>
+                <button id="submitVIPBtn" onclick="submitAddVIP()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Thêm VIP</button>
             </div>
         </div>
     </div>
@@ -727,7 +727,7 @@
         async function submitAddVIP() {
             const userId = document.getElementById('vipUserId').value.trim();
             const planType = document.getElementById('vipPlanType').value;
-            const submitBtn = document.querySelector('#addVIPModal button[onclick="submitAddVIP()"]');
+            const submitBtn = document.getElementById('submitVIPBtn');
             
             if (!userId) {
                 showToast('Vui lòng nhập User ID!', 'error');
