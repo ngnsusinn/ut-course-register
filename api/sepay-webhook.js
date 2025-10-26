@@ -8,7 +8,8 @@ const dbConfig = {
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    timezone: '+07:00'
 };
 
 // Validate environment variables
