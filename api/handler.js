@@ -153,61 +153,6 @@ async function checkVIPStatus(userId) {
     }
 }
 
-async function getOrderStatus(orderId) {
-    try {
-        const connection = await getPool().getConnection();
-        
-        const [rows] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ?',
-            [orderId]
-        );
-        
-        if (rows.length === 0) {
-            return null;
-        }
-        
-        const order = rows[0];
-
-        // Check for auto-cancellation after 15 minutes
-        if (order.payment_status === 'Unpaid') {
-            const orderTime = new Date(order.created_at);
-            const now = new Date();
-            const diffMinutes = (now - orderTime) / 1000 / 60;
-            
-            if (diffMinutes > 15) {
-                await connection.execute(
-                    'UPDATE orders SET payment_status = "Cancelled", updated_at = NOW() WHERE id = ?',
-                    [orderId]
-                );
-                
-                await connection.execute(
-                    'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ORDER_CANCELLED", ?, NOW())',
-                    [order.user_id, `Order #${orderId} auto-cancelled due to timeout`]
-                );
-                
-                order.payment_status = 'Cancelled';
-            }
-        }
-        
-        connection.release();
-        
-        return {
-            id: order.id,
-            userId: order.user_id,
-            amount: parseFloat(order.amount),
-            status: order.payment_status,
-            plan: order.plan_type,
-            planName: order.plan_name,
-            createdAt: order.created_at,
-            paidAt: order.paid_at,
-            transactionRef: order.transaction_ref
-        };
-    } catch (error) {
-        console.error('Error getting order status:', error);
-        return null;
-    }
-}
-
 // Helper: Create order
 async function createOrder(userId, plan) {
     const planConfig = VIP_PLANS[plan];
@@ -369,47 +314,6 @@ export default async (req, res) => {
                 };
                 break;
             }
-
-            case 'cancelOrder': {
-    const { orderId, reason } = payload;
-    if (!orderId) return { success: false, message: 'Order ID required' };
-
-    const connection = await getPool().getConnection();
-    try {
-        await connection.beginTransaction();
-
-        const [orders] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ? AND payment_status = "Unpaid"',
-            [orderId]
-        );
-
-        if (orders.length === 0) {
-            await connection.rollback();
-            return { success: false, message: 'Order not found or cannot be cancelled' };
-        }
-
-        const order = orders[0];
-
-        await connection.execute(
-            'UPDATE orders SET payment_status = "Cancelled", updated_at = NOW() WHERE id = ?',
-            [orderId]
-        );
-
-        await connection.execute(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ORDER_CANCELLED", ?, NOW())',
-            [order.user_id, `Order #${orderId} cancelled by user${reason ? ` (${reason})` : ''}`]
-        );
-
-        await connection.commit();
-        return { success: true, message: 'Order cancelled successfully' };
-    } catch (error) {
-        await connection.rollback();
-        console.error('Error cancelling order:', error);
-        return { success: false, message: error.message };
-    } finally {
-        connection.release();
-    }
-}
 
             // --- DATA RETRIEVAL ACTIONS ---
             case 'getFullSchedule': {
