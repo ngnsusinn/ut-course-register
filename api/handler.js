@@ -63,7 +63,7 @@ async function saveUserInfo(profile) {
         if (existingUsers.length === 0) {
             // Insert new user
             await connection.execute(
-                'INSERT INTO users (username, email, full_name, created_at) VALUES (?, ?, ?, CONVERT_TZ(NOW(), "UTC", "+07:00"))',
+                'INSERT INTO users (username, email, full_name, created_at) VALUES (?, ?, ?, NOW())',
                 [username, email, fullName]
             );
             console.log(`✅ Created new user in database: ${username}`);
@@ -318,9 +318,9 @@ async function autoCancelExpiredOrders() {
         // Cancel orders that are Unpaid for more than 15 minutes
         const [result] = await connection.execute(
             `UPDATE orders 
-             SET payment_status = "Cancelled", updated_at = CONVERT_TZ(NOW(), "UTC", "+07:00") 
+             SET payment_status = "Cancelled", updated_at = NOW() 
              WHERE payment_status = "Unpaid" 
-             AND TIMESTAMPDIFF(MINUTE, created_at, CONVERT_TZ(NOW(), "UTC", "+07:00")) > 15`
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) > 15`
         );
         
         if (result.affectedRows > 0) {

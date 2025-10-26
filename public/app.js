@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UTILITY FUNCTIONS ---
     const log = (message, isError = false) => {
-        const timestamp = new Date().toLocaleTimeString();
+        const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
         const logEntry = document.createElement('p');
         logEntry.innerHTML = `[${timestamp}] ${message}`;
         logEntry.className = isError ? 'text-red-400' : 'text-green-300';
