@@ -5,12 +5,14 @@ let allData = {
     subscriptions: [],
     orders: [],
     transactions: [],
-    logs: []
+    logs: [],
+    vipPlans: []
 };
 
 // Pagination state
 let pagination = {
     users: { currentPage: 1, rowsPerPage: 20 },
+    vipPlans: { currentPage: 1, rowsPerPage: 20 },
     subscriptions: { currentPage: 1, rowsPerPage: 20 },
     orders: { currentPage: 1, rowsPerPage: 20 },
     transactions: { currentPage: 1, rowsPerPage: 20 },
@@ -251,7 +253,8 @@ async function refreshData(type) {
         return;
     }
     
-    const action = `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    // Special mapping for vipPlans action
+    let action = type === 'vipPlans' ? 'getAllVIPPlans' : `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
     const refreshBtn = document.querySelector(`#${type}Tab button[onclick*="refreshData"]`);
     
     if (refreshBtn) {
@@ -269,7 +272,9 @@ async function refreshData(type) {
         const data = await response.json();
         
         if (data.success) {
-            allData[type] = data[type] || [];
+            // Map response data key
+            const dataKey = type === 'vipPlans' ? 'plans' : type;
+            allData[type] = data[dataKey] || [];
             renderTable(type);
         } else {
             console.error(`Error fetching ${type}:`, data.message);
@@ -293,6 +298,7 @@ async function refreshData(type) {
 function renderTable(type) {
     switch(type) {
         case 'users': renderUsers(); break;
+        case 'vipPlans': renderVIPPlans(); break;
         case 'subscriptions': renderSubscriptions(); break;
         case 'orders': renderOrders(); break;
         case 'transactions': renderTransactions(); break;
@@ -928,4 +934,175 @@ function formatCurrency(amount) {
         style: 'currency',
         currency: 'VND'
     }).format(amount);
+}
+
+// ===== VIP PLANS MANAGEMENT =====
+
+function renderVIPPlans() {
+    const tbody = document.getElementById('vipPlansTableBody');
+    
+    const { currentPage, rowsPerPage } = pagination.vipPlans;
+    const paginatedPlans = paginateArray(allData.vipPlans, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedPlans.map(plan => `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-medium" data-label="ID">${plan.id}</td>
+            <td class="px-6 py-4 font-mono text-sm" data-label="Key">${plan.plan_key}</td>
+            <td class="px-6 py-4 font-semibold" data-label="Tên">${plan.plan_name}</td>
+            <td class="px-6 py-4 text-center" data-label="Thời hạn">${plan.duration_days} ngày</td>
+            <td class="px-6 py-4 font-semibold text-green-600" data-label="Giá">${parseFloat(plan.price).toLocaleString('vi-VN')}đ</td>
+            <td class="px-6 py-4" data-label="Trạng thái">
+                <span class="px-2 py-1 rounded-full text-xs font-medium ${plan.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${plan.is_active ? '✅ Active' : '❌ Disabled'}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center" data-label="Thứ tự">${plan.sort_order}</td>
+            <td class="px-6 py-4 flex gap-2 flex-wrap" data-label="Actions">
+                <button onclick="openEditPlanModal(${plan.id})" class="text-blue-600 hover:text-blue-900 font-medium text-sm">
+                    ✏️ Sửa
+                </button>
+                <button onclick="togglePlanStatus(${plan.id})" class="text-${plan.is_active ? 'orange' : 'green'}-600 hover:text-${plan.is_active ? 'orange' : 'green'}-900 font-medium text-sm">
+                    ${plan.is_active ? '⏸️ Tắt' : '▶️ Bật'}
+                </button>
+                <button onclick="showConfirmModal('Xóa gói VIP', 'Bạn có chắc muốn xóa gói ${plan.plan_name}? Hành động này không thể hoàn tác.', () => deletePlan(${plan.id}))" class="text-red-600 hover:text-red-900 font-medium text-sm">
+                    🗑️ Xóa
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    
+    renderPaginationControls('vipPlans', allData.vipPlans.length);
+}
+
+// Create Plan Modal
+function openCreatePlanModal() {
+    document.getElementById('planModalTitle').textContent = '➕ Thêm gói VIP mới';
+    document.getElementById('planId').value = '';
+    document.getElementById('planKey').value = '';
+    document.getElementById('planKey').disabled = false;
+    document.getElementById('planName').value = '';
+    document.getElementById('planDuration').value = '';
+    document.getElementById('planPrice').value = '';
+    document.getElementById('planSortOrder').value = '0';
+    document.getElementById('planDescription').value = '';
+    document.getElementById('planModal').classList.remove('hidden');
+}
+
+// Edit Plan Modal
+function openEditPlanModal(id) {
+    const plan = allData.vipPlans.find(p => p.id === id);
+    if (!plan) return;
+    
+    document.getElementById('planModalTitle').textContent = '✏️ Chỉnh sửa gói VIP';
+    document.getElementById('planId').value = plan.id;
+    document.getElementById('planKey').value = plan.plan_key;
+    document.getElementById('planKey').disabled = true; // Không cho sửa plan_key
+    document.getElementById('planName').value = plan.plan_name;
+    document.getElementById('planDuration').value = plan.duration_days;
+    document.getElementById('planPrice').value = plan.price;
+    document.getElementById('planSortOrder').value = plan.sort_order;
+    document.getElementById('planDescription').value = plan.description || '';
+    document.getElementById('planModal').classList.remove('hidden');
+}
+
+function closePlanModal() {
+    document.getElementById('planModal').classList.add('hidden');
+}
+
+// Submit Plan (Create or Update)
+async function submitPlan() {
+    const id = document.getElementById('planId').value;
+    const planKey = document.getElementById('planKey').value.trim();
+    const planName = document.getElementById('planName').value.trim();
+    const durationDays = parseInt(document.getElementById('planDuration').value);
+    const price = parseFloat(document.getElementById('planPrice').value);
+    const sortOrder = parseInt(document.getElementById('planSortOrder').value) || 0;
+    const description = document.getElementById('planDescription').value.trim();
+    
+    // Validation
+    if (!planKey || !planName || !durationDays || !price) {
+        showToast('Vui lòng điền đầy đủ các trường bắt buộc!', 'error');
+        return;
+    }
+    
+    if (!/^[a-z0-9_]+$/.test(planKey)) {
+        showToast('Plan Key chỉ được chứa chữ thường, số và gạch dưới!', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('submitPlanBtn');
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loader inline-block"></div> Đang lưu...';
+    
+    try {
+        const action = id ? 'updateVIPPlan' : 'createVIPPlan';
+        const payload = { planKey, planName, durationDays, price, sortOrder, description };
+        if (id) payload.id = parseInt(id);
+        
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(data.message || (id ? 'Cập nhật thành công!' : 'Tạo gói VIP thành công!'), 'success');
+            closePlanModal();
+            await refreshData('vipPlans');
+        } else {
+            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }
+}
+
+// Delete Plan
+async function deletePlan(id) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'deleteVIPPlan', payload: { id } })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Xóa gói VIP thành công!', 'success');
+            await refreshData('vipPlans');
+        } else {
+            showToast(data.message || 'Không thể xóa gói VIP!', 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
+}
+
+// Toggle Plan Status
+async function togglePlanStatus(id) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'toggleVIPPlanStatus', payload: { id } })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(data.message || 'Cập nhật trạng thái thành công!', 'success');
+            await refreshData('vipPlans');
+        } else {
+            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
 }
