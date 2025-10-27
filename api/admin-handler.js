@@ -157,18 +157,35 @@ async function addVIPSubscription(payload) {
     const { userId, planType } = payload;
     if (!userId || !planType) return { success: false, message: 'userId and planType required' };
 
-    const planDurations = { '1day': 1, '3days': 3, '7days': 7, '30days': 30, 'infinite': 36500 };
-    const days = planDurations[planType];
-    if (!days) return { success: false, message: 'Invalid plan type' };
-
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
 
+        // Get plan duration from database
+        let days;
+        let planName;
+        
+        if (planType === 'infinite') {
+            days = 36500; // ~100 years
+            planName = 'Vĩnh viễn';
+        } else {
+            const [planData] = await connection.query(
+                'SELECT duration_days, plan_name FROM vip_plans WHERE plan_key = ? AND is_active = 1',
+                [planType]
+            );
+            
+            if (planData.length === 0) {
+                await connection.rollback();
+                return { success: false, message: 'Invalid or inactive plan type' };
+            }
+            
+            days = planData[0].duration_days;
+            planName = planData[0].plan_name;
+        }
+
         // Check if user exists
         const [existingUser] = await connection.query('SELECT id FROM users WHERE username = ?', [userId]);
         if (existingUser.length === 0) {
-            // FIX: NOW() theo phiên
             await connection.query('INSERT INTO users (username, created_at) VALUES (?, NOW())', [userId]);
         }
 
@@ -194,17 +211,15 @@ async function addVIPSubscription(payload) {
         }
 
         // Insert new VIP subscription
-        // FIX: created_at = NOW()
         await connection.query(
             'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
             [userId, planType, expiryDate]
         );
 
         const logDetails = addType === 'cumulative' 
-            ? `Admin added ${planType} VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
-            : `Admin added ${planType} VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
+            ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
+            : `Admin added ${planName} (${planType}) VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
 
-        // FIX: created_at = NOW()
         await connection.query(
             'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, NOW())',
             [userId, logDetails]

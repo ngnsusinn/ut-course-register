@@ -548,9 +548,63 @@ function getActionText(action) {
 }
 
 // VIP Management
-function openAddVIPModal(userId = '') {
+async function openAddVIPModal(userId = '') {
     document.getElementById('vipUserId').value = userId;
+    
+    // Load VIP plans from database and populate dropdown
+    await loadVIPPlansForModal();
+    
     document.getElementById('addVIPModal').classList.remove('hidden');
+}
+
+// Load VIP plans dynamically for the modal
+async function loadVIPPlansForModal() {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'getAllVIPPlans' })
+        });
+
+        const data = await response.json();
+        
+        if (data.success && data.plans) {
+            const selectElement = document.getElementById('vipPlanType');
+            
+            // Clear existing options except "infinite"
+            selectElement.innerHTML = '';
+            
+            // Add plans from database (only active plans)
+            data.plans
+                .filter(plan => plan.is_active === 1)
+                .forEach(plan => {
+                    const option = document.createElement('option');
+                    option.value = plan.plan_key;
+                    option.textContent = `${plan.plan_name} - ${parseFloat(plan.price).toLocaleString('vi-VN')}đ`;
+                    selectElement.appendChild(option);
+                });
+            
+            // Add "infinite" option at the end
+            const infiniteOption = document.createElement('option');
+            infiniteOption.value = 'infinite';
+            infiniteOption.textContent = 'Vĩnh viễn';
+            selectElement.appendChild(infiniteOption);
+        } else {
+            // Fallback to hardcoded plans if database fails
+            console.warn('Failed to load VIP plans from database, using fallback');
+            const selectElement = document.getElementById('vipPlanType');
+            selectElement.innerHTML = `
+                <option value="1day">1 Day VIP - 24,000đ</option>
+                <option value="3days">3 Days VIP - 72,000đ</option>
+                <option value="7days">7 Days VIP - 126,000đ</option>
+                <option value="30days">30 Days VIP - 432,000đ</option>
+                <option value="infinite">Vĩnh viễn</option>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading VIP plans:', error);
+        showToast('Không thể tải danh sách gói VIP', 'error');
+    }
 }
 
 function closeAddVIPModal() {
