@@ -170,13 +170,13 @@ export default async (req, res) => {
             const amountOut = transferType === 'out' ? transferAmount : 0;
             
             await connection.execute(
-                `INSERT INTO transactions 
-                (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
-                accumulated, code, transaction_content, reference_number, body, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-                [gateway, CONVERT_TZ(transactionDate, "UTC", "+07:00"), accountNumber, subAccount || '', amountIn, amountOut,
-                 accumulated, code, content, referenceCode, description || '']
-            );
+    `INSERT INTO transactions 
+    (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
+    accumulated, code, transaction_content, reference_number, body, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [gateway, transactionDateVN, accountNumber, subAccount || '', amountIn, amountOut,
+     accumulated, code, content, referenceCode, description || '']
+);
             
             connection.release();
             
