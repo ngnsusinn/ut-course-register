@@ -222,14 +222,13 @@
                     <div id="recentActivitiesList" class="space-y-2"></div>
                 </div>
             </div>
-
             <!-- Users Tab -->
             <div id="usersTab" class="tab-content">
                 <div class="bg-white rounded-xl shadow-md p-6">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800">Quản lý Users</h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." oninput="pagination.users.currentPage = 1; renderUsers();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
                             <button onclick="refreshData('users')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center">
                                 🔄 Refresh
                             </button>
@@ -248,6 +247,7 @@
                             <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <div id="usersPagination"></div>
                     <div id="usersStats" class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm"></div>
                 </div>
             </div>
@@ -258,8 +258,8 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800">VIP Subscriptions</h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="subscriptionsFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="subscriptionsFilter" onchange="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="active">Active</option>
                                 <option value="expired">Expired</option>
@@ -283,6 +283,7 @@
                             <tbody id="subscriptionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <div id="subscriptionsPagination"></div>
                 </div>
             </div>
 
@@ -292,8 +293,8 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800">Quản lý Đơn hàng</h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="ordersFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="ordersFilter" onchange="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="Paid">Đã thanh toán</option>
                                 <option value="Unpaid">Chưa thanh toán</option>
@@ -317,6 +318,7 @@
                             <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <div id="ordersPagination"></div>
                 </div>
             </div>
 
@@ -326,8 +328,8 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800">Giao dịch SePay</h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <input type="number" id="amountFilter" placeholder="Số tiền..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <input type="number" id="amountFilter" placeholder="Số tiền..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
                             <button onclick="refreshData('transactions')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
                         </div>
                     </div>
@@ -346,6 +348,7 @@
                             <tbody id="transactionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <div id="transactionsPagination"></div>
                 </div>
             </div>
 
@@ -355,8 +358,8 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800">Nhật ký hoạt động</h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="logsFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." oninput="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="logsFilter" onchange="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả hành động</option>
                                 <option value="USER_LOGIN">Đăng nhập</option>
                                 <option value="VIP_PURCHASE">Mua VIP</option>
@@ -380,6 +383,7 @@
                             <tbody id="logsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <div id="logsPagination"></div>
                 </div>
             </div>
         </main>

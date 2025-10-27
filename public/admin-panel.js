@@ -8,6 +8,15 @@ let allData = {
     logs: []
 };
 
+// Pagination state
+let pagination = {
+    users: { currentPage: 1, rowsPerPage: 20 },
+    subscriptions: { currentPage: 1, rowsPerPage: 20 },
+    orders: { currentPage: 1, rowsPerPage: 20 },
+    transactions: { currentPage: 1, rowsPerPage: 20 },
+    logs: { currentPage: 1, rowsPerPage: 20 }
+};
+
 // Dashboard chart instances
 let charts = {
     revenue: null,
@@ -92,6 +101,120 @@ function showToast(message, type = 'info') {
     document.body.appendChild(toast);
     
     setTimeout(() => toast.remove(), 3000);
+}
+
+// Pagination helper functions
+function paginateArray(array, page, rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return array.slice(start, end);
+}
+
+function getTotalPages(totalItems, rowsPerPage) {
+    return Math.ceil(totalItems / rowsPerPage);
+}
+
+function changePage(type, page) {
+    pagination[type].currentPage = page;
+    renderTable(type);
+}
+
+function renderPaginationControls(type, totalItems) {
+    const container = document.getElementById(`${type}Pagination`);
+    if (!container) return;
+    
+    const { currentPage, rowsPerPage } = pagination[type];
+    const totalPages = getTotalPages(totalItems, rowsPerPage);
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, totalItems);
+    
+    container.innerHTML = `
+        <div class="flex items-center justify-between bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button 
+                    onclick="changePage('${type}', ${currentPage - 1})" 
+                    ${currentPage === 1 ? 'disabled' : ''}
+                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Trước
+                </button>
+                <button 
+                    onclick="changePage('${type}', ${currentPage + 1})" 
+                    ${currentPage === totalPages ? 'disabled' : ''}
+                    class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Sau
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Hiển thị <span class="font-medium">${start}</span> đến <span class="font-medium">${end}</span> trong tổng số <span class="font-medium">${totalItems}</span> kết quả
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button 
+                            onclick="changePage('${type}', ${currentPage - 1})" 
+                            ${currentPage === 1 ? 'disabled' : ''}
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="sr-only">Trước</span>
+                            ←
+                        </button>
+                        ${generatePageNumbers(type, currentPage, totalPages)}
+                        <button 
+                            onclick="changePage('${type}', ${currentPage + 1})" 
+                            ${currentPage === totalPages ? 'disabled' : ''}
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="sr-only">Sau</span>
+                            →
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generatePageNumbers(type, currentPage, totalPages) {
+    let pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(i);
+        }
+    } else {
+        if (currentPage <= 3) {
+            pages = [1, 2, 3, 4, '...', totalPages];
+        } else if (currentPage >= totalPages - 2) {
+            pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+        } else {
+            pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+        }
+    }
+    
+    return pages.map(page => {
+        if (page === '...') {
+            return '<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>';
+        }
+        const isActive = page === currentPage;
+        return `
+            <button 
+                onclick="changePage('${type}', ${page})" 
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
+                    isActive 
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                }">
+                ${page}
+            </button>
+        `;
+    }).join('');
 }
 
 function logout() {
@@ -185,7 +308,11 @@ function renderUsers() {
         user.user_id.toLowerCase().includes(searchTerm)
     );
 
-    tbody.innerHTML = filteredUsers.map(user => {
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.users;
+    const paginatedUsers = paginateArray(filteredUsers, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedUsers.map(user => {
         const isVip = user.is_vip;
         const expiryDate = user.expiry_date ? new Date(user.expiry_date) : null;
         const isExpired = expiryDate && expiryDate < new Date();
@@ -235,6 +362,9 @@ function renderUsers() {
             <div class="text-sm text-gray-600">VIP Expired</div>
         </div>
     `;
+    
+    // Render pagination controls
+    renderPaginationControls('users', totalUsers);
 }
 
 function renderSubscriptions() {
@@ -252,7 +382,11 @@ function renderSubscriptions() {
         return matchesSearch && matchesStatus;
     });
 
-    tbody.innerHTML = filteredSubs.map(sub => {
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.subscriptions;
+    const paginatedSubs = paginateArray(filteredSubs, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedSubs.map(sub => {
         const isActive = new Date(sub.expiry_date) > new Date();
         return `
         <tr class="hover:bg-blue-50 transition-colors">
@@ -276,6 +410,9 @@ function renderSubscriptions() {
         </tr>
         `;
     }).join('');
+    
+    // Render pagination controls
+    renderPaginationControls('subscriptions', filteredSubs.length);
 }
 
 function renderOrders() {
@@ -290,7 +427,11 @@ function renderOrders() {
         return matchesSearch && matchesStatus;
     });
 
-    tbody.innerHTML = filteredOrders.map(order => `
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.orders;
+    const paginatedOrders = paginateArray(filteredOrders, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedOrders.map(order => `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">#${order.id}</td>
             <td class="px-6 py-4" data-label="User">${order.user_id}</td>
@@ -308,6 +449,9 @@ function renderOrders() {
             <td class="px-6 py-4 text-sm" data-label="Created">${formatDateTime(order.created_at)}</td>
         </tr>
     `).join('');
+    
+    // Render pagination controls
+    renderPaginationControls('orders', filteredOrders.length);
 }
 
 function renderTransactions() {
@@ -322,7 +466,11 @@ function renderTransactions() {
         return matchesSearch && matchesAmount;
     });
 
-    tbody.innerHTML = filteredTrans.map(trans => `
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.transactions;
+    const paginatedTrans = paginateArray(filteredTrans, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedTrans.map(trans => `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">${trans.id}</td>
             <td class="px-6 py-4" data-label="Gateway">
@@ -334,6 +482,9 @@ function renderTransactions() {
             <td class="px-6 py-4 text-sm" data-label="Time">${formatDateTime(trans.received_at)}</td>
         </tr>
     `).join('');
+    
+    // Render pagination controls
+    renderPaginationControls('transactions', filteredTrans.length);
 }
 
 function renderLogs() {
@@ -348,7 +499,11 @@ function renderLogs() {
         return matchesSearch && matchesAction;
     });
 
-    tbody.innerHTML = filteredLogs.map(log => `
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.logs;
+    const paginatedLogs = paginateArray(filteredLogs, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedLogs.map(log => `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">${log.id}</td>
             <td class="px-6 py-4" data-label="User">${log.user_id || 'N/A'}</td>
@@ -361,6 +516,9 @@ function renderLogs() {
             <td class="px-6 py-4 text-sm" data-label="Time">${formatDateTime(log.created_at)}</td>
         </tr>
     `).join('');
+    
+    // Render pagination controls
+    renderPaginationControls('logs', filteredLogs.length);
 }
 
 function getActionColor(action) {

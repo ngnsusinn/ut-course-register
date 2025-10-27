@@ -42,9 +42,7 @@ export default async function handler(req, res) {
             case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
             case 'deleteSubscription': result = await deleteSubscription(payload); break;
             case 'deleteUser': result = await deleteUser(payload); break;
-            case 'getPaymentSettings': result = await getPaymentSettings(); break;
-            case 'updatePaymentSettings': result = await updatePaymentSettings(payload); break;
-            case 'setActivePaymentMethod': result = await setActivePaymentMethod(payload); break;
+            case 'getDashboardStats': result = await getDashboardStats(); break;
             default: return res.status(400).json({ success: false, message: 'Unknown action' });
         }
         return res.status(200).json(result);
