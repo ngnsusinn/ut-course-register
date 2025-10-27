@@ -448,7 +448,9 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { userId, plan } = payload;
                 
-                if (!VIP_PLANS[plan]) {
+                // Validate plan exists in database
+                const vipPlans = await getVIPPlansFromDB();
+                if (!vipPlans[plan]) {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
                 
