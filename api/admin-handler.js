@@ -42,6 +42,9 @@ export default async function handler(req, res) {
             case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
             case 'deleteSubscription': result = await deleteSubscription(payload); break;
             case 'deleteUser': result = await deleteUser(payload); break;
+            case 'getPaymentSettings': result = await getPaymentSettings(); break;
+            case 'updatePaymentSettings': result = await updatePaymentSettings(payload); break;
+            case 'setActivePaymentMethod': result = await setActivePaymentMethod(payload); break;
             default: return res.status(400).json({ success: false, message: 'Unknown action' });
         }
         return res.status(200).json(result);
@@ -278,6 +281,86 @@ async function deleteSubscription(payload) {
     } catch (error) {
         await connection.rollback();
         return { success: false, message: 'Failed to delete', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
+// ===== PAYMENT SETTINGS MANAGEMENT =====
+async function getPaymentSettings() {
+    const connection = await pool.getConnection();
+    try {
+        const [settings] = await connection.query(`
+            SELECT * FROM payment_settings ORDER BY payment_method
+        `);
+        return { success: true, settings };
+    } finally {
+        connection.release();
+    }
+}
+
+async function updatePaymentSettings(payload) {
+    const { paymentMethod, config } = payload;
+    if (!paymentMethod || !['sepay', 'momo'].includes(paymentMethod)) {
+        return { success: false, message: 'Invalid payment method' };
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        if (paymentMethod === 'sepay') {
+            const { accountNumber, apiToken } = config;
+            await connection.query(
+                `UPDATE payment_settings 
+                SET sepay_account_number = ?, sepay_api_token = ?, updated_at = NOW() 
+                WHERE payment_method = 'sepay'`,
+                [accountNumber, apiToken]
+            );
+        } else if (paymentMethod === 'momo') {
+            const { partnerCode, accessKey, secretKey } = config;
+            await connection.query(
+                `UPDATE payment_settings 
+                SET momo_partner_code = ?, momo_access_key = ?, momo_secret_key = ?, updated_at = NOW() 
+                WHERE payment_method = 'momo'`,
+                [partnerCode, accessKey, secretKey]
+            );
+        }
+
+        await connection.commit();
+        return { success: true, message: 'Payment settings updated successfully' };
+    } catch (error) {
+        await connection.rollback();
+        return { success: false, message: 'Failed to update settings', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
+async function setActivePaymentMethod(payload) {
+    const { paymentMethod } = payload;
+    if (!paymentMethod || !['sepay', 'momo'].includes(paymentMethod)) {
+        return { success: false, message: 'Invalid payment method' };
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Deactivate all payment methods
+        await connection.query('UPDATE payment_settings SET is_active = 0');
+
+        // Activate selected payment method
+        await connection.query(
+            'UPDATE payment_settings SET is_active = 1 WHERE payment_method = ?',
+            [paymentMethod]
+        );
+
+        await connection.commit();
+        return { success: true, message: `Payment method switched to ${paymentMethod}` };
+    } catch (error) {
+        await connection.rollback();
+        return { success: false, message: 'Failed to switch payment method', error: error.message };
     } finally {
         connection.release();
     }

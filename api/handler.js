@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import mysql from 'mysql2/promise';
+import MoMoPayment from './momo-payment.js';
 
 // Database configuration
 const dbConfig = {
@@ -209,33 +210,95 @@ async function checkVIPStatus(userId) {
     }
 }
 
-// Helper: Create order
-async function createOrder(userId, plan) {
+// Helper: Create order with payment method support
+async function createOrder(userId, plan, paymentMethod = 'sepay') {
     const planConfig = VIP_PLANS[plan];
     if (!planConfig) return null;
     
     try {
         const connection = await getPool().getConnection();
         
-        const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
+        // Check active payment method
+        const [paymentSettings] = await connection.execute(
+            'SELECT * FROM payment_settings WHERE payment_method = ? AND is_active = 1 LIMIT 1',
+            [paymentMethod]
         );
+        
+        if (!paymentSettings || paymentSettings.length === 0) {
+            connection.release();
+            return { error: `Payment method ${paymentMethod} is not active` };
+        }
+        
+        const [result] = await connection.execute(
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, payment_method, gateway, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+            [userId, plan, planConfig.name, planConfig.price, 'Unpaid', paymentMethod, paymentMethod === 'momo' ? 'MoMo' : 'SePay']
+        );
+        
+        const orderId = result.insertId;
+        
+        // If MoMo payment, create payment request
+        if (paymentMethod === 'momo') {
+            const momoConfig = paymentSettings[0];
+            const momo = new MoMoPayment({
+                partnerCode: momoConfig.momo_partner_code,
+                accessKey: momoConfig.momo_access_key,
+                secretKey: momoConfig.momo_secret_key,
+                redirectUrl: process.env.MOMO_REDIRECT_URL || `${process.env.BASE_URL || 'https://yourdomain.com'}/payment/return`,
+                ipnUrl: process.env.MOMO_IPN_URL || `${process.env.BASE_URL || 'https://yourdomain.com'}/api/momo-webhook`,
+                isProduction: process.env.NODE_ENV === 'production'
+            });
+            
+            const momoOrderId = `${momoConfig.momo_partner_code}${Date.now()}`;
+            const paymentResult = await momo.createPayment({
+                orderId: momoOrderId,
+                amount: parseInt(planConfig.price),
+                orderInfo: `Thanh toan ${planConfig.name} - DH${orderId}`,
+                extraData: JSON.stringify({ orderId: orderId, userId: userId })
+            });
+            
+            if (paymentResult.success) {
+                // Update order with MoMo info
+                await connection.execute(
+                    'UPDATE orders SET momo_order_id = ?, momo_pay_url = ? WHERE id = ?',
+                    [momoOrderId, paymentResult.payUrl, orderId]
+                );
+                
+                connection.release();
+                
+                return {
+                    id: orderId,
+                    userId,
+                    amount: planConfig.price,
+                    status: 'Unpaid',
+                    plan,
+                    planName: planConfig.name,
+                    paymentMethod: 'momo',
+                    momoPayUrl: paymentResult.payUrl,
+                    momoDeeplink: paymentResult.deeplink,
+                    momoQrCodeUrl: paymentResult.qrCodeUrl,
+                    createdAt: new Date().toISOString()
+                };
+            } else {
+                connection.release();
+                return { error: paymentResult.message || 'Failed to create MoMo payment' };
+            }
+        }
         
         connection.release();
         
         return {
-            id: result.insertId,
+            id: orderId,
             userId,
             amount: planConfig.price,
             status: 'Unpaid',
             plan,
             planName: planConfig.name,
+            paymentMethod: 'sepay',
             createdAt: new Date().toISOString()
         };
     } catch (error) {
         console.error('Error creating order:', error);
-        return null;
+        return { error: error.message };
     }
 }
 
@@ -411,16 +474,16 @@ export default async (req, res) => {
 
             case 'createVIPOrder': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { userId, plan } = payload;
+                const { userId, plan, paymentMethod = 'sepay' } = payload;
                 
                 if (!VIP_PLANS[plan]) {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
                 
-                const order = await createOrder(userId, plan);
+                const order = await createOrder(userId, plan, paymentMethod);
                 
-                if (!order) {
-                    return res.status(500).json({ success: false, message: 'Failed to create order' });
+                if (!order || order.error) {
+                    return res.status(500).json({ success: false, message: order?.error || 'Failed to create order' });
                 }
                 
                 result = { success: true, order };
@@ -452,10 +515,34 @@ export default async (req, res) => {
             }
 
             case 'getVIPPlans': {
+                // Get active payment method
+                const connection = await getPool().getConnection();
+                const [settings] = await connection.execute(
+                    'SELECT payment_method FROM payment_settings WHERE is_active = 1 LIMIT 1'
+                );
+                connection.release();
+                
+                const activePaymentMethod = settings && settings.length > 0 ? settings[0].payment_method : 'sepay';
+                
                 result = { 
                     success: true, 
                     plans: VIP_PLANS,
-                    sepayConfig: SEPAY_CONFIG
+                    sepayConfig: SEPAY_CONFIG,
+                    activePaymentMethod: activePaymentMethod
+                };
+                break;
+            }
+            
+            case 'getPaymentSettings': {
+                const connection = await getPool().getConnection();
+                const [settings] = await connection.execute(
+                    'SELECT * FROM payment_settings WHERE is_active = 1'
+                );
+                connection.release();
+                
+                result = { 
+                    success: true, 
+                    settings: settings 
                 };
                 break;
             }
