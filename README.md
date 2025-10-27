@@ -1,6 +1,6 @@
 # 🎓 UTH Course Registration Tool
 
-Hệ thống đăng ký học phần tự động với tích hợp thanh toán VIP qua SePay và MoMo.
+Hệ thống đăng ký học phần tự động với tích hợp thanh toán VIP qua SePay.
 
 ## ✨ Tính năng
 
@@ -8,23 +8,23 @@ Hệ thống đăng ký học phần tự động với tích hợp thanh toán 
 - ✅ Đăng ký học phần tự động
 - ✅ Xem thời khóa biểu chi tiết
 - ✅ Nâng cấp tài khoản VIP (truy cập môn tiên quyết)
-- ✅ Thanh toán qua SePay hoặc MoMo
+- ✅ Thanh toán qua SePay
 - ✅ Theo dõi trạng thái đơn hàng
 - ✅ Quản lý VIP subscription
 
 ### 👨‍💼 Quản trị viên
+- ✅ Dashboard thống kê với biểu đồ
 - ✅ Quản lý người dùng và VIP subscriptions
 - ✅ Theo dõi đơn hàng và giao dịch
 - ✅ Xem logs hoạt động hệ thống
-- ✅ Cấu hình phương thức thanh toán (SePay/MoMo)
-- ✅ Chuyển đổi payment gateway linh hoạt
+- ✅ Phân tích dữ liệu theo thời gian thực
 
 ## 🛠️ Công nghệ
 
 - **Backend**: Node.js, Vercel Serverless Functions
 - **Database**: MySQL 5.7+
-- **Payment**: SePay, MoMo Payment API v2
-- **Frontend**: Vanilla JavaScript, Tailwind CSS
+- **Payment**: SePay
+- **Frontend**: Vanilla JavaScript, Tailwind CSS, Chart.js
 
 ## 📦 Cài đặt
 
@@ -43,13 +43,7 @@ npm install
 
 ### 3. Cấu hình môi trường
 
-Copy file `.env.example` thành `.env` và điền thông tin:
-
-\`\`\`bash
-cp .env.example .env
-\`\`\`
-
-Chỉnh sửa `.env`:
+Tạo file `.env` và điền thông tin:
 
 \`\`\`env
 # Database (Bắt buộc)
@@ -57,13 +51,6 @@ DB_HOST=your_host
 DB_USER=your_user
 DB_PASSWORD=your_password
 DB_NAME=your_database
-
-# MoMo (Tùy chọn - có thể config qua Admin Panel)
-MOMO_PARTNER_CODE=your_partner_code
-MOMO_ACCESS_KEY=your_access_key
-MOMO_SECRET_KEY=your_secret_key
-MOMO_REDIRECT_URL=https://yourdomain.com/payment/return
-MOMO_IPN_URL=https://yourdomain.com/api/momo-webhook
 
 # Application
 BASE_URL=https://yourdomain.com
@@ -88,30 +75,15 @@ npm run migrate
 
 \`\`\`bash
 npm run test:db
-\`\`\`
+```
 
 ### 6. Deploy lên Vercel
 
-\`\`\`bash
+```bash
 npm run deploy
-\`\`\`
+```
 
-## 🔧 Cấu hình Payment Gateway
-
-### Cách 1: Qua Admin Panel (Khuyến nghị)
-
-1. Truy cập `/admin` hoặc `/admin-panel.html`
-2. Đăng nhập với tài khoản admin
-3. Vào tab **⚙️ Cài đặt**
-4. Chọn phương thức thanh toán (SePay/MoMo)
-5. Điền thông tin cấu hình
-6. Nhấn **Kích hoạt** để sử dụng
-
-### Cách 2: Qua Environment Variables
-
-Thêm vào file `.env` (như hướng dẫn ở trên)
-
-## 📚 API Endpoints
+##  API Endpoints
 
 ### Main Handler (`/api/handler`)
 - `POST /api/handler` - Xử lý các action chính
@@ -127,7 +99,6 @@ Thêm vào file `.env` (như hướng dẫn ở trên)
 - `checkOrderStatus` - Kiểm tra trạng thái đơn
 - `cancelOrder` - Hủy đơn hàng
 - `getVIPPlans` - Lấy danh sách gói VIP
-- `getPaymentSettings` - Lấy cấu hình thanh toán
 
 ### Admin Handler (`/api/admin-handler`)
 - `POST /api/admin-handler` - Quản trị hệ thống
@@ -142,17 +113,12 @@ Thêm vào file `.env` (như hướng dẫn ở trên)
 - `addVIPSubscription` - Thêm VIP cho user
 - `deleteSubscription` - Xóa VIP subscription
 - `deleteUser` - Xóa người dùng
-- `getPaymentSettings` - Lấy cấu hình payment
-- `updatePaymentSettings` - Cập nhật cấu hình
-- `setActivePaymentMethod` - Chuyển đổi payment method
+- `getDashboardStats` - Lấy thống kê dashboard
 
 ### Webhooks
 
 #### SePay Webhook (`/api/sepay-webhook`)
 - `POST /api/sepay-webhook` - Nhận thông báo từ SePay
-
-#### MoMo Webhook (`/api/momo-webhook`)
-- `POST /api/momo-webhook` - Nhận IPN từ MoMo
 
 ## 🔐 Bảo mật
 
@@ -172,7 +138,6 @@ Thêm vào file `.env` (như hướng dẫn ở trên)
 - `orders` - Đơn hàng
 - `transactions` - Giao dịch thanh toán
 - `activity_logs` - Logs hoạt động
-- `payment_settings` - Cấu hình payment gateway
 
 ## 🧪 Testing
 
@@ -180,11 +145,6 @@ Thêm vào file `.env` (như hướng dẫn ở trên)
 \`\`\`bash
 npm run test:db
 \`\`\`
-
-### Test MoMo Payment
-Sử dụng MoMo Test Environment:
-- Endpoint: `test-payment.momo.vn`
-- Credentials: https://developers.momo.vn/
 
 ### Test SePay Webhook
 Sử dụng ngrok hoặc webhook.site để test locally:
@@ -207,14 +167,14 @@ ngrok http 3000
 3. Đảm bảo MySQL đang chạy và accessible
 
 ### Webhook không nhận được
-1. Kiểm tra URL trong payment gateway config
+1. Kiểm tra URL trong SePay config
 2. Verify SSL certificate (HTTPS required)
 3. Check firewall/security rules
 
-### MoMo signature invalid
-1. Kiểm tra Partner Code, Access Key, Secret Key
-2. Đảm bảo sử dụng đúng endpoint (test/production)
-3. Log raw signature string để debug
+### Dashboard không hiển thị
+1. Kiểm tra Chart.js CDN đã load
+2. Refresh browser cache và kiểm tra console errors
+3. Verify getDashboardStats API hoạt động
 
 ## 📄 License
 
@@ -229,16 +189,19 @@ Liên hệ: [Your Email/Support Channel]
 - Database timezone: UTC+7 (Vietnam)
 - Auto-cancel unpaid orders after 15 minutes
 - VIP subscriptions are cumulative (không reset khi mua thêm)
-- Admin panel: `/admin` hoặc `/admin-panel.html`
+- Admin panel: `/admin` hoặc `/admin-panel.html` với Dashboard analytics
 - Default admin credentials: Check database `admins` table
+- Dashboard charts: Revenue (Line), User Growth (Bar), VIP Distribution (Pie), Order Status (Doughnut)
 
 ## 🎯 Roadmap
 
+- [x] ~~MoMo Payment Integration~~ (Removed in v2.2.0)
+- [x] Admin Dashboard with Charts (Added in v2.2.0)
 - [ ] Email notifications
 - [ ] SMS integration
 - [ ] Mobile app
 - [ ] Multi-language support
-- [ ] Advanced analytics dashboard
+- [ ] Export reports (CSV/PDF)
 - [ ] Refund management
 
 ---

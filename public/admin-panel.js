@@ -5,10 +5,16 @@ let allData = {
     subscriptions: [],
     orders: [],
     transactions: [],
-    logs: [],
-    paymentSettings: []
+    logs: []
 };
-let currentPaymentMethod = 'sepay';
+
+// Dashboard chart instances
+let charts = {
+    revenue: null,
+    userGrowth: null,
+    vipDistribution: null,
+    orderStatus: null
+};
 
 // Login functionality
 async function login() {
@@ -47,7 +53,7 @@ async function login() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('adminDashboard').classList.remove('hidden');
             
-            await refreshData('users');
+            await refreshData('dashboard');
         } else {
             showToast(data.message || 'Đăng nhập thất bại!', 'error');
             errorDiv.textContent = data.message || 'Đăng nhập thất bại!';
@@ -112,15 +118,16 @@ function switchTab(tab) {
     document.getElementById(`${tab}Tab`).classList.remove('hidden');
     
     // Load data based on tab
-    if (tab === 'settings') {
-        loadPaymentSettings();
-    } else {
-        refreshData(tab);
-    }
+    refreshData(tab);
 }
 
 // Data fetching
 async function refreshData(type) {
+    if (type === 'dashboard') {
+        await loadDashboard();
+        return;
+    }
+    
     const action = `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
     const refreshBtn = document.querySelector(`#${type}Tab button[onclick*="refreshData"]`);
     
@@ -558,153 +565,209 @@ function debounce(func, wait) {
     };
 }
 
-// ===== PAYMENT SETTINGS FUNCTIONS =====
-async function loadPaymentSettings() {
+// ===== DASHBOARD FUNCTIONS =====
+async function loadDashboard() {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'getPaymentSettings' })
+            body: JSON.stringify({ action: 'getDashboardStats' })
         });
+
         const data = await response.json();
         
-        if (data.success && data.settings) {
-            allData.paymentSettings = data.settings;
+        if (data.success) {
+            const stats = data.stats;
             
-            // Find active payment method
-            const activeSetting = data.settings.find(s => s.is_active === 1);
-            if (activeSetting) {
-                currentPaymentMethod = activeSetting.payment_method;
-                updatePaymentUI(activeSetting.payment_method);
-                
-                // Load settings into forms
-                data.settings.forEach(setting => {
-                    if (setting.payment_method === 'sepay' && setting.sepay_account_number) {
-                        document.getElementById('sepayAccountNumber').value = setting.sepay_account_number || '';
-                        document.getElementById('sepayApiToken').value = setting.sepay_api_token || '';
-                    } else if (setting.payment_method === 'momo' && setting.momo_partner_code) {
-                        document.getElementById('momoPartnerCode').value = setting.momo_partner_code || '';
-                        document.getElementById('momoAccessKey').value = setting.momo_access_key || '';
-                        document.getElementById('momoSecretKey').value = setting.momo_secret_key || '';
+            // Update KPI cards
+            document.getElementById('totalUsers').textContent = stats.totalUsers;
+            document.getElementById('vipUsers').textContent = stats.vipUsers;
+            document.getElementById('totalRevenue').textContent = formatCurrency(stats.totalRevenue);
+            document.getElementById('totalOrders').textContent = stats.orders.total;
+            
+            // Render charts
+            renderRevenueChart(stats.revenueByDate);
+            renderUserGrowthChart(stats.userGrowth);
+            renderVipDistributionChart(stats.vipDistribution);
+            renderOrderStatusChart(stats.orders);
+            
+            // Render recent activities
+            renderRecentActivities(stats.recentActivities);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        showToast('Lỗi khi tải dashboard!', 'error');
+    }
+}
+
+// Revenue Chart
+function renderRevenueChart(data) {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    if (charts.revenue) charts.revenue.destroy();
+    
+    charts.revenue = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => new Date(d.date).toLocaleDateString('vi-VN')),
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: data.map(d => d.revenue),
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('vi-VN') + 'đ';
+                        }
                     }
-                });
+                }
             }
         }
-    } catch (error) {
-        console.error('Error loading payment settings:', error);
-        showToast('Lỗi tải cài đặt thanh toán', 'error');
-    }
+    });
 }
 
-function updatePaymentUI(method) {
-    // Update button states
-    document.getElementById('selectSepay').classList.toggle('active', method === 'sepay');
-    document.getElementById('selectMomo').classList.toggle('active', method === 'momo');
+// User Growth Chart
+function renderUserGrowthChart(data) {
+    const ctx = document.getElementById('userGrowthChart').getContext('2d');
     
-    // Show/hide settings panels
-    document.getElementById('sepaySettings').classList.toggle('hidden', method !== 'sepay');
-    document.getElementById('momoSettings').classList.toggle('hidden', method !== 'momo');
-}
-
-async function setPaymentMethod(method) {
-    if (method === currentPaymentMethod) {
-        // Already selected, just show settings
-        updatePaymentUI(method);
-        return;
-    }
+    if (charts.userGrowth) charts.userGrowth.destroy();
     
-    if (!confirm(`Bạn có chắc muốn chuyển sang phương thức thanh toán ${method.toUpperCase()}?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'setActivePaymentMethod', 
-                payload: { paymentMethod: method } 
-            })
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-            currentPaymentMethod = method;
-            updatePaymentUI(method);
-            showToast(`✅ Đã chuyển sang ${method.toUpperCase()}!`, 'success');
-        } else {
-            showToast('Lỗi: ' + data.message, 'error');
-        }
-    } catch (error) {
-        showToast('Lỗi kết nối: ' + error.message, 'error');
-    }
-}
-
-async function saveSepaySettings() {
-    const accountNumber = document.getElementById('sepayAccountNumber').value.trim();
-    const apiToken = document.getElementById('sepayApiToken').value.trim();
-    
-    if (!accountNumber || !apiToken) {
-        showToast('Vui lòng điền đầy đủ thông tin!', 'error');
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'updatePaymentSettings',
-                payload: {
-                    paymentMethod: 'sepay',
-                    config: { accountNumber, apiToken }
+    charts.userGrowth = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => new Date(d.date).toLocaleDateString('vi-VN')),
+            datasets: [{
+                label: 'Người dùng mới',
+                data: data.map(d => d.count),
+                backgroundColor: 'rgb(59, 130, 246)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
                 }
-            })
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast('✅ Đã lưu cấu hình SePay!', 'success');
-            await loadPaymentSettings();
-        } else {
-            showToast('Lỗi: ' + data.message, 'error');
+            }
         }
-    } catch (error) {
-        showToast('Lỗi kết nối: ' + error.message, 'error');
-    }
+    });
 }
 
-async function saveMomoSettings() {
-    const partnerCode = document.getElementById('momoPartnerCode').value.trim();
-    const accessKey = document.getElementById('momoAccessKey').value.trim();
-    const secretKey = document.getElementById('momoSecretKey').value.trim();
+// VIP Distribution Chart
+function renderVipDistributionChart(data) {
+    const ctx = document.getElementById('vipDistributionChart').getContext('2d');
     
-    if (!partnerCode || !accessKey || !secretKey) {
-        showToast('Vui lòng điền đầy đủ thông tin!', 'error');
-        return;
-    }
+    if (charts.vipDistribution) charts.vipDistribution.destroy();
     
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'updatePaymentSettings',
-                payload: {
-                    paymentMethod: 'momo',
-                    config: { partnerCode, accessKey, secretKey }
+    const planNames = {
+        '1day': '1 ngày',
+        '3days': '3 ngày',
+        '7days': '7 ngày',
+        '30days': '30 ngày',
+        'infinite': 'Vĩnh viễn'
+    };
+    
+    charts.vipDistribution = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: data.map(d => planNames[d.plan_type] || d.plan_type),
+            datasets: [{
+                data: data.map(d => d.count),
+                backgroundColor: [
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(251, 146, 60)',
+                    'rgb(147, 51, 234)',
+                    'rgb(236, 72, 153)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
                 }
-            })
-        });
-        const data = await response.json();
-        
-        if (data.success) {
-            showToast('✅ Đã lưu cấu hình MoMo!', 'success');
-            await loadPaymentSettings();
-        } else {
-            showToast('Lỗi: ' + data.message, 'error');
+            }
         }
-    } catch (error) {
-        showToast('Lỗi kết nối: ' + error.message, 'error');
-    }
+    });
+}
+
+// Order Status Chart
+function renderOrderStatusChart(orders) {
+    const ctx = document.getElementById('orderStatusChart').getContext('2d');
+    
+    if (charts.orderStatus) charts.orderStatus.destroy();
+    
+    charts.orderStatus = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Đã thanh toán', 'Chưa thanh toán', 'Đã hủy'],
+            datasets: [{
+                data: [orders.paid, orders.unpaid, orders.cancelled],
+                backgroundColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(251, 146, 60)',
+                    'rgb(239, 68, 68)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Recent Activities
+function renderRecentActivities(activities) {
+    const html = activities.map(activity => `
+        <div class="border-b border-gray-200 py-3">
+            <div class="flex justify-between items-start">
+                <div>
+                    <span class="font-semibold text-gray-800">${activity.user_id}</span>
+                    <span class="text-gray-600 ml-2">${activity.action}</span>
+                    ${activity.details ? `<p class="text-sm text-gray-500 mt-1">${activity.details}</p>` : ''}
+                </div>
+                <span class="text-xs text-gray-400">${new Date(activity.created_at).toLocaleString('vi-VN')}</span>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('recentActivitiesList').innerHTML = html || '<p class="text-gray-500 text-center py-4">Chưa có hoạt động nào</p>';
+}
+
+// Helper: Format currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount);
 }

@@ -286,82 +286,83 @@ async function deleteSubscription(payload) {
     }
 }
 
-// ===== PAYMENT SETTINGS MANAGEMENT =====
-async function getPaymentSettings() {
+// ===== DASHBOARD STATISTICS =====
+async function getDashboardStats() {
     const connection = await pool.getConnection();
     try {
-        const [settings] = await connection.query(`
-            SELECT * FROM payment_settings ORDER BY payment_method
-        `);
-        return { success: true, settings };
-    } finally {
-        connection.release();
-    }
-}
-
-async function updatePaymentSettings(payload) {
-    const { paymentMethod, config } = payload;
-    if (!paymentMethod || !['sepay', 'momo'].includes(paymentMethod)) {
-        return { success: false, message: 'Invalid payment method' };
-    }
-
-    const connection = await pool.getConnection();
-    try {
-        await connection.beginTransaction();
-
-        if (paymentMethod === 'sepay') {
-            const { accountNumber, apiToken } = config;
-            await connection.query(
-                `UPDATE payment_settings 
-                SET sepay_account_number = ?, sepay_api_token = ?, updated_at = NOW() 
-                WHERE payment_method = 'sepay'`,
-                [accountNumber, apiToken]
-            );
-        } else if (paymentMethod === 'momo') {
-            const { partnerCode, accessKey, secretKey } = config;
-            await connection.query(
-                `UPDATE payment_settings 
-                SET momo_partner_code = ?, momo_access_key = ?, momo_secret_key = ?, updated_at = NOW() 
-                WHERE payment_method = 'momo'`,
-                [partnerCode, accessKey, secretKey]
-            );
-        }
-
-        await connection.commit();
-        return { success: true, message: 'Payment settings updated successfully' };
-    } catch (error) {
-        await connection.rollback();
-        return { success: false, message: 'Failed to update settings', error: error.message };
-    } finally {
-        connection.release();
-    }
-}
-
-async function setActivePaymentMethod(payload) {
-    const { paymentMethod } = payload;
-    if (!paymentMethod || !['sepay', 'momo'].includes(paymentMethod)) {
-        return { success: false, message: 'Invalid payment method' };
-    }
-
-    const connection = await pool.getConnection();
-    try {
-        await connection.beginTransaction();
-
-        // Deactivate all payment methods
-        await connection.query('UPDATE payment_settings SET is_active = 0');
-
-        // Activate selected payment method
-        await connection.query(
-            'UPDATE payment_settings SET is_active = 1 WHERE payment_method = ?',
-            [paymentMethod]
+        // Total users
+        const [totalUsers] = await connection.query('SELECT COUNT(*) as count FROM users');
+        
+        // VIP users (active)
+        const [vipUsers] = await connection.query(
+            'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
         );
-
-        await connection.commit();
-        return { success: true, message: `Payment method switched to ${paymentMethod}` };
-    } catch (error) {
-        await connection.rollback();
-        return { success: false, message: 'Failed to switch payment method', error: error.message };
+        
+        // Total revenue
+        const [revenue] = await connection.query(
+            'SELECT SUM(amount) as total FROM orders WHERE payment_status = "Paid"'
+        );
+        
+        // Orders count
+        const [orders] = await connection.query('SELECT COUNT(*) as count FROM orders');
+        const [paidOrders] = await connection.query('SELECT COUNT(*) as count FROM orders WHERE payment_status = "Paid"');
+        const [unpaidOrders] = await connection.query('SELECT COUNT(*) as count FROM orders WHERE payment_status = "Unpaid"');
+        const [cancelledOrders] = await connection.query('SELECT COUNT(*) as count FROM orders WHERE payment_status = "Cancelled"');
+        
+        // Revenue by date (last 30 days)
+        const [revenueByDate] = await connection.query(`
+            SELECT DATE(paid_at) as date, SUM(amount) as revenue
+            FROM orders 
+            WHERE payment_status = 'Paid' AND paid_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(paid_at)
+            ORDER BY date ASC
+        `);
+        
+        // User growth (last 30 days)
+        const [userGrowth] = await connection.query(`
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM users
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `);
+        
+        // VIP plan distribution
+        const [vipDistribution] = await connection.query(`
+            SELECT plan_type, COUNT(*) as count
+            FROM vip_subscriptions
+            WHERE expiry_date > NOW()
+            GROUP BY plan_type
+        `);
+        
+        // Recent activities
+        const [recentActivities] = await connection.query(`
+            SELECT * FROM activity_logs
+            ORDER BY created_at DESC
+            LIMIT 10
+        `);
+        
+        return {
+            success: true,
+            stats: {
+                totalUsers: totalUsers[0].count,
+                vipUsers: vipUsers[0].count,
+                totalRevenue: revenue[0].total || 0,
+                orders: {
+                    total: orders[0].count,
+                    paid: paidOrders[0].count,
+                    unpaid: unpaidOrders[0].count,
+                    cancelled: cancelledOrders[0].count
+                },
+                revenueByDate,
+                userGrowth,
+                vipDistribution,
+                recentActivities
+            }
+        };
     } finally {
         connection.release();
     }
 }
+
+// ===== END DASHBOARD =====

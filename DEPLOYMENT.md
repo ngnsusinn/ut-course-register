@@ -3,32 +3,21 @@
 ## ✅ Pre-Deployment
 
 ### 1. Database Setup
-- [ ] Import `roacqgfa_reg_updated.sql` vào MySQL database
+- [ ] Import `roacqgfa_reg_rollback.sql` vào MySQL database
 - [ ] Verify database timezone = UTC+7
 - [ ] Test database connection: `npm run test:db`
 - [ ] Check admin account exists in `admins` table
 
 ### 2. Environment Variables
-- [ ] Copy `.env.example` → `.env`
+- [ ] Create `.env` file
 - [ ] Set database credentials (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)
 - [ ] Set BASE_URL to your domain
 - [ ] Set FRONTEND_URL to your domain
 - [ ] Set NODE_ENV=production
 
 ### 3. Payment Gateway Configuration
-
-#### Option A: Via Admin Panel (Recommended)
-- [ ] Login to `/admin`
-- [ ] Go to Settings (⚙️ Cài đặt)
-- [ ] Configure SePay or MoMo credentials
-- [ ] Activate desired payment method
-
-#### Option B: Via Environment Variables
-- [ ] Set MOMO_PARTNER_CODE (if using MoMo)
-- [ ] Set MOMO_ACCESS_KEY
-- [ ] Set MOMO_SECRET_KEY
-- [ ] Set MOMO_REDIRECT_URL (your domain + /payment/return)
-- [ ] Set MOMO_IPN_URL (your domain + /api/momo-webhook)
+- [ ] Configure SePay credentials in `.env` or via webhook
+- [ ] System uses SePay only (MoMo removed in v2.2.0)
 
 ### 4. Code Quality
 - [ ] No syntax errors: Run `get_errors`
@@ -86,29 +75,28 @@
 - [ ] Test main handler: `https://yourdomain.com/api/handler`
 - [ ] Test admin handler: `https://yourdomain.com/api/admin-handler`
 - [ ] Test SePay webhook: `https://yourdomain.com/api/sepay-webhook`
-- [ ] Test MoMo webhook: `https://yourdomain.com/api/momo-webhook`
 
 ### 2. Test User Flow
 - [ ] Access homepage: `https://yourdomain.com`
 - [ ] Login with test account
 - [ ] View schedule
 - [ ] Create VIP order
-- [ ] Verify payment flow (SePay or MoMo)
+- [ ] Verify payment flow (SePay only)
 - [ ] Check VIP activation after payment
 
 ### 3. Test Admin Panel
 - [ ] Access: `https://yourdomain.com/admin`
 - [ ] Login with admin credentials
 - [ ] Check all tabs load correctly:
-  - [ ] 👥 Người dùng
+  - [ ] � Dashboard (analytics with charts)
+  - [ ] �👥 Người dùng
   - [ ] 💎 VIP
   - [ ] 🛒 Đơn hàng
   - [ ] 💰 Giao dịch
   - [ ] 📋 Logs
-  - [ ] ⚙️ Cài đặt
+- [ ] Verify dashboard charts render
 - [ ] Add VIP subscription manually
-- [ ] Switch payment methods
-- [ ] Update payment settings
+- [ ] Test tab switching
 
 ### 4. Webhook Configuration
 
@@ -116,12 +104,6 @@
 - [ ] Login to SePay dashboard
 - [ ] Set webhook URL: `https://yourdomain.com/api/sepay-webhook`
 - [ ] Test webhook with real transaction
-
-#### MoMo
-- [ ] Login to MoMo Business Portal
-- [ ] Set IPN URL: `https://yourdomain.com/api/momo-webhook`
-- [ ] Set Return URL: `https://yourdomain.com/payment/return`
-- [ ] Test with MoMo test payment
 
 ### 5. Security Check
 - [ ] HTTPS enabled (SSL certificate)
@@ -181,11 +163,11 @@
 
 ## 📞 Support
 
-- Documentation: `/MOMO_INTEGRATION.md`
 - README: `/README.md`
+- Rollback Summary: `/ROLLBACK_SUMMARY.md`
 - Issues: Create issue on GitHub
 
 ---
 
 **Last Updated**: October 28, 2025
-**Version**: 2.1.0
+**Version**: 2.2.0

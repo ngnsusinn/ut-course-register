@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UTH Admin Panel - Quản lý hệ thống</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -150,18 +151,78 @@
         <div class="bg-white border-b shadow-sm">
             <div class="container mx-auto px-4">
                 <nav class="flex space-x-8 overflow-x-auto">
-                    <button onclick="switchTab('users')" class="tab-btn tab-active py-4 text-sm font-medium whitespace-nowrap" data-tab="users">👥 Quản lý Users</button>
-                    <button onclick="switchTab('subscriptions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="subscriptions">⭐ VIP Subscriptions</button>
-                    <button onclick="switchTab('orders')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="orders">📦 Đơn hàng</button>
-                    <button onclick="switchTab('transactions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="transactions">💳 Giao dịch</button>
-                    <button onclick="switchTab('logs')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="logs">📋 Nhật ký</button>
-                    <button onclick="switchTab('settings')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="settings">⚙️ Cài đặt</button>
+                    <button onclick="switchTab('dashboard')" class="tab-btn tab-active py-4 text-sm font-medium whitespace-nowrap" data-tab="dashboard">� Dashboard</button>
+                    <button onclick="switchTab('users')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="users">👥 Người dùng</button>
+                    <button onclick="switchTab('subscriptions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="subscriptions">💎 VIP</button>
+                    <button onclick="switchTab('orders')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="orders">� Đơn hàng</button>
+                    <button onclick="switchTab('transactions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="transactions">� Giao dịch</button>
+                    <button onclick="switchTab('logs')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="logs">📋 Logs</button>
                 </nav>
             </div>
         </div>
 
         <!-- Content -->
         <main class="container mx-auto px-4 py-8">
+            <!-- Dashboard Tab -->
+            <div id="dashboardTab" class="tab-content">
+                <h2 class="text-2xl font-bold mb-6">📊 Dashboard Overview</h2>
+                
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                        <div class="text-sm text-blue-600 font-semibold">TỔNG NGƯỜI DÙNG</div>
+                        <div class="text-3xl font-bold text-blue-900 mt-2" id="totalUsers">0</div>
+                    </div>
+                    
+                    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
+                        <div class="text-sm text-green-600 font-semibold">NGƯỜI DÙNG VIP</div>
+                        <div class="text-3xl font-bold text-green-900 mt-2" id="vipUsers">0</div>
+                    </div>
+                    
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg">
+                        <div class="text-sm text-purple-600 font-semibold">TỔNG DOANH THU</div>
+                        <div class="text-3xl font-bold text-purple-900 mt-2" id="totalRevenue">0đ</div>
+                    </div>
+                    
+                    <div class="bg-orange-50 border-l-4 border-orange-500 p-6 rounded-lg">
+                        <div class="text-sm text-orange-600 font-semibold">ĐƠN HÀNG</div>
+                        <div class="text-3xl font-bold text-orange-900 mt-2" id="totalOrders">0</div>
+                    </div>
+                </div>
+                
+                <!-- Charts Row 1 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Doanh thu 30 ngày qua</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Tăng trưởng người dùng</h3>
+                        <canvas id="userGrowthChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Charts Row 2 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Phân bố gói VIP</h3>
+                        <canvas id="vipDistributionChart"></canvas>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-lg font-semibold mb-4">Trạng thái đơn hàng</h3>
+                        <canvas id="orderStatusChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Activities -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-4">Hoạt động gần đây</h3>
+                    <div id="recentActivitiesList" class="space-y-2"></div>
+                </div>
+            </div>
+
             <!-- Users Tab -->
             <div id="usersTab" class="tab-content">
                 <div class="bg-white rounded-xl shadow-md p-6">
@@ -318,77 +379,6 @@
                             </thead>
                             <tbody id="logsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div id="settingsTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6">⚙️ Cài đặt thanh toán</h2>
-                    
-                    <!-- Payment Method Selector -->
-                    <div class="mb-8 p-6 bg-blue-50 rounded-lg">
-                        <h3 class="text-lg font-semibold mb-4">Phương thức thanh toán hiện tại</h3>
-                        <div class="flex gap-4">
-                            <button id="selectSepay" onclick="setPaymentMethod('sepay')" class="payment-method-btn flex-1 px-6 py-4 rounded-lg border-2 transition-all">
-                                <div class="text-2xl mb-2">🏦</div>
-                                <div class="font-bold">SePay</div>
-                                <div class="text-sm text-gray-600">Chuyển khoản ngân hàng</div>
-                            </button>
-                            <button id="selectMomo" onclick="setPaymentMethod('momo')" class="payment-method-btn flex-1 px-6 py-4 rounded-lg border-2 transition-all">
-                                <div class="text-2xl mb-2">💳</div>
-                                <div class="font-bold">MoMo</div>
-                                <div class="text-sm text-gray-600">Ví điện tử MoMo</div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- SePay Settings -->
-                    <div id="sepaySettings" class="mb-6 p-6 bg-gray-50 rounded-lg hidden">
-                        <h3 class="text-lg font-semibold mb-4">🏦 Cấu hình SePay</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Số tài khoản</label>
-                                <input type="text" id="sepayAccountNumber" placeholder="01006022006" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">API Token</label>
-                                <input type="password" id="sepayApiToken" placeholder="Your SePay API Token" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <button onclick="saveSepaySettings()" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
-                                💾 Lưu cấu hình SePay
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- MoMo Settings -->
-                    <div id="momoSettings" class="mb-6 p-6 bg-gray-50 rounded-lg hidden">
-                        <h3 class="text-lg font-semibold mb-4">💳 Cấu hình MoMo</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Partner Code</label>
-                                <input type="text" id="momoPartnerCode" placeholder="MOMO" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Access Key</label>
-                                <input type="text" id="momoAccessKey" placeholder="F8BBA842ECF85" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Secret Key</label>
-                                <input type="password" id="momoSecretKey" placeholder="K951B6PE1waDMi640xX08PD3vg6EkVlz" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <button onclick="saveMomoSettings()" class="w-full bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition font-semibold">
-                                💾 Lưu cấu hình MoMo
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Info Box -->
-                    <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p class="text-sm text-yellow-800">
-                            <strong>⚠️ Lưu ý:</strong> Sau khi thay đổi phương thức thanh toán, tất cả đơn hàng mới sẽ sử dụng phương thức được chọn. Đảm bảo bạn đã cấu hình đầy đủ thông tin trước khi kích hoạt.
-                        </p>
                     </div>
                 </div>
             </div>

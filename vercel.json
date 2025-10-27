@@ -10,10 +10,6 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/momo-webhook.js",
-      "use": "@vercel/node"
-    },
-    {
       "src": "api/admin-handler.js",
       "use": "@vercel/node"
     },
@@ -30,10 +26,6 @@
     {
       "src": "/api/sepay-webhook",
       "dest": "/api/sepay-webhook.js"
-    },
-    {
-      "src": "/api/momo-webhook",
-      "dest": "/api/momo-webhook.js"
     },
     {
       "src": "/api/admin-handler",

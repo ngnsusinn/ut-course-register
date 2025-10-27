@@ -1,7 +1,7 @@
 {
   "name": "uth-secure-tool",
-  "version": "2.1.0",
-  "description": "Secure UTH Course Registration Tool with VIP features and Payment integration (SePay & MoMo)",
+  "version": "2.2.0",
+  "description": "Secure UTH Course Registration Tool with VIP features and SePay Payment (MoMo Removed)",
   "main": "api/handler.js",
   "scripts": {
     "dev": "vercel dev",
@@ -26,7 +26,6 @@
     "uth",
     "course-registration",
     "sepay",
-    "momo",
     "payment",
     "vip",
     "education",
