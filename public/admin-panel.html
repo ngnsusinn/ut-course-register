@@ -10,7 +10,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        body { 
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
         .loader { 
             border: 3px solid #f3f3f3; 
             border-top: 3px solid #2563eb; 
@@ -56,9 +60,10 @@
             min-width: 300px;
             max-width: 500px;
             padding: 16px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             animation: slideInRight 0.3s ease-out;
+            backdrop-filter: blur(10px);
         }
         @keyframes slideInRight {
             from { transform: translateX(400px); opacity: 0; }
@@ -71,22 +76,50 @@
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(400px); opacity: 0; }
         }
+        
         ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
         .tab-active { 
             border-bottom: 3px solid #2563eb; 
             color: #2563eb; 
             font-weight: 600;
+            background: linear-gradient(to bottom, transparent, rgba(37, 99, 235, 0.05));
         }
+        
         .hidden { display: none; }
         .search-highlight { background-color: #fef3c7; }
+        
+        .card-gradient {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%);
+            backdrop-filter: blur(10px);
+        }
+        
+        .kpi-card {
+            transition: all 0.3s ease;
+            border-left-width: 4px;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .btn-primary {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
         
         .payment-method-btn {
             background: white;
             border-color: #e5e7eb;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         .payment-method-btn:hover {
             border-color: #2563eb;
@@ -98,66 +131,189 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
         
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
         @media screen and (max-width: 768px) {
             .responsive-table table thead { display: none; }
-            .responsive-table table tr { display: block; margin-bottom: 1rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
-            .responsive-table table th[scope="row"] { display: block; font-size: 1.1rem; padding: 0.75rem; background-color: #f7fafc; border-bottom: 1px solid #e2e8f0; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
-            .responsive-table table td { display: flex; justify-content: space-between; align-items: center; text-align: right; padding: 0.75rem; border-bottom: 1px solid #edf2f7; }
+            .responsive-table table tr { 
+                display: block; 
+                margin-bottom: 1rem; 
+                border: 1px solid #e2e8f0; 
+                border-radius: 0.75rem; 
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                overflow: hidden;
+            }
+            .responsive-table table th[scope="row"] { 
+                display: block; 
+                font-size: 1.1rem; 
+                padding: 0.75rem; 
+                background-color: #f7fafc; 
+                border-bottom: 1px solid #e2e8f0; 
+            }
+            .responsive-table table td { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                text-align: right; 
+                padding: 0.75rem; 
+                border-bottom: 1px solid #edf2f7; 
+            }
             .responsive-table table td:last-child { border-bottom: none; }
-            .responsive-table table td::before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 1rem; }
+            .responsive-table table td::before { 
+                content: attr(data-label); 
+                font-weight: 600; 
+                text-align: left; 
+                padding-right: 1rem; 
+                color: #64748b;
+            }
+        }
+        
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease-in;
+        }
+        
+        .modal-content {
+            animation: modalSlideUp 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="min-h-screen">
     <!-- Login Screen -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4">
-        <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-            <div class="text-center mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">🔐 UTH Admin Panel</h1>
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4 py-8">
+        <div class="bg-white/95 backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
+            <div class="text-center mb-8">
+                <div class="inline-block p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
+                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">UTH Admin Panel</h1>
                 <p class="text-gray-600">Hệ thống quản lý tài khoản và VIP</p>
             </div>
-            <div id="loginError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4"></div>
-            <div class="space-y-4">
-                <input type="text" id="username" placeholder="Tên đăng nhập" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <input type="password" id="password" placeholder="Mật khẩu" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="login()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">Đăng nhập</button>
+            <div id="loginError" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg mb-4 fade-in">
+                <div class="flex items-center">
+                    <span class="text-xl mr-2">⚠️</span>
+                    <span id="loginErrorText"></span>
+                </div>
             </div>
-            <p class="text-xs text-gray-500 mt-4 text-center">Default: admin/admin123 hoặc sunsin/password123</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tên đăng nhập</label>
+                    <input type="text" id="username" placeholder="Nhập tên đăng nhập" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
+                    <input type="password" id="password" placeholder="Nhập mật khẩu" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+                <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
+                    Đăng nhập
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-6 text-center bg-gray-50 py-2 px-4 rounded-lg">
+                💡 Default: <code class="bg-gray-200 px-2 py-1 rounded">admin/admin123</code> hoặc <code class="bg-gray-200 px-2 py-1 rounded">sunsin/password123</code>
+            </p>
         </div>
     </div>
 
     <!-- Admin Dashboard -->
-    <div id="adminDashboard" class="hidden min-h-screen bg-gray-50">
+    <div id="adminDashboard" class="hidden min-h-screen">
         <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
+        <header class="bg-white/95 backdrop-blur-lg shadow-lg border-b border-gray-200 sticky top-0 z-40">
             <div class="container mx-auto px-4 py-6">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="text-center sm:text-left">
-                        <h1 class="text-3xl font-bold text-blue-600">UTH Admin Panel</h1>
-                        <p class="text-gray-600 mt-1">Hệ thống quản lý tài khoản và VIP</p>
+                    <div class="text-center sm:text-left flex items-center gap-3">
+                        <div class="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">UTH Admin Panel</h1>
+                            <p class="text-gray-600 text-sm mt-0.5">Hệ thống quản lý tài khoản và VIP</p>
+                        </div>
                     </div>
                     <div class="flex items-center gap-4">
-                        <div class="text-right">
-                            <span class="text-sm text-gray-600">👤 Admin:</span>
-                            <span id="adminUsername" class="font-semibold text-blue-600"></span>
+                        <div class="text-right bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
+                            <span class="text-xs text-gray-500 block">Quản trị viên</span>
+                            <span id="adminUsername" class="font-semibold text-blue-600 text-sm"></span>
                         </div>
-                        <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition font-semibold">Đăng xuất</button>
+                        <button onclick="logout()" class="bg-gradient-to-r from-red-500 to-pink-600 text-white px-5 py-2.5 rounded-xl hover:from-red-600 hover:to-pink-700 transition font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                            Đăng xuất
+                        </button>
                     </div>
                 </div>
             </div>
         </header>
 
         <!-- Tabs Navigation -->
-        <div class="bg-white border-b shadow-sm">
+        <div class="bg-white/95 backdrop-blur-lg border-b shadow-sm sticky top-[104px] z-30">
             <div class="container mx-auto px-4">
-                <nav class="flex space-x-8 overflow-x-auto">
-                    <button onclick="switchTab('dashboard')" class="tab-btn tab-active py-4 text-sm font-medium whitespace-nowrap" data-tab="dashboard">� Dashboard</button>
-                    <button onclick="switchTab('users')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="users">👥 Người dùng</button>
-                    <button onclick="switchTab('vipPlans')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="vipPlans">⚙️ Gói VIP</button>
-                    <button onclick="switchTab('subscriptions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="subscriptions">💎 VIP</button>
-                    <button onclick="switchTab('orders')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="orders">� Đơn hàng</button>
-                    <button onclick="switchTab('transactions')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="transactions">� Giao dịch</button>
-                    <button onclick="switchTab('logs')" class="tab-btn py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap" data-tab="logs">📋 Logs</button>
+                <nav class="flex space-x-1 overflow-x-auto">
+                    <button onclick="switchTab('dashboard')" class="tab-btn tab-active px-6 py-4 text-sm font-medium whitespace-nowrap rounded-t-lg transition" data-tab="dashboard">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">📊</span>
+                            <span>Dashboard</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('users')" class="tab-btn px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap rounded-t-lg transition hover:bg-gray-50" data-tab="users">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">👥</span>
+                            <span>Người dùng</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('vipPlans')" class="tab-btn px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap rounded-t-lg transition hover:bg-gray-50" data-tab="vipPlans">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">⚙️</span>
+                            <span>Gói VIP</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('subscriptions')" class="tab-btn px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap rounded-t-lg transition hover:bg-gray-50" data-tab="subscriptions">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">💎</span>
+                            <span>VIP</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('orders')" class="tab-btn px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap rounded-t-lg transition hover:bg-gray-50" data-tab="orders">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">📦</span>
+                            <span>Đơn hàng</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('transactions')" class="tab-btn px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap rounded-t-lg transition hover:bg-gray-50" data-tab="transactions">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">💰</span>
+                            <span>Giao dịch</span>
+                        </span>
+                    </button>
+                    <button onclick="switchTab('logs')" class="tab-btn px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap rounded-t-lg transition hover:bg-gray-50" data-tab="logs">
+                        <span class="flex items-center gap-2">
+                            <span class="text-lg">📋</span>
+                            <span>Logs</span>
+                        </span>
+                    </button>
                 </nav>
             </div>
         </div>
@@ -166,83 +322,122 @@
         <main class="container mx-auto px-4 py-8">
             <!-- Dashboard Tab -->
             <div id="dashboardTab" class="tab-content">
-                <h2 class="text-2xl font-bold mb-6">📊 Dashboard Overview</h2>
+                <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                    <span class="text-3xl">📊</span>
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Dashboard Overview</span>
+                </h2>
                 
                 <!-- KPI Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-                        <div class="text-sm text-blue-600 font-semibold">TỔNG NGƯỜI DÙNG</div>
-                        <div class="text-3xl font-bold text-blue-900 mt-2" id="totalUsers">0</div>
+                    <div class="kpi-card bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 p-6 rounded-xl shadow-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm text-blue-700 font-semibold tracking-wide">TỔNG NGƯỜI DÙNG</div>
+                            <span class="text-3xl">👥</span>
+                        </div>
+                        <div class="text-4xl font-bold text-blue-900 mt-2" id="totalUsers">0</div>
+                        <div class="text-xs text-blue-600 mt-2">Tổng số người dùng đã đăng ký</div>
                     </div>
                     
-                    <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
-                        <div class="text-sm text-green-600 font-semibold">NGƯỜI DÙNG VIP</div>
-                        <div class="text-3xl font-bold text-green-900 mt-2" id="vipUsers">0</div>
+                    <div class="kpi-card bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 p-6 rounded-xl shadow-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm text-green-700 font-semibold tracking-wide">NGƯỜI DÙNG VIP</div>
+                            <span class="text-3xl">💎</span>
+                        </div>
+                        <div class="text-4xl font-bold text-green-900 mt-2" id="vipUsers">0</div>
+                        <div class="text-xs text-green-600 mt-2">Người dùng có gói VIP đang hoạt động</div>
                     </div>
                     
-                    <div class="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg">
-                        <div class="text-sm text-purple-600 font-semibold">TỔNG DOANH THU</div>
-                        <div class="text-3xl font-bold text-purple-900 mt-2" id="totalRevenue">0đ</div>
+                    <div class="kpi-card bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 p-6 rounded-xl shadow-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm text-purple-700 font-semibold tracking-wide">TỔNG DOANH THU</div>
+                            <span class="text-3xl">💰</span>
+                        </div>
+                        <div class="text-4xl font-bold text-purple-900 mt-2" id="totalRevenue">0đ</div>
+                        <div class="text-xs text-purple-600 mt-2">Tổng doanh thu từ các đơn hàng</div>
                     </div>
                     
-                    <div class="bg-orange-50 border-l-4 border-orange-500 p-6 rounded-lg">
-                        <div class="text-sm text-orange-600 font-semibold">ĐƠN HÀNG</div>
-                        <div class="text-3xl font-bold text-orange-900 mt-2" id="totalOrders">0</div>
+                    <div class="kpi-card bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-500 p-6 rounded-xl shadow-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm text-orange-700 font-semibold tracking-wide">ĐƠN HÀNG</div>
+                            <span class="text-3xl">📦</span>
+                        </div>
+                        <div class="text-4xl font-bold text-orange-900 mt-2" id="totalOrders">0</div>
+                        <div class="text-xs text-orange-600 mt-2">Tổng số đơn hàng đã tạo</div>
                     </div>
                 </div>
                 
                 <!-- Charts Row 1 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Doanh thu 30 ngày qua</h3>
+                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-xl">📈</span>
+                            <span>Doanh thu 30 ngày qua</span>
+                        </h3>
                         <canvas id="revenueChart"></canvas>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Tăng trưởng người dùng</h3>
+                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-xl">👤</span>
+                            <span>Tăng trưởng người dùng</span>
+                        </h3>
                         <canvas id="userGrowthChart"></canvas>
                     </div>
                 </div>
                 
                 <!-- Charts Row 2 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Phân bố gói VIP</h3>
+                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-xl">📊</span>
+                            <span>Phân bố gói VIP</span>
+                        </h3>
                         <canvas id="vipDistributionChart"></canvas>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-semibold mb-4">Trạng thái đơn hàng</h3>
+                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <span class="text-xl">📦</span>
+                            <span>Trạng thái đơn hàng</span>
+                        </h3>
                         <canvas id="orderStatusChart"></canvas>
                     </div>
                 </div>
                 
                 <!-- Recent Activities -->
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-4">Hoạt động gần đây</h3>
+                <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-xl">⚡</span>
+                        <span>Hoạt động gần đây</span>
+                    </h3>
                     <div id="recentActivitiesList" class="space-y-2"></div>
                 </div>
             </div>
+
             <!-- Users Tab -->
-            <div id="usersTab" class="tab-content">
-                <div class="bg-white rounded-xl shadow-md p-6">
+            <div id="usersTab" class="tab-content hidden">
+                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold text-gray-800">Quản lý Users</h2>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">👥</span>
+                            <span>Quản lý Người dùng</span>
+                        </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." oninput="pagination.users.currentPage = 1; renderUsers();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <button onclick="refreshData('users')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center">
-                                🔄 Refresh
+                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." oninput="pagination.users.currentPage = 1; renderUsers();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <button onclick="refreshData('users')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2">
+                                <span class="text-lg">🔄</span>
+                                <span>Refresh</span>
                             </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto responsive-table">
                         <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3">User Info</th>
-                                    <th class="px-6 py-3">VIP Status</th>
-                                    <th class="px-6 py-3">Ngày hết hạn</th>
-                                    <th class="px-6 py-3">Actions</th>
+                                    <th class="px-6 py-4 font-semibold">User Info</th>
+                                    <th class="px-6 py-4 font-semibold">VIP Status</th>
+                                    <th class="px-6 py-4 font-semibold">Ngày hết hạn</th>
+                                    <th class="px-6 py-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -255,28 +450,35 @@
 
             <!-- VIP Plans Management Tab -->
             <div id="vipPlansTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold text-gray-800">⚙️ Quản lý Gói VIP</h2>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">⚙️</span>
+                            <span>Quản lý Gói VIP</span>
+                        </h2>
                         <div class="flex gap-3">
-                            <button onclick="refreshData('vipPlans')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
-                            <button onclick="openCreatePlanModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold flex items-center">
-                                ➕ Thêm gói mới
+                            <button onclick="refreshData('vipPlans')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                                <span class="text-lg">🔄</span>
+                                <span>Refresh</span>
+                            </button>
+                            <button onclick="openCreatePlanModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-5 py-2.5 rounded-xl hover:from-green-700 hover:to-emerald-700 transition font-semibold flex items-center gap-2 shadow-lg">
+                                <span class="text-lg">➕</span>
+                                <span>Thêm gói mới</span>
                             </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto responsive-table">
                         <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3">ID</th>
-                                    <th class="px-6 py-3">Plan Key</th>
-                                    <th class="px-6 py-3">Tên gói</th>
-                                    <th class="px-6 py-3">Thời hạn (ngày)</th>
-                                    <th class="px-6 py-3">Giá (VNĐ)</th>
-                                    <th class="px-6 py-3">Trạng thái</th>
-                                    <th class="px-6 py-3">Thứ tự</th>
-                                    <th class="px-6 py-3">Actions</th>
+                                    <th class="px-6 py-4 font-semibold">ID</th>
+                                    <th class="px-6 py-4 font-semibold">Plan Key</th>
+                                    <th class="px-6 py-4 font-semibold">Tên gói</th>
+                                    <th class="px-6 py-4 font-semibold">Thời hạn (ngày)</th>
+                                    <th class="px-6 py-4 font-semibold">Giá (VNĐ)</th>
+                                    <th class="px-6 py-4 font-semibold">Trạng thái</th>
+                                    <th class="px-6 py-4 font-semibold">Thứ tự</th>
+                                    <th class="px-6 py-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="vipPlansTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -288,30 +490,36 @@
 
             <!-- VIP Subscriptions Tab -->
             <div id="subscriptionsTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold text-gray-800">VIP Subscriptions</h2>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">💎</span>
+                            <span>VIP Subscriptions</span>
+                        </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="subscriptionsFilter" onchange="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="subscriptionsFilter" onchange="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="active">Active</option>
                                 <option value="expired">Expired</option>
                             </select>
-                            <button onclick="refreshData('subscriptions')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                            <button onclick="refreshData('subscriptions')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                                <span class="text-lg">🔄</span>
+                                <span>Refresh</span>
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto responsive-table">
                         <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3">ID</th>
-                                    <th class="px-6 py-3">User ID</th>
-                                    <th class="px-6 py-3">Plan Type</th>
-                                    <th class="px-6 py-3">Trạng thái</th>
-                                    <th class="px-6 py-3">Hết hạn</th>
-                                    <th class="px-6 py-3">Tạo lúc</th>
-                                    <th class="px-6 py-3">Actions</th>
+                                    <th class="px-6 py-4 font-semibold">ID</th>
+                                    <th class="px-6 py-4 font-semibold">User ID</th>
+                                    <th class="px-6 py-4 font-semibold">Plan Type</th>
+                                    <th class="px-6 py-4 font-semibold">Trạng thái</th>
+                                    <th class="px-6 py-4 font-semibold">Hết hạn</th>
+                                    <th class="px-6 py-4 font-semibold">Tạo lúc</th>
+                                    <th class="px-6 py-4 font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="subscriptionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -323,30 +531,36 @@
 
             <!-- Orders Tab -->
             <div id="ordersTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold text-gray-800">Quản lý Đơn hàng</h2>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">📦</span>
+                            <span>Quản lý Đơn hàng</span>
+                        </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="ordersFilter" onchange="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="ordersFilter" onchange="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="Paid">Đã thanh toán</option>
                                 <option value="Unpaid">Chưa thanh toán</option>
                                 <option value="Cancelled">Đã hủy</option>
                             </select>
-                            <button onclick="refreshData('orders')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                            <button onclick="refreshData('orders')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                                <span class="text-lg">🔄</span>
+                                <span>Refresh</span>
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto responsive-table">
                         <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3">ID</th>
-                                    <th class="px-6 py-3">User ID</th>
-                                    <th class="px-6 py-3">Plan</th>
-                                    <th class="px-6 py-3">Số tiền</th>
-                                    <th class="px-6 py-3">Trạng thái</th>
-                                    <th class="px-6 py-3">Thời gian tạo</th>
+                                    <th class="px-6 py-4 font-semibold">ID</th>
+                                    <th class="px-6 py-4 font-semibold">User ID</th>
+                                    <th class="px-6 py-4 font-semibold">Plan</th>
+                                    <th class="px-6 py-4 font-semibold">Số tiền</th>
+                                    <th class="px-6 py-4 font-semibold">Trạng thái</th>
+                                    <th class="px-6 py-4 font-semibold">Thời gian tạo</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -358,25 +572,31 @@
 
             <!-- Transactions Tab -->
             <div id="transactionsTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold text-gray-800">Giao dịch SePay</h2>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">💰</span>
+                            <span>Giao dịch SePay</span>
+                        </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <input type="number" id="amountFilter" placeholder="Số tiền..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
-                            <button onclick="refreshData('transactions')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <input type="number" id="amountFilter" placeholder="Số tiền..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                            <button onclick="refreshData('transactions')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                                <span class="text-lg">🔄</span>
+                                <span>Refresh</span>
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto responsive-table">
                         <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3">ID</th>
-                                    <th class="px-6 py-3">Gateway</th>
-                                    <th class="px-6 py-3">Số tiền</th>
-                                    <th class="px-6 py-3">Nội dung</th>
-                                    <th class="px-6 py-3">Reference</th>
-                                    <th class="px-6 py-3">Thời gian</th>
+                                    <th class="px-6 py-4 font-semibold">ID</th>
+                                    <th class="px-6 py-4 font-semibold">Gateway</th>
+                                    <th class="px-6 py-4 font-semibold">Số tiền</th>
+                                    <th class="px-6 py-4 font-semibold">Nội dung</th>
+                                    <th class="px-6 py-4 font-semibold">Reference</th>
+                                    <th class="px-6 py-4 font-semibold">Thời gian</th>
                                 </tr>
                             </thead>
                             <tbody id="transactionsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -388,30 +608,36 @@
 
             <!-- Activity Logs Tab -->
             <div id="logsTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                        <h2 class="text-xl font-bold text-gray-800">Nhật ký hoạt động</h2>
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-2xl">📋</span>
+                            <span>Nhật ký hoạt động</span>
+                        </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." oninput="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="logsFilter" onchange="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." oninput="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="logsFilter" onchange="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả hành động</option>
                                 <option value="USER_LOGIN">Đăng nhập</option>
                                 <option value="VIP_PURCHASE">Mua VIP</option>
                                 <option value="ADMIN_ADD_VIP">Admin thêm VIP</option>
                                 <option value="ADMIN_DELETE_VIP">Admin xóa VIP</option>
                             </select>
-                            <button onclick="refreshData('logs')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold">🔄 Refresh</button>
+                            <button onclick="refreshData('logs')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                                <span class="text-lg">🔄</span>
+                                <span>Refresh</span>
+                            </button>
                         </div>
                     </div>
                     <div class="overflow-x-auto responsive-table">
                         <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gradient-to-r from-gray-50 to-gray-100">
                                 <tr>
-                                    <th class="px-6 py-3">ID</th>
-                                    <th class="px-6 py-3">User ID</th>
-                                    <th class="px-6 py-3">Hành động</th>
-                                    <th class="px-6 py-3">Chi tiết</th>
-                                    <th class="px-6 py-3">Thời gian</th>
+                                    <th class="px-6 py-4 font-semibold">ID</th>
+                                    <th class="px-6 py-4 font-semibold">User ID</th>
+                                    <th class="px-6 py-4 font-semibold">Hành động</th>
+                                    <th class="px-6 py-4 font-semibold">Chi tiết</th>
+                                    <th class="px-6 py-4 font-semibold">Thời gian</th>
                                 </tr>
                             </thead>
                             <tbody id="logsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
@@ -424,75 +650,87 @@
     </div>
 
     <!-- Add VIP Modal -->
-    <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
-            <h3 class="text-lg font-bold mb-4 text-gray-800">⭐ Thêm VIP Subscription</h3>
+    <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-900/50 modal-backdrop overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-2xl rounded-2xl bg-white modal-content">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <span class="text-2xl">⭐</span>
+                <span>Thêm VIP Subscription</span>
+            </h3>
             <div class="space-y-4">
-                <input type="text" id="vipUserId" placeholder="User ID (ví dụ: 054206005638)" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <select id="vipPlanType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="1day">1 Day VIP - 24,000đ</option>
-                    <option value="3days">3 Days VIP - 72,000đ</option>
-                    <option value="7days">7 Days VIP - 126,000đ</option>
-                    <option value="30days">30 Days VIP - 432,000đ</option>
-                    <option value="infinite">Vĩnh viễn</option>
-                </select>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
+                    <input type="text" id="vipUserId" placeholder="Ví dụ: 054206005638" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Gói VIP</label>
+                    <select id="vipPlanType" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="1day">1 Day VIP - 24,000đ</option>
+                        <option value="3days">3 Days VIP - 72,000đ</option>
+                        <option value="7days">7 Days VIP - 126,000đ</option>
+                        <option value="30days">30 Days VIP - 432,000đ</option>
+                        <option value="infinite">Vĩnh viễn</option>
+                    </select>
+                </div>
             </div>
-            <div class="flex justify-end gap-2 mt-6">
-                <button onclick="closeAddVIPModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
-                <button id="submitVIPBtn" onclick="submitAddVIP()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">Thêm VIP</button>
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="closeAddVIPModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium">Hủy</button>
+                <button id="submitVIPBtn" onclick="submitAddVIP()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition font-semibold shadow-lg">Thêm VIP</button>
             </div>
         </div>
     </div>
 
     <!-- Create/Edit VIP Plan Modal -->
-    <div id="planModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-xl bg-white">
-            <h3 class="text-lg font-bold mb-4 text-gray-800" id="planModalTitle">➕ Thêm gói VIP mới</h3>
+    <div id="planModal" class="hidden fixed inset-0 bg-gray-900/50 modal-backdrop overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-lg shadow-2xl rounded-2xl bg-white modal-content">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2" id="planModalTitle">
+                <span class="text-2xl">➕</span>
+                <span>Thêm gói VIP mới</span>
+            </h3>
             <div class="space-y-4">
                 <input type="hidden" id="planId">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan Key *</label>
-                    <input type="text" id="planKey" placeholder="Ví dụ: 1day, 3days, 60days" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-xs text-gray-500 mt-1">Unique identifier (chỉ chữ, số, gạch dưới)</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Plan Key <span class="text-red-500">*</span></label>
+                    <input type="text" id="planKey" placeholder="Ví dụ: 1day, 3days, 60days" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-gray-500 mt-1.5">Unique identifier (chỉ chữ, số, gạch dưới)</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tên gói * </label>
-                    <input type="text" id="planName" placeholder="Ví dụ: 1 Ngày VIP" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tên gói <span class="text-red-500">*</span></label>
+                    <input type="text" id="planName" placeholder="Ví dụ: 1 Ngày VIP" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Thời hạn (ngày) *</label>
-                        <input type="number" id="planDuration" placeholder="1" min="1" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Thời hạn (ngày) <span class="text-red-500">*</span></label>
+                        <input type="number" id="planDuration" placeholder="1" min="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Giá (VNĐ) *</label>
-                        <input type="number" id="planPrice" placeholder="24000" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Giá (VNĐ) <span class="text-red-500">*</span></label>
+                        <input type="number" id="planPrice" placeholder="24000" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
-                    <input type="number" id="planSortOrder" placeholder="0" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Thứ tự hiển thị</label>
+                    <input type="number" id="planSortOrder" placeholder="0" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
-                    <textarea id="planDescription" rows="2" placeholder="Mô tả chi tiết về gói VIP..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
+                    <textarea id="planDescription" rows="3" placeholder="Mô tả chi tiết về gói VIP..." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
             </div>
-            <div class="flex justify-end gap-2 mt-6">
-                <button onclick="closePlanModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
-                <button id="submitPlanBtn" onclick="submitPlan()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">Lưu</button>
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="closePlanModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium">Hủy</button>
+                <button id="submitPlanBtn" onclick="submitPlan()" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition font-semibold shadow-lg">Lưu</button>
             </div>
         </div>
     </div>
 
     <!-- Confirm Action Modal -->
-    <div id="confirmModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[60]">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
-            <h3 class="text-lg font-bold mb-4 text-gray-800" id="confirmTitle">Xác nhận</h3>
-            <p class="text-gray-600 mb-6" id="confirmMessage"></p>
-            <div class="flex justify-end gap-2">
-                <button onclick="closeConfirmModal()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition">Hủy</button>
-                <button id="confirmActionBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">Xác nhận</button>
+    <div id="confirmModal" class="hidden fixed inset-0 bg-gray-900/50 modal-backdrop overflow-y-auto h-full w-full z-[60]">
+        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-2xl rounded-2xl bg-white modal-content">
+            <h3 class="text-xl font-bold mb-4 text-gray-800" id="confirmTitle">Xác nhận</h3>
+            <p class="text-gray-600 mb-6 leading-relaxed" id="confirmMessage"></p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeConfirmModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium">Hủy</button>
+                <button id="confirmActionBtn" class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 transition font-semibold shadow-lg">Xác nhận</button>
             </div>
         </div>
     </div>
