@@ -118,7 +118,7 @@ async function getAllOrders() {
     const connection = await pool.getConnection();
     try {
         const [orders] = await connection.query(`
-            SELECT id, user_id, plan_name, amount, payment_status, created_at
+            SELECT id, order_code, user_id, plan_name, amount, payment_status, created_at
             FROM orders ORDER BY created_at DESC
         `);
         return { success: true, orders };

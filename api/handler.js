@@ -41,6 +41,16 @@ const getPool = () => {
     }
 };
 
+// Helper: Generate random order code DKHP + 12 random alphanumeric characters (uppercase)
+function generateOrderCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = 'DKHP';
+    for (let i = 0; i < 12; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 // NEW: Helper function to save/update user info in database
 async function saveUserInfo(profile) {
     let connection;
@@ -251,9 +261,31 @@ async function createOrder(userId, plan) {
         
         const connection = await getPool().getConnection();
         
+        // Generate unique order code
+        let orderCode;
+        let isUnique = false;
+        let attempts = 0;
+        
+        while (!isUnique && attempts < 10) {
+            orderCode = generateOrderCode();
+            const [existing] = await connection.execute(
+                'SELECT id FROM orders WHERE order_code = ?',
+                [orderCode]
+            );
+            if (existing.length === 0) {
+                isUnique = true;
+            }
+            attempts++;
+        }
+        
+        if (!isUnique) {
+            connection.release();
+            return { error: 'Failed to generate unique order code' };
+        }
+        
         const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, gateway, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-            [userId, plan, planConfig.name, planConfig.price, 'Unpaid', 'SePay']
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, gateway, order_code, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+            [userId, plan, planConfig.name, planConfig.price, 'Unpaid', 'SePay', orderCode]
         );
         
         const orderId = result.insertId;
@@ -261,6 +293,7 @@ async function createOrder(userId, plan) {
         
         return {
             id: orderId,
+            orderCode: orderCode,
             userId,
             amount: planConfig.price,
             status: 'Unpaid',
@@ -293,6 +326,7 @@ async function getOrderStatus(orderId) {
         const order = rows[0];
         return {
             id: order.id,
+            orderCode: order.order_code,
             userId: order.user_id,
             amount: parseFloat(order.amount),
             status: order.payment_status,

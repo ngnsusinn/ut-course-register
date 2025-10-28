@@ -298,18 +298,40 @@ export default async (req, res) => {
             conn.release();
         }
 
-        // Extract order ID from transaction content (pattern DH<number>)
-        const regex = /DH(\d+)/i;
+        // Extract order code from transaction content (pattern DKHP + 12 alphanumeric chars)
+        const regex = /DKHP[A-Z0-9]{12}/i;
         const match = (content || '').match(regex);
 
-        if (!match || !match[1]) {
+        if (!match) {
             return res.status(200).json({
                 success: false,
-                message: 'Order ID not found in transaction content'
+                message: 'Order code not found in transaction content'
             });
         }
 
-        const orderId = parseInt(match[1], 10);
+        const orderCode = match[0].toUpperCase();
+        
+        // Find order by order_code
+        const conn3 = await getPool().getConnection();
+        let orderId;
+        try {
+            const [orderRows] = await conn3.execute(
+                'SELECT id FROM orders WHERE order_code = ?',
+                [orderCode]
+            );
+            
+            if (orderRows.length === 0) {
+                conn3.release();
+                return res.status(200).json({
+                    success: false,
+                    message: `Order not found for code: ${orderCode}`
+                });
+            }
+            
+            orderId = orderRows[0].id;
+        } finally {
+            conn3.release();
+        }
 
         // Process the payment (this will update orders, vip_subscriptions, activity_logs)
         const result = await processVIPPayment(orderId, {

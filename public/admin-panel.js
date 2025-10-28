@@ -505,7 +505,8 @@ function renderOrders() {
     
     const filteredOrders = allData.orders.filter(order => {
         const matchesSearch = order.user_id.toLowerCase().includes(searchTerm) || 
-                            order.plan_name.toLowerCase().includes(searchTerm);
+                            order.plan_name.toLowerCase().includes(searchTerm) ||
+                            (order.order_code && order.order_code.toLowerCase().includes(searchTerm));
         const matchesStatus = !statusFilter || order.payment_status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -517,6 +518,9 @@ function renderOrders() {
     tbody.innerHTML = paginatedOrders.map(order => `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">#${order.id}</td>
+            <td class="px-6 py-4" data-label="Order Code">
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-mono font-bold">${order.order_code || 'N/A'}</span>
+            </td>
             <td class="px-6 py-4" data-label="User">${order.user_id}</td>
             <td class="px-6 py-4" data-label="Plan">${order.plan_name}</td>
             <td class="px-6 py-4 font-semibold" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>

@@ -319,18 +319,18 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
         }
 
         currentOrder = orderRes.order;
-        log(`✅ Tạo đơn hàng #DH${currentOrder.id} thành công`);
+        log(`✅ Tạo đơn hàng #${currentOrder.orderCode} thành công`);
 
         // Show payment section
         document.getElementById('payment-section').classList.remove('hidden');
         document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
         document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
 
-        // Update payment info
-        const qrUrl = `https://qr.sepay.vn/img?bank=${sepayConfig.bankName}&acc=${sepayConfig.accountNumber}&template=compact&amount=${currentOrder.amount}&des=DH${currentOrder.id}`;
+        // Update payment info - use orderCode instead of id
+        const qrUrl = `https://qr.sepay.vn/img?bank=${sepayConfig.bankName}&acc=${sepayConfig.accountNumber}&template=compact&amount=${currentOrder.amount}&des=${currentOrder.orderCode}`;
         document.getElementById('qr-code').src = qrUrl;
         document.getElementById('amount-display').textContent = `${currentOrder.amount.toLocaleString('vi-VN')}đ`;
-        document.getElementById('content-display').textContent = `DH${currentOrder.id}`;
+        document.getElementById('content-display').textContent = currentOrder.orderCode;
 
         // Start checking payment status
         startPaymentCheck();
