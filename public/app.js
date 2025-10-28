@@ -663,10 +663,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     // --- CORE LOGIC FUNCTIONS ---
-    // Save cached data to localStorage
+    // Save cached data to localStorage (include user info)
     const saveCachedData = () => {
         try {
             const cacheData = {
+                userId: userId, // Store current userId to verify cache ownership
                 allScheduleData,
                 registeredClassesData,
                 selectedClasses: Array.from(selectedClasses.entries()),
@@ -680,13 +681,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         }
     };
 
-    // Load cached data from localStorage
-    const loadCachedData = () => {
+    // Load cached data from localStorage (check user ID match)
+    const loadCachedData = (currentUserId) => {
         try {
             const cached = localStorage.getItem('userDataCache');
             if (!cached) return false;
 
             const cacheData = JSON.parse(cached);
+            
+            // Check if cached data belongs to a different user
+            if (cacheData.userId && cacheData.userId !== currentUserId) {
+                console.log('Cache belongs to different user, clearing...');
+                localStorage.removeItem('userDataCache');
+                return false;
+            }
             
             // Cache expires after 24 hours
             const CACHE_DURATION = 24 * 60 * 60 * 1000;
@@ -745,8 +753,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
-                // Try to load cached data first
-                const hasCachedData = loadCachedData();
+                // Try to load cached data first (check if belongs to current user)
+                const hasCachedData = loadCachedData(userId);
                 
                 if (hasCachedData) {
                     log('📦 Đã khôi phục dữ liệu từ cache');
@@ -851,8 +859,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
-                // Try to load cached data first
-                const hasCachedData = loadCachedData();
+                // Try to load cached data first (check if belongs to current user)
+                const hasCachedData = loadCachedData(userId);
                 
                 if (hasCachedData) {
                     log('📦 Đã khôi phục dữ liệu từ cache');
