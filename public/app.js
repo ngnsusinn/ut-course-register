@@ -962,22 +962,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
-                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
+                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`
                 : (isBatBuoc === undefined
                     ? 'N/A'
                     : (isBatBuoc
-                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
-                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
             
-            // Add conflict warning icon if has conflict
+            // Add conflict warning below subject name if has conflict
             const conflictWarning = hasConflict 
-                ? '<span class="ml-2 text-red-600 font-bold" title="Trùng lịch">⚠️ TRÙNG LỊCH</span>' 
+                ? '<div class="text-xs mt-1 text-red-600 font-bold">⚠️ TRÙNG LỊCH</div>' 
                 : '';
             
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${conflictWarning}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
-                <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
+                <td class="px-6 py-4 whitespace-nowrap" data-label="Loại HP">${typeHtml}</td>
                 <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
                 <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
