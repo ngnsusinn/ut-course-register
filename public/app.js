@@ -600,6 +600,57 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     // --- CORE LOGIC FUNCTIONS ---
+    // Save cached data to localStorage
+    const saveCachedData = () => {
+        try {
+            const cacheData = {
+                allScheduleData,
+                registeredClassesData,
+                selectedClasses: Array.from(selectedClasses.entries()),
+                subjectTypeMap: Array.from(subjectTypeMap.entries()),
+                prerequisiteToggleState: prerequisiteToggle?.checked || false,
+                timestamp: new Date().getTime()
+            };
+            localStorage.setItem('userDataCache', JSON.stringify(cacheData));
+        } catch (error) {
+            console.error('Failed to save cache:', error);
+        }
+    };
+
+    // Load cached data from localStorage
+    const loadCachedData = () => {
+        try {
+            const cached = localStorage.getItem('userDataCache');
+            if (!cached) return false;
+
+            const cacheData = JSON.parse(cached);
+            
+            // Cache expires after 24 hours
+            const CACHE_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - cacheData.timestamp > CACHE_DURATION) {
+                localStorage.removeItem('userDataCache');
+                return false;
+            }
+
+            // Restore data
+            allScheduleData = cacheData.allScheduleData || [];
+            registeredClassesData = cacheData.registeredClassesData || [];
+            selectedClasses = new Map(cacheData.selectedClasses || []);
+            subjectTypeMap = new Map(cacheData.subjectTypeMap || []);
+            
+            // Restore prerequisite toggle state
+            if (prerequisiteToggle && cacheData.prerequisiteToggleState !== undefined) {
+                prerequisiteToggle.checked = cacheData.prerequisiteToggleState;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Failed to load cache:', error);
+            localStorage.removeItem('userDataCache');
+            return false;
+        }
+    };
+
     const handleLogin = async () => {
         toggleLoading(loginBtn, true);
         const username = usernameInput.value.trim();
@@ -705,7 +756,36 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 vipStatus = initialData.vip || { hasVIP: false };
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
-                await fetchRegisteredClasses();
+                
+                // Try to load cached data first
+                const hasCachedData = loadCachedData();
+                
+                if (hasCachedData) {
+                    log('📦 Đã khôi phục dữ liệu từ cache');
+                    
+                    // Update UI with cached data
+                    if (allScheduleData.length > 0) {
+                        renderScheduleTable();
+                        // Update button text to "Tải lại"
+                        if (fetchBtn) {
+                            const btnSpan = fetchBtn.querySelector('span');
+                            if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
+                            fetchBtn.originalHTML = fetchBtn.innerHTML;
+                        }
+                    }
+                    
+                    if (registeredClassesData.length > 0) {
+                        renderRegisteredTable(registeredClassesData);
+                    }
+                    
+                    if (selectedClasses.size > 0) {
+                        updateSelectedList();
+                    }
+                } else {
+                    // No cache, fetch fresh data
+                    await fetchRegisteredClasses();
+                }
+                
                 return true;
             } else {
                 log('❌ Không thể tải dữ liệu, vui lòng đăng nhập lại', true);
@@ -727,8 +807,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         userId = null;
         vipStatus = { hasVIP: false };
         
-        // Clear session
+        // Clear session and cache
         localStorage.removeItem('userSession');
+        localStorage.removeItem('userDataCache');
 
         // Reset fetch button to its initial state for the next login
         if (fetchBtn) {
@@ -762,6 +843,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
 
+            // Save to cache
+            saveCachedData();
+
             // Update button's originalHTML to its new state before toggling loading off
             fetchBtn.originalHTML = fetchBtn.originalHTML.replace('Tải lịch học', 'Tải lại lịch học');
 
@@ -783,6 +867,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (registeredRes && registeredRes.success) {
             registeredClassesData = registeredRes.body; // Save for conflict detection
             await renderRegisteredTable(registeredRes.body);
+            
+            // Save to cache
+            saveCachedData();
+            
             // Re-render schedule table to update conflict highlights
             renderScheduleTable();
             log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
@@ -1057,6 +1145,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (selectedClasses.size === 0) {
             selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
             registrationControls.classList.add('hidden');
+            
+            // Save to cache even when empty
+            saveCachedData();
             return;
         }
         selectedList.innerHTML = [...selectedClasses.values()].map(cls => {
@@ -1071,6 +1162,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 </div>`;
         }).join('');
         registrationControls.classList.remove('hidden');
+        
+        // Save to cache whenever selection changes
+        saveCachedData();
     };
 
     // --- EVENT LISTENERS ---
