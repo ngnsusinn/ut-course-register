@@ -550,20 +550,23 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         toggleLoading(loginBtn, false);
     };
 
-    // Validate JWT token with portal API
+    // Validate JWT token with portal API (via backend proxy to avoid CORS)
     const validateTokenWithPortal = async (token) => {
         try {
-            const response = await fetch('https://portal.ut.edu.vn/api/v1/user/getCredit', {
-                method: 'GET',
+            const response = await fetch('/api/handler', {
+                method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                    // Removed Content-Type to avoid CORS preflight OPTIONS request
-                }
+                },
+                body: JSON.stringify({ 
+                    action: 'validateToken'
+                })
             });
             
             const data = await response.json();
             
-            if (data.success && data.status === 200) {
+            if (data.success && data.valid) {
                 return true;
             }
             

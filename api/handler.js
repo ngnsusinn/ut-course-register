@@ -436,6 +436,21 @@ export default async (req, res) => {
                 break;
             }
 
+            // --- TOKEN VALIDATION (Proxy to Portal API to avoid CORS) ---
+            case 'validateToken': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                try {
+                    const validateRes = await callApi('/user/getCredit', 'GET', token);
+                    result = {
+                        success: validateRes.success && validateRes.status === 200,
+                        valid: validateRes.success && validateRes.status === 200
+                    };
+                } catch (error) {
+                    result = { success: false, valid: false, message: 'Token validation failed' };
+                }
+                break;
+            }
+
             // --- VIP ACTIONS ---
             case 'checkVIPStatus': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
