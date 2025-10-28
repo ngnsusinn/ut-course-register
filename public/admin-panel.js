@@ -568,9 +568,16 @@ async function openAddVIPModal(userId = '') {
     document.getElementById('addVIPModal').classList.remove('hidden');
 }
 
-// Load VIP plans dynamically for the modal
+// Load VIP plans dynamically for the modal (100% from database)
+// Admin can add any plan (active or inactive), is_active only affects user purchases
 async function loadVIPPlansForModal() {
+    const selectElement = document.getElementById('vipPlanType');
+    
     try {
+        // Show loading state
+        selectElement.innerHTML = '<option value="">Đang tải gói VIP...</option>';
+        selectElement.disabled = true;
+        
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -580,41 +587,61 @@ async function loadVIPPlansForModal() {
         const data = await response.json();
         
         if (data.success && data.plans) {
-            const selectElement = document.getElementById('vipPlanType');
-            
-            // Clear existing options except "infinite"
+            // Clear loading state
             selectElement.innerHTML = '';
             
-            // Add plans from database (only active plans)
-            data.plans
-                .filter(plan => plan.is_active === 1)
-                .forEach(plan => {
-                    const option = document.createElement('option');
-                    option.value = plan.plan_key;
-                    option.textContent = `${plan.plan_name} - ${parseFloat(plan.price).toLocaleString('vi-VN')}đ`;
-                    selectElement.appendChild(option);
-                });
+            // Sort plans by sort_order (Admin can see ALL plans, not just active ones)
+            const sortedPlans = data.plans
+                .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
             
-            // Add "infinite" option at the end
+            // Check if we have any plans at all
+            if (sortedPlans.length === 0) {
+                selectElement.innerHTML = '<option value="">Chưa có gói VIP nào trong hệ thống</option>';
+                showToast('Chưa có gói VIP nào. Vui lòng tạo gói VIP trong tab VIP Plans', 'warning');
+                return;
+            }
+            
+            // Add ALL plans from database (both active and inactive)
+            // Admin can add any plan regardless of is_active status
+            sortedPlans.forEach(plan => {
+                const option = document.createElement('option');
+                option.value = plan.plan_key;
+                
+                // Format: "Plan Name (X days) - Price"
+                const daysText = plan.duration_days === 36500 
+                    ? 'Vĩnh viễn' 
+                    : `${plan.duration_days} ngày`;
+                
+                // Show inactive status with 🔴 icon for admin awareness
+                const statusIcon = plan.is_active === 1 ? '✅' : '🔴';
+                const statusText = plan.is_active === 1 ? '' : ' (Tắt)';
+                    
+                option.textContent = `${statusIcon} ${plan.plan_name} (${daysText}) - ${parseFloat(plan.price).toLocaleString('vi-VN')}đ${statusText}`;
+                
+                // Store metadata for potential use
+                option.setAttribute('data-duration', plan.duration_days);
+                option.setAttribute('data-price', plan.price);
+                option.setAttribute('data-active', plan.is_active);
+                
+                selectElement.appendChild(option);
+            });
+            
+            // Add "infinite" option at the end (special admin-only option)
             const infiniteOption = document.createElement('option');
             infiniteOption.value = 'infinite';
-            infiniteOption.textContent = 'Vĩnh viễn';
+            infiniteOption.textContent = '🌟 Vĩnh viễn (Admin Special)';
+            infiniteOption.setAttribute('data-duration', '36500');
             selectElement.appendChild(infiniteOption);
+            
+            selectElement.disabled = false;
         } else {
-            // Fallback to hardcoded plans if database fails
-            console.warn('Failed to load VIP plans from database, using fallback');
-            const selectElement = document.getElementById('vipPlanType');
-            selectElement.innerHTML = `
-                <option value="1day">1 Day VIP - 24,000đ</option>
-                <option value="3days">3 Days VIP - 72,000đ</option>
-                <option value="7days">7 Days VIP - 126,000đ</option>
-                <option value="30days">30 Days VIP - 432,000đ</option>
-                <option value="infinite">Vĩnh viễn</option>
-            `;
+            selectElement.innerHTML = '<option value="">Lỗi tải dữ liệu</option>';
+            showToast('Không thể tải danh sách gói VIP từ database', 'error');
         }
     } catch (error) {
         console.error('Error loading VIP plans:', error);
-        showToast('Không thể tải danh sách gói VIP', 'error');
+        selectElement.innerHTML = '<option value="">Lỗi kết nối</option>';
+        showToast('Lỗi kết nối đến server', 'error');
     }
 }
 
