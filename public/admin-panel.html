@@ -189,6 +189,41 @@
                 transform: translateY(0); 
             }
         }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+        }
+        
+        .chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .mobile-menu-dropdown {
+            display: none;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .desktop-tabs {
+                display: none;
+            }
+            
+            .mobile-menu-dropdown {
+                display: block;
+            }
+        }
+        
+        @media screen and (min-width: 769px) {
+            .mobile-menu-dropdown {
+                display: none;
+            }
+            
+            .desktop-tabs {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -258,7 +293,21 @@
         <!-- Tabs Navigation -->
         <div class="bg-white border-b shadow-sm">
             <div class="container mx-auto px-4">
-                <nav class="flex space-x-1 overflow-x-auto">
+                <!-- Mobile Dropdown Menu -->
+                <div class="mobile-menu-dropdown py-4">
+                    <select id="mobileTabSelect" onchange="switchTab(this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 font-medium">
+                        <option value="dashboard">📊 Dashboard</option>
+                        <option value="users">👥 Người dùng</option>
+                        <option value="vipPlans">⚙️ Gói VIP</option>
+                        <option value="subscriptions">💎 VIP</option>
+                        <option value="orders">📦 Đơn hàng</option>
+                        <option value="transactions">💰 Giao dịch</option>
+                        <option value="logs">📋 Logs</option>
+                    </select>
+                </div>
+                
+                <!-- Desktop Tabs -->
+                <nav class="desktop-tabs flex space-x-1 overflow-x-auto">
                     <button onclick="switchTab('dashboard')" class="tab-btn tab-active px-6 py-4 text-sm font-medium whitespace-nowrap rounded-t-lg transition" data-tab="dashboard">
                         <span class="flex items-center gap-2">
                             <span class="text-lg">📊</span>
@@ -360,7 +409,9 @@
                             <span class="text-xl">📈</span>
                             <span>Doanh thu 30 ngày</span>
                         </h3>
-                        <canvas id="revenueChart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
                     </div>
                     
                     <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
@@ -368,7 +419,9 @@
                             <span class="text-xl">👤</span>
                             <span>Tăng trưởng người dùng</span>
                         </h3>
-                        <canvas id="userGrowthChart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="userGrowthChart"></canvas>
+                        </div>
                     </div>
                     
                     <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
@@ -376,7 +429,9 @@
                             <span class="text-xl">📊</span>
                             <span>Phân bố gói VIP</span>
                         </h3>
-                        <canvas id="vipDistributionChart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="vipDistributionChart"></canvas>
+                        </div>
                     </div>
                     
                     <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
@@ -384,7 +439,9 @@
                             <span class="text-xl">📦</span>
                             <span>Trạng thái đơn hàng</span>
                         </h3>
-                        <canvas id="orderStatusChart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="orderStatusChart"></canvas>
+                        </div>
                     </div>
                 </div>
                 

@@ -230,16 +230,27 @@ function logout() {
 
 // Tab functionality
 function switchTab(tab) {
-    // Update tab buttons
+    // Update tab buttons (desktop)
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('tab-active');
         btn.classList.add('text-gray-600');
     });
     document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
     
-    // Activate selected tab
-    document.querySelector(`[data-tab="${tab}"]`).classList.add('tab-active');
-    document.querySelector(`[data-tab="${tab}"]`).classList.remove('text-gray-600');
+    // Activate selected tab (desktop)
+    const tabBtn = document.querySelector(`[data-tab="${tab}"]`);
+    if (tabBtn) {
+        tabBtn.classList.add('tab-active');
+        tabBtn.classList.remove('text-gray-600');
+    }
+    
+    // Update mobile dropdown
+    const mobileSelect = document.getElementById('mobileTabSelect');
+    if (mobileSelect) {
+        mobileSelect.value = tab;
+    }
+    
+    // Show selected content
     document.getElementById(`${tab}Tab`).classList.remove('hidden');
     
     // Load data based on tab

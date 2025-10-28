@@ -199,14 +199,20 @@ async function addVIPSubscription(payload) {
         let addType = 'new';
 
         if (activeVIP.length > 0) {
-            // extend
-            expiryDate = new Date(activeVIP[0].expiry_date);
-            expiryDate.setDate(expiryDate.getDate() + days);
+            // Extend from existing expiry date using MySQL DATE_ADD
+            const [result] = await connection.query(
+                'SELECT DATE_ADD(?, INTERVAL ? DAY) as new_expiry',
+                [activeVIP[0].expiry_date, days]
+            );
+            expiryDate = result[0].new_expiry;
             addType = 'cumulative';
         } else {
-            // start from now
-            expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + days);
+            // Start from now using MySQL DATE_ADD
+            const [result] = await connection.query(
+                'SELECT DATE_ADD(NOW(), INTERVAL ? DAY) as new_expiry',
+                [days]
+            );
+            expiryDate = result[0].new_expiry;
             addType = 'new';
         }
 
@@ -217,8 +223,8 @@ async function addVIPSubscription(payload) {
         );
 
         const logDetails = addType === 'cumulative' 
-            ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
-            : `Admin added ${planName} (${planType}) VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
+            ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${new Date(expiryDate).toLocaleString('vi-VN')}`
+            : `Admin added ${planName} (${planType}) VIP (mới) - Expiry: ${new Date(expiryDate).toLocaleString('vi-VN')}`;
 
         await connection.query(
             'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, NOW())',

@@ -71,37 +71,56 @@ async function processVIPPayment(orderId, transactionData) {
             [transactionData.reference_number, orderId]
         );
 
-        // vip duration map
-        const planDurations = {
-            '1day': 1,
-            '3days': 3,
-            '7days': 7,
-            '30days': 30
-        };
-        const daysToAdd = planDurations[order.plan_type] || 1;
+        // Get plan duration from database
+        const [planData] = await connection.execute(
+            'SELECT duration_days, plan_name FROM vip_plans WHERE plan_key = ? AND is_active = 1',
+            [order.plan_type]
+        );
+        
+        let daysToAdd;
+        if (planData.length === 0) {
+            // Fallback to hardcoded durations if plan not in database
+            const planDurations = {
+                '1day': 1,
+                '3days': 3,
+                '7days': 7,
+                '30days': 30
+            };
+            daysToAdd = planDurations[order.plan_type] || 1;
+        } else {
+            daysToAdd = planData[0].duration_days;
+        }
 
         // Check existing VIP (use FOR UPDATE to avoid race)
         const [existingVIP] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1',
+            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1 FOR UPDATE',
             [order.user_id]
         );
 
         let expiryDate;
         if (existingVIP.length > 0) {
-            expiryDate = new Date(existingVIP[0].expiry_date);
-            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
+            // Extend from existing expiry date using MySQL DATE_ADD
+            const [result] = await connection.execute(
+                'SELECT DATE_ADD(?, INTERVAL ? DAY) as new_expiry',
+                [existingVIP[0].expiry_date, daysToAdd]
+            );
+            expiryDate = result[0].new_expiry;
 
             await connection.execute(
                 'UPDATE vip_subscriptions SET expiry_date = ?, plan_type = ?, updated_at = NOW() WHERE id = ?',
-                [formatToMySQL(expiryDate), order.plan_type, existingVIP[0].id]
+                [expiryDate, order.plan_type, existingVIP[0].id]
             );
         } else {
-            expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
+            // Start from now using MySQL DATE_ADD
+            const [result] = await connection.execute(
+                'SELECT DATE_ADD(NOW(), INTERVAL ? DAY) as new_expiry',
+                [daysToAdd]
+            );
+            expiryDate = result[0].new_expiry;
 
             await connection.execute(
                 'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
-                [order.user_id, order.plan_type, formatToMySQL(expiryDate)]
+                [order.user_id, order.plan_type, expiryDate]
             );
         }
 
@@ -116,7 +135,7 @@ async function processVIPPayment(orderId, transactionData) {
         return {
             success: true,
             message: 'Payment processed successfully',
-            expiryDate: expiryDate.toISOString()
+            expiryDate: new Date(expiryDate).toISOString()
         };
 
     } catch (error) {
