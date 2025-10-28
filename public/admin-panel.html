@@ -201,27 +201,49 @@
             height: 100% !important;
         }
         
+        /* Mobile dropdown styling */
         .mobile-menu-dropdown {
             display: none;
         }
         
+        .mobile-menu-dropdown select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5rem;
+            padding-right: 3rem;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-menu-dropdown select:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        
+        .mobile-menu-dropdown select:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        
+        /* Responsive breakpoints */
         @media screen and (max-width: 768px) {
             .desktop-tabs {
-                display: none;
+                display: none !important;
             }
             
             .mobile-menu-dropdown {
-                display: block;
+                display: block !important;
             }
         }
         
         @media screen and (min-width: 769px) {
             .mobile-menu-dropdown {
-                display: none;
+                display: none !important;
             }
             
             .desktop-tabs {
-                display: flex;
+                display: flex !important;
             }
         }
     </style>
@@ -295,15 +317,22 @@
             <div class="container mx-auto px-4">
                 <!-- Mobile Dropdown Menu -->
                 <div class="mobile-menu-dropdown py-4">
-                    <select id="mobileTabSelect" onchange="switchTab(this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 font-medium">
-                        <option value="dashboard">📊 Dashboard</option>
-                        <option value="users">👥 Người dùng</option>
-                        <option value="vipPlans">⚙️ Gói VIP</option>
-                        <option value="subscriptions">💎 VIP</option>
-                        <option value="orders">📦 Đơn hàng</option>
-                        <option value="transactions">💰 Giao dịch</option>
-                        <option value="logs">📋 Logs</option>
-                    </select>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </div>
+                        <select id="mobileTabSelect" onchange="switchTab(this.value)" class="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800 font-medium">
+                            <option value="dashboard">📊 Dashboard</option>
+                            <option value="users">👥 Người dùng</option>
+                            <option value="vipPlans">⚙️ Gói VIP</option>
+                            <option value="subscriptions">💎 VIP</option>
+                            <option value="orders">📦 Đơn hàng</option>
+                            <option value="transactions">💰 Giao dịch</option>
+                            <option value="logs">📋 Logs</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <!-- Desktop Tabs -->
