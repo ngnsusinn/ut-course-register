@@ -744,7 +744,35 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 vipStatus = initialData.vip || { hasVIP: false };
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
-                await fetchRegisteredClasses();
+                
+                // Try to load cached data first
+                const hasCachedData = loadCachedData();
+                
+                if (hasCachedData) {
+                    log('📦 Đã khôi phục dữ liệu từ cache');
+                    
+                    // Update UI with cached data
+                    if (allScheduleData.length > 0) {
+                        renderScheduleTable();
+                        // Update button text to "Tải lại"
+                        if (fetchBtn) {
+                            const btnSpan = fetchBtn.querySelector('span');
+                            if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
+                            fetchBtn.originalHTML = fetchBtn.innerHTML;
+                        }
+                    }
+                    
+                    if (registeredClassesData.length > 0) {
+                        renderRegisteredTable(registeredClassesData);
+                    }
+                    
+                    if (selectedClasses.size > 0) {
+                        updateSelectedList();
+                    }
+                } else {
+                    // No cache, fetch fresh data
+                    await fetchRegisteredClasses();
+                }
                 
                 // Start VIP expiry check
                 startVIPExpiryCheck();
