@@ -12,7 +12,7 @@
     <style>
         body { 
             font-family: 'Be Vietnam Pro', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f9fafb;
         }
         
         .loader { 
@@ -61,9 +61,8 @@
             max-width: 500px;
             padding: 16px;
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             animation: slideInRight 0.3s ease-out;
-            backdrop-filter: blur(10px);
         }
         @keyframes slideInRight {
             from { transform: translateX(400px); opacity: 0; }
@@ -91,11 +90,6 @@
         
         .hidden { display: none; }
         .search-highlight { background-color: #fef3c7; }
-        
-        .card-gradient {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%);
-            backdrop-filter: blur(10px);
-        }
         
         .kpi-card {
             transition: all 0.3s ease;
@@ -197,17 +191,17 @@
         }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="bg-gray-50 text-gray-800">
     <!-- Login Screen -->
     <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4 py-8">
-        <div class="bg-white/95 backdrop-blur-lg p-8 rounded-2xl shadow-2xl w-full max-w-md border border-white/20">
+        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md border border-gray-200">
             <div class="text-center mb-8">
-                <div class="inline-block p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
+                <div class="inline-block p-4 bg-blue-600 rounded-2xl mb-4 shadow-lg">
                     <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                     </svg>
                 </div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">UTH Admin Panel</h1>
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">UTH Admin Panel</h1>
                 <p class="text-gray-600">Hệ thống quản lý tài khoản và VIP</p>
             </div>
             <div id="loginError" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg mb-4 fade-in">
@@ -219,13 +213,13 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tên đăng nhập</label>
-                    <input type="text" id="username" placeholder="Nhập tên đăng nhập" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                    <input type="text" id="username" placeholder="Nhập tên đăng nhập" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
-                    <input type="password" id="password" placeholder="Nhập mật khẩu" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                    <input type="password" id="password" placeholder="Nhập mật khẩu" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
-                <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
+                <button onclick="login()" class="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg">
                     Đăng nhập
                 </button>
             </div>
@@ -238,26 +232,19 @@
     <!-- Admin Dashboard -->
     <div id="adminDashboard" class="hidden min-h-screen">
         <!-- Header -->
-        <header class="bg-white/95 backdrop-blur-lg shadow-lg border-b border-gray-200 sticky top-0 z-40">
+        <header class="bg-white shadow-md border-b border-gray-200">
             <div class="container mx-auto px-4 py-6">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="text-center sm:text-left flex items-center gap-3">
-                        <div class="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">UTH Admin Panel</h1>
-                            <p class="text-gray-600 text-sm mt-0.5">Hệ thống quản lý tài khoản và VIP</p>
-                        </div>
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-3xl font-bold text-blue-600">UTH Admin Panel</h1>
+                        <p class="text-gray-600 mt-1">Hệ thống quản lý tài khoản và VIP</p>
                     </div>
                     <div class="flex items-center gap-4">
-                        <div class="text-right bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
+                        <div class="text-right bg-gray-50 px-4 py-2 rounded-lg border border-gray-200">
                             <span class="text-xs text-gray-500 block">Quản trị viên</span>
                             <span id="adminUsername" class="font-semibold text-blue-600 text-sm"></span>
                         </div>
-                        <button onclick="logout()" class="bg-gradient-to-r from-red-500 to-pink-600 text-white px-5 py-2.5 rounded-xl hover:from-red-600 hover:to-pink-700 transition font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
+                        <button onclick="logout()" class="bg-red-600 text-white px-5 py-2.5 rounded-lg hover:bg-red-700 transition font-semibold shadow-md flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                             </svg>
@@ -269,7 +256,7 @@
         </header>
 
         <!-- Tabs Navigation -->
-        <div class="bg-white/95 backdrop-blur-lg border-b shadow-sm sticky top-[104px] z-30">
+        <div class="bg-white border-b shadow-sm">
             <div class="container mx-auto px-4">
                 <nav class="flex space-x-1 overflow-x-auto">
                     <button onclick="switchTab('dashboard')" class="tab-btn tab-active px-6 py-4 text-sm font-medium whitespace-nowrap rounded-t-lg transition" data-tab="dashboard">
@@ -322,14 +309,14 @@
         <main class="container mx-auto px-4 py-8">
             <!-- Dashboard Tab -->
             <div id="dashboardTab" class="tab-content">
-                <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                <h2 class="text-2xl font-bold mb-6 flex items-center gap-3 text-blue-600">
                     <span class="text-3xl">📊</span>
-                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Dashboard Overview</span>
+                    <span>Dashboard Overview</span>
                 </h2>
                 
                 <!-- KPI Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="kpi-card bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 p-6 rounded-xl shadow-lg">
+                    <div class="kpi-card bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-md">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-sm text-blue-700 font-semibold tracking-wide">TỔNG NGƯỜI DÙNG</div>
                             <span class="text-3xl">👥</span>
@@ -338,7 +325,7 @@
                         <div class="text-xs text-blue-600 mt-2">Tổng số người dùng đã đăng ký</div>
                     </div>
                     
-                    <div class="kpi-card bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 p-6 rounded-xl shadow-lg">
+                    <div class="kpi-card bg-green-50 border-l-4 border-green-500 p-6 rounded-lg shadow-md">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-sm text-green-700 font-semibold tracking-wide">NGƯỜI DÙNG VIP</div>
                             <span class="text-3xl">💎</span>
@@ -347,7 +334,7 @@
                         <div class="text-xs text-green-600 mt-2">Người dùng có gói VIP đang hoạt động</div>
                     </div>
                     
-                    <div class="kpi-card bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 p-6 rounded-xl shadow-lg">
+                    <div class="kpi-card bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg shadow-md">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-sm text-purple-700 font-semibold tracking-wide">TỔNG DOANH THU</div>
                             <span class="text-3xl">💰</span>
@@ -356,7 +343,7 @@
                         <div class="text-xs text-purple-600 mt-2">Tổng doanh thu từ các đơn hàng</div>
                     </div>
                     
-                    <div class="kpi-card bg-gradient-to-br from-orange-50 to-orange-100 border-l-4 border-orange-500 p-6 rounded-xl shadow-lg">
+                    <div class="kpi-card bg-orange-50 border-l-4 border-orange-500 p-6 rounded-lg shadow-md">
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-sm text-orange-700 font-semibold tracking-wide">ĐƠN HÀNG</div>
                             <span class="text-3xl">📦</span>
@@ -368,7 +355,7 @@
                 
                 <!-- Charts Row 1 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                         <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                             <span class="text-xl">📈</span>
                             <span>Doanh thu 30 ngày qua</span>
@@ -376,7 +363,7 @@
                         <canvas id="revenueChart"></canvas>
                     </div>
                     
-                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                         <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                             <span class="text-xl">👤</span>
                             <span>Tăng trưởng người dùng</span>
@@ -387,7 +374,7 @@
                 
                 <!-- Charts Row 2 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                         <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                             <span class="text-xl">📊</span>
                             <span>Phân bố gói VIP</span>
@@ -395,7 +382,7 @@
                         <canvas id="vipDistributionChart"></canvas>
                     </div>
                     
-                    <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                         <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                             <span class="text-xl">📦</span>
                             <span>Trạng thái đơn hàng</span>
@@ -405,7 +392,7 @@
                 </div>
                 
                 <!-- Recent Activities -->
-                <div class="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-lg border border-gray-100">
+                <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                         <span class="text-xl">⚡</span>
                         <span>Hoạt động gần đây</span>
@@ -416,15 +403,15 @@
 
             <!-- Users Tab -->
             <div id="usersTab" class="tab-content hidden">
-                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <span class="text-2xl">👥</span>
                             <span>Quản lý Người dùng</span>
                         </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." oninput="pagination.users.currentPage = 1; renderUsers();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <button onclick="refreshData('users')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2">
+                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm User ID..." oninput="pagination.users.currentPage = 1; renderUsers();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <button onclick="refreshData('users')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center justify-center gap-2">
                                 <span class="text-lg">🔄</span>
                                 <span>Refresh</span>
                             </button>
@@ -450,18 +437,18 @@
 
             <!-- VIP Plans Management Tab -->
             <div id="vipPlansTab" class="tab-content hidden">
-                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <span class="text-2xl">⚙️</span>
                             <span>Quản lý Gói VIP</span>
                         </h2>
                         <div class="flex gap-3">
-                            <button onclick="refreshData('vipPlans')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                            <button onclick="refreshData('vipPlans')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2">
                                 <span class="text-lg">🔄</span>
                                 <span>Refresh</span>
                             </button>
-                            <button onclick="openCreatePlanModal()" class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-5 py-2.5 rounded-xl hover:from-green-700 hover:to-emerald-700 transition font-semibold flex items-center gap-2 shadow-lg">
+                            <button onclick="openCreatePlanModal()" class="bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 transition font-semibold flex items-center gap-2 shadow-lg">
                                 <span class="text-lg">➕</span>
                                 <span>Thêm gói mới</span>
                             </button>
@@ -490,20 +477,20 @@
 
             <!-- VIP Subscriptions Tab -->
             <div id="subscriptionsTab" class="tab-content hidden">
-                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <span class="text-2xl">💎</span>
                             <span>VIP Subscriptions</span>
                         </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="subscriptionsFilter" onchange="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="subscriptionsFilter" onchange="pagination.subscriptions.currentPage = 1; renderSubscriptions();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="active">Active</option>
                                 <option value="expired">Expired</option>
                             </select>
-                            <button onclick="refreshData('subscriptions')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                            <button onclick="refreshData('subscriptions')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2">
                                 <span class="text-lg">🔄</span>
                                 <span>Refresh</span>
                             </button>
@@ -531,21 +518,21 @@
 
             <!-- Orders Tab -->
             <div id="ordersTab" class="tab-content hidden">
-                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <span class="text-2xl">📦</span>
                             <span>Quản lý Đơn hàng</span>
                         </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="ordersFilter" onchange="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm User ID hoặc Plan..." oninput="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="ordersFilter" onchange="pagination.orders.currentPage = 1; renderOrders();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="Paid">Đã thanh toán</option>
                                 <option value="Unpaid">Chưa thanh toán</option>
                                 <option value="Cancelled">Đã hủy</option>
                             </select>
-                            <button onclick="refreshData('orders')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                            <button onclick="refreshData('orders')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2">
                                 <span class="text-lg">🔄</span>
                                 <span>Refresh</span>
                             </button>
@@ -572,16 +559,16 @@
 
             <!-- Transactions Tab -->
             <div id="transactionsTab" class="tab-content hidden">
-                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <span class="text-2xl">💰</span>
                             <span>Giao dịch SePay</span>
                         </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <input type="number" id="amountFilter" placeholder="Số tiền..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
-                            <button onclick="refreshData('transactions')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm Reference hoặc Content..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <input type="number" id="amountFilter" placeholder="Số tiền..." oninput="pagination.transactions.currentPage = 1; renderTransactions();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-32">
+                            <button onclick="refreshData('transactions')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2">
                                 <span class="text-lg">🔄</span>
                                 <span>Refresh</span>
                             </button>
@@ -608,22 +595,22 @@
 
             <!-- Activity Logs Tab -->
             <div id="logsTab" class="tab-content hidden">
-                <div class="bg-white/95 backdrop-blur-lg rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                         <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                             <span class="text-2xl">📋</span>
                             <span>Nhật ký hoạt động</span>
                         </h2>
                         <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." oninput="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
-                            <select id="logsFilter" onchange="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm User ID hoặc Action..." oninput="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                            <select id="logsFilter" onchange="pagination.logs.currentPage = 1; renderLogs();" class="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Tất cả hành động</option>
                                 <option value="USER_LOGIN">Đăng nhập</option>
                                 <option value="VIP_PURCHASE">Mua VIP</option>
                                 <option value="ADMIN_ADD_VIP">Admin thêm VIP</option>
                                 <option value="ADMIN_DELETE_VIP">Admin xóa VIP</option>
                             </select>
-                            <button onclick="refreshData('logs')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition font-semibold flex items-center gap-2">
+                            <button onclick="refreshData('logs')" class="btn-primary bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-semibold flex items-center gap-2">
                                 <span class="text-lg">🔄</span>
                                 <span>Refresh</span>
                             </button>
@@ -651,7 +638,7 @@
 
     <!-- Add VIP Modal -->
     <div id="addVIPModal" class="hidden fixed inset-0 bg-gray-900/50 modal-backdrop overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-2xl rounded-2xl bg-white modal-content">
+        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-xl rounded-2xl bg-white modal-content">
             <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
                 <span class="text-2xl">⭐</span>
                 <span>Thêm VIP Subscription</span>
@@ -659,25 +646,25 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">User ID</label>
-                    <input type="text" id="vipUserId" placeholder="Ví dụ: 054206005638" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <input type="text" id="vipUserId" placeholder="Ví dụ: 054206005638" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Gói VIP</label>
-                    <select id="vipPlanType" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="vipPlanType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Đang tải...</option>
                     </select>
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-8">
-                <button onclick="closeAddVIPModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium">Hủy</button>
-                <button id="submitVIPBtn" onclick="submitAddVIP()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition font-semibold shadow-lg">Thêm VIP</button>
+                <button onclick="closeAddVIPModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">Hủy</button>
+                <button id="submitVIPBtn" onclick="submitAddVIP()" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold shadow-md">Thêm VIP</button>
             </div>
         </div>
     </div>
 
     <!-- Create/Edit VIP Plan Modal -->
     <div id="planModal" class="hidden fixed inset-0 bg-gray-900/50 modal-backdrop overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-lg shadow-2xl rounded-2xl bg-white modal-content">
+        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-lg shadow-xl rounded-lg bg-white modal-content">
             <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2" id="planModalTitle">
                 <span class="text-2xl">➕</span>
                 <span>Thêm gói VIP mới</span>
@@ -686,47 +673,48 @@
                 <input type="hidden" id="planId">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Plan Key <span class="text-red-500">*</span></label>
-                    <input type="text" id="planKey" placeholder="Ví dụ: 1day, 3days, 60days" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="planKey" placeholder="Ví dụ: 1day, 3days, 60days" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-500 mt-1.5">Unique identifier (chỉ chữ, số, gạch dưới)</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tên gói <span class="text-red-500">*</span></label>
-                    <input type="text" id="planName" placeholder="Ví dụ: 1 Ngày VIP" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="planName" placeholder="Ví dụ: 1 Ngày VIP" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Thời hạn (ngày) <span class="text-red-500">*</span></label>
-                        <input type="number" id="planDuration" placeholder="1" min="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="planDuration" placeholder="1" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Giá (VNĐ) <span class="text-red-500">*</span></label>
-                        <input type="number" id="planPrice" placeholder="24000" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="planPrice" placeholder="24000" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Thứ tự hiển thị</label>
-                    <input type="number" id="planSortOrder" placeholder="0" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" id="planSortOrder" placeholder="0" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
-                    <textarea id="planDescription" rows="3" placeholder="Mô tả chi tiết về gói VIP..." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea id="planDescription" rows="3" placeholder="Mô tả chi tiết về gói VIP..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-8">
-                <button onclick="closePlanModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium">Hủy</button>
-                <button id="submitPlanBtn" onclick="submitPlan()" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition font-semibold shadow-lg">Lưu</button>
+                <button onclick="closePlanModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">Hủy</button>
+                <button id="submitPlanBtn" onclick="submitPlan()" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition font-semibold shadow-lg">Lưu</button>
             </div>
         </div>
     </div>
 
     <!-- Confirm Action Modal -->
+    <!-- Confirm Action Modal -->
     <div id="confirmModal" class="hidden fixed inset-0 bg-gray-900/50 modal-backdrop overflow-y-auto h-full w-full z-[60]">
-        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-2xl rounded-2xl bg-white modal-content">
+        <div class="relative top-20 mx-auto p-6 border border-gray-200 w-full max-w-md shadow-xl rounded-lg bg-white modal-content">
             <h3 class="text-xl font-bold mb-4 text-gray-800" id="confirmTitle">Xác nhận</h3>
             <p class="text-gray-600 mb-6 leading-relaxed" id="confirmMessage"></p>
             <div class="flex justify-end gap-3">
-                <button onclick="closeConfirmModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium">Hủy</button>
-                <button id="confirmActionBtn" class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl hover:from-red-600 hover:to-pink-700 transition font-semibold shadow-lg">Xác nhận</button>
+                <button onclick="closeConfirmModal()" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">Hủy</button>
+                <button id="confirmActionBtn" class="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold shadow-md">Xác nhận</button>
             </div>
         </div>
     </div>
