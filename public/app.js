@@ -915,8 +915,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
+        // Show all classes including "Đã khóa lớp"
         const filteredData = allScheduleData.filter(cls =>
-            cls.tenTrangThai !== 'Đã khóa lớp' &&
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
@@ -937,22 +937,36 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
             
+            // Check if class is locked
+            const isLocked = cls.tenTrangThai === 'Đã khóa lớp';
+            
             // Check for schedule conflict
             const conflictCheck = checkScheduleConflict(cls.scheduleDetails, registeredClassesData);
             const hasConflict = conflictCheck.hasConflict;
             
-            // Build row class and cursor based on conflict
+            // Build row class and cursor based on status
             let rowClass = 'bg-white border-b transition-colors duration-200';
-            if (hasConflict) {
+            if (isLocked) {
+                // Locked class - gray background, not clickable
+                rowClass += ' bg-gray-200 cursor-not-allowed opacity-60';
+            } else if (hasConflict) {
+                // Conflict - red background, not clickable
                 rowClass += ' bg-red-100 cursor-not-allowed';
             } else if (isSelected) {
+                // Selected - blue background, clickable
                 rowClass += ' bg-blue-200 cursor-pointer hover:bg-sky-100';
             } else {
+                // Normal - white background, clickable
                 rowClass += ' cursor-pointer hover:bg-sky-100';
             }
             
             row.className = rowClass;
             row.dataset.classId = cls.id;
+            
+            // Store locked status
+            if (isLocked) {
+                row.dataset.isLocked = 'true';
+            }
             
             // Store conflict info for tooltip
             if (hasConflict) {
@@ -969,13 +983,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
                         : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
             
-            // Add conflict warning below subject name if has conflict
-            const conflictWarning = hasConflict 
-                ? '<div class="text-xs mt-1 text-red-600 font-bold">⚠️ TRÙNG LỊCH</div>' 
-                : '';
+            // Add warnings below subject name (only conflict warning, not locked)
+            let warnings = '';
+            if (hasConflict) {
+                warnings += '<div class="text-xs mt-1 text-red-600 font-bold">⚠️ TRÙNG LỊCH</div>';
+            }
             
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${conflictWarning}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${warnings}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
                 <td class="px-6 py-4 whitespace-nowrap" data-label="Loại HP">${typeHtml}</td>
                 <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
@@ -1068,6 +1083,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     document.addEventListener('click', (e) => {
         const scheduleRow = e.target.closest('#schedule-container tr');
         if (scheduleRow) {
+            // Check if class is locked
+            if (scheduleRow.dataset.isLocked === 'true') {
+                log('🔒 Không thể chọn lớp này vì đã bị khóa', true);
+                return;
+            }
+            
             // Check if row has conflict
             if (scheduleRow.dataset.hasConflict === 'true') {
                 const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
