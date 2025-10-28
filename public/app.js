@@ -522,6 +522,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
         if (tokenRes && tokenRes.token) {
             authToken = tokenRes.token;
+            
+            // Save session to localStorage with JWT token
+            localStorage.setItem('userSession', JSON.stringify({
+                token: authToken,
+                username: username,
+                loginTime: new Date().getTime()
+            }));
+            
             log("✅ Đăng nhập thành công.");
             const initialData = await backendRequest('getInitialData');
             if (initialData && initialData.success) {
@@ -534,11 +542,87 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             } else {
                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
                 authToken = null;
+                localStorage.removeItem('userSession');
             }
         } else {
             log(`❌ Đăng nhập thất bại: ${tokenRes?.message || 'Lỗi không xác định'}`, true);
         }
         toggleLoading(loginBtn, false);
+    };
+
+    // Validate JWT token with portal API
+    const validateTokenWithPortal = async (token) => {
+        try {
+            const response = await fetch('https://portal.ut.edu.vn/api/v1/user/getCredit', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.status === 200) {
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Token validation failed:', error);
+            return false;
+        }
+    };
+
+    // Auto-login with saved session
+    const autoLogin = async () => {
+        const session = localStorage.getItem('userSession');
+        if (!session) return false;
+        
+        try {
+            const { token, loginTime } = JSON.parse(session);
+            
+            // Session expires after 24 hours
+            const SESSION_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - loginTime > SESSION_DURATION) {
+                localStorage.removeItem('userSession');
+                return false;
+            }
+            
+            // Validate token with portal API
+            const isValid = await validateTokenWithPortal(token);
+            
+            if (!isValid) {
+                log('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại', true);
+                localStorage.removeItem('userSession');
+                return false;
+            }
+            
+            // Token is valid, restore session
+            authToken = token;
+            
+            log('✅ Đã khôi phục phiên đăng nhập');
+            
+            const initialData = await backendRequest('getInitialData');
+            if (initialData && initialData.success) {
+                dotId = initialData.dot.id;
+                userId = initialData.profile.maSinhVien || initialData.profile.username;
+                vipStatus = initialData.vip || { hasVIP: false };
+                log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
+                updateUIAfterLogin(initialData.profile);
+                await fetchRegisteredClasses();
+                return true;
+            } else {
+                log('❌ Không thể tải dữ liệu, vui lòng đăng nhập lại', true);
+                localStorage.removeItem('userSession');
+                authToken = null;
+                return false;
+            }
+        } catch (error) {
+            console.error('Auto-login failed:', error);
+            localStorage.removeItem('userSession');
+            return false;
+        }
     };
 
     const handleLogout = async () => {
@@ -547,6 +631,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         dotId = null;
         userId = null;
         vipStatus = { hasVIP: false };
+        
+        // Clear session
+        localStorage.removeItem('userSession');
 
         // Reset fetch button to its initial state for the next login
         if (fetchBtn) {
@@ -846,6 +933,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     // --- EVENT LISTENERS ---
+    
+    // Try auto-login on page load
+    autoLogin().then(success => {
+        if (!success) {
+            // Show login form if auto-login failed
+            loginForm.classList.remove('hidden');
+        }
+    });
+    
     loginBtn.addEventListener('click', handleLogin);
     refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
     startInsertionBtn.addEventListener('click', startInsertion);

@@ -57,6 +57,14 @@ async function login() {
         
         if (data.success) {
             currentUser = data.admin;
+            
+            // Save session to localStorage
+            localStorage.setItem('adminSession', JSON.stringify({
+                username: currentUser.username,
+                password: password, // Store hashed password for auto-login
+                loginTime: new Date().getTime()
+            }));
+            
             document.getElementById('adminUsername').textContent = currentUser.username;
             showToast('Đăng nhập thành công!', 'success');
             
@@ -77,6 +85,58 @@ async function login() {
     } finally {
         loginBtn.disabled = false;
         loginBtn.innerHTML = originalHTML;
+    }
+}
+
+// Auto-login on page load
+async function autoLogin() {
+    const session = localStorage.getItem('adminSession');
+    if (!session) return false;
+    
+    try {
+        const { username, password, loginTime } = JSON.parse(session);
+        
+        // Session expires after 24 hours
+        const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+        if (new Date().getTime() - loginTime > SESSION_DURATION) {
+            localStorage.removeItem('adminSession');
+            return false;
+        }
+        
+        // Try to login with saved credentials
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'login', payload: { username, password } })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            currentUser = data.admin;
+            document.getElementById('adminUsername').textContent = currentUser.username;
+            
+            // Update login time
+            localStorage.setItem('adminSession', JSON.stringify({
+                username,
+                password,
+                loginTime: new Date().getTime()
+            }));
+            
+            // Show dashboard
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            
+            await refreshData('dashboard');
+            return true;
+        } else {
+            localStorage.removeItem('adminSession');
+            return false;
+        }
+    } catch (error) {
+        console.error('Auto-login failed:', error);
+        localStorage.removeItem('adminSession');
+        return false;
     }
 }
 
@@ -221,11 +281,17 @@ function generatePageNumbers(type, currentPage, totalPages) {
 
 function logout() {
     currentUser = null;
+    
+    // Clear session
+    localStorage.removeItem('adminSession');
+    
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('adminDashboard').classList.add('hidden');
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
     document.getElementById('loginError').classList.add('hidden');
+    
+    showToast('Đã đăng xuất thành công', 'success');
 }
 
 // Tab functionality
@@ -765,7 +831,15 @@ async function deleteSubscription(subId) {
 }
 
 // Search functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Try auto-login first
+    const loginSuccess = await autoLogin();
+    
+    if (!loginSuccess) {
+        // Show login screen if auto-login failed
+        document.getElementById('loginScreen').classList.remove('hidden');
+    }
+    
     // Add search event listeners
     const searchInputs = ['usersSearch', 'subscriptionsSearch', 'ordersSearch', 'transactionsSearch', 'logsSearch'];
     const filters = ['subscriptionsFilter', 'ordersFilter', 'logsFilter', 'amountFilter'];
