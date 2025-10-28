@@ -125,7 +125,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if two period arrays overlap
     // Example: [1,2,3] and [2,3,4] overlap, [1,2,3] and [4,5,6] don't overlap
+    // Exception: Period 16-18 (evening class) never conflicts with any other periods
     const periodsOverlap = (periods1, periods2) => {
+        // Check if either period set contains evening periods (16, 17, 18)
+        const eveningPeriods = [16, 17, 18];
+        const hasEvening1 = periods1.some(p => eveningPeriods.includes(p));
+        const hasEvening2 = periods2.some(p => eveningPeriods.includes(p));
+        
+        // If either period set is evening class, no conflict
+        if (hasEvening1 || hasEvening2) {
+            return false;
+        }
+        
+        // Normal conflict check for non-evening periods
         return periods1.some(p => periods2.includes(p));
     };
 
