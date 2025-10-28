@@ -388,10 +388,8 @@ async function autoCancelExpiredOrders() {
     }
 }
 
-// Run auto-cancel every 5 minutes
-setInterval(async () => {
-    await autoCancelExpiredOrders();
-}, 5 * 60 * 1000); // 5 minutes
+// NOTE: setInterval doesn't work in serverless functions
+// Auto-cancel will be called on each request instead
 
 // === MAIN HANDLER ===
 export default async (req, res) => {
@@ -404,6 +402,10 @@ export default async (req, res) => {
     
     // Regular API handler
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+
+    // Run auto-cancel expired orders on every request (serverless-friendly)
+    // This replaces the setInterval approach which doesn't work in serverless
+    autoCancelExpiredOrders().catch(err => console.error('[AUTO-CANCEL ERROR]', err));
 
     const { action, payload } = req.body;
     const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;

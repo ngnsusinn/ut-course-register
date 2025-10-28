@@ -174,6 +174,47 @@ async function processVIPPayment(orderId, transactionData) {
     }
 }
 
+// Helper: Auto-cancel expired orders
+async function autoCancelExpiredOrders() {
+    try {
+        const connection = await getPool().getConnection();
+        
+        // Cancel orders that are Unpaid for more than 15 minutes
+        const [result] = await connection.execute(
+            `UPDATE orders 
+             SET payment_status = "Cancelled", updated_at = NOW() 
+             WHERE payment_status = "Unpaid" 
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15`
+        );
+        
+        if (result.affectedRows > 0) {
+            console.log(`[WEBHOOK AUTO-CANCEL] Auto-cancelled ${result.affectedRows} expired orders (>= 15 minutes)`);
+            
+            // Get the cancelled order IDs for logging
+            const [cancelledOrders] = await connection.execute(
+                `SELECT id, user_id FROM orders 
+                 WHERE payment_status = "Cancelled" 
+                 AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`
+            );
+            
+            // Log activity for each cancelled order
+            for (const order of cancelledOrders) {
+                await connection.execute(
+                    `INSERT INTO activity_logs (user_id, action, details, created_at)
+                     VALUES (?, "ORDER_AUTO_CANCELLED", ?, NOW())`,
+                    [order.user_id, `Auto-cancelled order #${order.id} after 15 minutes timeout`]
+                );
+            }
+        }
+        
+        connection.release();
+        return result.affectedRows;
+    } catch (error) {
+        console.error('[WEBHOOK] Error auto-cancelling orders:', error);
+        return 0;
+    }
+}
+
 // Main webhook handler
 export default async (req, res) => {
     // CORS Headers
@@ -188,6 +229,9 @@ export default async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
+
+    // Run auto-cancel expired orders on every webhook request
+    autoCancelExpiredOrders().catch(err => console.error('[WEBHOOK AUTO-CANCEL ERROR]', err));
 
     try {
         const webhookData = req.body;
