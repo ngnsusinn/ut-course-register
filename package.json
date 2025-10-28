@@ -1,7 +1,7 @@
 {
   "name": "uth-secure-tool",
-  "version": "2.0.0",
-  "description": "Secure UTH Course Registration Tool with VIP features and SePay payment integration",
+  "version": "2.2.0",
+  "description": "Secure UTH Course Registration Tool with VIP features and SePay Payment (MoMo Removed)",
   "main": "api/handler.js",
   "scripts": {
     "dev": "vercel dev",
@@ -27,8 +27,14 @@
     "course-registration",
     "sepay",
     "payment",
-    "vip"
+    "vip",
+    "education",
+    "vietnam"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "UTH Dev Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ut-course-register"
+  }
 }

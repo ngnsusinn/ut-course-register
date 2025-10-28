@@ -163,13 +163,41 @@ async function getScheduleDetails(classId, token, source) {
     return (result && result.success) ? result.body : { error: true, message: result.message };
 }
 
-// VIP Plans Configuration
+// VIP Plans - Now loaded from database dynamically
+// Fallback for backward compatibility
 const VIP_PLANS = {
     '1day': { price: 24000, duration: 1, name: '1 Ngày VIP' },
     '3days': { price: 72000, duration: 3, name: '3 Ngày VIP' },
     '7days': { price: 126000, duration: 7, name: '7 Ngày VIP' },
     '30days': { price: 432000, duration: 30, name: '30 Ngày VIP' }
 };
+
+// Helper: Get VIP plans from database
+async function getVIPPlansFromDB() {
+    try {
+        const connection = await getPool().getConnection();
+        const [plans] = await connection.execute(
+            'SELECT plan_key, plan_name, duration_days, price, description, sort_order FROM vip_plans WHERE is_active = 1 ORDER BY sort_order ASC'
+        );
+        connection.release();
+        
+        // Convert to object format for backward compatibility
+        const plansObj = {};
+        plans.forEach(plan => {
+            plansObj[plan.plan_key] = {
+                price: parseFloat(plan.price),
+                duration: plan.duration_days,
+                name: plan.plan_name,
+                description: plan.description || ''
+            };
+        });
+        
+        return Object.keys(plansObj).length > 0 ? plansObj : VIP_PLANS;
+    } catch (error) {
+        console.error('Error loading VIP plans from DB, using fallback:', error);
+        return VIP_PLANS;
+    }
+}
 
 // SePay Configuration
 const SEPAY_CONFIG = {
@@ -209,23 +237,30 @@ async function checkVIPStatus(userId) {
     }
 }
 
-// Helper: Create order
+// Helper: Create order (SePay only)
 async function createOrder(userId, plan) {
-    const planConfig = VIP_PLANS[plan];
-    if (!planConfig) return null;
-    
     try {
+        // Get current VIP plans from database
+        const vipPlans = await getVIPPlansFromDB();
+        const planConfig = vipPlans[plan];
+        
+        if (!planConfig) {
+            console.error(`Invalid plan: ${plan}`);
+            return null;
+        }
+        
         const connection = await getPool().getConnection();
         
         const [result] = await connection.execute(
-            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-            [userId, plan, planConfig.name, planConfig.price, 'Unpaid']
+            'INSERT INTO orders (user_id, plan_type, plan_name, amount, payment_status, gateway, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+            [userId, plan, planConfig.name, planConfig.price, 'Unpaid', 'SePay']
         );
         
+        const orderId = result.insertId;
         connection.release();
         
         return {
-            id: result.insertId,
+            id: orderId,
             userId,
             amount: planConfig.price,
             status: 'Unpaid',
@@ -235,7 +270,7 @@ async function createOrder(userId, plan) {
         };
     } catch (error) {
         console.error('Error creating order:', error);
-        return null;
+        return { error: error.message };
     }
 }
 
@@ -401,6 +436,21 @@ export default async (req, res) => {
                 break;
             }
 
+            // --- TOKEN VALIDATION (Proxy to Portal API to avoid CORS) ---
+            case 'validateToken': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                try {
+                    const validateRes = await callApi('/user/getCredit', 'GET', token);
+                    result = {
+                        success: validateRes.success && validateRes.status === 200,
+                        valid: validateRes.success && validateRes.status === 200
+                    };
+                } catch (error) {
+                    result = { success: false, valid: false, message: 'Token validation failed' };
+                }
+                break;
+            }
+
             // --- VIP ACTIONS ---
             case 'checkVIPStatus': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -413,14 +463,16 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { userId, plan } = payload;
                 
-                if (!VIP_PLANS[plan]) {
+                // Validate plan exists in database
+                const vipPlans = await getVIPPlansFromDB();
+                if (!vipPlans[plan]) {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
                 
                 const order = await createOrder(userId, plan);
                 
-                if (!order) {
-                    return res.status(500).json({ success: false, message: 'Failed to create order' });
+                if (!order || order.error) {
+                    return res.status(500).json({ success: false, message: order?.error || 'Failed to create order' });
                 }
                 
                 result = { success: true, order };
@@ -452,9 +504,10 @@ export default async (req, res) => {
             }
 
             case 'getVIPPlans': {
+                const vipPlans = await getVIPPlansFromDB();
                 result = { 
                     success: true, 
-                    plans: VIP_PLANS,
+                    plans: vipPlans,
                     sepayConfig: SEPAY_CONFIG
                 };
                 break;

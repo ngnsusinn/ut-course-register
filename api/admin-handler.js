@@ -42,6 +42,13 @@ export default async function handler(req, res) {
             case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
             case 'deleteSubscription': result = await deleteSubscription(payload); break;
             case 'deleteUser': result = await deleteUser(payload); break;
+            case 'getDashboardStats': result = await getDashboardStats(); break;
+            // VIP Plans Management
+            case 'getAllVIPPlans': result = await getAllVIPPlans(); break;
+            case 'createVIPPlan': result = await createVIPPlan(payload); break;
+            case 'updateVIPPlan': result = await updateVIPPlan(payload); break;
+            case 'deleteVIPPlan': result = await deleteVIPPlan(payload); break;
+            case 'toggleVIPPlanStatus': result = await toggleVIPPlanStatus(payload); break;
             default: return res.status(400).json({ success: false, message: 'Unknown action' });
         }
         return res.status(200).json(result);
@@ -150,18 +157,31 @@ async function addVIPSubscription(payload) {
     const { userId, planType } = payload;
     if (!userId || !planType) return { success: false, message: 'userId and planType required' };
 
-    const planDurations = { '1day': 1, '3days': 3, '7days': 7, '30days': 30, 'infinite': 36500 };
-    const days = planDurations[planType];
-    if (!days) return { success: false, message: 'Invalid plan type' };
-
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
 
+        // Get plan duration from database
+        // ADMIN can add ANY plan (active or inactive), is_active only affects user purchases
+        let days;
+        let planName;
+        
+        const [planData] = await connection.query(
+            'SELECT duration_days, plan_name FROM vip_plans WHERE plan_key = ?',
+            [planType]
+        );
+        
+        if (planData.length === 0) {
+            await connection.rollback();
+            return { success: false, message: 'Invalid plan type. Plan does not exist in database.' };
+        }
+        
+        days = planData[0].duration_days;
+        planName = planData[0].plan_name;
+
         // Check if user exists
         const [existingUser] = await connection.query('SELECT id FROM users WHERE username = ?', [userId]);
         if (existingUser.length === 0) {
-            // FIX: NOW() theo phiên
             await connection.query('INSERT INTO users (username, created_at) VALUES (?, NOW())', [userId]);
         }
 
@@ -175,29 +195,41 @@ async function addVIPSubscription(payload) {
         let addType = 'new';
 
         if (activeVIP.length > 0) {
-            // extend
-            expiryDate = new Date(activeVIP[0].expiry_date);
-            expiryDate.setDate(expiryDate.getDate() + days);
+            // Extend from existing expiry date - insert directly with DATE_ADD in SQL
+            await connection.query(
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(?, INTERVAL ? DAY), NOW())',
+                [userId, planType, activeVIP[0].expiry_date, days]
+            );
+            
+            // Get the calculated expiry for logging
+            const [result] = await connection.query(
+                'SELECT DATE_FORMAT(DATE_ADD(?, INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
+                [activeVIP[0].expiry_date, days]
+            );
+            expiryDate = result[0].new_expiry;
             addType = 'cumulative';
         } else {
-            // start from now
-            expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + days);
+            // Start from now - insert directly with DATE_ADD in SQL
+            await connection.query(
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), NOW())',
+                [userId, planType, days]
+            );
+            
+            // Get the calculated expiry for logging
+            const [result] = await connection.query(
+                'SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
+                [days]
+            );
+            expiryDate = result[0].new_expiry;
             addType = 'new';
         }
 
-        // Insert new VIP subscription
-        // FIX: created_at = NOW()
-        await connection.query(
-            'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
-            [userId, planType, expiryDate]
-        );
+        console.log(`[DEBUG] Inserted VIP with expiry date: ${expiryDate} for ${days} days`);
 
         const logDetails = addType === 'cumulative' 
-            ? `Admin added ${planType} VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
-            : `Admin added ${planType} VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
+            ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${new Date(expiryDate).toLocaleString('vi-VN')}`
+            : `Admin added ${planName} (${planType}) VIP (mới) - Expiry: ${new Date(expiryDate).toLocaleString('vi-VN')}`;
 
-        // FIX: created_at = NOW()
         await connection.query(
             'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, "ADMIN_ADD_VIP", ?, NOW())',
             [userId, logDetails]
@@ -282,3 +314,291 @@ async function deleteSubscription(payload) {
         connection.release();
     }
 }
+
+// ===== DASHBOARD STATISTICS =====
+async function getDashboardStats() {
+    const connection = await pool.getConnection();
+    try {
+        // Total users
+        const [totalUsers] = await connection.query('SELECT COUNT(*) as count FROM users');
+        
+        // VIP users (active)
+        const [vipUsers] = await connection.query(
+            'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
+        );
+        
+        // Total revenue
+        const [revenue] = await connection.query(
+            'SELECT SUM(amount) as total FROM orders WHERE payment_status = "Paid"'
+        );
+        
+        // Orders count
+        const [orders] = await connection.query('SELECT COUNT(*) as count FROM orders');
+        const [paidOrders] = await connection.query('SELECT COUNT(*) as count FROM orders WHERE payment_status = "Paid"');
+        const [unpaidOrders] = await connection.query('SELECT COUNT(*) as count FROM orders WHERE payment_status = "Unpaid"');
+        const [cancelledOrders] = await connection.query('SELECT COUNT(*) as count FROM orders WHERE payment_status = "Cancelled"');
+        
+        // Revenue by date (last 30 days)
+        const [revenueByDate] = await connection.query(`
+            SELECT DATE(paid_at) as date, SUM(amount) as revenue
+            FROM orders 
+            WHERE payment_status = 'Paid' AND paid_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(paid_at)
+            ORDER BY date ASC
+        `);
+        
+        // User growth (last 30 days)
+        const [userGrowth] = await connection.query(`
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM users
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `);
+        
+        // VIP plan distribution
+        const [vipDistribution] = await connection.query(`
+            SELECT plan_type, COUNT(*) as count
+            FROM vip_subscriptions
+            WHERE expiry_date > NOW()
+            GROUP BY plan_type
+        `);
+        
+        // Recent activities
+        const [recentActivities] = await connection.query(`
+            SELECT * FROM activity_logs
+            ORDER BY created_at DESC
+            LIMIT 10
+        `);
+        
+        return {
+            success: true,
+            stats: {
+                totalUsers: totalUsers[0].count,
+                vipUsers: vipUsers[0].count,
+                totalRevenue: revenue[0].total || 0,
+                orders: {
+                    total: orders[0].count,
+                    paid: paidOrders[0].count,
+                    unpaid: unpaidOrders[0].count,
+                    cancelled: cancelledOrders[0].count
+                },
+                revenueByDate,
+                userGrowth,
+                vipDistribution,
+                recentActivities
+            }
+        };
+    } finally {
+        connection.release();
+    }
+}
+
+// ===== END DASHBOARD =====
+
+// ===== VIP PLANS MANAGEMENT =====
+
+async function getAllVIPPlans() {
+    const connection = await pool.getConnection();
+    try {
+        const [plans] = await connection.query(`
+            SELECT id, plan_key, plan_name, duration_days, price, is_active, sort_order, description, created_at, updated_at
+            FROM vip_plans
+            ORDER BY sort_order ASC, id ASC
+        `);
+        return { success: true, plans };
+    } finally {
+        connection.release();
+    }
+}
+
+async function createVIPPlan(payload) {
+    const { planKey, planName, durationDays, price, sortOrder, description } = payload;
+    
+    if (!planKey || !planName || !durationDays || !price) {
+        return { success: false, message: 'planKey, planName, durationDays, and price are required' };
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Check if plan_key already exists
+        const [existing] = await connection.query('SELECT id FROM vip_plans WHERE plan_key = ?', [planKey]);
+        if (existing.length > 0) {
+            await connection.rollback();
+            return { success: false, message: 'Plan key already exists' };
+        }
+
+        await connection.query(
+            `INSERT INTO vip_plans (plan_key, plan_name, duration_days, price, sort_order, description, created_at) 
+             VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+            [planKey, planName, durationDays, price, sortOrder || 0, description || null]
+        );
+
+        await connection.query(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
+            ['admin', 'ADMIN_CREATE_PLAN', `Admin created VIP plan: ${planName} (${planKey})`]
+        );
+
+        await connection.commit();
+        return { success: true, message: 'VIP plan created successfully' };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error creating VIP plan:', error);
+        return { success: false, message: 'Failed to create VIP plan', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
+async function updateVIPPlan(payload) {
+    const { id, planKey, planName, durationDays, price, sortOrder, description } = payload;
+    
+    if (!id) {
+        return { success: false, message: 'Plan ID is required' };
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // Check if plan exists
+        const [existing] = await connection.query('SELECT plan_key FROM vip_plans WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            await connection.rollback();
+            return { success: false, message: 'Plan not found' };
+        }
+
+        // If plan_key is being changed, check for duplicates
+        if (planKey && planKey !== existing[0].plan_key) {
+            const [duplicate] = await connection.query('SELECT id FROM vip_plans WHERE plan_key = ? AND id != ?', [planKey, id]);
+            if (duplicate.length > 0) {
+                await connection.rollback();
+                return { success: false, message: 'Plan key already exists' };
+            }
+        }
+
+        const updates = [];
+        const values = [];
+
+        if (planKey !== undefined) { updates.push('plan_key = ?'); values.push(planKey); }
+        if (planName !== undefined) { updates.push('plan_name = ?'); values.push(planName); }
+        if (durationDays !== undefined) { updates.push('duration_days = ?'); values.push(durationDays); }
+        if (price !== undefined) { updates.push('price = ?'); values.push(price); }
+        if (sortOrder !== undefined) { updates.push('sort_order = ?'); values.push(sortOrder); }
+        if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+        
+        updates.push('updated_at = NOW()');
+
+        if (updates.length > 0) {
+            values.push(id);
+            await connection.query(
+                `UPDATE vip_plans SET ${updates.join(', ')} WHERE id = ?`,
+                values
+            );
+        }
+
+        await connection.query(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
+            ['admin', 'ADMIN_UPDATE_PLAN', `Admin updated VIP plan ID: ${id}`]
+        );
+
+        await connection.commit();
+        return { success: true, message: 'VIP plan updated successfully' };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error updating VIP plan:', error);
+        return { success: false, message: 'Failed to update VIP plan', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
+async function deleteVIPPlan(payload) {
+    const { id } = payload;
+    
+    if (!id) {
+        return { success: false, message: 'Plan ID is required' };
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [plan] = await connection.query('SELECT plan_key, plan_name FROM vip_plans WHERE id = ?', [id]);
+        if (plan.length === 0) {
+            await connection.rollback();
+            return { success: false, message: 'Plan not found' };
+        }
+
+        // Check if plan is being used in active orders
+        const [activeOrders] = await connection.query(
+            'SELECT COUNT(*) as count FROM orders WHERE plan_type = ? AND payment_status = "Unpaid"',
+            [plan[0].plan_key]
+        );
+
+        if (activeOrders[0].count > 0) {
+            await connection.rollback();
+            return { 
+                success: false, 
+                message: `Cannot delete plan. ${activeOrders[0].count} unpaid orders are using this plan.` 
+            };
+        }
+
+        await connection.query('DELETE FROM vip_plans WHERE id = ?', [id]);
+
+        await connection.query(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
+            ['admin', 'ADMIN_DELETE_PLAN', `Admin deleted VIP plan: ${plan[0].plan_name} (${plan[0].plan_key})`]
+        );
+
+        await connection.commit();
+        return { success: true, message: 'VIP plan deleted successfully' };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error deleting VIP plan:', error);
+        return { success: false, message: 'Failed to delete VIP plan', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
+async function toggleVIPPlanStatus(payload) {
+    const { id } = payload;
+    
+    if (!id) {
+        return { success: false, message: 'Plan ID is required' };
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [plan] = await connection.query('SELECT plan_key, plan_name, is_active FROM vip_plans WHERE id = ?', [id]);
+        if (plan.length === 0) {
+            await connection.rollback();
+            return { success: false, message: 'Plan not found' };
+        }
+
+        const newStatus = plan[0].is_active ? 0 : 1;
+        await connection.query('UPDATE vip_plans SET is_active = ?, updated_at = NOW() WHERE id = ?', [newStatus, id]);
+
+        await connection.query(
+            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
+            ['admin', 'ADMIN_TOGGLE_PLAN', `Admin ${newStatus ? 'enabled' : 'disabled'} VIP plan: ${plan[0].plan_name}`]
+        );
+
+        await connection.commit();
+        return { success: true, message: `Plan ${newStatus ? 'enabled' : 'disabled'} successfully`, isActive: newStatus };
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error toggling VIP plan status:', error);
+        return { success: false, message: 'Failed to toggle plan status', error: error.message };
+    } finally {
+        connection.release();
+    }
+}
+
+// ===== END VIP PLANS MANAGEMENT =====
+
