@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userId = null;
     let vipStatus = { hasVIP: false };
     let allScheduleData = [];
+    let registeredClassesData = []; // Store registered classes for conflict detection
     let selectedClasses = new Map();
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
@@ -104,6 +105,85 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
         if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
         return details.map(detail => `<span>${cls.maLopHocPhan} | ${formatDayOfWeek(detail.thu)} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+    };
+
+    // --- SCHEDULE CONFLICT DETECTION ---
+    
+    // Parse period string "1-3" or "4-6" to array [1, 2, 3] or [4, 5, 6]
+    const parsePeriods = (tietHoc) => {
+        if (!tietHoc) return [];
+        const parts = tietHoc.toString().split('-');
+        if (parts.length !== 2) return [];
+        const start = parseInt(parts[0]);
+        const end = parseInt(parts[1]);
+        const periods = [];
+        for (let i = start; i <= end; i++) {
+            periods.push(i);
+        }
+        return periods;
+    };
+
+    // Check if two period arrays overlap
+    // Example: [1,2,3] and [2,3,4] overlap, [1,2,3] and [4,5,6] don't overlap
+    const periodsOverlap = (periods1, periods2) => {
+        return periods1.some(p => periods2.includes(p));
+    };
+
+    // Check if two date ranges overlap
+    const dateRangesOverlap = (start1, end1, start2, end2) => {
+        const s1 = new Date(start1).getTime();
+        const e1 = new Date(end1).getTime();
+        const s2 = new Date(start2).getTime();
+        const e2 = new Date(end2).getTime();
+        return s1 <= e2 && s2 <= e1;
+    };
+
+    // Check if a class schedule conflicts with registered classes
+    const checkScheduleConflict = (classScheduleDetails, registeredClassesData) => {
+        if (!classScheduleDetails || !Array.isArray(classScheduleDetails) || classScheduleDetails.length === 0) {
+            return { hasConflict: false, conflicts: [] };
+        }
+
+        const conflicts = [];
+
+        for (const schedule of classScheduleDetails) {
+            const schedulePeriods = parsePeriods(schedule.tietHoc);
+            if (schedulePeriods.length === 0) continue;
+
+            for (const registered of registeredClassesData) {
+                if (!registered.scheduleDetails || !Array.isArray(registered.scheduleDetails)) continue;
+
+                for (const regSchedule of registered.scheduleDetails) {
+                    const regPeriods = parsePeriods(regSchedule.tietHoc);
+                    if (regPeriods.length === 0) continue;
+
+                    // Check if same day of week
+                    if (schedule.thu === regSchedule.thu) {
+                        // Check if date ranges overlap
+                        if (dateRangesOverlap(
+                            schedule.ngayBatDau, schedule.ngayKetThuc,
+                            regSchedule.ngayBatDau, regSchedule.ngayKetThuc
+                        )) {
+                            // Check if periods overlap
+                            if (periodsOverlap(schedulePeriods, regPeriods)) {
+                                conflicts.push({
+                                    registeredClass: registered.tenMonHoc,
+                                    registeredCode: registered.maLopHocPhan,
+                                    day: formatDayOfWeek(schedule.thu),
+                                    period: schedule.tietHoc,
+                                    conflictPeriod: regSchedule.tietHoc
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return {
+            hasConflict: conflicts.length > 0,
+            conflicts: conflicts
+        };
     };
 
     // --- VIP FUNCTIONS ---
@@ -689,7 +769,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites, userId });
 
         if (registeredRes && registeredRes.success) {
+            registeredClassesData = registeredRes.body; // Save for conflict detection
             await renderRegisteredTable(registeredRes.body);
+            // Re-render schedule table to update conflict highlights
+            renderScheduleTable();
             log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
         } else {
             log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
@@ -853,8 +936,30 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         filteredData.forEach(cls => {
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
-            row.className = `bg-white border-b hover:bg-sky-100 cursor-pointer transition-colors duration-200 ${isSelected ? 'bg-blue-200' : ''}`;
+            
+            // Check for schedule conflict
+            const conflictCheck = checkScheduleConflict(cls.scheduleDetails, registeredClassesData);
+            const hasConflict = conflictCheck.hasConflict;
+            
+            // Build row class and cursor based on conflict
+            let rowClass = 'bg-white border-b transition-colors duration-200';
+            if (hasConflict) {
+                rowClass += ' bg-red-100 cursor-not-allowed';
+            } else if (isSelected) {
+                rowClass += ' bg-blue-200 cursor-pointer hover:bg-sky-100';
+            } else {
+                rowClass += ' cursor-pointer hover:bg-sky-100';
+            }
+            
+            row.className = rowClass;
             row.dataset.classId = cls.id;
+            
+            // Store conflict info for tooltip
+            if (hasConflict) {
+                row.dataset.hasConflict = 'true';
+                row.dataset.conflictInfo = JSON.stringify(conflictCheck.conflicts);
+            }
+            
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
                 ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>`
@@ -863,8 +968,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     : (isBatBuoc
                         ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800">Bắt buộc</span>`
                         : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800">Tự chọn</span>`));
+            
+            // Add conflict warning icon if has conflict
+            const conflictWarning = hasConflict 
+                ? '<span class="ml-2 text-red-600 font-bold" title="Trùng lịch">⚠️ TRÙNG LỊCH</span>' 
+                : '';
+            
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${conflictWarning}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
                 <td class="px-6 py-4" data-label="Loại HP">${typeHtml}</td>
                 <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
@@ -957,6 +1068,16 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     document.addEventListener('click', (e) => {
         const scheduleRow = e.target.closest('#schedule-container tr');
         if (scheduleRow) {
+            // Check if row has conflict
+            if (scheduleRow.dataset.hasConflict === 'true') {
+                const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
+                const conflictMessages = conflicts.map(c => 
+                    `- ${c.registeredClass} (${c.registeredCode}): ${c.day}, Tiết ${c.conflictPeriod}`
+                ).join('\n');
+                log(`⚠️ Không thể chọn lớp này vì trùng lịch với:\n${conflictMessages}`, true);
+                return;
+            }
+            
             if (!vipStatus.hasVIP) {
                 log("⚠️ Bạn cần nâng cấp VIP để chọn lớp.", true);
                 return;
@@ -985,6 +1106,52 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (cancelBtn) {
             const { regId, tenMon, source } = cancelBtn.dataset;
             cancelRegistration(regId, tenMon, source);
+        }
+    });
+
+    // Add hover tooltip for conflict rows
+    let tooltipElement = null;
+    
+    document.addEventListener('mouseover', (e) => {
+        const scheduleRow = e.target.closest('#schedule-container tr');
+        if (scheduleRow && scheduleRow.dataset.hasConflict === 'true') {
+            // Remove existing tooltip
+            if (tooltipElement) {
+                tooltipElement.remove();
+                tooltipElement = null;
+            }
+            
+            // Create tooltip
+            const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
+            const conflictMessages = conflicts.map(c => 
+                `<div class="py-1">• <strong>${c.registeredClass}</strong> (${c.registeredCode})<br/>&nbsp;&nbsp;${c.day}, Tiết ${c.conflictPeriod} (trùng với tiết ${c.period})</div>`
+            ).join('');
+            
+            tooltipElement = document.createElement('div');
+            tooltipElement.className = 'fixed bg-red-600 text-white text-sm px-4 py-3 rounded-lg shadow-lg z-50 max-w-md';
+            tooltipElement.innerHTML = `
+                <div class="font-bold mb-2">⚠️ TRÙNG LỊCH HỌC</div>
+                ${conflictMessages}
+            `;
+            
+            document.body.appendChild(tooltipElement);
+            
+            // Position tooltip near cursor
+            const updateTooltipPosition = (event) => {
+                const x = event.clientX + 15;
+                const y = event.clientY + 15;
+                tooltipElement.style.left = x + 'px';
+                tooltipElement.style.top = y + 'px';
+            };
+            
+            updateTooltipPosition(e);
+            scheduleRow.addEventListener('mousemove', updateTooltipPosition);
+            scheduleRow.addEventListener('mouseleave', () => {
+                if (tooltipElement) {
+                    tooltipElement.remove();
+                    tooltipElement = null;
+                }
+            });
         }
     });
 });
