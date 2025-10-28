@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isProcessStopped = false;
     let currentOrder = null;
     let paymentCheckInterval = null;
+    let vipExpiryCheckInterval = null;
 
     // Assign originalHTML safely
     const buttons = [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn];
@@ -211,19 +212,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const plans = plansRes.plans;
         const sepayConfig = plansRes.sepayConfig;
+        
+        // Check if user has VIP to show appropriate title
+        const isRenewal = vipStatus.hasVIP;
+        const modalTitle = isRenewal ? '🔄 Gia hạn VIP' : '🌟 Nâng cấp VIP';
 
         modal.innerHTML = `
             <div class="payment-modal-content bg-white rounded-xl shadow-md p-6">
                 <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
-                <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">🌟 Nâng cấp VIP</h2>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">${modalTitle}</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     ${Object.entries(plans).map(([key, plan]) => `
                         <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
                             <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
                             <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
-                            <p class="text-gray-600 mb-4">${plan.duration} ngày</p>
+                            <p class="text-gray-600 mb-4">${isRenewal ? 'Gia hạn thêm' : ''} ${plan.duration} ngày</p>
                             <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
-                                Chọn gói này
+                                ${isRenewal ? 'Gia hạn' : 'Chọn gói này'}
                             </button>
                         </div>
                     `).join('')}
@@ -391,8 +396,50 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
     const checkAndUpdateVIPStatus = async () => {
         const vipRes = await backendRequest('checkVIPStatus', { userId });
         if (vipRes && vipRes.success) {
+            const previousVIPStatus = vipStatus.hasVIP;
             vipStatus = vipRes.vip;
             updateVIPDisplay();
+            
+            // If VIP status changed from active to expired
+            if (previousVIPStatus && !vipStatus.hasVIP) {
+                log('⚠️ VIP của bạn đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.', true);
+                
+                // Reset UI to non-VIP state
+                allScheduleData = [];
+                selectedClasses.clear();
+                updateSelectedList();
+                renderScheduleTable();
+                
+                // Clear cache
+                localStorage.removeItem('userDataCache');
+                
+                // Show VIP modal
+                setTimeout(() => {
+                    showVIPModal();
+                }, 1000);
+            }
+        }
+    };
+    
+    // Start auto-check VIP expiry every 7 seconds
+    const startVIPExpiryCheck = () => {
+        if (vipExpiryCheckInterval) clearInterval(vipExpiryCheckInterval);
+        
+        vipExpiryCheckInterval = setInterval(async () => {
+            if (!authToken || !userId) {
+                clearInterval(vipExpiryCheckInterval);
+                return;
+            }
+            
+            await checkAndUpdateVIPStatus();
+        }, 7000); // Check every 7 seconds
+    };
+    
+    // Stop VIP expiry check
+    const stopVIPExpiryCheck = () => {
+        if (vipExpiryCheckInterval) {
+            clearInterval(vipExpiryCheckInterval);
+            vipExpiryCheckInterval = null;
         }
     };
 	
@@ -409,7 +456,15 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
                 <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
             </div>
         `;
-        upgradeVipBtn.classList.add('hidden');
+        
+        // Change button to "Gia hạn VIP" when user has VIP
+        upgradeVipBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Gia hạn VIP</span>
+        `;
+        upgradeVipBtn.classList.remove('hidden');
 
         if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
         if (prerequisiteToggle) prerequisiteToggle.disabled = false; // <-- enable checkbox for VIP
@@ -421,6 +476,14 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             <div class="text-center p-3 bg-gray-100 rounded-lg">
                 <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
             </div>
+        `;
+        
+        // Reset button to "Nâng cấp VIP" when no VIP
+        upgradeVipBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Nâng cấp VIP</span>
         `;
         upgradeVipBtn.classList.remove('hidden');
 
@@ -682,6 +745,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 await fetchRegisteredClasses();
+                
+                // Start VIP expiry check
+                startVIPExpiryCheck();
             } else {
                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
                 authToken = null;
@@ -786,6 +852,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     await fetchRegisteredClasses();
                 }
                 
+                // Start VIP expiry check
+                startVIPExpiryCheck();
+                
                 return true;
             } else {
                 log('❌ Không thể tải dữ liệu, vui lòng đăng nhập lại', true);
@@ -802,6 +871,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const handleLogout = async () => {
         await stopProcess();
+        
+        // Stop VIP expiry check
+        stopVIPExpiryCheck();
+        
         authToken = null;
         dotId = null;
         userId = null;
