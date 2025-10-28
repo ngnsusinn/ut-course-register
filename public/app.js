@@ -556,8 +556,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const response = await fetch('https://portal.ut.edu.vn/api/v1/user/getCredit', {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`
+                    // Removed Content-Type to avoid CORS preflight OPTIONS request
                 }
             });
             
