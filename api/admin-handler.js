@@ -201,7 +201,7 @@ async function addVIPSubscription(payload) {
         if (activeVIP.length > 0) {
             // Extend from existing expiry date using MySQL DATE_ADD
             const [result] = await connection.query(
-                'SELECT DATE_ADD(?, INTERVAL ? DAY) as new_expiry',
+                'SELECT DATE_FORMAT(DATE_ADD(?, INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [activeVIP[0].expiry_date, days]
             );
             expiryDate = result[0].new_expiry;
@@ -209,12 +209,14 @@ async function addVIPSubscription(payload) {
         } else {
             // Start from now using MySQL DATE_ADD
             const [result] = await connection.query(
-                'SELECT DATE_ADD(NOW(), INTERVAL ? DAY) as new_expiry',
+                'SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [days]
             );
             expiryDate = result[0].new_expiry;
             addType = 'new';
         }
+
+        console.log(`[DEBUG] Calculated expiry date: ${expiryDate} for ${days} days`);
 
         // Insert new VIP subscription
         await connection.query(

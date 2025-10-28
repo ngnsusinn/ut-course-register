@@ -101,7 +101,7 @@ async function processVIPPayment(orderId, transactionData) {
         if (existingVIP.length > 0) {
             // Extend from existing expiry date using MySQL DATE_ADD
             const [result] = await connection.execute(
-                'SELECT DATE_ADD(?, INTERVAL ? DAY) as new_expiry',
+                'SELECT DATE_FORMAT(DATE_ADD(?, INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [existingVIP[0].expiry_date, daysToAdd]
             );
             expiryDate = result[0].new_expiry;
@@ -113,7 +113,7 @@ async function processVIPPayment(orderId, transactionData) {
         } else {
             // Start from now using MySQL DATE_ADD
             const [result] = await connection.execute(
-                'SELECT DATE_ADD(NOW(), INTERVAL ? DAY) as new_expiry',
+                'SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [daysToAdd]
             );
             expiryDate = result[0].new_expiry;
@@ -123,6 +123,8 @@ async function processVIPPayment(orderId, transactionData) {
                 [order.user_id, order.plan_type, expiryDate]
             );
         }
+
+        console.log(`[DEBUG WEBHOOK] Calculated expiry date: ${expiryDate} for ${daysToAdd} days, order #${orderId}`);
 
         // Log activity
         await connection.execute(
