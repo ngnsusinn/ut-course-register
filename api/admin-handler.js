@@ -199,7 +199,13 @@ async function addVIPSubscription(payload) {
         let addType = 'new';
 
         if (activeVIP.length > 0) {
-            // Extend from existing expiry date using MySQL DATE_ADD
+            // Extend from existing expiry date - insert directly with DATE_ADD in SQL
+            await connection.query(
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(?, INTERVAL ? DAY), NOW())',
+                [userId, planType, activeVIP[0].expiry_date, days]
+            );
+            
+            // Get the calculated expiry for logging
             const [result] = await connection.query(
                 'SELECT DATE_FORMAT(DATE_ADD(?, INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [activeVIP[0].expiry_date, days]
@@ -207,7 +213,13 @@ async function addVIPSubscription(payload) {
             expiryDate = result[0].new_expiry;
             addType = 'cumulative';
         } else {
-            // Start from now using MySQL DATE_ADD
+            // Start from now - insert directly with DATE_ADD in SQL
+            await connection.query(
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), NOW())',
+                [userId, planType, days]
+            );
+            
+            // Get the calculated expiry for logging
             const [result] = await connection.query(
                 'SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [days]
@@ -216,13 +228,7 @@ async function addVIPSubscription(payload) {
             addType = 'new';
         }
 
-        console.log(`[DEBUG] Calculated expiry date: ${expiryDate} for ${days} days`);
-
-        // Insert new VIP subscription
-        await connection.query(
-            'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
-            [userId, planType, expiryDate]
-        );
+        console.log(`[DEBUG] Inserted VIP with expiry date: ${expiryDate} for ${days} days`);
 
         const logDetails = addType === 'cumulative' 
             ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${new Date(expiryDate).toLocaleString('vi-VN')}`

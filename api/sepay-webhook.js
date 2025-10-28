@@ -99,32 +99,34 @@ async function processVIPPayment(orderId, transactionData) {
 
         let expiryDate;
         if (existingVIP.length > 0) {
-            // Extend from existing expiry date using MySQL DATE_ADD
+            // Extend from existing expiry date - update directly with DATE_ADD in SQL
+            await connection.execute(
+                'UPDATE vip_subscriptions SET expiry_date = DATE_ADD(?, INTERVAL ? DAY), plan_type = ?, updated_at = NOW() WHERE id = ?',
+                [existingVIP[0].expiry_date, daysToAdd, order.plan_type, existingVIP[0].id]
+            );
+            
+            // Get the calculated expiry for logging
             const [result] = await connection.execute(
                 'SELECT DATE_FORMAT(DATE_ADD(?, INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [existingVIP[0].expiry_date, daysToAdd]
             );
             expiryDate = result[0].new_expiry;
-
-            await connection.execute(
-                'UPDATE vip_subscriptions SET expiry_date = ?, plan_type = ?, updated_at = NOW() WHERE id = ?',
-                [expiryDate, order.plan_type, existingVIP[0].id]
-            );
         } else {
-            // Start from now using MySQL DATE_ADD
+            // Start from now - insert directly with DATE_ADD in SQL
+            await connection.execute(
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), NOW())',
+                [order.user_id, order.plan_type, daysToAdd]
+            );
+            
+            // Get the calculated expiry for logging
             const [result] = await connection.execute(
                 'SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [daysToAdd]
             );
             expiryDate = result[0].new_expiry;
-
-            await connection.execute(
-                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, ?, NOW())',
-                [order.user_id, order.plan_type, expiryDate]
-            );
         }
 
-        console.log(`[DEBUG WEBHOOK] Calculated expiry date: ${expiryDate} for ${daysToAdd} days, order #${orderId}`);
+        console.log(`[DEBUG WEBHOOK] Inserted VIP with expiry date: ${expiryDate} for ${daysToAdd} days, order #${orderId}`);
 
         // Log activity
         await connection.execute(
