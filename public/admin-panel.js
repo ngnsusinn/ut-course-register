@@ -601,7 +601,7 @@ async function loadVIPPlansForModal() {
                 return;
             }
             
-            // Add ALL plans from database (both active and inactive)
+            // Add ALL plans from database (100% from database, no hardcoded options)
             // Admin can add any plan regardless of is_active status
             sortedPlans.forEach(plan => {
                 const option = document.createElement('option');
@@ -612,11 +612,10 @@ async function loadVIPPlansForModal() {
                     ? 'Vĩnh viễn' 
                     : `${plan.duration_days} ngày`;
                 
-                // Show inactive status with 🔴 icon for admin awareness
+                // Show status with emoji only (no text)
                 const statusIcon = plan.is_active === 1 ? '✅' : '🔴';
-                const statusText = plan.is_active === 1 ? '' : ' (Tắt)';
                     
-                option.textContent = `${statusIcon} ${plan.plan_name} (${daysText}) - ${parseFloat(plan.price).toLocaleString('vi-VN')}đ${statusText}`;
+                option.textContent = `${statusIcon} ${plan.plan_name} (${daysText}) - ${parseFloat(plan.price).toLocaleString('vi-VN')}đ`;
                 
                 // Store metadata for potential use
                 option.setAttribute('data-duration', plan.duration_days);
@@ -625,13 +624,6 @@ async function loadVIPPlansForModal() {
                 
                 selectElement.appendChild(option);
             });
-            
-            // Add "infinite" option at the end (special admin-only option)
-            const infiniteOption = document.createElement('option');
-            infiniteOption.value = 'infinite';
-            infiniteOption.textContent = '🌟 Vĩnh viễn (Admin Special)';
-            infiniteOption.setAttribute('data-duration', '36500');
-            selectElement.appendChild(infiniteOption);
             
             selectElement.disabled = false;
         } else {
@@ -877,7 +869,7 @@ function renderRevenueChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: { display: false }
             },
@@ -914,7 +906,7 @@ function renderUserGrowthChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: { display: false }
             },
@@ -961,10 +953,17 @@ function renderVipDistributionChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        }
+                    }
                 }
             }
         }
@@ -992,10 +991,17 @@ function renderOrderStatusChart(orders) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        }
+                    }
                 }
             }
         }

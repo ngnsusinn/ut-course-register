@@ -162,26 +162,22 @@ async function addVIPSubscription(payload) {
         await connection.beginTransaction();
 
         // Get plan duration from database
+        // ADMIN can add ANY plan (active or inactive), is_active only affects user purchases
         let days;
         let planName;
         
-        if (planType === 'infinite') {
-            days = 36500; // ~100 years
-            planName = 'Vĩnh viễn';
-        } else {
-            const [planData] = await connection.query(
-                'SELECT duration_days, plan_name FROM vip_plans WHERE plan_key = ? AND is_active = 1',
-                [planType]
-            );
-            
-            if (planData.length === 0) {
-                await connection.rollback();
-                return { success: false, message: 'Invalid or inactive plan type' };
-            }
-            
-            days = planData[0].duration_days;
-            planName = planData[0].plan_name;
+        const [planData] = await connection.query(
+            'SELECT duration_days, plan_name FROM vip_plans WHERE plan_key = ?',
+            [planType]
+        );
+        
+        if (planData.length === 0) {
+            await connection.rollback();
+            return { success: false, message: 'Invalid plan type. Plan does not exist in database.' };
         }
+        
+        days = planData[0].duration_days;
+        planName = planData[0].plan_name;
 
         // Check if user exists
         const [existingUser] = await connection.query('SELECT id FROM users WHERE username = ?', [userId]);
