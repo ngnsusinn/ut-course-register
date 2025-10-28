@@ -195,7 +195,7 @@ async function addVIPSubscription(payload) {
         let addType = 'new';
 
         if (activeVIP.length > 0) {
-            // Extend from existing expiry date - insert directly with DATE_ADD in SQL
+            // Extend from existing expiry date - add days to existing expiry
             await connection.query(
                 'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(?, INTERVAL ? DAY), NOW())',
                 [userId, planType, activeVIP[0].expiry_date, days]
@@ -209,15 +209,17 @@ async function addVIPSubscription(payload) {
             expiryDate = result[0].new_expiry;
             addType = 'cumulative';
         } else {
-            // Start from now - insert directly with DATE_ADD in SQL
+            // Start from now - round up to next day 00:00:00, then add days
+            // Formula: DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL ? DAY)
+            // Example: Add at 9AM 28/10 with 1-day plan → 00:00:00 29/10 + 1 day → 00:00:00 30/10
             await connection.query(
-                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), NOW())',
+                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL ? DAY), NOW())',
                 [userId, planType, days]
             );
             
             // Get the calculated expiry for logging
             const [result] = await connection.query(
-                'SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
+                'SELECT DATE_FORMAT(DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
                 [days]
             );
             expiryDate = result[0].new_expiry;
