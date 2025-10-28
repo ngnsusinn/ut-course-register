@@ -351,25 +351,33 @@ async function autoCancelExpiredOrders() {
     try {
         const connection = await getPool().getConnection();
         
-        // Cancel orders that are Unpaid for more than 15 minutes
+        // Cancel orders that are Unpaid for more than 15 minutes (exactly)
+        // Use TIMESTAMPDIFF to calculate exact minutes from created_at
         const [result] = await connection.execute(
             `UPDATE orders 
              SET payment_status = "Cancelled", updated_at = NOW() 
              WHERE payment_status = "Unpaid" 
-             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) > 15`
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15`
         );
         
         if (result.affectedRows > 0) {
-            console.log(`Auto-cancelled ${result.affectedRows} expired orders`);
+            console.log(`[AUTO-CANCEL] Auto-cancelled ${result.affectedRows} expired orders (>= 15 minutes)`);
             
-            // Log activity for cancelled orders
-            await connection.execute(
-                `INSERT INTO activity_logs (user_id, action, details, created_at)
-                 SELECT user_id, "ORDER_AUTO_CANCELLED", CONCAT("Auto-cancelled order ", id, " (timeout)"), NOW()
-                 FROM orders 
+            // Get the cancelled order IDs for logging
+            const [cancelledOrders] = await connection.execute(
+                `SELECT id, user_id FROM orders 
                  WHERE payment_status = "Cancelled" 
                  AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`
             );
+            
+            // Log activity for each cancelled order
+            for (const order of cancelledOrders) {
+                await connection.execute(
+                    `INSERT INTO activity_logs (user_id, action, details, created_at)
+                     VALUES (?, "ORDER_AUTO_CANCELLED", ?, NOW())`,
+                    [order.user_id, `Auto-cancelled order #${order.id} after 15 minutes timeout`]
+                );
+            }
         }
         
         connection.release();

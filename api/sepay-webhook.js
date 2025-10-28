@@ -39,8 +39,9 @@ async function processVIPPayment(orderId, transactionData) {
     try {
         await connection.beginTransaction();
 
+        // Query for Unpaid OR Cancelled orders
         const [orders] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ? AND payment_status = "Unpaid" FOR UPDATE',
+            'SELECT * FROM orders WHERE id = ? AND payment_status IN ("Unpaid", "Cancelled") FOR UPDATE',
             [orderId]
         );
 
@@ -51,11 +52,6 @@ async function processVIPPayment(orderId, transactionData) {
 
         const order = orders[0];
 
-        if (order.payment_status === 'Cancelled') {
-            await connection.rollback();
-            return { success: false, message: 'Order has been cancelled' };
-        }
-
         // Verify amount matches; cast both to numbers
         const txAmount = parseFloat(transactionData.amount_in || 0);
         const orderAmount = parseFloat(order.amount || 0);
@@ -65,7 +61,32 @@ async function processVIPPayment(orderId, transactionData) {
             return { success: false, message: 'Amount mismatch' };
         }
 
-        // Update order status
+        // Check if order was already cancelled
+        if (order.payment_status === 'Cancelled') {
+            // Record transaction but DO NOT activate VIP or change order status
+            await connection.execute(
+                'UPDATE orders SET transaction_ref = ?, updated_at = NOW() WHERE id = ?',
+                [transactionData.reference_number, orderId]
+            );
+            
+            // Log activity for late payment on cancelled order
+            await connection.execute(
+                'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
+                [order.user_id, 'PAYMENT_ON_CANCELLED_ORDER', `User paid for cancelled order #${orderId} (VIP not activated)`]
+            );
+            
+            await connection.commit();
+            console.log(`[WEBHOOK WARNING] Payment received for cancelled order #${orderId}, transaction recorded but VIP not activated`);
+            
+            return {
+                success: true,
+                message: 'Payment recorded but order was already cancelled. VIP not activated.',
+                orderCancelled: true
+            };
+        }
+
+        // Order is Unpaid - proceed with normal VIP activation
+        // Update order status to Paid
         await connection.execute(
             'UPDATE orders SET payment_status = "Paid", paid_at = NOW(), transaction_ref = ?, updated_at = NOW() WHERE id = ?',
             [transactionData.reference_number, orderId]
