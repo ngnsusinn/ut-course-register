@@ -137,6 +137,7 @@ async function getAllSubscriptions() {
                 vs.user_id,
                 vs.plan_id,
                 vs.order_id,
+                o.order_code,
                 vs.plan_type,
                 vp.plan_name,
                 vs.expiry_date,
@@ -144,6 +145,7 @@ async function getAllSubscriptions() {
                 vs.created_at
             FROM vip_subscriptions vs
             LEFT JOIN vip_plans vp ON vs.plan_id = vp.id
+            LEFT JOIN orders o ON vs.order_id = o.id
             ORDER BY vs.created_at DESC
         `);
         return { success: true, subscriptions };
@@ -205,8 +207,11 @@ async function addVIPSubscription(payload) {
         let addType = 'new';
 
         if (activeVIP.length > 0) {
-            // Extend from existing expiry date
+            // Extend from existing expiry date (round to end of day, then add days)
             expiryDate = new Date(activeVIP[0].expiry_date);
+            // Round to end of current expiry day
+            expiryDate.setHours(23, 59, 59, 999);
+            // Add the number of days
             expiryDate.setDate(expiryDate.getDate() + days);
             
             await connection.execute(
@@ -217,11 +222,13 @@ async function addVIPSubscription(payload) {
             );
             addType = 'cumulative';
         } else {
-            // Start from tomorrow midnight, then add days
+            // Start from tomorrow midnight, then add days (end of day)
             expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + 1);
             expiryDate.setHours(0, 0, 0, 0);
             expiryDate.setDate(expiryDate.getDate() + days);
+            // Set to end of the final day
+            expiryDate.setHours(23, 59, 59, 999);
             
             await connection.execute(
                 `INSERT INTO vip_subscriptions (

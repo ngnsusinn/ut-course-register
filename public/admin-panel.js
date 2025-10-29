@@ -515,9 +515,9 @@ function renderSubscriptions() {
             ? `👨‍💼 Admin (${sub.created_by_admin})`
             : `👤 User`;
         
-        // Show order link if user purchased, or "Admin" if admin added
-        const orderDisplay = sub.order_id 
-            ? `<a href="#orders" onclick="filterOrderById(${sub.order_id})" class="text-blue-600 hover:underline font-medium">Đơn #${sub.order_id}</a>`
+        // Show order code if user purchased, or "Admin" if admin added
+        const orderDisplay = sub.order_code 
+            ? `<a href="#orders" onclick="filterOrderByCode('${sub.order_code}')" class="text-blue-600 hover:underline font-medium font-mono">${sub.order_code}</a>`
             : '<span class="text-purple-600 font-medium">👨‍💼 Admin</span>';
         
         return `
