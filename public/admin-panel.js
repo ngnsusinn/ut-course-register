@@ -443,27 +443,27 @@ function renderUsers() {
         return `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4" data-label="User Info">
-                <div class="font-medium text-gray-900">${user.user_id}</div>
-                ${user.full_name ? `<div class="text-sm text-gray-500">${user.full_name}</div>` : ''}
-                ${user.email ? `<div class="text-xs text-gray-400 mt-1">📧 ${user.email}</div>` : ''}
+                <div class="font-semibold text-gray-900">${user.user_id}</div>
+                ${user.full_name ? `<div class="text-sm text-gray-600 mt-0.5">${user.full_name}</div>` : ''}
+                ${user.email ? `<div class="text-sm text-gray-500 mt-0.5">📧 ${user.email}</div>` : ''}
             </td>
             <td class="px-6 py-4" data-label="VIP Status">
-                <span class="px-2 py-1 rounded-full text-xs font-medium ${isVip && !isExpired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${isVip && !isExpired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
                     ${isVip && !isExpired ? '✅ VIP Active' : '❌ No VIP'}
                 </span>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Expiry">
+            <td class="px-6 py-4" data-label="Expiry">
                 ${expiryDate ? `
-                    <div class="${isExpired ? 'text-red-600' : 'text-green-600'} font-medium">
+                    <div class="${isExpired ? 'text-red-600' : 'text-green-600'} font-semibold text-sm">
                         ${formatDateTime(expiryDate)}
                     </div>
-                ` : '<span class="text-gray-400">N/A</span>'}
+                ` : '<span class="text-gray-400 text-sm">N/A</span>'}
             </td>
             <td class="px-6 py-4 flex gap-2" data-label="Actions">
-                <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-900 font-medium text-sm">
+                <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-sm transition">
                     ➕ Thêm VIP
                 </button>
-                <button onclick="showConfirmModal('Xóa User', 'Bạn có chắc muốn xóa user này không? Mọi dữ liệu liên quan sẽ bị xóa.', () => deleteUser('${user.user_id}'))" class="text-red-600 hover:text-red-900 font-medium text-sm">
+                <button onclick="showConfirmModal('Xóa User', 'Bạn có chắc muốn xóa user này không? Mọi dữ liệu liên quan sẽ bị xóa.', () => deleteUser('${user.user_id}'))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
                     🗑️ Xóa
                 </button>
             </td>
@@ -522,36 +522,36 @@ function renderSubscriptions() {
         
         // Show order code if user purchased, or "Admin" if admin added
         const orderDisplay = sub.order_code 
-            ? `<a href="#orders" onclick="filterOrderByCode('${sub.order_code}')" class="text-blue-600 hover:underline font-medium font-mono">${sub.order_code}</a>`
-            : '<span class="text-purple-600 font-medium">👨‍💼 Admin</span>';
+            ? `<a href="#orders" onclick="filterOrderByCode('${sub.order_code}')" class="text-blue-600 hover:text-blue-800 font-semibold font-mono text-sm transition">${sub.order_code}</a>`
+            : '<span class="text-purple-600 font-semibold text-sm">👨‍💼 Admin</span>';
         
         return `
         <tr class="hover:bg-blue-50 transition-colors">
-            <td class="px-6 py-4 font-medium" data-label="ID">#${sub.id}</td>
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${sub.id}</td>
             <td class="px-6 py-4" data-label="User">
-                <div class="font-medium text-gray-900">${sub.user_id}</div>
-                ${sub.plan_name ? `<div class="text-xs text-gray-500 mt-1">${sub.plan_name}</div>` : ''}
+                <div class="font-semibold text-gray-900">${sub.user_id}</div>
+                ${sub.plan_name ? `<div class="text-sm text-gray-600 mt-0.5">${sub.plan_name}</div>` : ''}
             </td>
             <td class="px-6 py-4" data-label="Plan">
-                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${sub.plan_type}</span>
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">${sub.plan_type}</span>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Source">
-                <span class="text-xs">${source}</span>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Source">
+                ${source}
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Order">${orderDisplay}</td>
+            <td class="px-6 py-4" data-label="Order">${orderDisplay}</td>
             <td class="px-6 py-4" data-label="Status">
-                <span class="px-2 py-1 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${isActive ? '✅ Active' : '❌ Expired'}
                 </span>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Expiry">
-                <div class="${isActive ? 'text-green-600' : 'text-red-600'} font-medium">
+            <td class="px-6 py-4" data-label="Expiry">
+                <div class="${isActive ? 'text-green-600' : 'text-red-600'} font-semibold text-sm">
                     ${formatDateTime(sub.expiry_date)}
                 </div>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-500" data-label="Created">${formatDateTime(sub.created_at)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${formatDateTime(sub.created_at)}</td>
             <td class="px-6 py-4" data-label="Actions">
-                <button onclick="showConfirmModal('Xóa VIP Subscription', 'Bạn có chắc muốn xóa subscription này không?', () => deleteSubscription(${sub.id}))" class="text-red-600 hover:text-red-900 font-medium text-sm">
+                <button onclick="showConfirmModal('Xóa VIP Subscription', 'Bạn có chắc muốn xóa subscription này không?', () => deleteSubscription(${sub.id}))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
                     🗑️ Xóa
                 </button>
             </td>
@@ -586,22 +586,22 @@ function renderOrders() {
         
         return `
         <tr class="hover:bg-blue-50 transition-colors">
-            <td class="px-6 py-4 font-medium" data-label="ID">#${order.id}</td>
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${order.id}</td>
             <td class="px-6 py-4" data-label="Order Code">
                 <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-mono font-bold">${order.order_code || 'N/A'}</span>
             </td>
             <td class="px-6 py-4" data-label="User">
-                <div class="font-medium text-gray-900">${order.user_id}</div>
+                <div class="font-semibold text-gray-900">${order.user_id}</div>
             </td>
             <td class="px-6 py-4" data-label="Plan">
                 <div>
-                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${order.plan_name}</span>
-                    ${order.gateway ? `<div class="text-xs text-gray-500 mt-1">💳 ${order.gateway}</div>` : ''}
+                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">${order.plan_name}</span>
+                    ${order.gateway ? `<div class="text-sm text-gray-600 mt-1">💳 ${order.gateway}</div>` : ''}
                 </div>
             </td>
-            <td class="px-6 py-4 font-semibold text-green-600" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
+            <td class="px-6 py-4 font-bold text-green-600 text-sm" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
             <td class="px-6 py-4" data-label="Status">
-                <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${
                     isCancelled ? 'bg-red-100 text-red-800' :
                     isPaid ? 'bg-green-100 text-green-800' :
                     'bg-yellow-100 text-yellow-800'
@@ -609,11 +609,10 @@ function renderOrders() {
                     ${isCancelled ? '❌ Cancelled' : isPaid ? '✅ Paid' : '⏳ Unpaid'}
                 </span>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Paid At">
-                ${order.paid_at ? `<div class="text-green-600 font-medium">${formatDateTime(order.paid_at)}</div>` : '<span class="text-gray-400">N/A</span>'}
+            <td class="px-6 py-4" data-label="Paid At">
+                ${order.paid_at ? `<div class="text-green-600 font-semibold text-sm">${formatDateTime(order.paid_at)}</div>` : '<span class="text-gray-400 text-sm">N/A</span>'}
             </td>
-            <td class="px-6 py-4 text-sm text-gray-500" data-label="Created">${formatDateTime(order.created_at)}</td>
-            ${isCancelled ? `<td class="px-6 py-4 text-sm text-red-500" data-label="Cancelled">${formatDateTime(order.cancelled_at)}</td>` : ''}
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${formatDateTime(order.created_at)}</td>
         </tr>
     `}).join('');
     
@@ -639,25 +638,25 @@ function renderTransactions() {
 
     tbody.innerHTML = paginatedTrans.map(trans => {
         const orderLink = trans.order_code 
-            ? `<a href="#orders" onclick="filterOrderByCode('${trans.order_code}')" class="text-blue-600 hover:underline font-medium font-mono">${trans.order_code}</a>`
-            : '<span class="text-gray-400">N/A</span>';
+            ? `<a href="#orders" onclick="filterOrderByCode('${trans.order_code}')" class="text-blue-600 hover:text-blue-800 font-semibold font-mono text-sm transition">${trans.order_code}</a>`
+            : '<span class="text-gray-400 text-sm">N/A</span>';
         
         return `
         <tr class="hover:bg-blue-50 transition-colors">
-            <td class="px-6 py-4 font-medium" data-label="ID">#${trans.id}</td>
-            <td class="px-6 py-4 text-sm" data-label="Order">${orderLink}</td>
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${trans.id}</td>
+            <td class="px-6 py-4" data-label="Order">${orderLink}</td>
             <td class="px-6 py-4" data-label="Gateway">
-                <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-medium">💳 ${trans.gateway}</span>
+                <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-semibold">💳 ${trans.gateway}</span>
             </td>
             <td class="px-6 py-4 font-bold text-green-600" data-label="Amount">
-                <div class="text-lg">${parseFloat(trans.amount_in).toLocaleString('vi-VN')}đ</div>
+                <div class="text-base">${parseFloat(trans.amount_in).toLocaleString('vi-VN')}đ</div>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Content">
-                <div class="max-w-xs truncate" title="${trans.transaction_content || 'N/A'}">${trans.transaction_content || 'N/A'}</div>
+            <td class="px-6 py-4" data-label="Content">
+                <div class="max-w-xs truncate text-sm text-gray-700" title="${trans.transaction_content || 'N/A'}">${trans.transaction_content || 'N/A'}</div>
             </td>
-            <td class="px-6 py-4 text-xs font-mono bg-gray-50" data-label="Reference">${trans.reference_number || 'N/A'}</td>
-            <td class="px-6 py-4 text-sm" data-label="Time">
-                <div class="text-gray-600">${formatDateTime(trans.received_at)}</div>
+            <td class="px-6 py-4 text-xs font-mono bg-gray-50 text-gray-600" data-label="Reference">${trans.reference_number || 'N/A'}</td>
+            <td class="px-6 py-4" data-label="Time">
+                <div class="text-sm text-gray-600">${formatDateTime(trans.received_at)}</div>
             </td>
         </tr>
     `}).join('');
@@ -684,18 +683,18 @@ function renderLogs() {
 
     tbody.innerHTML = paginatedLogs.map(log => `
         <tr class="hover:bg-blue-50 transition-colors">
-            <td class="px-6 py-4 font-medium" data-label="ID">#${log.id}</td>
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${log.id}</td>
             <td class="px-6 py-4" data-label="User">
-                <div class="font-medium text-gray-900">${log.user_id || 'System'}</div>
-                ${log.admin_id ? `<div class="text-xs text-purple-600 mt-1">👨‍💼 Admin: ${log.admin_id}</div>` : ''}
+                <div class="font-semibold text-gray-900">${log.user_id || 'System'}</div>
+                ${log.admin_id ? `<div class="text-sm text-purple-600 mt-0.5">👨‍💼 Admin: ${log.admin_id}</div>` : ''}
             </td>
             <td class="px-6 py-4" data-label="Action">
-                <span class="px-2 py-1 rounded text-xs font-medium ${getActionColor(log.action)}">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${getActionColor(log.action)}">
                     ${getActionText(log.action)}
                 </span>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Details">
-                <div class="max-w-md truncate" title="${log.details || 'N/A'}">${log.details || 'N/A'}</div>
+            <td class="px-6 py-4" data-label="Details">
+                <div class="max-w-md truncate text-sm text-gray-700" title="${log.details || 'N/A'}">${log.details || 'N/A'}</div>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600" data-label="Time">${formatDateTime(log.created_at)}</td>
         </tr>
@@ -1271,16 +1270,16 @@ function renderRecentActivities(activities) {
         <div class="border-b border-gray-200 py-3 hover:bg-gray-50 transition-colors px-2 rounded">
             <div class="flex justify-between items-start gap-3">
                 <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="px-2 py-1 rounded text-xs font-medium ${getActionColor(activity.action)}">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <span class="px-2 py-1 rounded text-xs font-semibold ${getActionColor(activity.action)}">
                             ${getActionText(activity.action)}
                         </span>
-                        <span class="font-semibold text-gray-800">${activity.user_id || 'System'}</span>
-                        ${activity.admin_id ? `<span class="text-xs text-purple-600">👨‍💼 ${activity.admin_id}</span>` : ''}
+                        <span class="font-semibold text-gray-900 text-sm">${activity.user_id || 'System'}</span>
+                        ${activity.admin_id ? `<span class="text-sm text-purple-600">👨‍💼 ${activity.admin_id}</span>` : ''}
                     </div>
-                    ${activity.details ? `<p class="text-sm text-gray-600 mt-1 line-clamp-2">${activity.details}</p>` : ''}
+                    ${activity.details ? `<p class="text-sm text-gray-700 mt-1 line-clamp-2">${activity.details}</p>` : ''}
                 </div>
-                <span class="text-xs text-gray-400 whitespace-nowrap">${new Date(activity.created_at).toLocaleString('vi-VN', { 
+                <span class="text-xs text-gray-500 whitespace-nowrap">${new Date(activity.created_at).toLocaleString('vi-VN', { 
                     month: 'short', 
                     day: 'numeric', 
                     hour: '2-digit', 
@@ -1311,32 +1310,32 @@ function renderVIPPlans() {
 
     tbody.innerHTML = paginatedPlans.map(plan => `
         <tr class="hover:bg-blue-50 transition-colors">
-            <td class="px-6 py-4 font-medium" data-label="ID">#${plan.id}</td>
-            <td class="px-6 py-4 font-mono text-sm bg-gray-50" data-label="Key">${plan.plan_key}</td>
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${plan.id}</td>
+            <td class="px-6 py-4 font-mono text-sm bg-gray-50 text-gray-700" data-label="Key">${plan.plan_key}</td>
             <td class="px-6 py-4" data-label="Tên">
                 <div class="font-semibold text-gray-900">${plan.plan_name}</div>
-                ${plan.description ? `<div class="text-xs text-gray-500 mt-1">${plan.description}</div>` : ''}
+                ${plan.description ? `<div class="text-sm text-gray-600 mt-0.5">${plan.description}</div>` : ''}
             </td>
             <td class="px-6 py-4 text-center" data-label="Thời hạn">
-                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">⏱️ ${plan.duration_days} ngày</span>
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">⏱️ ${plan.duration_days} ngày</span>
             </td>
-            <td class="px-6 py-4 font-bold text-green-600 text-lg" data-label="Giá">${parseFloat(plan.price).toLocaleString('vi-VN')}đ</td>
+            <td class="px-6 py-4 font-bold text-green-600" data-label="Giá">${parseFloat(plan.price).toLocaleString('vi-VN')}đ</td>
             <td class="px-6 py-4" data-label="Trạng thái">
-                <span class="px-2 py-1 rounded-full text-xs font-medium ${plan.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${plan.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${plan.is_active ? '✅ Active' : '❌ Disabled'}
                 </span>
             </td>
             <td class="px-6 py-4 text-center" data-label="Thứ tự">
-                <span class="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-medium">#${plan.sort_order}</span>
+                <span class="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-semibold">#${plan.sort_order}</span>
             </td>
             <td class="px-6 py-4 flex gap-2 flex-wrap" data-label="Actions">
-                <button onclick="openEditPlanModal(${plan.id})" class="text-blue-600 hover:text-blue-900 font-medium text-sm">
+                <button onclick="openEditPlanModal(${plan.id})" class="text-blue-600 hover:text-blue-800 font-semibold text-sm transition">
                     ✏️ Sửa
                 </button>
-                <button onclick="togglePlanStatus(${plan.id})" class="text-${plan.is_active ? 'orange' : 'green'}-600 hover:text-${plan.is_active ? 'orange' : 'green'}-900 font-medium text-sm">
+                <button onclick="togglePlanStatus(${plan.id})" class="text-${plan.is_active ? 'orange' : 'green'}-600 hover:text-${plan.is_active ? 'orange' : 'green'}-800 font-semibold text-sm transition">
                     ${plan.is_active ? '⏸️ Tắt' : '▶️ Bật'}
                 </button>
-                <button onclick="showConfirmModal('Xóa gói VIP', 'Bạn có chắc muốn xóa gói ${plan.plan_name}? Hành động này không thể hoàn tác.', () => deletePlan(${plan.id}))" class="text-red-600 hover:text-red-900 font-medium text-sm">
+                <button onclick="showConfirmModal('Xóa gói VIP', 'Bạn có chắc muốn xóa gói ${plan.plan_name}? Hành động này không thể hoàn tác.', () => deletePlan(${plan.id}))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
                     🗑️ Xóa
                 </button>
             </td>
