@@ -513,6 +513,7 @@ async function cancelOrder(orderId) {
 /**
  * Auto-cancel unpaid orders after 15 minutes
  * NOW: Uses stored procedure if available, falls back to direct update
+ * FIX: Only log orders that were JUST cancelled, not all cancelled orders
  */
 async function autoCancelExpiredOrders() {
     let connection;
@@ -531,7 +532,18 @@ async function autoCancelExpiredOrders() {
             // Fall back to direct SQL
         }
         
-        // Fallback: Direct SQL update
+        // FIX: Get list of orders to cancel BEFORE updating
+        const [ordersToCancel] = await connection.execute(
+            `SELECT id, user_id FROM orders 
+             WHERE payment_status = "Unpaid" 
+             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15`
+        );
+        
+        if (ordersToCancel.length === 0) {
+            return; // No orders to cancel
+        }
+        
+        // Update orders to Cancelled
         const [result] = await connection.execute(
             `UPDATE orders 
              SET payment_status = "Cancelled", cancelled_at = NOW(), updated_at = NOW() 
@@ -542,17 +554,16 @@ async function autoCancelExpiredOrders() {
         if (result.affectedRows > 0) {
             console.log(`✅ Auto-cancelled ${result.affectedRows} orders`);
             
-            // Log cancellations
-            await connection.execute(
-                `INSERT INTO activity_logs (user_id, action, details, created_at)
-                 SELECT user_id, 'ORDER_AUTO_CANCELLED', 
-                        CONCAT('Auto-cancelled order #', id, ' (timeout)'), NOW()
-                 FROM orders 
-                 WHERE payment_status = 'Cancelled' 
-                 AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15
-                 AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
-                 LIMIT ${result.affectedRows}`
-            );
+            // Log cancellations - ONLY for orders that were just cancelled
+            for (const order of ordersToCancel) {
+                await connection.execute(
+                    `INSERT INTO activity_logs (user_id, action, details, created_at)
+                     VALUES (?, 'ORDER_AUTO_CANCELLED', ?, NOW())`,
+                    [order.user_id, `Auto-cancelled order #${order.id} (timeout)`]
+                );
+            }
+            
+            console.log(`✅ Logged ${ordersToCancel.length} auto-cancellations`);
         }
     } catch (error) {
         console.error('❌ Error auto-cancelling orders:', error.message);
