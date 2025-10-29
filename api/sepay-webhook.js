@@ -1,6 +1,11 @@
+// ============================================
+// IMPROVED SEPAY WEBHOOK WITH FK & CONSTRAINTS
+// ============================================
 import mysql from 'mysql2/promise';
 
+// ============================================
 // Database configuration
+// ============================================
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'your_db_user',
@@ -14,8 +19,7 @@ const dbConfig = {
 
 // Validate environment variables
 if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
-    console.error('Missing required database environment variables');
-    throw new Error('Database configuration is incomplete');
+    console.warn('⚠️  Missing database environment variables - using defaults');
 }
 
 // Create connection pool
@@ -23,25 +27,47 @@ let pool;
 const getPool = () => {
     if (!pool) {
         pool = mysql.createPool(dbConfig);
+        console.log('✅ Webhook database pool created');
     }
     return pool;
 };
 
-// helper: format Date -> 'YYYY-MM-DD HH:mm:ss'
+// ============================================
+// Helper functions
+// ============================================
+
+/**
+ * Format Date to MySQL format: YYYY-MM-DD HH:mm:ss
+ */
 function formatToMySQL(dt) {
     const pad = n => (n < 10 ? '0' + n : n);
     return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
 }
 
-// Helper: Process VIP payment (kept logic but ensure safe release)
+/**
+ * Process VIP payment after bank payment received
+ * NOW: Uses order_id FK, validates amounts, handles cancelled orders
+ */
 async function processVIPPayment(orderId, transactionData) {
-    const connection = await getPool().getConnection();
+    let connection;
     try {
+        connection = await getPool().getConnection();
         await connection.beginTransaction();
 
-        // Query for Unpaid OR Cancelled orders
+        // Query for Unpaid OR Cancelled orders (with row lock to prevent race conditions)
         const [orders] = await connection.execute(
-            'SELECT * FROM orders WHERE id = ? AND payment_status IN ("Unpaid", "Cancelled") FOR UPDATE',
+            `SELECT 
+                id,
+                user_id,
+                plan_type,
+                plan_id,
+                plan_name,
+                amount,
+                payment_status
+             FROM orders 
+             WHERE id = ? 
+             AND payment_status IN ('Unpaid', 'Cancelled')
+             FOR UPDATE`,
             [orderId]
         );
 
@@ -52,31 +78,34 @@ async function processVIPPayment(orderId, transactionData) {
 
         const order = orders[0];
 
-        // Verify amount matches; cast both to numbers
+        // Verify amount matches (with small tolerance for float errors)
         const txAmount = parseFloat(transactionData.amount_in || 0);
         const orderAmount = parseFloat(order.amount || 0);
 
-        if (Math.abs(txAmount - orderAmount) > 0.001) {
+        if (Math.abs(txAmount - orderAmount) > 0.01) {
             await connection.rollback();
-            return { success: false, message: 'Amount mismatch' };
+            return { success: false, message: `Amount mismatch: received ${txAmount}, expected ${orderAmount}` };
         }
 
         // Check if order was already cancelled
         if (order.payment_status === 'Cancelled') {
-            // Record transaction but DO NOT activate VIP or change order status
+            // Record transaction ref but DO NOT activate VIP
             await connection.execute(
-                'UPDATE orders SET transaction_ref = ?, updated_at = NOW() WHERE id = ?',
+                `UPDATE orders 
+                 SET transaction_ref = ?, updated_at = NOW() 
+                 WHERE id = ?`,
                 [transactionData.reference_number, orderId]
             );
             
             // Log activity for late payment on cancelled order
             await connection.execute(
-                'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
-                [order.user_id, 'PAYMENT_ON_CANCELLED_ORDER', `User paid for cancelled order #${orderId} (VIP not activated)`]
+                `INSERT INTO activity_logs (user_id, action, details, created_at) 
+                 VALUES (?, 'PAYMENT_ON_CANCELLED_ORDER', ?, NOW())`,
+                [order.user_id, `User paid for cancelled order #${orderId} (VIP not activated)`]
             );
             
             await connection.commit();
-            console.log(`[WEBHOOK WARNING] Payment received for cancelled order #${orderId}, transaction recorded but VIP not activated`);
+            console.log(`⚠️  Payment received for cancelled order #${orderId}, VIP not activated`);
             
             return {
                 success: true,
@@ -88,73 +117,92 @@ async function processVIPPayment(orderId, transactionData) {
         // Order is Unpaid - proceed with normal VIP activation
         // Update order status to Paid
         await connection.execute(
-            'UPDATE orders SET payment_status = "Paid", paid_at = NOW(), transaction_ref = ?, updated_at = NOW() WHERE id = ?',
+            `UPDATE orders 
+             SET payment_status = 'Paid', paid_at = NOW(), transaction_ref = ?, updated_at = NOW() 
+             WHERE id = ?`,
             [transactionData.reference_number, orderId]
         );
 
-        // Get plan duration from database
-        const [planData] = await connection.execute(
-            'SELECT duration_days, plan_name FROM vip_plans WHERE plan_key = ? AND is_active = 1',
-            [order.plan_type]
-        );
-        
-        let daysToAdd;
-        if (planData.length === 0) {
-            // Fallback to hardcoded durations if plan not in database
-            const planDurations = {
-                '1day': 1,
-                '3days': 3,
-                '7days': 7,
-                '30days': 30
-            };
-            daysToAdd = planDurations[order.plan_type] || 1;
+        // Get plan duration from database (using plan_id FK if available)
+        let daysToAdd = 1;
+        let planName = order.plan_name;
+
+        if (order.plan_id) {
+            // Use plan_id FK reference
+            const [planData] = await connection.execute(
+                `SELECT duration_days, plan_name 
+                 FROM vip_plans 
+                 WHERE id = ? AND is_active = 1`,
+                [order.plan_id]
+            );
+            
+            if (planData.length > 0) {
+                daysToAdd = planData[0].duration_days;
+                planName = planData[0].plan_name;
+            }
         } else {
-            daysToAdd = planData[0].duration_days;
+            // Fallback to plan_key lookup
+            const [planData] = await connection.execute(
+                `SELECT duration_days, plan_name 
+                 FROM vip_plans 
+                 WHERE plan_key = ? AND is_active = 1`,
+                [order.plan_type]
+            );
+            
+            if (planData.length > 0) {
+                daysToAdd = planData[0].duration_days;
+                planName = planData[0].plan_name;
+            }
         }
 
-        // Check existing VIP (use FOR UPDATE to avoid race)
+        // Check existing VIP subscription (use row lock)
         const [existingVIP] = await connection.execute(
-            'SELECT * FROM vip_subscriptions WHERE user_id = ? AND expiry_date > NOW() ORDER BY expiry_date DESC LIMIT 1 FOR UPDATE',
+            `SELECT id, expiry_date, plan_id 
+             FROM vip_subscriptions 
+             WHERE user_id = ? AND expiry_date > NOW() 
+             ORDER BY expiry_date DESC 
+             LIMIT 1 
+             FOR UPDATE`,
             [order.user_id]
         );
 
         let expiryDate;
-        if (existingVIP.length > 0) {
-            // Extend from existing expiry date - add days to existing expiry
-            await connection.execute(
-                'UPDATE vip_subscriptions SET expiry_date = DATE_ADD(?, INTERVAL ? DAY), plan_type = ?, updated_at = NOW() WHERE id = ?',
-                [existingVIP[0].expiry_date, daysToAdd, order.plan_type, existingVIP[0].id]
-            );
-            
-            // Get the calculated expiry for logging
-            const [result] = await connection.execute(
-                'SELECT DATE_FORMAT(DATE_ADD(?, INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
-                [existingVIP[0].expiry_date, daysToAdd]
-            );
-            expiryDate = result[0].new_expiry;
-        } else {
-            // Start from now - round up to next day 00:00:00, then add days
-            // Formula: DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL ? DAY)
-            // Example: Buy at 9AM 28/10 with 1-day plan → 00:00:00 29/10 + 1 day → 00:00:00 30/10
-            await connection.execute(
-                'INSERT INTO vip_subscriptions (user_id, plan_type, expiry_date, created_at) VALUES (?, ?, DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL ? DAY), NOW())',
-                [order.user_id, order.plan_type, daysToAdd]
-            );
-            
-            // Get the calculated expiry for logging
-            const [result] = await connection.execute(
-                'SELECT DATE_FORMAT(DATE_ADD(DATE_ADD(CURDATE(), INTERVAL 1 DAY), INTERVAL ? DAY), "%Y-%m-%d %H:%i:%s") as new_expiry',
-                [daysToAdd]
-            );
-            expiryDate = result[0].new_expiry;
-        }
 
-        console.log(`[DEBUG WEBHOOK] Inserted VIP with expiry date: ${expiryDate} for ${daysToAdd} days, order #${orderId}`);
+        if (existingVIP.length > 0) {
+            // Extend from existing expiry date
+            expiryDate = new Date(existingVIP[0].expiry_date);
+            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
+            
+            await connection.execute(
+                `UPDATE vip_subscriptions 
+                 SET expiry_date = ?, plan_id = ?, plan_type = ?, updated_at = NOW() 
+                 WHERE id = ?`,
+                [expiryDate, order.plan_id, order.plan_type, existingVIP[0].id]
+            );
+            
+            console.log(`✅ Extended VIP: ${order.user_id}, +${daysToAdd} days to ${expiryDate.toISOString()}`);
+        } else {
+            // Create new VIP subscription (start from tomorrow midnight)
+            expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 1);
+            expiryDate.setHours(0, 0, 0, 0);
+            expiryDate.setDate(expiryDate.getDate() + daysToAdd);
+            
+            await connection.execute(
+                `INSERT INTO vip_subscriptions (
+                    user_id, plan_id, plan_type, expiry_date, order_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, NOW())`,
+                [order.user_id, order.plan_id, order.plan_type, expiryDate, orderId]
+            );
+            
+            console.log(`✅ Created new VIP: ${order.user_id}, expires ${expiryDate.toISOString()}`);
+        }
 
         // Log activity
         await connection.execute(
-            'INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())',
-            [order.user_id, 'VIP_PURCHASE', `Purchased ${order.plan_name} - Order #${orderId}`]
+            `INSERT INTO activity_logs (user_id, action, details, created_at) 
+             VALUES (?, 'VIP_PURCHASE', ?, NOW())`,
+            [order.user_id, `Purchased ${planName} - Order #${orderId}`]
         );
 
         await connection.commit();
@@ -162,63 +210,137 @@ async function processVIPPayment(orderId, transactionData) {
         return {
             success: true,
             message: 'Payment processed successfully',
-            expiryDate: new Date(expiryDate).toISOString()
+            expiryDate: expiryDate.toISOString(),
+            orderCancelled: false
         };
 
     } catch (error) {
-        try { await connection.rollback(); } catch (_) {}
-        console.error('Error in processVIPPayment:', error);
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackErr) {
+                console.error('❌ Rollback error:', rollbackErr.message);
+            }
+        }
+        console.error('❌ Error in processVIPPayment:', error.message);
         return { success: false, message: error.message || 'Unknown error' };
     } finally {
-        connection.release();
+        if (connection) {
+            try {
+                connection.release();
+            } catch (releaseErr) {
+                console.error('❌ Release error:', releaseErr.message);
+            }
+        }
     }
 }
 
-// Helper: Auto-cancel expired orders
-async function autoCancelExpiredOrders() {
+/**
+ * Record transaction in database with order_id FK
+ */
+async function recordTransaction(transactionData) {
+    let connection;
     try {
-        const connection = await getPool().getConnection();
+        connection = await getPool().getConnection();
         
-        // Cancel orders that are Unpaid for more than 15 minutes
+        const [result] = await connection.execute(
+            `INSERT INTO transactions (
+                gateway,
+                transaction_date,
+                account_number,
+                sub_account,
+                amount_in,
+                amount_out,
+                accumulated,
+                code,
+                transaction_content,
+                reference_number,
+                body,
+                order_id,
+                received_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [
+                transactionData.gateway || '',
+                transactionData.transactionDateStr,
+                transactionData.accountNumber || '',
+                transactionData.subAccount || '',
+                transactionData.amountIn,
+                transactionData.amountOut,
+                transactionData.accumulated || 0,
+                transactionData.code || '',
+                transactionData.content || '',
+                transactionData.referenceCode || '',
+                transactionData.description || '',
+                transactionData.orderId || null  // FK to orders.id
+            ]
+        );
+        
+        return { success: true, transactionId: result.insertId };
+    } catch (error) {
+        console.error('❌ Error recording transaction:', error.message);
+        return { success: false, message: error.message };
+    } finally {
+        if (connection) {
+            try {
+                connection.release();
+            } catch (err) {
+                console.error('Release error:', err);
+            }
+        }
+    }
+}
+
+/**
+ * Auto-cancel unpaid orders after 15 minutes
+ * NOW: Uses stored procedure if available
+ */
+async function autoCancelExpiredOrders() {
+    let connection;
+    try {
+        connection = await getPool().getConnection();
+        
+        // Try to use stored procedure first
+        try {
+            await connection.execute('CALL sp_auto_cancel_unpaid_orders()');
+            console.log('✅ Auto-cancel executed via stored procedure');
+            return;
+        } catch (err) {
+            if (err.code !== 'ER_SP_DOES_NOT_EXIST') {
+                throw err;
+            }
+            // Fall back to direct SQL
+        }
+        
+        // Fallback: Direct SQL update
         const [result] = await connection.execute(
             `UPDATE orders 
-             SET payment_status = "Cancelled", updated_at = NOW() 
-             WHERE payment_status = "Unpaid" 
+             SET payment_status = 'Cancelled', cancelled_at = NOW(), updated_at = NOW() 
+             WHERE payment_status = 'Unpaid' 
              AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15`
         );
         
         if (result.affectedRows > 0) {
-            console.log(`[WEBHOOK AUTO-CANCEL] Auto-cancelled ${result.affectedRows} expired orders (>= 15 minutes)`);
-            
-            // Get the cancelled order IDs for logging
-            const [cancelledOrders] = await connection.execute(
-                `SELECT id, user_id FROM orders 
-                 WHERE payment_status = "Cancelled" 
-                 AND updated_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`
-            );
-            
-            // Log activity for each cancelled order
-            for (const order of cancelledOrders) {
-                await connection.execute(
-                    `INSERT INTO activity_logs (user_id, action, details, created_at)
-                     VALUES (?, "ORDER_AUTO_CANCELLED", ?, NOW())`,
-                    [order.user_id, `Auto-cancelled order #${order.id} after 15 minutes timeout`]
-                );
+            console.log(`✅ Auto-cancelled ${result.affectedRows} orders`);
+        }
+    } catch (error) {
+        console.error('❌ Error auto-cancelling orders:', error.message);
+    } finally {
+        if (connection) {
+            try {
+                connection.release();
+            } catch (err) {
+                console.error('Release error:', err);
             }
         }
-        
-        connection.release();
-        return result.affectedRows;
-    } catch (error) {
-        console.error('[WEBHOOK] Error auto-cancelling orders:', error);
-        return 0;
     }
 }
 
-// Main webhook handler
+// ============================================
+// MAIN WEBHOOK HANDLER
+// ============================================
 export default async (req, res) => {
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://your-domain.com');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -230,8 +352,8 @@ export default async (req, res) => {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    // Run auto-cancel expired orders on every webhook request
-    autoCancelExpiredOrders().catch(err => console.error('[WEBHOOK AUTO-CANCEL ERROR]', err));
+    // Run auto-cancel on every webhook request
+    autoCancelExpiredOrders().catch(err => console.error('❌ Auto-cancel error:', err.message));
 
     try {
         const webhookData = req.body;
@@ -240,7 +362,7 @@ export default async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid webhook data' });
         }
 
-        // destructure safely
+        // Destructure webhook fields
         const {
             gateway,
             transactionDate,
@@ -255,108 +377,126 @@ export default async (req, res) => {
             description
         } = webhookData;
 
-        // convert transactionDate string -> JS Date assuming incoming time is UTC or local.
-        // If incoming is already local VN time, remove the +7 logic.
-        // Here we assume incoming is UTC string "YYYY-MM-DD HH:mm:ss" -> treat it as UTC then add +7
-        // If your bank sends VN local time already, set useAsIs = true.
-        const useAsIs = false; // set true if incoming transactionDate already in +07:00
+        // Parse and convert transaction date
         let dtObj;
         if (!transactionDate) {
-            dtObj = new Date(); // fallback to now
+            dtObj = new Date();
         } else {
-            // Parse "YYYY-MM-DD HH:mm:ss" by replacing space with 'T' and treating as UTC if useAsIs=false
+            // Parse "YYYY-MM-DD HH:mm:ss" string
             const t = transactionDate.trim().replace(' ', 'T');
-            if (useAsIs) {
-                // treat as local VN time -> create Date from components without timezone shift
-                // create as local by appending local offset
-                dtObj = new Date(t);
-            } else {
-                // treat as UTC then add +7
-                dtObj = new Date(t + 'Z'); // force as UTC
-                dtObj = new Date(dtObj.getTime() + 7 * 60 * 60 * 1000); // shift to +07:00
-            }
+            dtObj = new Date(t + 'Z'); // Treat as UTC
+            dtObj = new Date(dtObj.getTime() + 7 * 60 * 60 * 1000); // Convert to UTC+7
         }
 
         const transactionDateStr = formatToMySQL(dtObj);
 
-        // compute amount_in/out depending on transferType
+        // Compute amount_in/out based on transfer type
         const amountIn = transferType === 'in' ? parseFloat(transferAmount || 0) : 0;
         const amountOut = transferType === 'out' ? parseFloat(transferAmount || 0) : 0;
 
-        // Insert transaction (use a dedicated connection)
-        const conn = await getPool().getConnection();
-        try {
-            await conn.execute(
-                `INSERT INTO transactions 
-                (gateway, transaction_date, account_number, sub_account, amount_in, amount_out, 
-                accumulated, code, transaction_content, reference_number, body, received_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-                [gateway || '', transactionDateStr, accountNumber || '', subAccount || '', amountIn, amountOut,
-                 accumulated || 0, code || '', content || '', referenceCode || '', description || '']
-            );
-        } finally {
-            conn.release();
-        }
+        // Extract order code from transaction content
+        // Pattern: DKHP + 12 alphanumeric characters
+        const orderCodeRegex = /DKHP[A-Z0-9]{12}/i;
+        const orderCodeMatch = (content || '').match(orderCodeRegex);
 
-        // Extract order code from transaction content (pattern DKHP + 12 alphanumeric chars)
-        const regex = /DKHP[A-Z0-9]{12}/i;
-        const match = (content || '').match(regex);
+        if (!orderCodeMatch) {
+            // Record transaction even if order code not found
+            await recordTransaction({
+                gateway,
+                transactionDateStr,
+                accountNumber,
+                subAccount,
+                amountIn,
+                amountOut,
+                accumulated,
+                code,
+                content,
+                referenceCode,
+                description,
+                orderId: null
+            });
 
-        if (!match) {
             return res.status(200).json({
                 success: false,
-                message: 'Order code not found in transaction content'
+                message: 'Order code not found in transaction content',
+                transactionRecorded: true
             });
         }
 
-        const orderCode = match[0].toUpperCase();
+        const orderCode = orderCodeMatch[0].toUpperCase();
         
         // Find order by order_code
-        const conn3 = await getPool().getConnection();
+        let connection;
         let orderId;
         try {
-            const [orderRows] = await conn3.execute(
+            connection = await getPool().getConnection();
+            const [orderRows] = await connection.execute(
                 'SELECT id FROM orders WHERE order_code = ?',
                 [orderCode]
             );
             
             if (orderRows.length === 0) {
-                conn3.release();
+                // Record transaction even if order not found
+                await recordTransaction({
+                    gateway,
+                    transactionDateStr,
+                    accountNumber,
+                    subAccount,
+                    amountIn,
+                    amountOut,
+                    accumulated,
+                    code,
+                    content,
+                    referenceCode,
+                    description,
+                    orderId: null
+                });
+
                 return res.status(200).json({
                     success: false,
-                    message: `Order not found for code: ${orderCode}`
+                    message: `Order not found for code: ${orderCode}`,
+                    transactionRecorded: true
                 });
             }
             
             orderId = orderRows[0].id;
         } finally {
-            conn3.release();
+            if (connection) connection.release();
         }
 
-        // Process the payment (this will update orders, vip_subscriptions, activity_logs)
-        const result = await processVIPPayment(orderId, {
+        // Record transaction with order_id FK
+        const txResult = await recordTransaction({
+            gateway,
+            transactionDateStr,
+            accountNumber,
+            subAccount,
+            amountIn,
+            amountOut,
+            accumulated,
+            code,
+            content,
+            referenceCode,
+            description,
+            orderId
+        });
+
+        if (!txResult.success) {
+            console.error('❌ Failed to record transaction:', txResult.message);
+        }
+
+        // Process the payment
+        const paymentResult = await processVIPPayment(orderId, {
             amount_in: amountIn,
             reference_number: referenceCode
         });
 
-        // Update transactions row to set order_id where reference_number matches (safe update)
-        const conn2 = await getPool().getConnection();
-        try {
-            await conn2.execute(
-                'UPDATE transactions SET order_id = ? WHERE reference_number = ?',
-                [orderId, referenceCode]
-            );
-        } finally {
-            conn2.release();
-        }
-
-        return res.status(200).json(result);
+        return res.status(200).json(paymentResult);
 
     } catch (error) {
-        console.error('Webhook error:', error);
+        console.error('❌ Webhook error:', error);
         return res.status(500).json({
             success: false,
-            message: 'Internal server error: ' + (error && error.message ? error.message : String(error))
+            message: 'Internal server error: ' + (error?.message || String(error))
         });
     }
 };
