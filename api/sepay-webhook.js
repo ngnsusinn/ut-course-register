@@ -169,33 +169,55 @@ async function processVIPPayment(orderId, transactionData) {
         let expiryDate;
 
         if (existingVIP.length > 0) {
-            // Extend from existing expiry date
+            // User already has active VIP - create NEW subscription with cumulative expiry
             expiryDate = new Date(existingVIP[0].expiry_date);
+            // Round to end of current expiry day
+            expiryDate.setHours(23, 59, 59, 999);
+            // Add the number of days
             expiryDate.setDate(expiryDate.getDate() + daysToAdd);
             
+            // Format to MySQL datetime string to preserve timezone
+            const expiryString = expiryDate.getFullYear() + '-' + 
+                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(expiryDate.getDate()).padStart(2, '0') + ' ' + 
+                String(expiryDate.getHours()).padStart(2, '0') + ':' + 
+                String(expiryDate.getMinutes()).padStart(2, '0') + ':' + 
+                String(expiryDate.getSeconds()).padStart(2, '0');
+            
+            // INSERT new subscription instead of UPDATE (to preserve purchase history)
             await connection.execute(
-                `UPDATE vip_subscriptions 
-                 SET expiry_date = ?, plan_id = ?, plan_type = ?, updated_at = NOW() 
-                 WHERE id = ?`,
-                [expiryDate, order.plan_id, order.plan_type, existingVIP[0].id]
+                `INSERT INTO vip_subscriptions (
+                    user_id, plan_id, plan_type, expiry_date, order_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, NOW())`,
+                [order.user_id, order.plan_id, order.plan_type, expiryString, orderId]
             );
             
-            console.log(`✅ Extended VIP: ${order.user_id}, +${daysToAdd} days to ${expiryDate.toISOString()}`);
+            console.log(`✅ Extended VIP: ${order.user_id}, +${daysToAdd} days to ${expiryDate.toLocaleString('vi-VN')}`);
         } else {
             // Create new VIP subscription (start from tomorrow midnight)
             expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + 1);
             expiryDate.setHours(0, 0, 0, 0);
             expiryDate.setDate(expiryDate.getDate() + daysToAdd);
+            // Set to end of the final day
+            expiryDate.setHours(23, 59, 59, 999);
+            
+            // Format to MySQL datetime string to preserve timezone
+            const expiryString = expiryDate.getFullYear() + '-' + 
+                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(expiryDate.getDate()).padStart(2, '0') + ' ' + 
+                String(expiryDate.getHours()).padStart(2, '0') + ':' + 
+                String(expiryDate.getMinutes()).padStart(2, '0') + ':' + 
+                String(expiryDate.getSeconds()).padStart(2, '0');
             
             await connection.execute(
                 `INSERT INTO vip_subscriptions (
                     user_id, plan_id, plan_type, expiry_date, order_id, created_at
                 ) VALUES (?, ?, ?, ?, ?, NOW())`,
-                [order.user_id, order.plan_id, order.plan_type, expiryDate, orderId]
+                [order.user_id, order.plan_id, order.plan_type, expiryString, orderId]
             );
             
-            console.log(`✅ Created new VIP: ${order.user_id}, expires ${expiryDate.toISOString()}`);
+            console.log(`✅ Created new VIP: ${order.user_id}, expires ${expiryDate.toLocaleString('vi-VN')}`);
         }
 
         // Log activity
