@@ -962,6 +962,15 @@ async function loadDashboard() {
             console.log('👥 User growth:', stats.userGrowth);
             console.log('⭐ VIP distribution:', stats.vipDistribution);
             
+            // Normalize field names if backend returns payment_date instead of date
+            if (stats.revenueByDate && stats.revenueByDate.length > 0) {
+                stats.revenueByDate = stats.revenueByDate.map(item => ({
+                    date: item.date || item.payment_date,
+                    revenue: item.revenue || item.daily_revenue
+                }));
+                console.log('✅ Normalized revenue data:', stats.revenueByDate);
+            }
+            
             // Update KPI cards
             document.getElementById('totalUsers').textContent = stats.totalUsers;
             document.getElementById('vipUsers').textContent = stats.vipUsers;
@@ -1013,16 +1022,28 @@ function renderRevenueChart(data) {
         return;
     }
     
-    // Reverse data to show oldest to newest (left to right)
-    const reversedData = [...data].reverse();
+    // Normalize data and reverse to show oldest to newest (left to right)
+    const normalizedData = data.map(item => ({
+        date: item.date || item.payment_date,
+        revenue: parseFloat(item.revenue || item.daily_revenue || 0)
+    })).reverse();
+    
+    console.log('🎨 Chart normalized data:', normalizedData);
     
     charts.revenue = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: reversedData.map(d => new Date(d.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })),
+            labels: normalizedData.map(d => {
+                const date = new Date(d.date);
+                if (isNaN(date.getTime())) {
+                    console.error('❌ Invalid date:', d.date);
+                    return 'N/A';
+                }
+                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            }),
             datasets: [{
                 label: 'Doanh thu (VNĐ)',
-                data: reversedData.map(d => parseFloat(d.revenue || 0)),
+                data: normalizedData.map(d => d.revenue),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 tension: 0.4,
