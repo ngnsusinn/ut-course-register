@@ -323,6 +323,26 @@ function switchTab(tab) {
     refreshData(tab);
 }
 
+// Helper function to filter and highlight an order by ID
+function filterOrderById(orderId) {
+    // Switch to orders tab
+    switchTab('orders');
+    
+    // Wait for tab to load, then filter
+    setTimeout(() => {
+        const ordersSearch = document.getElementById('ordersSearch');
+        if (ordersSearch) {
+            // Clear filter and search for the order ID
+            document.getElementById('ordersFilter').value = '';
+            ordersSearch.value = `#${orderId}`;
+            renderOrders();
+            
+            // Scroll to the orders section
+            document.getElementById('ordersTab').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 300);
+}
+
 // Data fetching
 async function refreshData(type) {
     if (type === 'dashboard') {
@@ -471,13 +491,27 @@ function renderSubscriptions() {
 
     tbody.innerHTML = paginatedSubs.map(sub => {
         const isActive = new Date(sub.expiry_date) > new Date();
+        const source = sub.created_by_admin 
+            ? `👨‍💼 Admin (${sub.created_by_admin})`
+            : `👤 User`;
+        const orderLink = sub.order_id 
+            ? `<a href="#orders" onclick="filterOrderById(${sub.order_id})" class="text-blue-600 hover:underline">Đơn #${sub.order_id}</a>`
+            : '<span class="text-gray-400">N/A</span>';
+        
         return `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">${sub.id}</td>
             <td class="px-6 py-4" data-label="User">${sub.user_id}</td>
             <td class="px-6 py-4" data-label="Plan">
-                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${sub.plan_type}</span>
+                <div>
+                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${sub.plan_type}</span>
+                    <div class="text-xs text-gray-500 mt-1">Plan #${sub.plan_id || 'N/A'}</div>
+                </div>
             </td>
+            <td class="px-6 py-4 text-sm" data-label="Source">
+                <span class="text-xs">${source}</span>
+            </td>
+            <td class="px-6 py-4 text-sm" data-label="Order">${orderLink}</td>
             <td class="px-6 py-4" data-label="Status">
                 <span class="px-2 py-1 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${isActive ? '✅ Active' : '❌ Expired'}
@@ -515,27 +549,39 @@ function renderOrders() {
     const { currentPage, rowsPerPage } = pagination.orders;
     const paginatedOrders = paginateArray(filteredOrders, currentPage, rowsPerPage);
 
-    tbody.innerHTML = paginatedOrders.map(order => `
+    tbody.innerHTML = paginatedOrders.map(order => {
+        const isCancelled = order.cancelled_at !== null && order.cancelled_at !== undefined;
+        const isPaid = order.payment_status === 'Paid';
+        
+        return `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">#${order.id}</td>
             <td class="px-6 py-4" data-label="Order Code">
                 <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-mono font-bold">${order.order_code || 'N/A'}</span>
             </td>
             <td class="px-6 py-4" data-label="User">${order.user_id}</td>
-            <td class="px-6 py-4" data-label="Plan">${order.plan_name}</td>
+            <td class="px-6 py-4" data-label="Plan">
+                <div>
+                    <div>${order.plan_name}</div>
+                    <div class="text-xs text-gray-500 mt-1">Plan #${order.plan_id || 'N/A'}</div>
+                </div>
+            </td>
             <td class="px-6 py-4 font-semibold" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
             <td class="px-6 py-4" data-label="Status">
                 <span class="px-2 py-1 rounded-full text-xs font-medium ${
-                    order.payment_status === 'Paid' ? 'bg-green-100 text-green-800' :
-                    order.payment_status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                    isCancelled ? 'bg-red-100 text-red-800' :
+                    isPaid ? 'bg-green-100 text-green-800' :
                     'bg-yellow-100 text-yellow-800'
                 }">
-                    ${order.payment_status}
+                    ${isCancelled ? '❌ Cancelled' : isPaid ? '✅ Paid' : '⏳ Unpaid'}
                 </span>
+            </td>
+            <td class="px-6 py-4 text-sm" data-label="Paid At">
+                ${order.paid_at ? formatDateTime(order.paid_at) : '<span class="text-gray-400">N/A</span>'}
             </td>
             <td class="px-6 py-4 text-sm" data-label="Created">${formatDateTime(order.created_at)}</td>
         </tr>
-    `).join('');
+    `}).join('');
     
     // Render pagination controls
     renderPaginationControls('orders', filteredOrders.length);
@@ -557,9 +603,15 @@ function renderTransactions() {
     const { currentPage, rowsPerPage } = pagination.transactions;
     const paginatedTrans = paginateArray(filteredTrans, currentPage, rowsPerPage);
 
-    tbody.innerHTML = paginatedTrans.map(trans => `
+    tbody.innerHTML = paginatedTrans.map(trans => {
+        const orderLink = trans.order_id 
+            ? `<a href="#orders" onclick="filterOrderById(${trans.order_id})" class="text-blue-600 hover:underline">Đơn #${trans.order_id}</a>`
+            : '<span class="text-gray-400">N/A</span>';
+        
+        return `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">${trans.id}</td>
+            <td class="px-6 py-4 text-sm" data-label="Order">${orderLink}</td>
             <td class="px-6 py-4" data-label="Gateway">
                 <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-medium">${trans.gateway}</span>
             </td>
@@ -568,7 +620,7 @@ function renderTransactions() {
             <td class="px-6 py-4 text-sm font-mono" data-label="Reference">${trans.reference_number || 'N/A'}</td>
             <td class="px-6 py-4 text-sm" data-label="Time">${formatDateTime(trans.received_at)}</td>
         </tr>
-    `).join('');
+    `}).join('');
     
     // Render pagination controls
     renderPaginationControls('transactions', filteredTrans.length);
@@ -905,6 +957,11 @@ async function loadDashboard() {
         if (data.success) {
             const stats = data.stats;
             
+            // Debug: Log revenue data
+            console.log('📊 Revenue data:', stats.revenueByDate);
+            console.log('👥 User growth:', stats.userGrowth);
+            console.log('⭐ VIP distribution:', stats.vipDistribution);
+            
             // Update KPI cards
             document.getElementById('totalUsers').textContent = stats.totalUsers;
             document.getElementById('vipUsers').textContent = stats.vipUsers;
@@ -932,31 +989,67 @@ function renderRevenueChart(data) {
     
     if (charts.revenue) charts.revenue.destroy();
     
+    // Handle empty data
+    if (!data || data.length === 0) {
+        charts.revenue = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Chưa có dữ liệu'],
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: [0],
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        return;
+    }
+    
+    // Reverse data to show oldest to newest (left to right)
+    const reversedData = [...data].reverse();
+    
     charts.revenue = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: data.map(d => new Date(d.date).toLocaleDateString('vi-VN')),
+            labels: reversedData.map(d => new Date(d.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })),
             datasets: [{
                 label: 'Doanh thu (VNĐ)',
-                data: data.map(d => d.revenue),
+                data: reversedData.map(d => parseFloat(d.revenue || 0)),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 tension: 0.4,
-                fill: true
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Doanh thu: ' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return value.toLocaleString('vi-VN') + 'đ';
+                            return (value / 1000).toFixed(0) + 'K';
                         }
                     }
                 }
