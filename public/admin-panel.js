@@ -343,6 +343,26 @@ function filterOrderById(orderId) {
     }, 300);
 }
 
+// Helper function to filter and highlight an order by order code
+function filterOrderByCode(orderCode) {
+    // Switch to orders tab
+    switchTab('orders');
+    
+    // Wait for tab to load, then filter
+    setTimeout(() => {
+        const ordersSearch = document.getElementById('ordersSearch');
+        if (ordersSearch) {
+            // Clear filter and search for the order code
+            document.getElementById('ordersFilter').value = '';
+            ordersSearch.value = orderCode;
+            renderOrders();
+            
+            // Scroll to the orders section
+            document.getElementById('ordersTab').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 300);
+}
+
 // Data fetching
 async function refreshData(type) {
     if (type === 'dashboard') {
@@ -505,10 +525,7 @@ function renderSubscriptions() {
             <td class="px-6 py-4 font-medium" data-label="ID">${sub.id}</td>
             <td class="px-6 py-4" data-label="User">${sub.user_id}</td>
             <td class="px-6 py-4" data-label="Plan">
-                <div>
-                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${sub.plan_type}</span>
-                    <div class="text-xs text-gray-500 mt-1">Plan #${sub.plan_id || 'N/A'}</div>
-                </div>
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${sub.plan_type}</span>
             </td>
             <td class="px-6 py-4 text-sm" data-label="Source">
                 <span class="text-xs">${source}</span>
@@ -563,10 +580,7 @@ function renderOrders() {
             </td>
             <td class="px-6 py-4" data-label="User">${order.user_id}</td>
             <td class="px-6 py-4" data-label="Plan">
-                <div>
-                    <div>${order.plan_name}</div>
-                    <div class="text-xs text-gray-500 mt-1">Plan #${order.plan_id || 'N/A'}</div>
-                </div>
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">${order.plan_name}</span>
             </td>
             <td class="px-6 py-4 font-semibold" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
             <td class="px-6 py-4" data-label="Status">
@@ -606,14 +620,14 @@ function renderTransactions() {
     const paginatedTrans = paginateArray(filteredTrans, currentPage, rowsPerPage);
 
     tbody.innerHTML = paginatedTrans.map(trans => {
-        const orderLink = trans.order_id 
-            ? `<a href="#orders" onclick="filterOrderById(${trans.order_id})" class="text-blue-600 hover:underline">Đơn #${trans.order_id}</a>`
+        const orderLink = trans.order_code 
+            ? `<a href="#orders" onclick="filterOrderByCode('${trans.order_code}')" class="text-blue-600 hover:underline font-medium">${trans.order_code}</a>`
             : '<span class="text-gray-400">N/A</span>';
         
         return `
         <tr class="hover:bg-blue-50 transition-colors">
             <td class="px-6 py-4 font-medium" data-label="ID">${trans.id}</td>
-            <td class="px-6 py-4 text-sm" data-label="Order">${orderLink}</td>
+            <td class="px-6 py-4 text-sm font-mono" data-label="Order">${orderLink}</td>
             <td class="px-6 py-4" data-label="Gateway">
                 <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-medium">${trans.gateway}</span>
             </td>

@@ -383,12 +383,14 @@ async function getAllTransactions() {
             SELECT 
                 t.id,
                 t.order_id,
+                o.order_code,
                 t.gateway,
                 t.amount_in,
                 t.transaction_content,
                 t.reference_number,
                 t.received_at
             FROM transactions t
+            LEFT JOIN orders o ON t.order_id = o.id
             ORDER BY t.received_at DESC
         `);
         return { success: true, transactions };
