@@ -214,11 +214,19 @@ async function addVIPSubscription(payload) {
             // Add the number of days
             expiryDate.setDate(expiryDate.getDate() + days);
             
+            // Format to MySQL datetime string (YYYY-MM-DD HH:mm:ss) to preserve timezone
+            const expiryString = expiryDate.getFullYear() + '-' + 
+                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(expiryDate.getDate()).padStart(2, '0') + ' ' + 
+                String(expiryDate.getHours()).padStart(2, '0') + ':' + 
+                String(expiryDate.getMinutes()).padStart(2, '0') + ':' + 
+                String(expiryDate.getSeconds()).padStart(2, '0');
+            
             await connection.execute(
                 `INSERT INTO vip_subscriptions (
                     user_id, plan_id, plan_type, expiry_date, created_by_admin, created_at
                 ) VALUES (?, ?, ?, ?, 'admin', NOW())`,
-                [userId, planId, planType, expiryDate]
+                [userId, planId, planType, expiryString]
             );
             addType = 'cumulative';
         } else {
@@ -230,11 +238,19 @@ async function addVIPSubscription(payload) {
             // Set to end of the final day
             expiryDate.setHours(23, 59, 59, 999);
             
+            // Format to MySQL datetime string (YYYY-MM-DD HH:mm:ss) to preserve timezone
+            const expiryString = expiryDate.getFullYear() + '-' + 
+                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(expiryDate.getDate()).padStart(2, '0') + ' ' + 
+                String(expiryDate.getHours()).padStart(2, '0') + ':' + 
+                String(expiryDate.getMinutes()).padStart(2, '0') + ':' + 
+                String(expiryDate.getSeconds()).padStart(2, '0');
+            
             await connection.execute(
                 `INSERT INTO vip_subscriptions (
                     user_id, plan_id, plan_type, expiry_date, created_by_admin, created_at
                 ) VALUES (?, ?, ?, ?, 'admin', NOW())`,
-                [userId, planId, planType, expiryDate]
+                [userId, planId, planType, expiryString]
             );
             addType = 'new';
         }
