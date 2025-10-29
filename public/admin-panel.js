@@ -494,9 +494,11 @@ function renderSubscriptions() {
         const source = sub.created_by_admin 
             ? `👨‍💼 Admin (${sub.created_by_admin})`
             : `👤 User`;
-        const orderLink = sub.order_id 
-            ? `<a href="#orders" onclick="filterOrderById(${sub.order_id})" class="text-blue-600 hover:underline">Đơn #${sub.order_id}</a>`
-            : '<span class="text-gray-400">N/A</span>';
+        
+        // Show order link if user purchased, or "Admin" if admin added
+        const orderDisplay = sub.order_id 
+            ? `<a href="#orders" onclick="filterOrderById(${sub.order_id})" class="text-blue-600 hover:underline font-medium">Đơn #${sub.order_id}</a>`
+            : '<span class="text-purple-600 font-medium">👨‍💼 Admin</span>';
         
         return `
         <tr class="hover:bg-blue-50 transition-colors">
@@ -511,7 +513,7 @@ function renderSubscriptions() {
             <td class="px-6 py-4 text-sm" data-label="Source">
                 <span class="text-xs">${source}</span>
             </td>
-            <td class="px-6 py-4 text-sm" data-label="Order">${orderLink}</td>
+            <td class="px-6 py-4 text-sm" data-label="Order">${orderDisplay}</td>
             <td class="px-6 py-4" data-label="Status">
                 <span class="px-2 py-1 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${isActive ? '✅ Active' : '❌ Expired'}

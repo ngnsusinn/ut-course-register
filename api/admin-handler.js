@@ -435,8 +435,9 @@ async function getDashboardStats() {
         // Use improved views for better performance
         const [totalUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
         
+        // Count DISTINCT users with active VIP (not total subscriptions)
         const [vipUsers] = await connection.execute(
-            'SELECT COUNT(*) as count FROM v_active_vip_users'
+            'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
         );
         
         const [revenue] = await connection.execute(
