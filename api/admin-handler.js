@@ -136,6 +136,7 @@ async function getAllSubscriptions() {
                 vs.id,
                 vs.user_id,
                 vs.plan_id,
+                vs.order_id,
                 vs.plan_type,
                 vp.plan_name,
                 vs.expiry_date,
@@ -452,17 +453,27 @@ async function getDashboardStats() {
             FROM orders
         `);
         
-        // Revenue by date (last 30 days)
+        // Revenue by date (last 7 days)
         const [revenueByDate] = await connection.execute(`
-            SELECT payment_date, daily_revenue FROM v_revenue_by_day
-            LIMIT 30
+            SELECT 
+                DATE(payment_date) as date, 
+                CAST(daily_revenue as DECIMAL(10,2)) as revenue 
+            FROM v_revenue_by_day
+            ORDER BY payment_date DESC
+            LIMIT 7
         `);
         
-        // User growth (last 30 days)
+        // Normalize data format to ensure consistency
+        const normalizedRevenueData = revenueByDate.map(row => ({
+            date: row.date,
+            revenue: parseFloat(row.revenue || 0)
+        }));
+        
+        // User growth (last 7 days)
         const [userGrowth] = await connection.execute(`
             SELECT DATE(created_at) as date, COUNT(*) as count
             FROM users
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
             GROUP BY DATE(created_at)
             ORDER BY date ASC
         `);
@@ -495,7 +506,7 @@ async function getDashboardStats() {
                     unpaid: orderStats[0].unpaid || 0,
                     cancelled: orderStats[0].cancelled || 0
                 },
-                revenueByDate,
+                revenueByDate: normalizedRevenueData,
                 userGrowth,
                 vipDistribution,
                 recentActivities
@@ -504,28 +515,24 @@ async function getDashboardStats() {
     } catch (error) {
         console.warn('⚠️  Dashboard stats error (views may not exist yet):', error.message);
         // Fallback to basic stats if views don't exist
-        try {
-            const [totalUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
-            const [vipUsers] = await connection.execute(
-                'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
-            );
-            
-            return {
-                success: true,
-                stats: {
-                    totalUsers: totalUsers[0].count,
-                    vipUsers: vipUsers[0].count,
-                    totalRevenue: 0,
-                    orders: { total: 0, paid: 0, unpaid: 0, cancelled: 0 },
-                    revenueByDate: [],
-                    userGrowth: [],
-                    vipDistribution: [],
-                    recentActivities: []
-                }
-            };
-        } finally {
-            if (connection) connection.release();
-        }
+        const [totalUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
+        const [vipUsers] = await connection.execute(
+            'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
+        );
+        
+        return {
+            success: true,
+            stats: {
+                totalUsers: totalUsers[0].count,
+                vipUsers: vipUsers[0].count,
+                totalRevenue: 0,
+                orders: { total: 0, paid: 0, unpaid: 0, cancelled: 0 },
+                revenueByDate: [],
+                userGrowth: [],
+                vipDistribution: [],
+                recentActivities: []
+            }
+        };
     } finally {
         if (connection) connection.release();
     }
