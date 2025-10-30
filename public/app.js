@@ -973,7 +973,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const fetchRegisteredClasses = async () => {
         if (!authToken) return;
         toggleLoading(refreshRegisteredBtn, true);
-        const fetchPrerequisites = vipStatus.hasVIP && prerequisiteToggle?.checked || false;
+        // Always fetch prerequisites (set to true)
+        const fetchPrerequisites = true;
 
         const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites, userId });
 
