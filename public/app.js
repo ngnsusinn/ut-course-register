@@ -46,6 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentOrder = null;
     let paymentCheckInterval = null;
     let vipExpiryCheckInterval = null;
+    
+    // Expose data for timetable module
+    window.getRegisteredClassesData = () => registeredClassesData;
+    window.getSelectedClassesData = () => Array.from(selectedClasses.values());
 
     // Assign originalHTML safely
     const buttons = [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn];

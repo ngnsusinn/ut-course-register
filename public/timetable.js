@@ -222,15 +222,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Event handlers
     viewTimetableBtn?.addEventListener('click', () => {
-        // Get registered and selected classes data from window scope
-        if (typeof window.registeredClassesData !== 'undefined') {
-            registeredData = window.registeredClassesData || [];
+        // Get registered and selected classes data using getter functions
+        if (typeof window.getRegisteredClassesData === 'function') {
+            registeredData = window.getRegisteredClassesData() || [];
         }
-        if (typeof window.selectedClasses !== 'undefined') {
-            selectedData = Array.from(window.selectedClasses.values()) || [];
+        if (typeof window.getSelectedClassesData === 'function') {
+            selectedData = window.getSelectedClassesData() || [];
         }
         
-        console.log('Opening timetable with data:', { registeredData, selectedData });
+        console.log('Opening timetable with data:', { 
+            registeredCount: registeredData.length, 
+            selectedCount: selectedData.length,
+            registeredData, 
+            selectedData 
+        });
+        
+        if (registeredData.length === 0 && selectedData.length === 0) {
+            console.warn('No data found! Make sure you have fetched registered classes and/or selected some classes.');
+        }
         
         timetableModal.classList.remove('hidden');
         updateTimetable();
@@ -261,15 +270,5 @@ document.addEventListener('DOMContentLoaded', function() {
             
             updateTimetable();
         });
-    });
-    
-    // Expose data to window for access from this module
-    window.addEventListener('load', () => {
-        if (typeof registeredClassesData !== 'undefined') {
-            window.registeredClassesData = registeredClassesData;
-        }
-        if (typeof selectedClasses !== 'undefined') {
-            window.selectedClasses = selectedClasses;
-        }
     });
 });
