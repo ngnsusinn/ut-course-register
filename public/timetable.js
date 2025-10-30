@@ -6,39 +6,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const timetableModal = document.getElementById('timetable-modal');
     const viewTimetableBtn = document.getElementById('view-timetable-btn');
     const closeTimetableModal = document.getElementById('close-timetable-modal');
-    const timetableDatePicker = document.getElementById('timetable-date-picker');
-    const timetablePrevWeek = document.getElementById('timetable-prev-week');
-    const timetableToday = document.getElementById('timetable-today');
-    const timetableNextWeek = document.getElementById('timetable-next-week');
     const timetableContent = document.getElementById('timetable-content');
     const timetableTabBtns = document.querySelectorAll('.timetable-tab-btn');
     
-    let currentDate = new Date();
     let currentPhase = 1; // Default to phase 1
     let registeredData = [];
     let selectedData = [];
-    
-    // Time period mapping
-    const timePeriods = {
-        1: { ca: 'Sáng', name: 'Ca 1', start: '06:45', end: '08:25' },
-        2: { ca: 'Sáng', name: 'Ca 1', start: '06:45', end: '08:25' },
-        3: { ca: 'Sáng', name: 'Ca 1', start: '08:25', end: '10:15' },
-        4: { ca: 'Sáng', name: 'Ca 1', start: '08:25', end: '10:15' },
-        5: { ca: 'Sáng', name: 'Ca 2', start: '10:25', end: '12:15' },
-        6: { ca: 'Sáng', name: 'Ca 2', start: '10:25', end: '12:15' },
-        7: { ca: 'Chiều', name: 'Ca 3', start: '12:25', end: '14:15' },
-        8: { ca: 'Chiều', name: 'Ca 3', start: '12:25', end: '14:15' },
-        9: { ca: 'Chiều', name: 'Ca 3', start: '14:15', end: '14:50' },
-        10: { ca: 'Chiều', name: 'Ca 4', start: '14:50', end: '16:40' },
-        11: { ca: 'Chiều', name: 'Ca 4', start: '15:40', end: '17:20' },
-        12: { ca: 'Chiều', name: 'Ca 4', start: '15:40', end: '17:20' },
-        13: { ca: 'Tối', name: 'Ca 5', start: '17:30', end: '19:20' },
-        14: { ca: 'Tối', name: 'Ca 5', start: '17:30', end: '19:20' },
-        15: { ca: 'Tối', name: 'Ca 5', start: '17:30', end: '20:00' },
-        16: { ca: 'Tối', name: 'Ca 6', start: '20:10', end: '22:00' },
-        17: { ca: 'Tối', name: 'Ca 6', start: '20:10', end: '22:00' },
-        18: { ca: 'Tối', name: 'Ca 6', start: '20:10', end: '22:40' }
-    };
     
     // Parse periods from string like "3-4" or "10-12"
     const parseTietHoc = (tietHoc) => {
@@ -57,163 +30,116 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Get session (ca) from period number
     const getSessionFromPeriod = (period) => {
-        const info = timePeriods[period];
-        return info ? info.name : '';
+        if (period >= 1 && period <= 4) return 'Ca 1';
+        if (period >= 5 && period <= 6) return 'Ca 2';
+        if (period >= 7 && period <= 9) return 'Ca 3';
+        if (period >= 10 && period <= 12) return 'Ca 4';
+        if (period >= 13 && period <= 15) return 'Ca 5';
+        if (period >= 16 && period <= 18) return 'Ca 6';
+        return '';
     };
     
     // Get time range from periods
     const getTimeRange = (periods) => {
         if (!periods || periods.length === 0) return '';
+        const timePeriods = {
+            1: '06:45', 2: '07:35', 3: '08:25', 4: '09:25',
+            5: '10:25', 6: '11:25', 7: '12:25', 8: '13:25',
+            9: '14:15', 10: '14:50', 11: '15:40', 12: '16:40',
+            13: '17:30', 14: '18:30', 15: '19:20', 16: '20:10',
+            17: '21:00', 18: '21:50'
+        };
         const firstPeriod = Math.min(...periods);
         const lastPeriod = Math.max(...periods);
-        const startTime = timePeriods[firstPeriod]?.start || '';
-        const endTime = timePeriods[lastPeriod]?.end || '';
+        const startTime = timePeriods[firstPeriod] || '';
+        const endTime = timePeriods[lastPeriod + 1] || timePeriods[lastPeriod] || '';
         return `${startTime} - ${endTime}`;
     };
     
-    // Get Monday of the week containing the given date
-    const getMonday = (date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
-    };
-    
-    // Format date as DD/MM/YYYY
-    const formatDate = (date) => {
-        const d = new Date(date);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}/${month}/${year}`;
-    };
-    
-    // Get week days starting from Monday
-    const getWeekDays = (monday) => {
-        const days = [];
-        for (let i = 0; i < 7; i++) {
-            const day = new Date(monday);
-            day.setDate(monday.getDate() + i);
-            days.push(day);
-        }
-        return days;
-    };
-    
-    // Check if date is in range
-    const isDateInRange = (date, startDate, endDate) => {
-        const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
-        const s = new Date(startDate);
-        s.setHours(0, 0, 0, 0);
-        const e = new Date(endDate);
-        e.setHours(0, 0, 0, 0);
-        return d >= s && d <= e;
-    };
-    
     // Generate timetable HTML
-    const generateTimetable = (weekDays, phase) => {
+    const generateTimetable = (phase) => {
         const sessions = {
             'Sáng': ['Ca 1', 'Ca 2'],
             'Chiều': ['Ca 3', 'Ca 4'],
             'Tối': ['Ca 5', 'Ca 6']
         };
         
-        // Filter classes by phase
-        const phaseClasses = registeredData.filter(cls => {
-            if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return false;
-            // Check if class has schedules in the given phase
-            return cls.scheduleDetails.some(schedule => {
-                const classPhase = schedule.dotHoc || 1; // Default to phase 1 if not specified
-                return classPhase === phase;
-            });
-        });
+        const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
         
-        // Build timetable grid
+        // Build timetable grid: grid[thu][session] = [classes]
         const grid = {};
         
-        phaseClasses.forEach(cls => {
+        // Initialize grid for all days and sessions
+        for (let thu = 2; thu <= 8; thu++) {
+            grid[thu] = {};
+            Object.values(sessions).flat().forEach(session => {
+                grid[thu][session] = [];
+            });
+        }
+        
+        // Process registered classes
+        console.log('Registered data:', registeredData);
+        registeredData.forEach(cls => {
+            if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
+            
             cls.scheduleDetails.forEach(schedule => {
-                const classPhase = schedule.dotHoc || 1;
-                if (classPhase !== phase) return;
+                const thu = schedule.thu; // 2-8
+                if (!thu || thu < 2 || thu > 8) return;
                 
-                const thu = schedule.thu; // 2-8 (8 is Sunday)
                 const periods = parseTietHoc(schedule.tietHoc);
                 if (periods.length === 0) return;
                 
-                // Get session name for this period
                 const session = getSessionFromPeriod(periods[0]);
                 if (!session) return;
                 
-                // Check if any day in the week falls within this schedule
-                weekDays.forEach((day, dayIndex) => {
-                    const dayOfWeek = day.getDay() === 0 ? 8 : day.getDay() + 1; // Convert to 2-8
-                    if (dayOfWeek === thu && isDateInRange(day, schedule.ngayBatDau, schedule.ngayKetThuc)) {
-                        const key = `${session}-${dayIndex}`;
-                        if (!grid[key]) {
-                            grid[key] = [];
-                        }
-                        
-                        // Check if class already exists in this cell
-                        const exists = grid[key].some(item => item.maLopHocPhan === cls.maLopHocPhan);
-                        if (!exists) {
-                            grid[key].push({
-                                tenMonHoc: cls.tenMonHoc,
-                                maLopHocPhan: cls.maLopHocPhan,
-                                tietHoc: schedule.tietHoc,
-                                periods: periods,
-                                phong: schedule.phong || 'N/A',
-                                timeRange: getTimeRange(periods),
-                                lmsLink: schedule.lmsLink || '',
-                                isRegistered: true,
-                                isSelected: selectedData.some(sel => sel.maLopHocPhan === cls.maLopHocPhan)
-                            });
-                        }
-                    }
-                });
+                // Check if already exists
+                const exists = grid[thu][session].some(item => item.maLopHocPhan === cls.maLopHocPhan);
+                if (!exists) {
+                    grid[thu][session].push({
+                        tenMonHoc: cls.tenMonHoc,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        tietHoc: schedule.tietHoc,
+                        periods: periods,
+                        phong: schedule.phong || 'N/A',
+                        timeRange: getTimeRange(periods),
+                        lmsLink: schedule.lmsLink || '',
+                        isRegistered: true
+                    });
+                }
             });
         });
         
-        // Add selected classes that are not registered
+        // Process selected classes
+        console.log('Selected data:', selectedData);
         selectedData.forEach(cls => {
+            // Skip if already registered
             if (registeredData.some(reg => reg.maLopHocPhan === cls.maLopHocPhan)) return;
             
             if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
             
             cls.scheduleDetails.forEach(schedule => {
-                const classPhase = schedule.dotHoc || 1;
-                if (classPhase !== phase) return;
-                
                 const thu = schedule.thu;
+                if (!thu || thu < 2 || thu > 8) return;
+                
                 const periods = parseTietHoc(schedule.tietHoc);
                 if (periods.length === 0) return;
                 
                 const session = getSessionFromPeriod(periods[0]);
                 if (!session) return;
                 
-                weekDays.forEach((day, dayIndex) => {
-                    const dayOfWeek = day.getDay() === 0 ? 8 : day.getDay() + 1;
-                    if (dayOfWeek === thu && isDateInRange(day, schedule.ngayBatDau, schedule.ngayKetThuc)) {
-                        const key = `${session}-${dayIndex}`;
-                        if (!grid[key]) {
-                            grid[key] = [];
-                        }
-                        
-                        const exists = grid[key].some(item => item.maLopHocPhan === cls.maLopHocPhan);
-                        if (!exists) {
-                            grid[key].push({
-                                tenMonHoc: cls.tenMonHoc,
-                                maLopHocPhan: cls.maLopHocPhan,
-                                tietHoc: schedule.tietHoc,
-                                periods: periods,
-                                phong: schedule.phong || 'N/A',
-                                timeRange: getTimeRange(periods),
-                                lmsLink: schedule.lmsLink || '',
-                                isRegistered: false,
-                                isSelected: true
-                            });
-                        }
-                    }
-                });
+                const exists = grid[thu][session].some(item => item.maLopHocPhan === cls.maLopHocPhan);
+                if (!exists) {
+                    grid[thu][session].push({
+                        tenMonHoc: cls.tenMonHoc,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        tietHoc: schedule.tietHoc,
+                        periods: periods,
+                        phong: schedule.phong || 'N/A',
+                        timeRange: getTimeRange(periods),
+                        lmsLink: schedule.lmsLink || '',
+                        isRegistered: false
+                    });
+                }
             });
         });
         
@@ -224,11 +150,8 @@ document.addEventListener('DOMContentLoaded', function() {
         html += '<thead><tr class="bg-gradient-to-r from-teal-50 to-teal-100">';
         html += '<th class="border border-gray-300 px-2 py-3 text-center font-semibold" colspan="2">Ca học</th>';
         
-        const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-        weekDays.forEach((day, index) => {
-            const isToday = day.toDateString() === new Date().toDateString();
-            const bgClass = isToday ? 'bg-teal-200' : '';
-            html += `<th class="border border-gray-300 px-2 py-3 text-center font-semibold ${bgClass}">${dayNames[index]}<br><span class="text-sm font-normal">${formatDate(day)}</span></th>`;
+        dayNames.forEach(dayName => {
+            html += `<th class="border border-gray-300 px-2 py-3 text-center font-semibold">${dayName}</th>`;
         });
         
         html += '</tr></thead><tbody>';
@@ -244,17 +167,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 html += '<tr>';
                 html += `<td class="border border-gray-300 px-4 py-2 text-center font-semibold bg-gray-50">${session}</td>`;
                 
-                for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                    const key = `${session}-${dayIndex}`;
-                    const classes = grid[key] || [];
-                    
-                    const isToday = weekDays[dayIndex].toDateString() === new Date().toDateString();
-                    const bgClass = isToday ? 'bg-teal-50' : '';
+                // Loop through days (thu 2-8)
+                for (let thu = 2; thu <= 8; thu++) {
+                    const classes = grid[thu][session] || [];
                     
                     if (classes.length === 0) {
-                        html += `<td class="border border-gray-300 px-2 py-2 ${bgClass}"></td>`;
+                        html += '<td class="border border-gray-300 px-2 py-2"></td>';
                     } else {
-                        html += `<td class="border border-gray-300 px-2 py-2 ${bgClass}">`;
+                        html += '<td class="border border-gray-300 px-2 py-2">';
                         
                         classes.forEach(cls => {
                             const bgColor = cls.isRegistered ? 'rgb(0, 134, 137)' : 'rgb(255, 152, 0)';
@@ -296,21 +216,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update timetable display
     const updateTimetable = () => {
-        const monday = getMonday(currentDate);
-        const weekDays = getWeekDays(monday);
-        
-        // Update date picker
-        timetableDatePicker.valueAsDate = currentDate;
-        
-        // Generate timetable
-        const html = generateTimetable(weekDays, currentPhase);
+        const html = generateTimetable(currentPhase);
         timetableContent.innerHTML = html;
     };
     
     // Event handlers
     viewTimetableBtn?.addEventListener('click', () => {
-        // Get registered and selected classes data
-        // Access from window scope since it's defined in app.js
+        // Get registered and selected classes data from window scope
         if (typeof window.registeredClassesData !== 'undefined') {
             registeredData = window.registeredClassesData || [];
         }
@@ -318,7 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedData = Array.from(window.selectedClasses.values()) || [];
         }
         
-        currentDate = new Date();
+        console.log('Opening timetable with data:', { registeredData, selectedData });
+        
         timetableModal.classList.remove('hidden');
         updateTimetable();
     });
@@ -331,26 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === timetableModal) {
             timetableModal.classList.add('hidden');
         }
-    });
-    
-    timetableDatePicker?.addEventListener('change', (e) => {
-        currentDate = new Date(e.target.value);
-        updateTimetable();
-    });
-    
-    timetablePrevWeek?.addEventListener('click', () => {
-        currentDate.setDate(currentDate.getDate() - 7);
-        updateTimetable();
-    });
-    
-    timetableToday?.addEventListener('click', () => {
-        currentDate = new Date();
-        updateTimetable();
-    });
-    
-    timetableNextWeek?.addEventListener('click', () => {
-        currentDate.setDate(currentDate.getDate() + 7);
-        updateTimetable();
     });
     
     timetableTabBtns.forEach(btn => {
