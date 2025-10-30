@@ -28,14 +28,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return periods;
     };
     
-    // Get session (ca) from period number
-    const getSessionFromPeriod = (period) => {
-        if (period >= 1 && period <= 4) return 'Ca 1';
-        if (period >= 5 && period <= 6) return 'Ca 2';
-        if (period >= 7 && period <= 9) return 'Ca 3';
-        if (period >= 10 && period <= 12) return 'Ca 4';
-        if (period >= 13 && period <= 15) return 'Ca 5';
-        if (period >= 16 && period <= 18) return 'Ca 6';
+    // Get session (ca) from first period number (for classes spanning multiple sessions)
+    // Ca 1: 1-3, Ca 2: 4-6, Ca 3: 7-9, Ca 4: 10-12, Ca 5: 13-15, Ca 6: 16-18
+    const getSessionFromPeriod = (firstPeriod) => {
+        if (firstPeriod >= 1 && firstPeriod <= 3) return 'Ca 1';
+        if (firstPeriod >= 4 && firstPeriod <= 6) return 'Ca 2';
+        if (firstPeriod >= 7 && firstPeriod <= 9) return 'Ca 3';
+        if (firstPeriod >= 10 && firstPeriod <= 12) return 'Ca 4';
+        if (firstPeriod >= 13 && firstPeriod <= 15) return 'Ca 5';
+        if (firstPeriod >= 16 && firstPeriod <= 18) return 'Ca 6';
         return '';
     };
     
