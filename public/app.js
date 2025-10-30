@@ -1200,7 +1200,21 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Add warnings below subject name (only conflict warning, not locked)
             let warnings = '';
             if (hasConflict) {
-                warnings += '<div class="text-xs mt-1 text-red-600 font-bold">⚠️ TRÙNG LỊCH</div>';
+                const conflictCount = conflictCheck.conflicts.length;
+                const conflictSummary = conflictCheck.conflicts.map(c => c.registeredClass).join(', ');
+                warnings += `
+                    <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-red-800">TRÙNG LỊCH HỌC</p>
+                                <p class="text-xs text-red-700 mt-0.5">Trùng với ${conflictCount} môn: ${conflictSummary}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
             
             row.innerHTML = `
@@ -1312,10 +1326,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Check if row has conflict
             if (scheduleRow.dataset.hasConflict === 'true') {
                 const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
-                const conflictMessages = conflicts.map(c => 
-                    `- ${c.registeredClass} (${c.registeredCode}): ${c.day}, Tiết ${c.conflictPeriod}`
+                const conflictList = conflicts.map((c, idx) => 
+                    `${idx + 1}. ${c.registeredClass} (${c.registeredCode}) - ${c.day}, Tiết ${c.conflictPeriod}`
                 ).join('\n');
-                log(`⚠️ Không thể chọn lớp này vì trùng lịch với:\n${conflictMessages}`, true);
+                
+                log(`⚠️ KHÔNG THỂ CHỌN LỚP NÀY\n\n🔴 Trùng lịch học với ${conflicts.length} môn đã đăng ký:\n\n${conflictList}\n\n💡 Vui lòng chọn lớp khác hoặc hủy đăng ký lớp bị trùng.`, true);
                 return;
             }
             
@@ -1365,14 +1380,45 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Create tooltip
             const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
             const conflictMessages = conflicts.map(c => 
-                `<div class="py-1">• <strong>${c.registeredClass}</strong> (${c.registeredCode})<br/>&nbsp;&nbsp;${c.day}, Tiết ${c.conflictPeriod} (trùng với tiết ${c.period})</div>`
+                `<div class="py-2 border-b border-red-500 last:border-0">
+                    <div class="flex items-start gap-2">
+                        <span class="text-red-200 text-lg flex-shrink-0">📚</span>
+                        <div class="flex-1">
+                            <p class="font-semibold text-white">${c.registeredClass}</p>
+                            <p class="text-xs text-red-100 mt-1">Mã LHP: ${c.registeredCode}</p>
+                            <div class="flex items-center gap-2 mt-1.5 text-xs text-red-100">
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    ${c.day}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Tiết ${c.conflictPeriod}
+                                </span>
+                            </div>
+                            <p class="text-xs text-yellow-200 mt-1.5 font-medium">⚠️ Trùng với tiết ${c.period} của lớp này</p>
+                        </div>
+                    </div>
+                </div>`
             ).join('');
             
             tooltipElement = document.createElement('div');
-            tooltipElement.className = 'fixed bg-red-600 text-white text-sm px-4 py-3 rounded-lg shadow-lg z-50 max-w-md';
+            tooltipElement.className = 'fixed bg-gradient-to-br from-red-600 to-red-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 max-w-md border-2 border-red-500';
             tooltipElement.innerHTML = `
-                <div class="font-bold mb-2">⚠️ TRÙNG LỊCH HỌC</div>
+                <div class="flex items-center gap-2 mb-3 pb-2 border-b border-red-500">
+                    <svg class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-bold text-lg">TRÙNG LỊCH HỌC</span>
+                </div>
                 ${conflictMessages}
+                <div class="mt-3 pt-2 border-t border-red-500 text-xs text-red-100">
+                    💡 Tip: Chọn lớp học khác hoặc hủy đăng ký lớp bị trùng
+                </div>
             `;
             
             document.body.appendChild(tooltipElement);
