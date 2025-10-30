@@ -1078,23 +1078,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
         
         if (registeredStatus === 'Đã khóa lớp') {
-            log(`❌ Không thể hủy lớp ${regCode} - Lớp đã bị khóa (trạng thái: ${registeredStatus})`, true);
-            log(`💡 Học phí đã được tính cho lớp này, không thể thay đổi`, true);
+            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
             return false;
         }
         
         if (registeredStatus === 'Đã mở chính thức') {
-            log(`❌ Không thể hủy lớp ${regCode} - Lớp đã mở chính thức, không cho phép hủy (trạng thái: ${registeredStatus})`, true);
+            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
             return false;
         }
         
         if (registeredStatus === 'Đang lên kế hoạch') {
-            log(`❌ Không thể hủy lớp ${regCode} - Lớp đang lên kế hoạch, đã bị khóa (trạng thái: ${registeredStatus})`, true);
+            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
             return false;
         }
         
         if (registeredStatus !== 'Đang chờ đăng ký' && registeredClass.isAllowCancel === false) {
-            log(`❌ Không thể hủy lớp ${regCode} - Hệ thống không cho phép hủy lớp này (trạng thái: ${registeredStatus})`, true);
+            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
             return false;
         }
         
@@ -1113,15 +1112,16 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const targetStatus = targetClass.tenTrangThai || '';
         
         if (targetStatus === 'Đã khóa lớp') {
-            log(`❌ Không thể đăng ký lớp ${targetCode} - Lớp đã bị khóa (trạng thái: ${targetStatus})`, true);
+            log(`❌ Không thể đăng ký lớp ${targetCode} - Trạng thái: ${targetStatus}`, true);
             return false;
         }
         
         if (targetStatus === 'Đang lên kế hoạch') {
-            log(`❌ Không thể đăng ký lớp ${targetCode} - Lớp đang lên kế hoạch, chưa mở đăng ký (trạng thái: ${targetStatus})`, true);
+            log(`❌ Không thể đăng ký lớp ${targetCode} - Trạng thái: ${targetStatus}`, true);
             return false;
         }
         
+        // Check if target class has available slots
         if (targetClass.phanTramDangKy >= 100) {
             log(`❌ Lớp ${targetCode} đã đầy (${targetClass.phanTramDangKy}%), không thể đổi lớp`, true);
             return false;
@@ -1714,22 +1714,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
             
             if (registeredStatus === 'Đã khóa lớp') {
-                log(`❌ Không thể đổi lớp ${registeredData.code} - Lớp đã bị khóa, học phí đã được tính`, true);
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
             
             if (registeredStatus === 'Đã mở chính thức') {
-                log(`❌ Không thể đổi lớp ${registeredData.code} - Lớp đã mở chính thức, không cho phép hủy`, true);
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
             
             if (registeredStatus === 'Đang lên kế hoạch') {
-                log(`❌ Không thể đổi lớp ${registeredData.code} - Lớp đang lên kế hoạch, đã bị khóa`, true);
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
             
             if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
-                log(`❌ Không thể đổi lớp ${registeredData.code} - Hệ thống không cho phép hủy lớp này`, true);
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
             
@@ -1737,17 +1737,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const targetStatus = targetClass.tenTrangThai || '';
             
             if (targetStatus === 'Đã khóa lớp') {
-                log(`❌ Không thể đăng ký lớp ${targetData.code} - Lớp đã bị khóa`, true);
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
                 return;
             }
             
             if (targetStatus === 'Đang lên kế hoạch') {
-                log(`❌ Không thể đăng ký lớp ${targetData.code} - Lớp đang lên kế hoạch, chưa mở đăng ký`, true);
-                return;
-            }
-            
-            if (targetClass.phanTramDangKy >= 100) {
-                log(`❌ Không thể đăng ký lớp ${targetData.code} - Lớp đã đầy (${targetClass.phanTramDangKy}%)`, true);
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
                 return;
             }
             
@@ -1820,21 +1815,19 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     
                     // Check registered class can be cancelled
                     if (registeredStatus === 'Đã khóa lớp') {
-                        swapDisabledReason = 'Lớp đã khóa - Học phí đã tính';
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
                     } else if (registeredStatus === 'Đã mở chính thức') {
-                        swapDisabledReason = 'Lớp đã mở chính thức - Không cho phép hủy';
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
                     } else if (registeredStatus === 'Đang lên kế hoạch') {
-                        swapDisabledReason = 'Lớp đang lên kế hoạch - Đã khóa';
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
                     } else if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
-                        swapDisabledReason = 'Hệ thống không cho phép hủy';
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
                     }
                     // Check target class can be registered
                     else if (targetStatus === 'Đã khóa lớp') {
-                        swapDisabledReason = 'Lớp đích đã khóa';
+                        swapDisabledReason = `Lớp đích - Trạng thái: ${targetStatus}`;
                     } else if (targetStatus === 'Đang lên kế hoạch') {
-                        swapDisabledReason = 'Lớp đích đang lên kế hoạch';
-                    } else if (targetClass && targetClass.phanTramDangKy >= 100) {
-                        swapDisabledReason = `Lớp đích đã đầy (${targetClass.phanTramDangKy}%)`;
+                        swapDisabledReason = `Lớp đích - Trạng thái: ${targetStatus}`;
                     } else {
                         canSwap = true;
                     }
