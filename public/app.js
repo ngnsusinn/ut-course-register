@@ -222,17 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Format conflict details
-            const conflictDetails = uniqueConflicts.map(c => 
-                `${c.day}, Tiết ${c.conflictPeriod}`
-            ).join('; ');
-            
             return {
                 registeredClass: conflict.registeredClass,
                 registeredCode: conflict.registeredCode,
-                day: uniqueConflicts[0].day,
-                period: uniqueConflicts.map(c => c.period).join(', '),
-                conflictPeriod: conflictDetails
+                uniqueConflicts: uniqueConflicts // Keep detailed conflict info for tooltip
             };
         });
 
@@ -1365,9 +1358,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Check if row has conflict
             if (scheduleRow.dataset.hasConflict === 'true') {
                 const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
-                const conflictList = conflicts.map((c, idx) => 
-                    `${idx + 1}. ${c.registeredClass} (${c.registeredCode}) - ${c.day}, Tiết ${c.conflictPeriod}`
-                ).join('\n');
+                const conflictList = conflicts.map((conflict, idx) => {
+                    const details = conflict.uniqueConflicts.map(c => 
+                        `${c.day}, Tiết ${c.conflictPeriod}`
+                    ).join(' và ');
+                    return `${idx + 1}. ${conflict.registeredClass} (${conflict.registeredCode}) - ${details}`;
+                }).join('\n');
                 
                 log(`⚠️ KHÔNG THỂ CHỌN LỚP NÀY\n\n🔴 Trùng lịch học với ${conflicts.length} môn đã đăng ký:\n\n${conflictList}\n\n💡 Vui lòng chọn lớp khác hoặc hủy đăng ký lớp bị trùng.`, true);
                 return;
@@ -1418,32 +1414,36 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             // Create tooltip
             const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
-            const conflictMessages = conflicts.map(c => 
-                `<div class="py-2 border-b border-red-500 last:border-0">
+            const conflictMessages = conflicts.map(conflict => {
+                // Format all unique conflicts for this class
+                const conflictDetails = conflict.uniqueConflicts.map(c => 
+                    `<div class="flex items-center gap-2 mt-1.5 text-xs text-red-100">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                            </svg>
+                            ${c.day}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                            Tiết ${c.conflictPeriod}
+                        </span>
+                    </div>`
+                ).join('');
+                
+                return `<div class="py-2 border-b border-red-500 last:border-0">
                     <div class="flex items-start gap-2">
                         <span class="text-red-200 text-lg flex-shrink-0">📚</span>
                         <div class="flex-1">
-                            <p class="font-semibold text-white">${c.registeredClass}</p>
-                            <p class="text-xs text-red-100 mt-1">Mã LHP: ${c.registeredCode}</p>
-                            <div class="flex items-center gap-2 mt-1.5 text-xs text-red-100">
-                                <span class="flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
-                                    </svg>
-                                    ${c.day}
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                                    </svg>
-                                    Tiết ${c.conflictPeriod}
-                                </span>
-                            </div>
-                            <p class="text-xs text-yellow-200 mt-1.5 font-medium">⚠️ Trùng với tiết ${c.period} của lớp này</p>
+                            <p class="font-semibold text-white">${conflict.registeredClass}</p>
+                            <p class="text-xs text-red-100 mt-1">Mã LHP: ${conflict.registeredCode}</p>
+                            ${conflictDetails}
                         </div>
                     </div>
-                </div>`
-            ).join('');
+                </div>`;
+            }).join('');
             
             tooltipElement = document.createElement('div');
             tooltipElement.className = 'fixed bg-gradient-to-br from-red-600 to-red-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 max-w-md border-2 border-red-500';
