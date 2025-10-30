@@ -77,20 +77,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Auto-detect phases based on ngayBatDau
-        // Collect all unique start dates and group by month
-        let monthGroups = {};
+        // Auto-detect phases based on ngayBatDau only
+        // Collect all unique start dates
+        let allStartDates = [];
         
         registeredData.forEach(cls => {
             if (cls.scheduleDetails) {
                 cls.scheduleDetails.forEach(schedule => {
                     if (schedule.ngayBatDau) {
-                        const date = new Date(schedule.ngayBatDau);
-                        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                        if (!monthGroups[yearMonth]) {
-                            monthGroups[yearMonth] = [];
-                        }
-                        monthGroups[yearMonth].push(date);
+                        allStartDates.push(new Date(schedule.ngayBatDau));
                     }
                 });
             }
@@ -100,51 +95,48 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cls.scheduleDetails) {
                 cls.scheduleDetails.forEach(schedule => {
                     if (schedule.ngayBatDau) {
-                        const date = new Date(schedule.ngayBatDau);
-                        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                        if (!monthGroups[yearMonth]) {
-                            monthGroups[yearMonth] = [];
-                        }
-                        monthGroups[yearMonth].push(date);
+                        allStartDates.push(new Date(schedule.ngayBatDau));
                     }
                 });
             }
         });
         
-        // Sort month groups
-        const sortedMonths = Object.keys(monthGroups).sort();
+        // Remove duplicates and sort
+        allStartDates = [...new Set(allStartDates.map(d => d.getTime()))].map(t => new Date(t));
+        allStartDates.sort((a, b) => a - b);
+        
         let phaseBoundary = null;
         
-        console.log('Month groups:', sortedMonths);
+        console.log('All start dates:', allStartDates.map(d => d.toLocaleDateString('vi-VN')));
         
-        if (sortedMonths.length > 1) {
-            // Find the largest gap between consecutive months
+        if (allStartDates.length > 1) {
+            // Find the largest gap between consecutive start dates
             let maxGap = 0;
-            let maxGapMonth = null;
+            let maxGapIndex = -1;
             
-            for (let i = 0; i < sortedMonths.length - 1; i++) {
-                const [year1, month1] = sortedMonths[i].split('-').map(Number);
-                const [year2, month2] = sortedMonths[i + 1].split('-').map(Number);
+            for (let i = 0; i < allStartDates.length - 1; i++) {
+                const gap = allStartDates[i + 1] - allStartDates[i];
+                const gapDays = gap / (24 * 60 * 60 * 1000);
                 
-                // Calculate month difference
-                const monthDiff = (year2 - year1) * 12 + (month2 - month1);
+                console.log(`Gap: ${allStartDates[i].toLocaleDateString('vi-VN')} → ${allStartDates[i + 1].toLocaleDateString('vi-VN')} = ${Math.round(gapDays)} days`);
                 
-                if (monthDiff > maxGap) {
-                    maxGap = monthDiff;
-                    maxGapMonth = sortedMonths[i + 1];
+                if (gap > maxGap) {
+                    maxGap = gap;
+                    maxGapIndex = i;
                 }
             }
             
-            // If there's a gap of at least 2 months, use it as phase boundary
-            if (maxGap >= 2 && maxGapMonth) {
-                const [year, month] = maxGapMonth.split('-').map(Number);
-                phaseBoundary = new Date(year, month - 1, 1); // First day of that month
-                console.log('Phase boundary detected at:', phaseBoundary.toLocaleDateString('vi-VN'));
-                console.log('Gap:', maxGap, 'months');
-                console.log('Phase 1: Before', phaseBoundary.toLocaleDateString('vi-VN'));
-                console.log('Phase 2: From', phaseBoundary.toLocaleDateString('vi-VN'), 'onwards');
+            const maxGapDays = maxGap / (24 * 60 * 60 * 1000);
+            
+            // If gap is at least 2 days, use it as phase boundary
+            if (maxGapDays >= 2 && maxGapIndex >= 0) {
+                phaseBoundary = allStartDates[maxGapIndex + 1];
+                console.log('✓ Phase boundary detected at:', phaseBoundary.toLocaleDateString('vi-VN'));
+                console.log('  Largest gap:', Math.round(maxGapDays), 'days');
+                console.log('  Phase 1: Before', phaseBoundary.toLocaleDateString('vi-VN'));
+                console.log('  Phase 2: From', phaseBoundary.toLocaleDateString('vi-VN'), 'onwards');
             } else {
-                console.log('No significant gap found between months. All schedules will be in Phase 1.');
+                console.log('✗ No significant gap found (largest gap:', Math.round(maxGapDays), 'days). All schedules will be in Phase 1.');
             }
         }
         
