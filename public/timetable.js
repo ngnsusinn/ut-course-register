@@ -78,48 +78,67 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Auto-detect phases based on ngayBatDau
-        // Find the earliest start date to determine phase boundary
-        let allDates = [];
+        // Collect all unique start dates with their months
+        let datesByMonth = {};
+        
         registeredData.forEach(cls => {
             if (cls.scheduleDetails) {
                 cls.scheduleDetails.forEach(schedule => {
                     if (schedule.ngayBatDau) {
-                        allDates.push(new Date(schedule.ngayBatDau));
+                        const date = new Date(schedule.ngayBatDau);
+                        const month = date.getMonth() + 1; // 1-12
+                        if (!datesByMonth[month]) {
+                            datesByMonth[month] = [];
+                        }
+                        datesByMonth[month].push(date);
                     }
                 });
             }
         });
+        
         selectedData.forEach(cls => {
             if (cls.scheduleDetails) {
                 cls.scheduleDetails.forEach(schedule => {
                     if (schedule.ngayBatDau) {
-                        allDates.push(new Date(schedule.ngayBatDau));
+                        const date = new Date(schedule.ngayBatDau);
+                        const month = date.getMonth() + 1;
+                        if (!datesByMonth[month]) {
+                            datesByMonth[month] = [];
+                        }
+                        datesByMonth[month].push(date);
                     }
                 });
             }
         });
         
-        // Sort dates and find the boundary (gap between phases)
-        allDates.sort((a, b) => a - b);
+        // Determine phase boundary: if there are dates in Sep-Nov (9-11) and Dec-Feb (12-2), split them
+        let hasPhase1 = false; // Sep-Nov (9-11)
+        let hasPhase2 = false; // Dec-Feb (12-2)
         let phaseBoundary = null;
         
-        if (allDates.length > 1) {
-            // Find the largest gap between consecutive dates
-            let maxGap = 0;
-            let gapIndex = -1;
-            for (let i = 0; i < allDates.length - 1; i++) {
-                const gap = allDates[i + 1] - allDates[i];
-                if (gap > maxGap) {
-                    maxGap = gap;
-                    gapIndex = i;
+        for (let month in datesByMonth) {
+            const m = parseInt(month);
+            if (m >= 9 && m <= 11) hasPhase1 = true;
+            if (m === 12 || m === 1 || m === 2) hasPhase2 = true;
+        }
+        
+        console.log('Date distribution by month:', datesByMonth);
+        console.log('Has Phase 1 (Sep-Nov):', hasPhase1, 'Has Phase 2 (Dec-Feb):', hasPhase2);
+        
+        // If both phases exist, set boundary to December 1st of the year
+        if (hasPhase1 && hasPhase2) {
+            // Find a date from the data to get the year
+            let sampleDate = null;
+            for (let month in datesByMonth) {
+                if (datesByMonth[month].length > 0) {
+                    sampleDate = datesByMonth[month][0];
+                    break;
                 }
             }
-            
-            // If there's a gap of more than 30 days, use it as phase boundary
-            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-            if (maxGap > thirtyDays) {
-                phaseBoundary = allDates[gapIndex + 1];
-                console.log('Phase boundary detected:', phaseBoundary);
+            if (sampleDate) {
+                const year = sampleDate.getFullYear();
+                phaseBoundary = new Date(year, 11, 1); // December 1st (month 11 = December in JS)
+                console.log('Phase boundary set to December 1st:', phaseBoundary);
             }
         }
         
@@ -127,11 +146,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const getSchedulePhase = (schedule) => {
             if (!schedule.ngayBatDau || !phaseBoundary) return 1;
             const startDate = new Date(schedule.ngayBatDau);
-            return startDate < phaseBoundary ? 1 : 2;
+            const phase = startDate < phaseBoundary ? 1 : 2;
+            return phase;
         };
         
         // Process registered classes
-        console.log('Registered data:', registeredData);
+        console.log('Processing registered data for phase:', phase);
         registeredData.forEach(cls => {
             if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
             
@@ -166,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Process selected classes
-        console.log('Selected data:', selectedData);
+        console.log('Processing selected data for phase:', phase);
         selectedData.forEach(cls => {
             // Skip if already registered
             if (registeredData.some(reg => reg.maLopHocPhan === cls.maLopHocPhan)) return;
