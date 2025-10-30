@@ -77,12 +77,68 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Auto-detect phases based on ngayBatDau
+        // Find the earliest start date to determine phase boundary
+        let allDates = [];
+        registeredData.forEach(cls => {
+            if (cls.scheduleDetails) {
+                cls.scheduleDetails.forEach(schedule => {
+                    if (schedule.ngayBatDau) {
+                        allDates.push(new Date(schedule.ngayBatDau));
+                    }
+                });
+            }
+        });
+        selectedData.forEach(cls => {
+            if (cls.scheduleDetails) {
+                cls.scheduleDetails.forEach(schedule => {
+                    if (schedule.ngayBatDau) {
+                        allDates.push(new Date(schedule.ngayBatDau));
+                    }
+                });
+            }
+        });
+        
+        // Sort dates and find the boundary (gap between phases)
+        allDates.sort((a, b) => a - b);
+        let phaseBoundary = null;
+        
+        if (allDates.length > 1) {
+            // Find the largest gap between consecutive dates
+            let maxGap = 0;
+            let gapIndex = -1;
+            for (let i = 0; i < allDates.length - 1; i++) {
+                const gap = allDates[i + 1] - allDates[i];
+                if (gap > maxGap) {
+                    maxGap = gap;
+                    gapIndex = i;
+                }
+            }
+            
+            // If there's a gap of more than 30 days, use it as phase boundary
+            const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+            if (maxGap > thirtyDays) {
+                phaseBoundary = allDates[gapIndex + 1];
+                console.log('Phase boundary detected:', phaseBoundary);
+            }
+        }
+        
+        // Helper function to determine phase of a schedule
+        const getSchedulePhase = (schedule) => {
+            if (!schedule.ngayBatDau || !phaseBoundary) return 1;
+            const startDate = new Date(schedule.ngayBatDau);
+            return startDate < phaseBoundary ? 1 : 2;
+        };
+        
         // Process registered classes
         console.log('Registered data:', registeredData);
         registeredData.forEach(cls => {
             if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
             
             cls.scheduleDetails.forEach(schedule => {
+                // Filter by phase
+                if (getSchedulePhase(schedule) !== phase) return;
+                
                 const thu = schedule.thu; // 2-8
                 if (!thu || thu < 2 || thu > 8) return;
                 
@@ -118,6 +174,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
             
             cls.scheduleDetails.forEach(schedule => {
+                // Filter by phase
+                if (getSchedulePhase(schedule) !== phase) return;
+                
                 const thu = schedule.thu;
                 if (!thu || thu < 2 || thu > 8) return;
                 
