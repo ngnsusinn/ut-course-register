@@ -77,48 +77,72 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Auto-detect phases based on ngayBatDau only
-        // Collect all unique start dates
-        let allStartDates = [];
+        // Auto-detect phases based on earliest ngayBatDau of each class
+        // Collect earliest start date for each class (by maLopHocPhan)
+        let classStartDates = new Map(); // maLopHocPhan -> earliest start date
         
         registeredData.forEach(cls => {
-            if (cls.scheduleDetails) {
+            if (cls.scheduleDetails && cls.scheduleDetails.length > 0) {
+                let earliestDate = null;
                 cls.scheduleDetails.forEach(schedule => {
                     if (schedule.ngayBatDau) {
-                        allStartDates.push(new Date(schedule.ngayBatDau));
+                        const date = new Date(schedule.ngayBatDau);
+                        if (!earliestDate || date < earliestDate) {
+                            earliestDate = date;
+                        }
                     }
                 });
+                if (earliestDate) {
+                    classStartDates.set(cls.maLopHocPhan, {
+                        date: earliestDate,
+                        tenMonHoc: cls.tenMonHoc
+                    });
+                }
             }
         });
         
         selectedData.forEach(cls => {
-            if (cls.scheduleDetails) {
+            if (cls.scheduleDetails && cls.scheduleDetails.length > 0) {
+                let earliestDate = null;
                 cls.scheduleDetails.forEach(schedule => {
                     if (schedule.ngayBatDau) {
-                        allStartDates.push(new Date(schedule.ngayBatDau));
+                        const date = new Date(schedule.ngayBatDau);
+                        if (!earliestDate || date < earliestDate) {
+                            earliestDate = date;
+                        }
                     }
                 });
+                if (earliestDate && !classStartDates.has(cls.maLopHocPhan)) {
+                    classStartDates.set(cls.maLopHocPhan, {
+                        date: earliestDate,
+                        tenMonHoc: cls.tenMonHoc
+                    });
+                }
             }
         });
         
-        // Remove duplicates and sort
-        allStartDates = [...new Set(allStartDates.map(d => d.getTime()))].map(t => new Date(t));
-        allStartDates.sort((a, b) => a - b);
+        // Get all unique earliest dates and sort
+        let uniqueStartDates = [...classStartDates.values()].map(v => v.date);
+        uniqueStartDates = [...new Set(uniqueStartDates.map(d => d.getTime()))].map(t => new Date(t));
+        uniqueStartDates.sort((a, b) => a - b);
         
         let phaseBoundary = null;
         
-        console.log('All start dates:', allStartDates.map(d => d.toLocaleDateString('vi-VN')));
+        console.log('Classes with earliest start dates:');
+        classStartDates.forEach((value, key) => {
+            console.log(`  ${value.tenMonHoc} (${key}): ${value.date.toLocaleDateString('vi-VN')}`);
+        });
         
-        if (allStartDates.length > 1) {
+        if (uniqueStartDates.length > 1) {
             // Find the largest gap between consecutive start dates
             let maxGap = 0;
             let maxGapIndex = -1;
             
-            for (let i = 0; i < allStartDates.length - 1; i++) {
-                const gap = allStartDates[i + 1] - allStartDates[i];
+            for (let i = 0; i < uniqueStartDates.length - 1; i++) {
+                const gap = uniqueStartDates[i + 1] - uniqueStartDates[i];
                 const gapDays = gap / (24 * 60 * 60 * 1000);
                 
-                console.log(`Gap: ${allStartDates[i].toLocaleDateString('vi-VN')} → ${allStartDates[i + 1].toLocaleDateString('vi-VN')} = ${Math.round(gapDays)} days`);
+                console.log(`Gap: ${uniqueStartDates[i].toLocaleDateString('vi-VN')} → ${uniqueStartDates[i + 1].toLocaleDateString('vi-VN')} = ${Math.round(gapDays)} days`);
                 
                 if (gap > maxGap) {
                     maxGap = gap;
@@ -130,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // If gap is at least 2 days, use it as phase boundary
             if (maxGapDays >= 2 && maxGapIndex >= 0) {
-                phaseBoundary = allStartDates[maxGapIndex + 1];
+                phaseBoundary = uniqueStartDates[maxGapIndex + 1];
                 console.log('✓ Phase boundary detected at:', phaseBoundary.toLocaleDateString('vi-VN'));
                 console.log('  Largest gap:', Math.round(maxGapDays), 'days');
                 console.log('  Phase 1: Before', phaseBoundary.toLocaleDateString('vi-VN'));
