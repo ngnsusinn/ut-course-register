@@ -1040,6 +1040,59 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         }
     };
 
+    // Swap class function - Cancel registered class and register target class
+    const swapClass = async (registeredData, targetData) => {
+        const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
+        const { id: targetId, code: targetCode, name: targetName, source: targetSource } = targetData;
+        
+        log(`🔄 Bắt đầu đổi lớp: ${regName} → ${targetName}`);
+        
+        // Step 1: Check target class availability
+        log(`📊 Kiểm tra tình trạng lớp ${targetCode}...`);
+        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+        
+        if (!targetClass) {
+            log(`❌ Không tìm thấy thông tin lớp ${targetCode}`, true);
+            return false;
+        }
+        
+        if (targetClass.phanTramDangKy >= 100) {
+            log(`❌ Lớp ${targetCode} đã đầy (${targetClass.phanTramDangKy}%), không thể đổi lớp`, true);
+            return false;
+        }
+        
+        log(`✓ Lớp ${targetCode} còn chỗ (${targetClass.phanTramDangKy}%)`);
+        
+        // Step 2: Cancel registered class
+        log(`🗑️ Đang hủy lớp ${regName} (${regCode})...`);
+        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
+        
+        if (!cancelResult || !cancelResult.success) {
+            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi'}`, true);
+            return false;
+        }
+        
+        log(`✅ Đã hủy lớp ${regCode} thành công`);
+        
+        // Step 3: Register target class
+        log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
+        const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
+        
+        if (!registerResult || !registerResult.success) {
+            log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi'}`, true);
+            log(`⚠️ LƯU Ý: Bạn đã hủy lớp ${regCode}, vui lòng đăng ký lại thủ công!`, true);
+            return false;
+        }
+        
+        log(`✅ Đăng ký lớp ${targetCode} thành công!`);
+        log(`🎉 Đổi lớp hoàn tất: ${regName} → ${targetName}`);
+        
+        // Refresh registered classes list
+        await fetchRegisteredClasses();
+        
+        return true;
+    };
+
     const startInsertion = () => {
         if (!vipStatus.hasVIP) {
             log("⚠️ Bạn cần nâng cấp VIP để thực hiện chèn lớp.", true);
@@ -1398,6 +1451,31 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const { regId, tenMon, source } = cancelBtn.dataset;
             cancelRegistration(regId, tenMon, source);
         }
+        
+        const swapBtn = e.target.closest('.swap-class-btn');
+        if (swapBtn) {
+            const registeredData = {
+                id: swapBtn.dataset.registeredId,
+                code: swapBtn.dataset.registeredCode,
+                name: swapBtn.dataset.registeredName,
+                source: swapBtn.dataset.registeredSource
+            };
+            const targetData = {
+                id: swapBtn.dataset.targetId,
+                code: swapBtn.dataset.targetCode,
+                name: swapBtn.dataset.targetName,
+                source: swapBtn.dataset.targetSource
+            };
+            
+            if (confirm(`Bạn có chắc muốn đổi lớp?\n\nHủy: ${registeredData.name} (${registeredData.code})\nĐăng ký: ${targetData.name} (${targetData.code})`)) {
+                swapClass(registeredData, targetData).then(success => {
+                    if (success && tooltipElement) {
+                        tooltipElement.remove();
+                        tooltipElement = null;
+                    }
+                });
+            }
+        }
     });
 
     // Add hover tooltip for conflict rows
@@ -1414,6 +1492,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             // Create tooltip
             const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
+            const targetClassId = scheduleRow.dataset.classId;
+            const targetClass = allScheduleData.find(c => c.id.toString() === targetClassId);
+            
             const conflictMessages = conflicts.map(conflict => {
                 // Format all unique conflicts for this class
                 const conflictDetails = conflict.uniqueConflicts.map(c => 
@@ -1433,6 +1514,27 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     </div>`
                 ).join('');
                 
+                // Find the registered class to get its ID and percentage
+                const registeredClass = registeredClassesData.find(r => r.maLopHocPhan === conflict.registeredCode);
+                const canSwap = registeredClass && registeredClass.isAllowCancel !== false;
+                
+                const swapButton = canSwap ? 
+                    `<button class="swap-class-btn mt-2 w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold py-1.5 px-3 rounded transition duration-200 flex items-center justify-center gap-1"
+                            data-registered-id="${registeredClass.id}"
+                            data-registered-code="${conflict.registeredCode}"
+                            data-registered-name="${conflict.registeredClass}"
+                            data-registered-source="${registeredClass.source}"
+                            data-target-id="${targetClassId}"
+                            data-target-code="${targetClass?.maLopHocPhan || ''}"
+                            data-target-name="${targetClass?.tenMonHoc || ''}"
+                            data-target-source="${targetClass?.source || ''}">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z"/>
+                        </svg>
+                        Đổi lớp
+                    </button>` 
+                    : '<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi lớp (không cho phép hủy)</p>';
+                
                 return `<div class="py-2 border-b border-red-500 last:border-0">
                     <div class="flex items-start gap-2">
                         <span class="text-red-200 text-lg flex-shrink-0">📚</span>
@@ -1440,6 +1542,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             <p class="font-semibold text-white">${conflict.registeredClass}</p>
                             <p class="text-xs text-red-100 mt-1">Mã LHP: ${conflict.registeredCode}</p>
                             ${conflictDetails}
+                            ${swapButton}
                         </div>
                     </div>
                 </div>`;
