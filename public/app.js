@@ -161,7 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return { hasConflict: false, conflicts: [] };
         }
 
-        const conflicts = [];
+        // Use Map to group conflicts by registered class (maLopHocPhan)
+        const conflictMap = new Map();
 
         for (const schedule of classScheduleDetails) {
             const schedulePeriods = parsePeriods(schedule.tietHoc);
@@ -183,9 +184,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         )) {
                             // Check if periods overlap
                             if (periodsOverlap(schedulePeriods, regPeriods)) {
-                                conflicts.push({
-                                    registeredClass: registered.tenMonHoc,
-                                    registeredCode: registered.maLopHocPhan,
+                                // Group by registered class code to avoid duplicates
+                                const key = registered.maLopHocPhan;
+                                
+                                if (!conflictMap.has(key)) {
+                                    conflictMap.set(key, {
+                                        registeredClass: registered.tenMonHoc,
+                                        registeredCode: registered.maLopHocPhan,
+                                        conflicts: []
+                                    });
+                                }
+                                
+                                // Add this specific conflict detail
+                                conflictMap.get(key).conflicts.push({
                                     day: formatDayOfWeek(schedule.thu),
                                     period: schedule.tietHoc,
                                     conflictPeriod: regSchedule.tietHoc
@@ -196,6 +207,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        // Convert map to array and format conflicts
+        const conflicts = Array.from(conflictMap.values()).map(conflict => {
+            // Get unique day-period combinations
+            const uniqueConflicts = [];
+            const seen = new Set();
+            
+            for (const c of conflict.conflicts) {
+                const key = `${c.day}-${c.period}-${c.conflictPeriod}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueConflicts.push(c);
+                }
+            }
+            
+            // Format conflict details
+            const conflictDetails = uniqueConflicts.map(c => 
+                `${c.day}, Tiết ${c.conflictPeriod}`
+            ).join('; ');
+            
+            return {
+                registeredClass: conflict.registeredClass,
+                registeredCode: conflict.registeredCode,
+                day: uniqueConflicts[0].day,
+                period: uniqueConflicts.map(c => c.period).join(', '),
+                conflictPeriod: conflictDetails
+            };
+        });
 
         return {
             hasConflict: conflicts.length > 0,
