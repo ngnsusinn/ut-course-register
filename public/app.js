@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allScheduleData = [];
     let registeredClassesData = []; // Store registered classes for conflict detection
     let selectedClasses = new Map();
+    let swapPendingClasses = new Map(); // Store classes pending swap: key = targetClassId, value = { registered, target }
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
@@ -49,7 +50,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Expose data for timetable module
     window.getRegisteredClassesData = () => registeredClassesData;
-    window.getSelectedClassesData = () => Array.from(selectedClasses.values());
+    window.getSelectedClassesData = () => {
+        const allClasses = [];
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            allClasses.push(cls);
+        });
+        
+        // Add target classes from swap pending (not registered classes)
+        swapPendingClasses.forEach(swap => {
+            allClasses.push(swap.target);
+        });
+        
+        return allClasses;
+    };
 
     // Assign originalHTML safely
     const buttons = [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn];
@@ -680,6 +695,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         searchInput.value = '';
         allScheduleData = [];
         selectedClasses.clear();
+        swapPendingClasses.clear();
         updateSelectedList();
 
         if (paymentCheckInterval) clearInterval(paymentCheckInterval);
@@ -707,6 +723,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 allScheduleData,
                 registeredClassesData,
                 selectedClasses: Array.from(selectedClasses.entries()),
+                swapPendingClasses: Array.from(swapPendingClasses.entries()),
                 subjectTypeMap: Array.from(subjectTypeMap.entries()),
                 prerequisiteToggleState: prerequisiteToggle?.checked || false,
                 timestamp: new Date().getTime()
@@ -743,6 +760,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             allScheduleData = cacheData.allScheduleData || [];
             registeredClassesData = cacheData.registeredClassesData || [];
             selectedClasses = new Map(cacheData.selectedClasses || []);
+            swapPendingClasses = new Map(cacheData.swapPendingClasses || []);
             subjectTypeMap = new Map(cacheData.subjectTypeMap || []);
             
             // Restore prerequisite toggle state
@@ -1047,12 +1065,60 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         log(`🔄 Bắt đầu đổi lớp: ${regName} → ${targetName}`);
         
-        // Step 1: Check target class availability
-        log(`📊 Kiểm tra tình trạng lớp ${targetCode}...`);
+        // Step 1: Validate registered class can be cancelled
+        log(`🔍 Kiểm tra lớp đã đăng ký ${regCode}...`);
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        
+        if (!registeredClass) {
+            log(`❌ Không tìm thấy thông tin lớp đã đăng ký ${regCode}`, true);
+            return false;
+        }
+        
+        // Check if registered class can be cancelled based on status
+        const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+        
+        if (registeredStatus === 'Đã khóa lớp') {
+            log(`❌ Không thể hủy lớp ${regCode} - Lớp đã bị khóa (trạng thái: ${registeredStatus})`, true);
+            log(`💡 Học phí đã được tính cho lớp này, không thể thay đổi`, true);
+            return false;
+        }
+        
+        if (registeredStatus === 'Đã mở chính thức') {
+            log(`❌ Không thể hủy lớp ${regCode} - Lớp đã mở chính thức, không cho phép hủy (trạng thái: ${registeredStatus})`, true);
+            return false;
+        }
+        
+        if (registeredStatus === 'Đang lên kế hoạch') {
+            log(`❌ Không thể hủy lớp ${regCode} - Lớp đang lên kế hoạch, đã bị khóa (trạng thái: ${registeredStatus})`, true);
+            return false;
+        }
+        
+        if (registeredStatus !== 'Đang chờ đăng ký' && registeredClass.isAllowCancel === false) {
+            log(`❌ Không thể hủy lớp ${regCode} - Hệ thống không cho phép hủy lớp này (trạng thái: ${registeredStatus})`, true);
+            return false;
+        }
+        
+        log(`✓ Lớp ${regCode} có thể hủy (trạng thái: ${registeredStatus})`);
+        
+        // Step 2: Validate target class can be registered
+        log(`📊 Kiểm tra lớp đích ${targetCode}...`);
         const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
         
         if (!targetClass) {
-            log(`❌ Không tìm thấy thông tin lớp ${targetCode}`, true);
+            log(`❌ Không tìm thấy thông tin lớp đích ${targetCode}`, true);
+            return false;
+        }
+        
+        // Check target class status
+        const targetStatus = targetClass.tenTrangThai || '';
+        
+        if (targetStatus === 'Đã khóa lớp') {
+            log(`❌ Không thể đăng ký lớp ${targetCode} - Lớp đã bị khóa (trạng thái: ${targetStatus})`, true);
+            return false;
+        }
+        
+        if (targetStatus === 'Đang lên kế hoạch') {
+            log(`❌ Không thể đăng ký lớp ${targetCode} - Lớp đang lên kế hoạch, chưa mở đăng ký (trạng thái: ${targetStatus})`, true);
             return false;
         }
         
@@ -1061,9 +1127,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             return false;
         }
         
-        log(`✓ Lớp ${targetCode} còn chỗ (${targetClass.phanTramDangKy}%)`);
+        log(`✓ Lớp ${targetCode} có thể đăng ký (trạng thái: ${targetStatus}, ${targetClass.phanTramDangKy}% đã đăng ký)`);
         
-        // Step 2: Cancel registered class
+        // Step 3: Cancel registered class
         log(`🗑️ Đang hủy lớp ${regName} (${regCode})...`);
         const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
         
@@ -1074,7 +1140,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         log(`✅ Đã hủy lớp ${regCode} thành công`);
         
-        // Step 3: Register target class
+        // Step 4: Register target class
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
         const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
         
@@ -1098,22 +1164,41 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             log("⚠️ Bạn cần nâng cấp VIP để thực hiện chèn lớp.", true);
             return;
         }
-        if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để chèn.", true);
+        
+        const totalClasses = selectedClasses.size + swapPendingClasses.size;
+        if (totalClasses === 0) {
+            return log("Vui lòng chọn lớp để chèn.", true);
+        }
+        
         stopProcess();
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu quá trình chèn lớp...");
 
         const classesBySubject = new Map();
+        
+        // Add regular selected classes
         selectedClasses.forEach(cls => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
-            classesBySubject.get(cls.maHocPhan).push(cls);
+            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
         });
+        
+        // Add swap pending classes (only target classes for insertion)
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const targetClass = swap.target;
+            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
+            classesBySubject.get(targetClass.maHocPhan).push({ 
+                type: 'swap', 
+                class: targetClass,
+                registeredClass: swap.registered
+            });
+        });
+        
         const delay = parseInt(delayInput.value, 10) || 1000;
 
-        classesBySubject.forEach((classes, maHocPhan) => {
-            const tenMonHoc = classes[0].tenMonHoc || maHocPhan;
-            const source = classes[0].source;
+        classesBySubject.forEach((classItems, maHocPhan) => {
+            const tenMonHoc = classItems[0].class.tenMonHoc || maHocPhan;
+            const source = classItems[0].class.source;
 
             const intervalId = setInterval(async () => {
                 if (isProcessStopped) return;
@@ -1122,20 +1207,53 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 if (!statusRes || !statusRes.success) return;
 
                 for (const availableClass of statusRes.body) {
-                    if (selectedClasses.has(availableClass.id.toString()) && availableClass.phanTramDangKy < 100) {
-                        log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                        const regResult = await backendRequest('register', { classId: availableClass.id, source });
-
-                        if (regResult && regResult.success) {
-                            log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
-                            clearInterval(registrationIntervals.get(maHocPhan));
-                            registrationIntervals.delete(maHocPhan);
-                            classes.forEach(c => selectedClasses.delete(c.id.toString()));
-                            await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
-                            if (registrationIntervals.size === 0) await stopProcess();
-                            return;
+                    const matchedItem = classItems.find(item => item.class.id.toString() === availableClass.id.toString());
+                    
+                    if (matchedItem && availableClass.phanTramDangKy < 100) {
+                        if (matchedItem.type === 'swap') {
+                            // Handle swap: cancel old class first, then register new class
+                            const regClass = matchedItem.registeredClass;
+                            log(`[${tenMonHoc}] 🔔 Đổi lớp: ${regClass.maLopHocPhan} → ${availableClass.maLopHocPhan}`);
+                            
+                            const swapResult = await swapClass(
+                                {
+                                    id: regClass.id,
+                                    code: regClass.maLopHocPhan,
+                                    name: regClass.tenMonHoc,
+                                    source: regClass.source
+                                },
+                                {
+                                    id: availableClass.id,
+                                    code: availableClass.maLopHocPhan,
+                                    name: availableClass.tenMonHoc,
+                                    source: availableClass.source
+                                }
+                            );
+                            
+                            if (swapResult) {
+                                log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
+                                swapPendingClasses.delete(matchedItem.class.id.toString());
+                                updateSelectedList();
+                                clearInterval(registrationIntervals.get(maHocPhan));
+                                registrationIntervals.delete(maHocPhan);
+                                break;
+                            }
                         } else {
-                            log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                            // Handle regular registration
+                            log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
+                            const regResult = await backendRequest('register', { classId: availableClass.id, source });
+
+                            if (regResult && regResult.success) {
+                                log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
+                                clearInterval(registrationIntervals.get(maHocPhan));
+                                registrationIntervals.delete(maHocPhan);
+                                selectedClasses.delete(availableClass.id.toString());
+                                await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                                if (registrationIntervals.size === 0) await stopProcess();
+                                return;
+                            } else {
+                                log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                            }
                         }
                     }
                 }
@@ -1149,39 +1267,91 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             log("⚠️ Bạn cần nâng cấp VIP để thực hiện đăng ký.", true);
             return;
         }
-        if (selectedClasses.size === 0) return log("Vui lòng chọn lớp để đăng ký.", true);
+        
+        const totalClasses = selectedClasses.size + swapPendingClasses.size;
+        if (totalClasses === 0) {
+            return log("Vui lòng chọn lớp để đăng ký.", true);
+        }
+        
         stopProcess();
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu đăng ký liên tục...");
 
         const classesBySubject = new Map();
+        
+        // Add regular selected classes
         selectedClasses.forEach(cls => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
-            classesBySubject.get(cls.maHocPhan).push(cls);
+            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
         });
+        
+        // Add swap pending classes
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const targetClass = swap.target;
+            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
+            classesBySubject.get(targetClass.maHocPhan).push({ 
+                type: 'swap', 
+                class: targetClass,
+                registeredClass: swap.registered
+            });
+        });
+        
         const delay = parseInt(delayInput.value, 10) || 1000;
 
-        classesBySubject.forEach((classes, maHocPhan) => {
-            const tenMonHoc = classes[0].tenMonHoc;
+        classesBySubject.forEach((classItems, maHocPhan) => {
+            const tenMonHoc = classItems[0].class.tenMonHoc;
 
             const intervalId = setInterval(async () => {
                 if (isProcessStopped) return;
-                for (const cls of classes) {
+                
+                for (const item of classItems) {
                     if (isProcessStopped) return;
-                    log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${cls.maLopHocPhan}...`);
-                    const result = await backendRequest('register', { classId: cls.id, source: cls.source });
+                    
+                    if (item.type === 'swap') {
+                        // Handle swap registration
+                        const regClass = item.registeredClass;
+                        log(`[${tenMonHoc}] 🔄 Thử đổi lớp: ${regClass.maLopHocPhan} → ${item.class.maLopHocPhan}`);
+                        
+                        const swapResult = await swapClass(
+                            {
+                                id: regClass.id,
+                                code: regClass.maLopHocPhan,
+                                name: regClass.tenMonHoc,
+                                source: regClass.source
+                            },
+                            {
+                                id: item.class.id,
+                                code: item.class.maLopHocPhan,
+                                name: item.class.tenMonHoc,
+                                source: item.class.source
+                            }
+                        );
+                        
+                        if (swapResult) {
+                            swapPendingClasses.delete(item.class.id.toString());
+                            await updateSelectedList();
+                            clearInterval(registrationIntervals.get(maHocPhan));
+                            registrationIntervals.delete(maHocPhan);
+                            if (registrationIntervals.size === 0) await stopProcess();
+                            return;
+                        }
+                    } else {
+                        // Handle regular registration
+                        log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
+                        const result = await backendRequest('register', { classId: item.class.id, source: item.class.source });
 
-                    if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
-                        log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
-                        clearInterval(registrationIntervals.get(maHocPhan));
-                        registrationIntervals.delete(maHocPhan);
-                        classes.forEach(c => selectedClasses.delete(c.id.toString()));
-                        await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
-                        if (registrationIntervals.size === 0) await stopProcess();
-                        return;
-                    } else if (result) {
-                        log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
+                        if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
+                            log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
+                            clearInterval(registrationIntervals.get(maHocPhan));
+                            registrationIntervals.delete(maHocPhan);
+                            selectedClasses.delete(item.class.id.toString());
+                            await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                            if (registrationIntervals.size === 0) await stopProcess();
+                            return;
+                        } else if (result) {
+                            log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
+                        }
                     }
                 }
             }, delay);
@@ -1355,7 +1525,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             registrationControls.classList.add('hidden');
             return;
         }
-        if (selectedClasses.size === 0) {
+        
+        const totalCount = selectedClasses.size + swapPendingClasses.size;
+        
+        if (totalCount === 0) {
             selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
             registrationControls.classList.add('hidden');
             
@@ -1363,9 +1536,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             saveCachedData();
             return;
         }
-        selectedList.innerHTML = [...selectedClasses.values()].map(cls => {
+        
+        let html = '';
+        
+        // Render regular selected classes
+        selectedClasses.forEach(cls => {
             const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
-            return `
+            html += `
                 <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
                     <div>
                         <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
@@ -1373,7 +1550,51 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     </div>
                     <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
                 </div>`;
-        }).join('');
+        });
+        
+        // Render swap pending classes with strikethrough old class and arrow to new class
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const registeredClass = swap.registered;
+            const targetClass = swap.target;
+            
+            const regSourceBadge = registeredClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            const targetSourceBadge = targetClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            
+            html += `
+                <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-2 rounded-md hover:bg-yellow-100">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-xs font-bold text-yellow-800 uppercase">Đổi lớp</span>
+                        </div>
+                        
+                        <!-- Old class (strikethrough) -->
+                        <div class="mb-1">
+                            <p class="font-semibold text-sm text-gray-500 line-through decoration-2">${registeredClass.tenMonHoc} ${regSourceBadge}</p>
+                            <div class="text-xs text-gray-400 line-through mt-1">${formatSelectedClassDetail(registeredClass, registeredClass.scheduleDetails)}</div>
+                        </div>
+                        
+                        <!-- Arrow -->
+                        <div class="flex items-center gap-2 my-1">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                            <span class="text-xs font-semibold text-green-700">Đổi sang</span>
+                        </div>
+                        
+                        <!-- New class -->
+                        <div>
+                            <p class="font-semibold text-sm text-green-800">${targetClass.tenMonHoc} ${targetSourceBadge}</p>
+                            <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(targetClass, targetClass.scheduleDetails)}</div>
+                        </div>
+                    </div>
+                    <button data-target-class-id="${targetClassId}" class="remove-swap-btn text-red-500 hover:text-red-700 ml-2 flex-shrink-0">&times;</button>
+                </div>`;
+        });
+        
+        selectedList.innerHTML = html;
         registrationControls.classList.remove('hidden');
         
         // Save to cache whenever selection changes
@@ -1446,6 +1667,19 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
             updateSelectedList();
         }
+        
+        const removeSwapBtn = e.target.closest('.remove-swap-btn');
+        if (removeSwapBtn) {
+            if (!vipStatus.hasVIP) {
+                log("⚠️ Bạn cần nâng cấp VIP để chỉnh sửa danh sách lớp.", true);
+                return;
+            }
+            const targetClassId = removeSwapBtn.dataset.targetClassId;
+            swapPendingClasses.delete(targetClassId);
+            updateSelectedList();
+            log("🗑️ Đã hủy yêu cầu đổi lớp");
+        }
+        
         const cancelBtn = e.target.closest('.cancel-btn');
         if (cancelBtn) {
             const { regId, tenMon, source } = cancelBtn.dataset;
@@ -1467,13 +1701,70 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 source: swapBtn.dataset.targetSource
             };
             
-            if (confirm(`Bạn có chắc muốn đổi lớp?\n\nHủy: ${registeredData.name} (${registeredData.code})\nĐăng ký: ${targetData.name} (${targetData.code})`)) {
-                swapClass(registeredData, targetData).then(success => {
-                    if (success && tooltipElement) {
-                        tooltipElement.remove();
-                        tooltipElement = null;
-                    }
-                });
+            // Find full class objects from data
+            const registeredClass = registeredClassesData.find(c => c.id.toString() === registeredData.id);
+            const targetClass = allScheduleData.find(c => c.id.toString() === targetData.id);
+            
+            if (!registeredClass || !targetClass) {
+                log("❌ Không tìm thấy thông tin đầy đủ của lớp", true);
+                return;
+            }
+            
+            // Validate registered class can be cancelled
+            const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+            
+            if (registeredStatus === 'Đã khóa lớp') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Lớp đã bị khóa, học phí đã được tính`, true);
+                return;
+            }
+            
+            if (registeredStatus === 'Đã mở chính thức') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Lớp đã mở chính thức, không cho phép hủy`, true);
+                return;
+            }
+            
+            if (registeredStatus === 'Đang lên kế hoạch') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Lớp đang lên kế hoạch, đã bị khóa`, true);
+                return;
+            }
+            
+            if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Hệ thống không cho phép hủy lớp này`, true);
+                return;
+            }
+            
+            // Validate target class can be registered
+            const targetStatus = targetClass.tenTrangThai || '';
+            
+            if (targetStatus === 'Đã khóa lớp') {
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Lớp đã bị khóa`, true);
+                return;
+            }
+            
+            if (targetStatus === 'Đang lên kế hoạch') {
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Lớp đang lên kế hoạch, chưa mở đăng ký`, true);
+                return;
+            }
+            
+            if (targetClass.phanTramDangKy >= 100) {
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Lớp đã đầy (${targetClass.phanTramDangKy}%)`, true);
+                return;
+            }
+            
+            // All validations passed - add to swap pending list
+            swapPendingClasses.set(targetData.id, {
+                registered: registeredClass,
+                target: targetClass
+            });
+            
+            log(`✅ Đã thêm yêu cầu đổi lớp: ${registeredData.name} → ${targetData.name}`);
+            log(`📋 Trạng thái: ${registeredStatus} → ${targetStatus}`);
+            updateSelectedList();
+            
+            // Close tooltip
+            if (tooltipElement) {
+                tooltipElement.remove();
+                tooltipElement = null;
             }
         }
     });
@@ -1516,7 +1807,38 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 
                 // Find the registered class to get its ID and percentage
                 const registeredClass = registeredClassesData.find(r => r.maLopHocPhan === conflict.registeredCode);
-                const canSwap = registeredClass && registeredClass.isAllowCancel !== false;
+                
+                // Check if swap is allowed based on class status
+                let canSwap = false;
+                let swapDisabledReason = '';
+                
+                if (!registeredClass) {
+                    swapDisabledReason = 'Không tìm thấy thông tin lớp';
+                } else {
+                    const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+                    const targetStatus = targetClass?.tenTrangThai || '';
+                    
+                    // Check registered class can be cancelled
+                    if (registeredStatus === 'Đã khóa lớp') {
+                        swapDisabledReason = 'Lớp đã khóa - Học phí đã tính';
+                    } else if (registeredStatus === 'Đã mở chính thức') {
+                        swapDisabledReason = 'Lớp đã mở chính thức - Không cho phép hủy';
+                    } else if (registeredStatus === 'Đang lên kế hoạch') {
+                        swapDisabledReason = 'Lớp đang lên kế hoạch - Đã khóa';
+                    } else if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
+                        swapDisabledReason = 'Hệ thống không cho phép hủy';
+                    }
+                    // Check target class can be registered
+                    else if (targetStatus === 'Đã khóa lớp') {
+                        swapDisabledReason = 'Lớp đích đã khóa';
+                    } else if (targetStatus === 'Đang lên kế hoạch') {
+                        swapDisabledReason = 'Lớp đích đang lên kế hoạch';
+                    } else if (targetClass && targetClass.phanTramDangKy >= 100) {
+                        swapDisabledReason = `Lớp đích đã đầy (${targetClass.phanTramDangKy}%)`;
+                    } else {
+                        canSwap = true;
+                    }
+                }
                 
                 const swapButton = canSwap ? 
                     `<button class="swap-class-btn mt-2 w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold py-1.5 px-3 rounded transition duration-200 flex items-center justify-center gap-1"
@@ -1533,7 +1855,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         </svg>
                         Đổi lớp
                     </button>` 
-                    : '<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi lớp (không cho phép hủy)</p>';
+                    : `<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi: ${swapDisabledReason}</p>`;
                 
                 return `<div class="py-2 border-b border-red-500 last:border-0">
                     <div class="flex items-start gap-2">
