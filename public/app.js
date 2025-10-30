@@ -1511,12 +1511,221 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 <td class="px-6 py-4" data-label="Hành động">${
                     reg.isAllowCancel === false
                         ? ''
-                        : `<button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn">Hủy</button>`
+                        : `
+                            <button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn mr-3">Hủy</button>
+                            <button data-reg-id="${reg.id ?? ''}" 
+                                    data-reg-code="${reg.maLopHocPhan ?? ''}" 
+                                    data-reg-name="${reg.tenMonHoc ?? ''}" 
+                                    data-reg-source="${reg.source ?? ''}"
+                                    data-reg-subject-code="${reg.maHocPhan ?? ''}"
+                                    data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
+                                    class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Đổi lớp</button>
+                        `
                 }</td>`;
             tbody.appendChild(row);
         });
         registeredContainer.innerHTML = '';
         registeredContainer.appendChild(table);
+    };
+
+    // Show swap class modal from registered classes table
+    const showSwapClassModal = async (registeredClassData) => {
+        const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
+        
+        // Find registered class details
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        if (!registeredClass) {
+            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+            return;
+        }
+        
+        // Filter available classes for the same subject
+        const availableClasses = allScheduleData.filter(cls => 
+            cls.maHocPhan === subjectCode && 
+            cls.id.toString() !== regId &&
+            cls.tenTrangThai !== 'Đã khóa lớp' &&
+            cls.tenTrangThai !== 'Đang lên kế hoạch'
+        );
+        
+        if (availableClasses.length === 0) {
+            log(`❌ Không có lớp nào khác để đổi cho môn ${regName}`, true);
+            return;
+        }
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.id = 'swap-class-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">🔄 Đổi lớp học phần</h2>
+                        <p class="text-sm text-blue-100 mt-1">Lớp hiện tại: ${regName} (${regCode})</p>
+                    </div>
+                    <button id="close-swap-modal" class="text-white hover:text-gray-200 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto flex-1">
+                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">📋 Lịch học hiện tại:</span><br>
+                            <div class="mt-2 text-gray-600">${formatScheduleDetail(registeredClass.scheduleDetails)}</div>
+                        </p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đổi đến:</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Mã LHP</th>
+                                    <th scope="col" class="px-4 py-3">Lịch học</th>
+                                    <th scope="col" class="px-4 py-3">Trạng thái</th>
+                                    <th scope="col" class="px-4 py-3">Đã ĐK</th>
+                                    <th scope="col" class="px-4 py-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="swap-classes-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Render available classes
+        const tbody = modal.querySelector('#swap-classes-tbody');
+        availableClasses.forEach(cls => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            
+            // Check if schedules conflict
+            const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
+            const conflictBadge = hasConflict 
+                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>' 
+                : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Không trùng</span>';
+            
+            const isFull = cls.phanTramDangKy >= 100;
+            const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
+            
+            row.innerHTML = `
+                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}</td>
+                <td class="px-4 py-3">
+                    <div class="text-xs">${formatScheduleDetail(cls.scheduleDetails)}</div>
+                </td>
+                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-4 py-3 ${statusColor}">${cls.phanTramDangKy}%</td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-col gap-2">
+                        ${conflictBadge}
+                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-blue-600 text-white hover:bg-blue-700"
+                                data-target-id="${cls.id}"
+                                data-target-code="${cls.maLopHocPhan}"
+                                data-target-name="${cls.tenMonHoc}"
+                                data-target-source="${cls.source}"
+                                data-has-conflict="${hasConflict}">
+                            🔄 Đổi lớp
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+        
+        // Close modal handler
+        modal.querySelector('#close-swap-modal').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Execute swap handler
+        modal.querySelectorAll('.execute-swap-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const targetId = btn.dataset.targetId;
+                const targetCode = btn.dataset.targetCode;
+                const targetName = btn.dataset.targetName;
+                const targetSource = btn.dataset.targetSource;
+                const hasConflict = btn.dataset.hasConflict === 'true';
+                
+                // Find target class full info
+                const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+                if (!targetClass) {
+                    alert('❌ Không tìm thấy thông tin lớp đích');
+                    return;
+                }
+                
+                // Find registered class full info
+                const registeredClassFull = registeredClassesData.find(c => c.id.toString() === regId);
+                if (!registeredClassFull) {
+                    alert('❌ Không tìm thấy thông tin lớp đã đăng ký');
+                    return;
+                }
+                
+                const confirmMsg = hasConflict 
+                    ? `⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!\n\nBạn vẫn muốn thêm vào danh sách đổi lớp?\n\nHủy: ${regName} (${regCode})\nĐăng ký: ${targetName} (${targetCode})\n\n${targetClass.phanTramDangKy >= 100 ? '⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.' : '✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.'}`
+                    : `Xác nhận thêm vào danh sách đổi lớp?\n\nHủy: ${regName} (${regCode})\nĐăng ký: ${targetName} (${targetCode})\n\n${targetClass.phanTramDangKy >= 100 ? '⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.' : '✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.'}`;
+                
+                if (!confirm(confirmMsg)) return;
+                
+                // Add to swap pending list
+                swapPendingClasses.set(targetId, {
+                    registered: registeredClassFull,
+                    target: targetClass
+                });
+                
+                log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                if (targetClass.phanTramDangKy >= 100) {
+                    log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                }
+                
+                updateSelectedList();
+                modal.remove();
+            });
+        });
+    };
+    
+    // Check schedule conflict between two specific classes
+    const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => {
+        if (!schedule1 || !Array.isArray(schedule1) || schedule1.length === 0) return false;
+        if (!schedule2 || !Array.isArray(schedule2) || schedule2.length === 0) return false;
+        
+        for (const s1 of schedule1) {
+            const periods1 = parsePeriods(s1.tietHoc);
+            if (periods1.length === 0) continue;
+            
+            for (const s2 of schedule2) {
+                const periods2 = parsePeriods(s2.tietHoc);
+                if (periods2.length === 0) continue;
+                
+                // Check if same day of week
+                if (s1.thu === s2.thu) {
+                    // Check if date ranges overlap
+                    if (dateRangesOverlap(s1.ngayBatDau, s1.ngayKetThuc, s2.ngayBatDau, s2.ngayKetThuc)) {
+                        // Check if periods overlap
+                        if (periodsOverlap(periods1, periods2)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
     };
 
     const updateSelectedList = async () => {
@@ -1684,6 +1893,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (cancelBtn) {
             const { regId, tenMon, source } = cancelBtn.dataset;
             cancelRegistration(regId, tenMon, source);
+        }
+        
+        const swapFromRegisteredBtn = e.target.closest('.swap-from-registered-btn');
+        if (swapFromRegisteredBtn) {
+            const registeredData = {
+                id: swapFromRegisteredBtn.dataset.regId,
+                code: swapFromRegisteredBtn.dataset.regCode,
+                name: swapFromRegisteredBtn.dataset.regName,
+                source: swapFromRegisteredBtn.dataset.regSource,
+                subjectCode: swapFromRegisteredBtn.dataset.regSubjectCode,
+                status: swapFromRegisteredBtn.dataset.regStatus
+            };
+            
+            showSwapClassModal(registeredData);
         }
         
         const swapBtn = e.target.closest('.swap-class-btn');
