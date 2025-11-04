@@ -168,8 +168,30 @@
       </div>
     </div>
     
-    <script src="app.js" defer></script>
-    <script src="timetable.js" defer></script>
+    <!-- Load obfuscated version if available, fallback to original -->
+    <script>
+      (function() {
+        var scripts = [
+          { obf: 'app.obfuscated.js', orig: 'app.js' },
+          { obf: 'timetable.obfuscated.js', orig: 'timetable.js' }
+        ];
+        scripts.forEach(function(s) {
+          fetch(s.obf, { method: 'HEAD' })
+            .then(function(res) {
+              var script = document.createElement('script');
+              script.src = res.ok ? s.obf : s.orig;
+              script.defer = true;
+              document.body.appendChild(script);
+            })
+            .catch(function() {
+              var script = document.createElement('script');
+              script.src = s.orig;
+              script.defer = true;
+              document.body.appendChild(script);
+            });
+        });
+      })();
+    </script>
     
     <!-- Vercel Speed Insights -->
     <script>

@@ -8,7 +8,9 @@
     "deploy": "vercel --prod",
     "test:db": "node scripts/test-connection.js",
     "migrate": "node scripts/migrate.js",
-    "postinstall": "echo '✅ Dependencies installed. Run npm run migrate to setup database.'"
+    "postinstall": "echo '✅ Dependencies installed. Run npm run migrate to setup database.'",
+    "obfuscate": "node scripts/obfuscate.js",
+    "build": "npm run obfuscate"
   },
   "dependencies": {
     "node-fetch": "^2.6.7",
@@ -19,7 +21,8 @@
   },
   "devDependencies": {
     "vercel": "^33.0.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "javascript-obfuscator": "^4.1.0"
   },
   "engines": {
     "node": ">=14.x"

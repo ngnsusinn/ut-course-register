@@ -807,7 +807,22 @@
         </div>
     </div>
 
-    <script src="admin-panel.js"></script>
+    <!-- Load obfuscated version if available, fallback to original -->
+    <script>
+      (function() {
+        fetch('admin-panel.obfuscated.js', { method: 'HEAD' })
+          .then(function(res) {
+            var script = document.createElement('script');
+            script.src = res.ok ? 'admin-panel.obfuscated.js' : 'admin-panel.js';
+            document.body.appendChild(script);
+          })
+          .catch(function() {
+            var script = document.createElement('script');
+            script.src = 'admin-panel.js';
+            document.body.appendChild(script);
+          });
+      })();
+    </script>
     
     <!-- Vercel Speed Insights -->
     <script>
