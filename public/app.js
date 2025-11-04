@@ -1465,7 +1465,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             </svg>
                             <div class="flex-1">
                                 <p class="text-xs font-bold text-red-800">TRÙNG LỊCH HỌC</p>
-                                <p class="text-xs text-red-700 mt-0.5">Trùng với ${conflictCount} môn: ${conflictSummary}</p>
+                                <p class="text-xs text-red-700 mt-0.5">Trùng với: ${conflictSummary}</p>
                             </div>
                         </div>
                     </div>
