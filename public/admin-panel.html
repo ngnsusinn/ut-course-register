@@ -807,20 +807,18 @@
         </div>
     </div>
 
-    <!-- Load obfuscated version if available, fallback to original -->
+    <!-- Load obfuscated JS with fallback -->
     <script>
       (function() {
-        fetch('admin-panel.obfuscated.js', { method: 'HEAD' })
-          .then(function(res) {
-            var script = document.createElement('script');
-            script.src = res.ok ? 'admin-panel.obfuscated.js' : 'admin-panel.js';
-            document.body.appendChild(script);
-          })
-          .catch(function() {
-            var script = document.createElement('script');
-            script.src = 'admin-panel.js';
-            document.body.appendChild(script);
-          });
+        var script = document.createElement('script');
+        script.onerror = function() {
+          console.warn('Failed to load admin-panel.obfuscated.js, loading admin-panel.js');
+          var fallbackScript = document.createElement('script');
+          fallbackScript.src = 'admin-panel.js';
+          document.body.appendChild(fallbackScript);
+        };
+        script.src = 'admin-panel.obfuscated.js';
+        document.body.appendChild(script);
       })();
     </script>
     

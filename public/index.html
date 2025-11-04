@@ -168,28 +168,25 @@
       </div>
     </div>
     
-    <!-- Load obfuscated version if available, fallback to original -->
+    <!-- Load obfuscated JS with fallback -->
     <script>
       (function() {
-        var scripts = [
-          { obf: 'app.obfuscated.js', orig: 'app.js' },
-          { obf: 'timetable.obfuscated.js', orig: 'timetable.js' }
-        ];
-        scripts.forEach(function(s) {
-          fetch(s.obf, { method: 'HEAD' })
-            .then(function(res) {
-              var script = document.createElement('script');
-              script.src = res.ok ? s.obf : s.orig;
-              script.defer = true;
-              document.body.appendChild(script);
-            })
-            .catch(function() {
-              var script = document.createElement('script');
-              script.src = s.orig;
-              script.defer = true;
-              document.body.appendChild(script);
-            });
-        });
+        function loadScript(src, fallback) {
+          var script = document.createElement('script');
+          script.defer = true;
+          script.onerror = function() {
+            if (fallback && src !== fallback) {
+              console.warn('Failed to load ' + src + ', loading ' + fallback);
+              loadScript(fallback, null);
+            }
+          };
+          script.src = src;
+          document.body.appendChild(script);
+        }
+        
+        // Load obfuscated versions first, fallback to original on error
+        loadScript('app.obfuscated.js', 'app.js');
+        loadScript('timetable.obfuscated.js', 'timetable.js');
       })();
     </script>
     
