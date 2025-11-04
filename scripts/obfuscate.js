@@ -38,21 +38,18 @@ const obfuscationOptions = {
     unicodeEscapeSequence: false
 };
 
-// Files to obfuscate
+// Files to obfuscate (will backup original and replace with obfuscated)
 const filesToObfuscate = [
     {
         input: 'public/app.js',
-        output: 'public/app.obfuscated.js',
         backup: 'public/app.original.js'
     },
     {
         input: 'public/admin-panel.js',
-        output: 'public/admin-panel.obfuscated.js',
         backup: 'public/admin-panel.original.js'
     },
     {
         input: 'public/timetable.js',
-        output: 'public/timetable.obfuscated.js',
         backup: 'public/timetable.original.js'
     }
 ];
@@ -61,7 +58,6 @@ const filesToObfuscate = [
 filesToObfuscate.forEach(file => {
     try {
         const inputPath = path.join(__dirname, '..', file.input);
-        const outputPath = path.join(__dirname, '..', file.output);
         const backupPath = path.join(__dirname, '..', file.backup);
         
         // Check if file exists
@@ -75,23 +71,25 @@ filesToObfuscate.forEach(file => {
         // Read original file
         const originalCode = fs.readFileSync(inputPath, 'utf8');
         
-        // Create backup of original file
+        // Create backup of original file (only once)
         if (!fs.existsSync(backupPath)) {
             fs.writeFileSync(backupPath, originalCode, 'utf8');
             console.log(`   ✅ Backup created: ${file.backup}`);
+        } else {
+            console.log(`   📦 Backup exists: ${file.backup}`);
         }
         
         // Obfuscate the code
         console.log(`   🔄 Obfuscating...`);
         const obfuscationResult = JavaScriptObfuscator.obfuscate(originalCode, obfuscationOptions);
         
-        // Write obfuscated code
-        fs.writeFileSync(outputPath, obfuscationResult.getObfuscatedCode(), 'utf8');
-        console.log(`   ✅ Obfuscated file created: ${file.output}`);
+        // Overwrite original file with obfuscated code
+        fs.writeFileSync(inputPath, obfuscationResult.getObfuscatedCode(), 'utf8');
+        console.log(`   ✅ File obfuscated and replaced: ${file.input}`);
         
         // Get file sizes
-        const originalSize = (fs.statSync(inputPath).size / 1024).toFixed(2);
-        const obfuscatedSize = (fs.statSync(outputPath).size / 1024).toFixed(2);
+        const originalSize = (fs.statSync(backupPath).size / 1024).toFixed(2);
+        const obfuscatedSize = (fs.statSync(inputPath).size / 1024).toFixed(2);
         console.log(`   📊 Original size: ${originalSize} KB`);
         console.log(`   📊 Obfuscated size: ${obfuscatedSize} KB\n`);
         
@@ -101,8 +99,8 @@ filesToObfuscate.forEach(file => {
 });
 
 console.log('✅ Obfuscation completed!');
-console.log('\n📝 Next steps:');
-console.log('1. Update your HTML files to use .obfuscated.js files');
-console.log('2. Test the obfuscated files locally');
-console.log('3. Deploy to Vercel');
-console.log('\n⚠️  Note: Keep the .original.js files as backups (add to .gitignore)');
+console.log('\n📝 Important:');
+console.log('- Original files backed up as *.original.js');
+console.log('- Main JS files now contain obfuscated code');
+console.log('- Deploy to production normally');
+console.log('\n⚠️  To restore original files, run: npm run restore');

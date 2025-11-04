@@ -28,12 +28,6 @@ public/app.original.js
 public/admin-panel.original.js
 public/timetable.original.js
 
-# Obfuscated files (will be generated during Vercel build)
-*.obfuscated.js
-public/app.obfuscated.js
-public/admin-panel.obfuscated.js
-public/timetable.obfuscated.js
-
 # Logs
 logs/
 *.log

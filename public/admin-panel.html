@@ -807,44 +807,7 @@
         </div>
     </div>
 
-    <!-- Load JS with silent fallback (no 404 errors) -->
-    <script>
-      (function() {
-        var isProduction = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-        
-        function loadScript(src, callback) {
-          var script = document.createElement('script');
-          
-          var loaded = false;
-          script.onload = function() {
-            if (!loaded) {
-              loaded = true;
-              if (callback) callback(true);
-            }
-          };
-          script.onerror = function() {
-            if (!loaded) {
-              loaded = true;
-              if (callback) callback(false);
-            }
-          };
-          
-          script.src = src;
-          document.body.appendChild(script);
-        }
-        
-        // Try obfuscated first
-        loadScript('admin-panel.obfuscated.js', function(success) {
-          if (!success) {
-            // Obfuscated failed, load original
-            if (!isProduction) {
-              console.log('[Dev] Loading original: admin-panel.js');
-            }
-            loadScript('admin-panel.js');
-          }
-        });
-      })();
-    </script>
+    <script src="admin-panel.js"></script>
     
     <!-- Vercel Speed Insights -->
     <script>
