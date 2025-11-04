@@ -807,12 +807,16 @@
         </div>
     </div>
 
-    <!-- Load obfuscated JS with fallback -->
+    <!-- Load obfuscated JS with silent fallback -->
     <script>
       (function() {
+        var isProduction = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
         var script = document.createElement('script');
         script.onerror = function() {
-          console.warn('Failed to load admin-panel.obfuscated.js, loading admin-panel.js');
+          // Silent fallback in production, only warn in dev
+          if (!isProduction) {
+            console.log('[Dev] Using original file: admin-panel.js');
+          }
           var fallbackScript = document.createElement('script');
           fallbackScript.src = 'admin-panel.js';
           document.body.appendChild(fallbackScript);

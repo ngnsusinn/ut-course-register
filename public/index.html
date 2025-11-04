@@ -168,25 +168,46 @@
       </div>
     </div>
     
-    <!-- Load obfuscated JS with fallback -->
+    <!-- Load obfuscated JS with silent fallback -->
     <script>
       (function() {
-        function loadScript(src, fallback) {
+        var isProduction = location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+        var scriptsToLoad = [
+          { obf: 'app.obfuscated.js', orig: 'app.js' },
+          { obf: 'timetable.obfuscated.js', orig: 'timetable.js' }
+        ];
+        var currentIndex = 0;
+        
+        function loadScript(src, fallback, callback) {
           var script = document.createElement('script');
           script.defer = true;
+          script.onload = function() {
+            if (callback) callback();
+          };
           script.onerror = function() {
             if (fallback && src !== fallback) {
-              console.warn('Failed to load ' + src + ', loading ' + fallback);
-              loadScript(fallback, null);
+              // Silent fallback in production, only warn in dev
+              if (!isProduction) {
+                console.log('[Dev] Using original file: ' + fallback);
+              }
+              loadScript(fallback, null, callback);
+            } else if (callback) {
+              callback();
             }
           };
           script.src = src;
           document.body.appendChild(script);
         }
         
-        // Load obfuscated versions first, fallback to original on error
-        loadScript('app.obfuscated.js', 'app.js');
-        loadScript('timetable.obfuscated.js', 'timetable.js');
+        function loadNext() {
+          if (currentIndex >= scriptsToLoad.length) return;
+          var s = scriptsToLoad[currentIndex];
+          currentIndex++;
+          loadScript(s.obf, s.orig, loadNext);
+        }
+        
+        // Start loading scripts in sequence
+        loadNext();
       })();
     </script>
     
