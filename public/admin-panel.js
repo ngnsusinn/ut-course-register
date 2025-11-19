@@ -27,6 +27,59 @@ let charts = {
     orderStatus: null
 };
 
+// --- UTILITY FUNCTIONS ---
+
+// Debounce function for search inputs
+const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+};
+
+// Centralized Backend Request
+const backendRequest = async (action, payload = {}) => {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error(`API Error (${action}):`, error);
+        return { success: false, message: error.message };
+    }
+};
+
+// Format Date Time
+const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('vi-VN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+    }).format(date);
+};
+
+// Format Currency
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount);
+};
+
 // Login functionality
 async function login() {
     const username = document.getElementById('username').value.trim();
@@ -47,13 +100,7 @@ async function login() {
     loginBtn.innerHTML = '<div class="loader"></div> Đang đăng nhập...';
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'login', payload: { username, password } })
-        });
-
-        const data = await response.json();
+        const data = await backendRequest('login', { username, password });
         
         if (data.success) {
             currentUser = data.admin;
@@ -104,13 +151,7 @@ async function autoLogin() {
         }
         
         // Try to login with saved credentials
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'login', payload: { username, password } })
-        });
-
-        const data = await response.json();
+        const data = await backendRequest('login', { username, password });
         
         if (data.success) {
             currentUser = data.admin;
@@ -148,21 +189,28 @@ function showToast(message, type = 'info') {
     // Create in-page toast (not popup)
     const toast = document.createElement('div');
     toast.id = 'inPageToast';
-    toast.className = `fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 ${
+    toast.className = `fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 ${
         type === 'success' ? 'bg-green-500 text-white' : 
         type === 'error' ? 'bg-red-500 text-white' : 
         'bg-blue-500 text-white'
     }`;
     
-    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+    const icon = type === 'success' ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : 
+                 type === 'error' ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>' : 
+                 '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    
     toast.innerHTML = `
-        <span class="text-lg">${icon}</span>
+        <div>${icon}</div>
         <span class="font-medium">${message}</span>
     `;
     
     document.body.appendChild(toast);
     
-    setTimeout(() => toast.remove(), 3000);
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-y-full', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // Pagination helper functions
@@ -381,12 +429,7 @@ async function refreshData(type) {
     }
     
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action })
-        });
-        const data = await response.json();
+        const data = await backendRequest(action);
         
         if (data.success) {
             // Map response data key
@@ -764,13 +807,7 @@ async function loadVIPPlansForModal() {
         selectElement.innerHTML = '<option value="">Đang tải gói VIP...</option>';
         selectElement.disabled = true;
         
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'getAllVIPPlans' })
-        });
-
-        const data = await response.json();
+        const data = await backendRequest('getAllVIPPlans');
         
         if (data.success && data.plans) {
             // Clear loading state
@@ -842,15 +879,7 @@ async function submitAddVIP() {
     submitBtn.innerHTML = '<div class="loader"></div> Đang xử lý...';
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'addVIPSubscription', 
-                payload: { userId, planType } 
-            })
-        });
-        const data = await response.json();
+        const data = await backendRequest('addVIPSubscription', { userId, planType });
         
         if (data.success) {
             showToast('✅ Đã thêm VIP thành công!', 'success');
@@ -895,15 +924,7 @@ async function deleteUser(userId) {
     deleteBtn.innerHTML = '<div class="loader"></div>';
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'deleteUser', 
-                payload: { userId } 
-            })
-        });
-        const data = await response.json();
+        const data = await backendRequest('deleteUser', { userId });
         
         if (data.success) {
             showToast('✅ Đã xóa user thành công!', 'success');
@@ -926,15 +947,7 @@ async function deleteSubscription(subId) {
     deleteBtn.innerHTML = '<div class="loader"></div>';
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                action: 'deleteSubscription', 
-                payload: { subscriptionId: subId } 
-            })
-        });
-        const data = await response.json();
+        const data = await backendRequest('deleteSubscription', { subscriptionId: subId });
         
         if (data.success) {
             showToast('✅ Đã xóa subscription!', 'success');
@@ -993,19 +1006,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 });
-
-// Utility function
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
 
 // ===== DASHBOARD FUNCTIONS =====
 async function loadDashboard() {
@@ -1411,13 +1411,7 @@ async function submitPlan() {
         const payload = { planKey, planName, durationDays, price, sortOrder, description };
         if (id) payload.id = parseInt(id);
         
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, payload })
-        });
-        
-        const data = await response.json();
+        const data = await backendRequest(action, payload);
         
         if (data.success) {
             showToast(data.message || (id ? 'Cập nhật thành công!' : 'Tạo gói VIP thành công!'), 'success');
@@ -1437,13 +1431,7 @@ async function submitPlan() {
 // Delete Plan
 async function deletePlan(id) {
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'deleteVIPPlan', payload: { id } })
-        });
-        
-        const data = await response.json();
+        const data = await backendRequest('deleteVIPPlan', { id });
         
         if (data.success) {
             showToast('Xóa gói VIP thành công!', 'success');
@@ -1459,13 +1447,7 @@ async function deletePlan(id) {
 // Toggle Plan Status
 async function togglePlanStatus(id) {
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'toggleVIPPlanStatus', payload: { id } })
-        });
-        
-        const data = await response.json();
+        const data = await backendRequest('toggleVIPPlanStatus', { id });
         
         if (data.success) {
             showToast(data.message || 'Cập nhật trạng thái thành công!', 'success');

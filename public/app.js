@@ -1,16 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // CSS Toggle Switch (đã được tối ưu với Tailwind)
-    const style = document.createElement('style');
-    style.innerHTML = `
-        input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
-        input:checked~.block{background-color:#a7f3d0}
-        .payment-modal{display:none;position:fixed;z-index:50;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4)}
-        .payment-modal-content{background-color:#fff;margin:5% auto;padding:24px;border:none;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
-        .close-modal{color:#6b7280;font-size:1.75rem;font-weight:700;cursor:pointer}
-        .close-modal:hover,.close-modal:focus{color:#1f2937}
-    `;
-    document.head.appendChild(style);
-
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -89,11 +77,43 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- UTILITY FUNCTIONS ---
+    const showToast = (message, type = 'info') => {
+        const existingToast = document.getElementById('inPageToast');
+        if (existingToast) existingToast.remove();
+        
+        const toast = document.createElement('div');
+        toast.id = 'inPageToast';
+        toast.className = `fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 ${
+            type === 'success' ? 'bg-green-500 text-white' : 
+            type === 'error' ? 'bg-red-500 text-white' : 
+            'bg-blue-500 text-white'
+        }`;
+        
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        toast.innerHTML = `
+            <span class="text-lg">${icon}</span>
+            <span class="font-medium">${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('translate-y-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    };
+
     const log = (message, isError = false) => {
         const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
         const logEntry = document.createElement('p');
-        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.textContent = `[${timestamp}] ${message}`;
         logEntry.className = isError ? 'text-red-400' : 'text-green-300';
+        
+        // Optimization: Limit log history to prevent DOM slowdown
+        if (logOutput.children.length > 100) {
+            logOutput.removeChild(logOutput.firstChild);
+        }
+        
         logOutput.appendChild(logEntry);
         logOutput.scrollTop = logOutput.scrollHeight;
     };
@@ -163,10 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check if two date ranges overlap
     const dateRangesOverlap = (start1, end1, start2, end2) => {
-        const s1 = new Date(start1).getTime();
-        const e1 = new Date(end1).getTime();
-        const s2 = new Date(start2).getTime();
-        const e2 = new Date(end2).getTime();
+        const s1 = typeof start1 === 'number' ? start1 : new Date(start1).getTime();
+        const e1 = typeof end1 === 'number' ? end1 : new Date(end1).getTime();
+        const s2 = typeof start2 === 'number' ? start2 : new Date(start2).getTime();
+        const e2 = typeof end2 === 'number' ? end2 : new Date(end2).getTime();
         return s1 <= e2 && s2 <= e1;
     };
 
@@ -180,22 +200,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const conflictMap = new Map();
 
         for (const schedule of classScheduleDetails) {
-            const schedulePeriods = parsePeriods(schedule.tietHoc);
+            // Use pre-parsed periods if available
+            const schedulePeriods = schedule.periods || parsePeriods(schedule.tietHoc);
             if (schedulePeriods.length === 0) continue;
+            
+            const sStart = schedule.start || schedule.ngayBatDau;
+            const sEnd = schedule.end || schedule.ngayKetThuc;
 
             for (const registered of registeredClassesData) {
-                if (!registered.scheduleDetails || !Array.isArray(registered.scheduleDetails)) continue;
+                // Use pre-parsed schedule if available
+                const regSchedules = registered.parsedSchedule || registered.scheduleDetails;
+                if (!regSchedules || !Array.isArray(regSchedules)) continue;
 
-                for (const regSchedule of registered.scheduleDetails) {
-                    const regPeriods = parsePeriods(regSchedule.tietHoc);
+                for (const regSchedule of regSchedules) {
+                    const regPeriods = regSchedule.periods || parsePeriods(regSchedule.tietHoc);
                     if (regPeriods.length === 0) continue;
 
                     // Check if same day of week
                     if (schedule.thu === regSchedule.thu) {
                         // Check if date ranges overlap
                         if (dateRangesOverlap(
-                            schedule.ngayBatDau, schedule.ngayKetThuc,
-                            regSchedule.ngayBatDau, regSchedule.ngayKetThuc
+                            sStart, sEnd,
+                            regSchedule.start || regSchedule.ngayBatDau, 
+                            regSchedule.end || regSchedule.ngayKetThuc
                         )) {
                             // Check if periods overlap
                             if (periodsOverlap(schedulePeriods, regPeriods)) {
@@ -607,6 +634,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const updateUIAfterLogin = (profile) => {
         loginForm.classList.add('hidden');
 
+        // Update Header User Info
+        const userInfoHeader = document.getElementById('user-info');
+        const userNameDisplay = document.getElementById('user-name-display');
+        if (userInfoHeader && userNameDisplay) {
+            userInfoHeader.classList.remove('hidden');
+            userInfoHeader.classList.add('flex');
+            userNameDisplay.textContent = profile.hoTen || profile.username || 'Sinh viên';
+        }
+
         // Create user panel if not exists
         if (!document.getElementById('user-panel-content')) {
             const panelContainer = document.createElement('div');
@@ -687,6 +723,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         loginForm.classList.remove('hidden');
         const panel = document.getElementById('user-panel-content');
         if (panel) panel.classList.add('hidden');
+
+        // Hide Header User Info
+        const userInfoHeader = document.getElementById('user-info');
+        if (userInfoHeader) {
+            userInfoHeader.classList.add('hidden');
+            userInfoHeader.classList.remove('flex');
+        }
 
         scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem dữ liệu.</p>';
         registeredContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Chưa có dữ liệu.</p>';
@@ -1003,6 +1046,19 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
         if (scheduleRes && scheduleRes.success) {
             allScheduleData = scheduleRes.schedule;
+            
+            // Pre-parse schedules for performance
+            allScheduleData.forEach(cls => {
+                if (cls.scheduleDetails && Array.isArray(cls.scheduleDetails)) {
+                    cls.parsedSchedule = cls.scheduleDetails.map(s => ({
+                        ...s,
+                        periods: parsePeriods(s.tietHoc),
+                        start: new Date(s.ngayBatDau).getTime(),
+                        end: new Date(s.ngayKetThuc).getTime()
+                    }));
+                }
+            });
+
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
             log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
 
@@ -1030,6 +1086,19 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
         if (registeredRes && registeredRes.success) {
             registeredClassesData = registeredRes.body; // Save for conflict detection
+            
+            // Pre-parse schedules for performance
+            registeredClassesData.forEach(reg => {
+                if (reg.scheduleDetails && Array.isArray(reg.scheduleDetails)) {
+                    reg.parsedSchedule = reg.scheduleDetails.map(s => ({
+                        ...s,
+                        periods: parsePeriods(s.tietHoc),
+                        start: new Date(s.ngayBatDau).getTime(),
+                        end: new Date(s.ngayKetThuc).getTime()
+                    }));
+                }
+            });
+
             await renderRegisteredTable(registeredRes.body);
             
             // Save to cache
@@ -1410,7 +1479,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const isLocked = cls.tenTrangThai === 'Đã khóa lớp';
             
             // Check for schedule conflict
-            const conflictCheck = checkScheduleConflict(cls.scheduleDetails, registeredClassesData);
+            const conflictCheck = checkScheduleConflict(cls.parsedSchedule || cls.scheduleDetails, registeredClassesData);
             const hasConflict = conflictCheck.hasConflict;
             
             // Build row class and cursor based on status
@@ -1456,11 +1525,17 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             let warnings = '';
             if (hasConflict) {
                 const conflictCount = conflictCheck.conflicts.length;
-                const conflictSummary = conflictCheck.conflicts.map(c => c.registeredClass).join(', ');
+                const conflictSummary = conflictCheck.conflicts.map((conflict, idx) => {
+                    const details = conflict.uniqueConflicts.map(c => 
+                        `${c.day}, Tiết ${c.conflictPeriod}`
+                    ).join(' và ');
+                    return `${idx + 1}. ${conflict.registeredClass} (${conflict.registeredCode}) - ${details}`;
+                }).join('\n');
+                
                 warnings += `
                     <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
                         <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
                             <div class="flex-1">
@@ -1489,7 +1564,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (!data || data.length === 0) {
             registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
             return;
-        }
+               }
         const table = document.createElement('table');
         table.className = 'w-full text-sm text-left text-gray-500';
         table.innerHTML = `
@@ -1774,7 +1849,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
                             <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
                             <span class="text-xs font-bold text-yellow-800 uppercase">Đổi lớp</span>
                         </div>
@@ -2007,7 +2082,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const conflictMessages = conflicts.map(conflict => {
                 // Format all unique conflicts for this class
                 const conflictDetails = conflict.uniqueConflicts.map(c => 
-                    `<div class="flex items-center gap-2 mt-1.5 text-xs text-red-100">
+                    `<div class="flex items-center gap-1 mt-1.5 text-xs text-red-100">
                         <span class="flex items-center gap-1">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
@@ -2090,7 +2165,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             tooltipElement.className = 'fixed bg-gradient-to-br from-red-600 to-red-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 max-w-md border-2 border-red-500';
             tooltipElement.innerHTML = `
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-red-500">
-                    <svg class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 24 24">
                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                     </svg>
                     <span class="font-bold text-lg">TRÙNG LỊCH HỌC</span>
