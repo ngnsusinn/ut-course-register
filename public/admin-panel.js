@@ -896,12 +896,6 @@ async function submitAddVIP() {
     }
 }
 
-// Format datetime to UTC+7
-function formatDateTime(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleString('vi-VN', { timeZone: 'Asia/Bangkok' });
-}
-
 // Confirm Modal Functions
 function showConfirmModal(title, message, onConfirm) {
     document.getElementById('confirmTitle').textContent = title;
@@ -1290,14 +1284,6 @@ function renderRecentActivities(activities) {
     `).join('');
     
     document.getElementById('recentActivitiesList').innerHTML = html || '<p class="text-gray-500 text-center py-4">Chưa có hoạt động nào</p>';
-}
-
-// Helper: Format currency
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND'
-    }).format(amount);
 }
 
 // ===== VIP PLANS MANAGEMENT =====
