@@ -1603,12 +1603,23 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             classId: cls.id,
                             source: regSource
                         });
+                        
+                        // Get real-time availability data
+                        const availabilityCheck = await backendRequest('checkClassAvailability', {
+                            classId: cls.id,
+                            source: regSource
+                        });
+                        
                         return {
                             ...cls,
                             maHocPhan: detectedMaHocPhan,
                             tenMonHoc: regName,
                             source: regSource,
-                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true },
+                            // Override with real-time data
+                            phanTramDangKy: availabilityCheck?.success ? availabilityCheck.phanTramDangKy : cls.phanTramDangKy,
+                            tenTrangThai: availabilityCheck?.success ? availabilityCheck.tenTrangThai : cls.tenTrangThai,
+                            choDangKy: availabilityCheck?.success ? availabilityCheck.canRegister : cls.choDangKy
                         };
                     })
                 );
@@ -1621,7 +1632,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 );
                 
                 console.log('Classes fetched from API:', availableClasses.length);
-                log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+                log(`✅ Đã lấy ${availableClasses.length} lớp từ API (với trạng thái realtime)`);
             } else {
                 log(`❌ Không thể lấy danh sách lớp từ API`, true);
             }
