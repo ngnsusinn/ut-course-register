@@ -1526,14 +1526,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         // Get subject code - try multiple sources (prioritize registeredClass data)
         let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
         
-        // If still not found, try to extract from class code pattern (e.g., TT0401 -> TT04)
+        // If still not found, extract from maLopHocPhan by removing last 2 characters
+        // Example: DT012301 -> DT0123, TT0401 -> TT04
         if (!actualSubjectCode && regCode) {
-            // Try to extract subject code from class code (usually remove last 2 digits)
-            const match = regCode.match(/^([A-Z]+\d+)/);
-            if (match) {
-                actualSubjectCode = match[1];
-                console.log('✅ Extracted maHocPhan from class code:', actualSubjectCode);
-            }
+            actualSubjectCode = regCode.slice(0, -2);
+            console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', actualSubjectCode);
         }
         
         // Last resort: search in allScheduleData (may fail if class is locked)
