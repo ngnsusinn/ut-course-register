@@ -799,26 +799,44 @@ export default async (req, res) => {
 
             case 'checkClassAvailability': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source } = payload;
+                const { classId, dotId, maHocPhan, source } = payload;
                 
-                // Get class details to check availability
-                const detailRes = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
+                // Use getLopHocPhan (same as checkClassStatus) to get accurate phanTramDangKy
+                const classEndpoint = source === 'dkhpdk'
+                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
                 
-                if (!detailRes || !detailRes.success) {
+                const classListRes = await callApi(classEndpoint, 'GET', token, null, source);
+                
+                if (!classListRes || !classListRes.success || !Array.isArray(classListRes.body)) {
                     return res.status(200).json({ 
                         success: true, 
                         canRegister: false, 
                         isFull: true,
+                        phanTramDangKy: 0,
+                        tenTrangThai: 'Unknown',
                         message: 'Không thể lấy thông tin lớp học'
                     });
                 }
                 
-                const classData = detailRes.body;
+                // Find the specific class by ID
+                const classData = classListRes.body.find(cls => cls.id.toString() === classId.toString());
+                
+                if (!classData) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        canRegister: false, 
+                        isFull: true,
+                        phanTramDangKy: 0,
+                        tenTrangThai: 'Not Found',
+                        message: 'Không tìm thấy lớp học'
+                    });
+                }
                 
                 // Check class status
                 const tenTrangThai = classData.tenTrangThai || '';
                 const phanTramDangKy = classData.phanTramDangKy || 0;
-                const choDangKy = classData.choDangKy !== false; // Default true if not specified
+                const choDangKy = classData.choDangKy !== false;
                 
                 // Determine if class can be registered
                 let canRegister = true;
@@ -829,10 +847,11 @@ export default async (req, res) => {
                 if (tenTrangThai === 'Đã khóa lớp') {
                     canRegister = false;
                     message = 'Lớp đã bị khóa';
-                } else if (tenTrangThai === 'Đang lên kế hoạch') {
+                } else if (tenTrangThai === 'Đang lên kế hoạch' || tenTrangThai === 'Đang chờ đăng ký') {
                     canRegister = false;
-                    message = 'Lớp đang lên kế hoạch';
+                    message = 'Lớp chưa mở đăng ký';
                 } else if (phanTramDangKy >= 100) {
+                    canRegister = false;
                     isFull = true;
                     message = 'Lớp đã đầy';
                 } else if (!choDangKy) {
@@ -846,6 +865,7 @@ export default async (req, res) => {
                     isFull,
                     phanTramDangKy,
                     tenTrangThai,
+                    choDangKy,
                     message
                 };
                 break;

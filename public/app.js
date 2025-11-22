@@ -1077,13 +1077,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     // Swap class function - Check target slot first, cancel old class, then register new class
     const swapClass = async (registeredData, targetData) => {
         const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
-        const { id: targetId, code: targetCode, name: targetName, source: targetSource } = targetData;
+        const { id: targetId, code: targetCode, name: targetName, source: targetSource, maHocPhan: targetMaHocPhan } = targetData;
         
         log(`🔄 Bắt đầu đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
         
         // Step 1: Check target class availability first
         log(`🔍 Kiểm tra lớp đích ${targetCode}...`);
-        const checkResult = await backendRequest('checkClassAvailability', { classId: targetId, source: targetSource });
+        
+        // Extract maHocPhan from targetCode if not available (remove last 2 characters)
+        const maHocPhan = targetMaHocPhan || targetCode.slice(0, -2);
+        
+        const checkResult = await backendRequest('checkClassAvailability', { 
+            classId: targetId, 
+            dotId, 
+            maHocPhan, 
+            source: targetSource 
+        });
         
         if (!checkResult || !checkResult.success) {
             log(`⚠️ Không thể kiểm tra lớp đích, dừng đổi lớp để an toàn`, true);
