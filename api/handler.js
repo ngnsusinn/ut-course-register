@@ -786,6 +786,17 @@ export default async (req, res) => {
                 break;
             }
 
+            case 'getScheduleDetails': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { classId, source } = payload;
+                const scheduleDetails = await getScheduleDetails(classId, token, source);
+                result = { 
+                    success: !scheduleDetails.error, 
+                    body: scheduleDetails 
+                };
+                break;
+            }
+
             case 'checkClassAvailability': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source } = payload;

@@ -1561,8 +1561,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
         console.log('🔍 Current class code (regCode):', regCode);
         
-        // Filter available classes for the same subject
-        const availableClasses = allScheduleData.filter(cls => {
+        // Try to find classes in allScheduleData first
+        let availableClasses = allScheduleData.filter(cls => {
             const matches = cls.maHocPhan === actualSubjectCode && 
                 cls.maLopHocPhan !== regCode &&
                 cls.tenTrangThai !== 'Đã khóa lớp' &&
@@ -1575,7 +1575,49 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             return matches;
         });
         
-        console.log('Total available classes found:', availableClasses.length);
+        console.log('Classes found in allScheduleData:', availableClasses.length);
+        
+        // If no classes found in cache, fetch from API
+        if (availableClasses.length === 0) {
+            log(`🔍 Không tìm thấy lớp trong cache, đang lấy từ API cho môn ${regName}...`);
+            
+            const checkStatusRes = await backendRequest('checkClassStatus', { 
+                dotId, 
+                maHocPhan: actualSubjectCode, 
+                source: regSource 
+            });
+            
+            if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
+                // Get schedule details for each class
+                const classesWithDetails = await Promise.all(
+                    checkStatusRes.body.map(async (cls) => {
+                        const scheduleDetails = await backendRequest('getScheduleDetails', {
+                            classId: cls.id,
+                            source: regSource
+                        });
+                        return {
+                            ...cls,
+                            maHocPhan: actualSubjectCode,
+                            tenMonHoc: regName,
+                            source: regSource,
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
+                        };
+                    })
+                );
+                
+                // Filter out current registered class and locked/planning classes
+                availableClasses = classesWithDetails.filter(cls => 
+                    cls.maLopHocPhan !== regCode &&
+                    cls.tenTrangThai !== 'Đã khóa lớp' &&
+                    cls.tenTrangThai !== 'Đang lên kế hoạch'
+                );
+                
+                console.log('Classes fetched from API:', availableClasses.length);
+                log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+            } else {
+                log(`❌ Không thể lấy danh sách lớp từ API`, true);
+            }
+        }
         
         if (availableClasses.length === 0) {
             log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
