@@ -1742,10 +1742,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 const targetSource = btn.dataset.targetSource;
                 const hasConflict = btn.dataset.hasConflict === 'true';
                 
-                // Find target class full info
-                const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+                // Find target class full info from availableClasses (not allScheduleData)
+                const targetClass = availableClasses.find(c => c.id.toString() === targetId);
                 if (!targetClass) {
                     alert('❌ Không tìm thấy thông tin lớp đích');
+                    console.log('❌ Debug: targetId =', targetId);
+                    console.log('❌ Available classes:', availableClasses.map(c => ({ id: c.id, code: c.maLopHocPhan })));
                     return;
                 }
                 
