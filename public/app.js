@@ -633,7 +633,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
                             <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
                         </div>
-                        <div class="ml-3 text-gray-700 font-medium">Bao gồm môn điều kiện</div>
+                        <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn điều kiện</div>
                     </label>
                 </div>
                 
@@ -673,7 +673,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', showVIPModal);
-            prerequisiteToggle.addEventListener('change', fetchRegisteredClasses);
+            // Removed auto-fetch on prerequisite toggle change - user should manually refresh if needed
         }
 
         greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
@@ -1549,16 +1549,35 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             return;
         }
         
+        // Get subject code from registered class if not provided
+        const actualSubjectCode = subjectCode || registeredClass.maHocPhan;
+        
+        if (!actualSubjectCode) {
+            log('❌ Không tìm thấy mã học phần của lớp này', true);
+            console.log('Registered class data:', registeredClass);
+            return;
+        }
+        
+        console.log('Looking for classes with maHocPhan:', actualSubjectCode);
+        
         // Filter available classes for the same subject
-        const availableClasses = allScheduleData.filter(cls => 
-            cls.maHocPhan === subjectCode && 
-            cls.id.toString() !== regId &&
-            cls.tenTrangThai !== 'Đã khóa lớp' &&
-            cls.tenTrangThai !== 'Đang lên kế hoạch'
-        );
+        const availableClasses = allScheduleData.filter(cls => {
+            const matches = cls.maHocPhan === actualSubjectCode && 
+                cls.id.toString() !== regId &&
+                cls.tenTrangThai !== 'Đã khóa lớp' &&
+                cls.tenTrangThai !== 'Đang lên kế hoạch';
+            
+            if (matches) {
+                console.log('Found available class:', cls.maLopHocPhan, cls.tenTrangThai);
+            }
+            
+            return matches;
+        });
+        
+        console.log('Total available classes found:', availableClasses.length);
         
         if (availableClasses.length === 0) {
-            log(`❌ Không có lớp nào khác để đổi cho môn ${regName}`, true);
+            log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
             return;
         }
         
