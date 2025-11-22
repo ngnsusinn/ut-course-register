@@ -1068,35 +1068,52 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         );
     };
 
-    // Swap class function - Cancel registered class and register target class
+    // Swap class function - Check target slot first, then cancel registered class and register target class
     const swapClass = async (registeredData, targetData) => {
         const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
         const { id: targetId, code: targetCode, name: targetName, source: targetSource } = targetData;
         
         log(`🔄 Bắt đầu đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
         
-        // Cancel registered class - let API handle validation
-        log(`🗑️ Đang hủy lớp ${regName} (${regCode})...`);
-        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
+        // Step 1: Check target class availability first (before canceling current class)
+        log(`🔍 Kiểm tra lớp đích ${targetCode}...`);
+        const checkResult = await backendRequest('checkClassAvailability', { classId: targetId, source: targetSource });
         
-        if (!cancelResult || !cancelResult.success) {
-            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
+        if (!checkResult || !checkResult.success) {
+            // If API doesn't support checkClassAvailability, try to register directly (will be rolled back if fails)
+            log(`⚠️ Không thể kiểm tra trước, sẽ thử đăng ký trực tiếp...`);
+        } else if (checkResult.isFull || !checkResult.canRegister) {
+            log(`❌ Lớp ${targetCode} không còn chỗ hoặc không thể đăng ký`, true);
             return false;
+        } else {
+            log(`✅ Lớp ${targetCode} còn chỗ, tiếp tục đổi lớp...`);
         }
         
-        log(`✅ Đã hủy lớp ${regCode} thành công`);
-        
-        // Register target class - let API handle validation
+        // Step 2: Try to register target class first
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
         const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
         
         if (!registerResult || !registerResult.success) {
             log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
-            log(`⚠️ LƯU Ý: Bạn đã hủy lớp ${regCode}, vui lòng đăng ký lại thủ công!`, true);
+            log(`ℹ️ Lớp ${regCode} vẫn giữ nguyên, không bị hủy`, true);
             return false;
         }
         
         log(`✅ Đăng ký lớp ${targetCode} thành công!`);
+        
+        // Step 3: Cancel old registered class (after successfully registering new one)
+        log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
+        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
+        
+        if (!cancelResult || !cancelResult.success) {
+            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
+            log(`⚠️ LƯU Ý: Bạn đã đăng ký lớp ${targetCode}, nhưng lớp ${regCode} chưa hủy được. Vui lòng hủy thủ công!`, true);
+            // Still return true because new class was registered successfully
+            await fetchRegisteredClasses();
+            return true;
+        }
+        
+        log(`✅ Đã hủy lớp ${regCode} thành công`);
         log(`🎉 Đổi lớp hoàn tất: ${regName} → ${targetName}`);
         
         // Refresh registered classes list
