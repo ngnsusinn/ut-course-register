@@ -1002,9 +1002,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites, userId });
 
         if (scheduleRes && scheduleRes.success) {
-            allScheduleData = scheduleRes.schedule;
+            // Filter out locked classes from the schedule
+            const totalClasses = scheduleRes.schedule.length;
+            const unlockedClasses = scheduleRes.schedule.filter(cls => cls.tenTrangThai !== 'Đã khóa lớp');
+            
+            allScheduleData = unlockedClasses;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-            log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+            
+            log(`✅ Đã tải thành công ${totalClasses} lớp học phần.`);
+            log(`📋 Hiển thị ${unlockedClasses.length} lớp chưa khóa (đã lọc bỏ ${totalClasses - unlockedClasses.length} lớp đã khóa).`);
 
             // Save to cache
             saveCachedData();
