@@ -1519,16 +1519,17 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         console.log('🔍 Looking for classes with maHocPhan:', actualSubjectCode);
         console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
+        console.log('🔍 Current class code (regCode):', regCode);
         
         // Filter available classes for the same subject
         const availableClasses = allScheduleData.filter(cls => {
             const matches = cls.maHocPhan === actualSubjectCode && 
-                cls.id.toString() !== regId &&
+                cls.maLopHocPhan !== regCode &&
                 cls.tenTrangThai !== 'Đã khóa lớp' &&
                 cls.tenTrangThai !== 'Đang lên kế hoạch';
             
             if (cls.maHocPhan === actualSubjectCode) {
-                console.log('  ➜ Same subject:', cls.maLopHocPhan, '| Status:', cls.tenTrangThai, '| Match:', matches);
+                console.log('  ➜ Same subject:', cls.maLopHocPhan, '| isCurrent:', cls.maLopHocPhan === regCode, '| Status:', cls.tenTrangThai, '| Match:', matches);
             }
             
             return matches;
@@ -1661,29 +1662,49 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 // Find registered class full info
                 const registeredClassFull = registeredClassesData.find(c => c.id.toString() === regId);
                 if (!registeredClassFull) {
-                    alert('❌ Không tìm thấy thông tin lớp đã đăng ký');
+                    log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
                     return;
                 }
                 
-                const confirmMsg = hasConflict 
-                    ? `⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!\n\nBạn vẫn muốn thêm vào danh sách đổi lớp?\n\nHủy: ${regName} (${regCode})\nĐăng ký: ${targetName} (${targetCode})\n\n${targetClass.phanTramDangKy >= 100 ? '⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.' : '✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.'}`
-                    : `Xác nhận thêm vào danh sách đổi lớp?\n\nHủy: ${regName} (${regCode})\nĐăng ký: ${targetName} (${targetCode})\n\n${targetClass.phanTramDangKy >= 100 ? '⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.' : '✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.'}`;
+                const conflictWarning = hasConflict 
+                    ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!</p></div>'
+                    : '';
                 
-                if (!confirm(confirmMsg)) return;
+                const slotInfo = targetClass.phanTramDangKy >= 100 
+                    ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.</p>'
+                    : '<p class="text-sm text-green-600 mt-2">✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.</p>';
                 
-                // Add to swap pending list
-                swapPendingClasses.set(targetId, {
-                    registered: registeredClassFull,
-                    target: targetClass
-                });
+                const confirmMsg = `
+                    ${conflictWarning}
+                    <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đổi lớp?</p>
+                    <div class="bg-gray-50 p-3 rounded mb-2">
+                        <p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>
+                        <p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>
+                    </div>
+                    ${slotInfo}
+                `;
                 
-                log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
-                if (targetClass.phanTramDangKy >= 100) {
-                    log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
-                }
-                
-                updateSelectedList();
-                modal.remove();
+                showConfirmModal(
+                    confirmMsg,
+                    () => {
+                        // On confirm - Add to swap pending list
+                        swapPendingClasses.set(targetId, {
+                            registered: registeredClassFull,
+                            target: targetClass
+                        });
+                        
+                        log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        if (targetClass.phanTramDangKy >= 100) {
+                            log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                        }
+                        
+                        updateSelectedList();
+                        modal.remove();
+                    },
+                    () => {
+                        // On cancel - do nothing
+                    }
+                );
             });
         });
     };
