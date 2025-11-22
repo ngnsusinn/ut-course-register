@@ -1596,16 +1596,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             });
             
             if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
-                // Get schedule details for each class
+                // Get schedule details for each class (don't need to check availability again, data is already accurate)
                 const classesWithDetails = await Promise.all(
                     checkStatusRes.body.map(async (cls) => {
                         const scheduleDetails = await backendRequest('getScheduleDetails', {
-                            classId: cls.id,
-                            source: regSource
-                        });
-                        
-                        // Get real-time availability data
-                        const availabilityCheck = await backendRequest('checkClassAvailability', {
                             classId: cls.id,
                             source: regSource
                         });
@@ -1615,11 +1609,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             maHocPhan: detectedMaHocPhan,
                             tenMonHoc: regName,
                             source: regSource,
-                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true },
-                            // Override with real-time data
-                            phanTramDangKy: availabilityCheck?.success ? availabilityCheck.phanTramDangKy : cls.phanTramDangKy,
-                            tenTrangThai: availabilityCheck?.success ? availabilityCheck.tenTrangThai : cls.tenTrangThai,
-                            choDangKy: availabilityCheck?.success ? availabilityCheck.canRegister : cls.choDangKy
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
                         };
                     })
                 );
@@ -1632,7 +1622,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 );
                 
                 console.log('Classes fetched from API:', availableClasses.length);
-                log(`✅ Đã lấy ${availableClasses.length} lớp từ API (với trạng thái realtime)`);
+                log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
             } else {
                 log(`❌ Không thể lấy danh sách lớp từ API`, true);
             }
