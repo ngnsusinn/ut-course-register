@@ -786,6 +786,60 @@ export default async (req, res) => {
                 break;
             }
 
+            case 'checkClassAvailability': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { classId, source } = payload;
+                
+                // Get class details to check availability
+                const detailRes = await callApi(`/getLopHocPhanDetail?idLopHocPhan=${classId}`, 'GET', token, null, source);
+                
+                if (!detailRes || !detailRes.success) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        canRegister: false, 
+                        isFull: true,
+                        message: 'Không thể lấy thông tin lớp học'
+                    });
+                }
+                
+                const classData = detailRes.body;
+                
+                // Check class status
+                const tenTrangThai = classData.tenTrangThai || '';
+                const phanTramDangKy = classData.phanTramDangKy || 0;
+                const choDangKy = classData.choDangKy !== false; // Default true if not specified
+                
+                // Determine if class can be registered
+                let canRegister = true;
+                let isFull = false;
+                let message = 'Lớp có thể đăng ký';
+                
+                // Check locked status
+                if (tenTrangThai === 'Đã khóa lớp') {
+                    canRegister = false;
+                    message = 'Lớp đã bị khóa';
+                } else if (tenTrangThai === 'Đang lên kế hoạch') {
+                    canRegister = false;
+                    message = 'Lớp đang lên kế hoạch';
+                } else if (phanTramDangKy >= 100) {
+                    isFull = true;
+                    message = 'Lớp đã đầy';
+                } else if (!choDangKy) {
+                    canRegister = false;
+                    message = 'Lớp không cho phép đăng ký';
+                }
+                
+                result = { 
+                    success: true, 
+                    canRegister,
+                    isFull,
+                    phanTramDangKy,
+                    tenTrangThai,
+                    message
+                };
+                break;
+            }
+
             // --- WRITE ACTIONS ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
