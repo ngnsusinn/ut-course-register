@@ -1073,89 +1073,25 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
         const { id: targetId, code: targetCode, name: targetName, source: targetSource } = targetData;
         
-        log(`🔄 Bắt đầu đổi lớp: ${regName} → ${targetName}`);
+        log(`🔄 Bắt đầu đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
         
-        // Step 1: Validate registered class can be cancelled
-        log(`🔍 Kiểm tra lớp đã đăng ký ${regCode}...`);
-        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
-        
-        if (!registeredClass) {
-            log(`❌ Không tìm thấy thông tin lớp đã đăng ký ${regCode}`, true);
-            return false;
-        }
-        
-        // Check if registered class can be cancelled based on status
-        const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
-        
-        if (registeredStatus === 'Đã khóa lớp') {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
-            return false;
-        }
-        
-        if (registeredStatus === 'Đã mở chính thức') {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
-            return false;
-        }
-        
-        if (registeredStatus === 'Đang lên kế hoạch') {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
-            return false;
-        }
-        
-        if (registeredStatus !== 'Đang chờ đăng ký' && registeredClass.isAllowCancel === false) {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
-            return false;
-        }
-        
-        log(`✓ Lớp ${regCode} có thể hủy (trạng thái: ${registeredStatus})`);
-        
-        // Step 2: Validate target class can be registered
-        log(`📊 Kiểm tra lớp đích ${targetCode}...`);
-        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
-        
-        if (!targetClass) {
-            log(`❌ Không tìm thấy thông tin lớp đích ${targetCode}`, true);
-            return false;
-        }
-        
-        // Check target class status
-        const targetStatus = targetClass.tenTrangThai || '';
-        
-        if (targetStatus === 'Đã khóa lớp') {
-            log(`❌ Không thể đăng ký lớp ${targetCode} - Trạng thái: ${targetStatus}`, true);
-            return false;
-        }
-        
-        if (targetStatus === 'Đang lên kế hoạch') {
-            log(`❌ Không thể đăng ký lớp ${targetCode} - Trạng thái: ${targetStatus}`, true);
-            return false;
-        }
-        
-        // Check if target class has available slots
-        if (targetClass.phanTramDangKy >= 100) {
-            log(`❌ Lớp ${targetCode} đã đầy (${targetClass.phanTramDangKy}%), không thể đổi lớp`, true);
-            return false;
-        }
-        
-        log(`✓ Lớp ${targetCode} có thể đăng ký (trạng thái: ${targetStatus}, ${targetClass.phanTramDangKy}% đã đăng ký)`);
-        
-        // Step 3: Cancel registered class
+        // Cancel registered class - let API handle validation
         log(`🗑️ Đang hủy lớp ${regName} (${regCode})...`);
         const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
         
         if (!cancelResult || !cancelResult.success) {
-            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi'}`, true);
+            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
             return false;
         }
         
         log(`✅ Đã hủy lớp ${regCode} thành công`);
         
-        // Step 4: Register target class
+        // Register target class - let API handle validation
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
         const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
         
         if (!registerResult || !registerResult.success) {
-            log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi'}`, true);
+            log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
             log(`⚠️ LƯU Ý: Bạn đã hủy lớp ${regCode}, vui lòng đăng ký lại thủ công!`, true);
             return false;
         }
