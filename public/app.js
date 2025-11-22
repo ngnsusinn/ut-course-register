@@ -1581,9 +1581,44 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (availableClasses.length === 0) {
             log(`🔍 Không tìm thấy lớp trong cache, đang lấy từ API cho môn ${regName}...`);
             
+            // Try to detect maHocPhan from registered class's maLopHocPhan
+            // Pattern: Usually first part of maLopHocPhan (e.g., DT012301 -> DT0123, TT0401 -> TT04)
+            let detectedMaHocPhan = actualSubjectCode;
+            
+            // If actualSubjectCode still not reliable, try to find from allScheduleData by matching class name
+            if (!detectedMaHocPhan || detectedMaHocPhan.length < 2) {
+                const sameNameClass = allScheduleData.find(cls => 
+                    cls.tenMonHoc === regName || 
+                    cls.tenMonHoc.toLowerCase().includes(regName.toLowerCase())
+                );
+                if (sameNameClass) {
+                    detectedMaHocPhan = sameNameClass.maHocPhan;
+                    console.log('✅ Detected maHocPhan from class name:', detectedMaHocPhan);
+                }
+            }
+            
+            // If still not found, try pattern extraction from maLopHocPhan
+            if (!detectedMaHocPhan || detectedMaHocPhan.length < 2) {
+                // Try multiple patterns:
+                // Pattern 1: ABCD0102 -> ABCD01 (letters + first 2 digits)
+                // Pattern 2: AB0401 -> AB04 (letters + first 2 digits)
+                const pattern1 = regCode.match(/^([A-Z]+\d{2})/);
+                const pattern2 = regCode.match(/^([A-Z]+\d+)/);
+                
+                if (pattern1) {
+                    detectedMaHocPhan = pattern1[1];
+                    console.log('✅ Detected maHocPhan using pattern 1:', detectedMaHocPhan);
+                } else if (pattern2) {
+                    detectedMaHocPhan = pattern2[1];
+                    console.log('✅ Detected maHocPhan using pattern 2:', detectedMaHocPhan);
+                }
+            }
+            
+            console.log('🔍 Using maHocPhan for API call:', detectedMaHocPhan);
+            
             const checkStatusRes = await backendRequest('checkClassStatus', { 
                 dotId, 
-                maHocPhan: actualSubjectCode, 
+                maHocPhan: detectedMaHocPhan, 
                 source: regSource 
             });
             
@@ -1597,7 +1632,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         });
                         return {
                             ...cls,
-                            maHocPhan: actualSubjectCode,
+                            maHocPhan: detectedMaHocPhan,
                             tenMonHoc: regName,
                             source: regSource,
                             scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
