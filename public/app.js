@@ -262,7 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.id = 'vip-modal';
 
         const plans = plansRes.plans;
-        const sepayConfig = plansRes.sepayConfig;
         
         // Check if user has VIP to show appropriate title
         const isRenewal = vipStatus.hasVIP;
@@ -284,36 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `).join('')}
                 </div>
-                <div id="payment-section" class="hidden">
-                    <h3 class="text-xl font-bold mb-4 text-gray-800 border-t pt-4">Thông tin thanh toán</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
-                            <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
-                            <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
-                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div></p>
-                        </div>
-                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
-                            <div class="text-center mb-4">
-                                <img src="https://qr.sepay.vn/assets/img/banklogo/MB.png" class="inline-block" style="max-height:50px">
-                                <p class="font-bold text-gray-800">Ngân hàng ${sepayConfig.bankName}</p>
-                            </div>
-                            <table class="w-full text-sm text-gray-600">
-                                <tbody>
-                                    <tr><td class="py-1 font-medium">Chủ TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountName}</td></tr>
-                                    <tr><td class="py-1 font-medium">Số TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountNumber}</td></tr>
-                                    <tr><td class="py-1 font-medium">Số tiền:</td><td class="font-bold text-gray-800" id="amount-display"></td></tr>
-                                    <tr><td class="py-1 font-medium">Nội dung:</td><td class="font-bold text-gray-800" id="content-display"></td></tr>
-                                </tbody>
-                            </table>
-                            <p class="bg-yellow-50 p-2 rounded mt-4 text-xs text-gray-600">⚠️ Lưu ý: Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận</p>
-                        </div>
-                    </div>
-                    <div class="text-center mt-6">
-                        <button id="cancel-payment-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
-                            Hủy thanh toán
-                        </button>
-                    </div>
+                <div class="text-center text-sm text-gray-500 mt-4">
+                    <p>Bạn sẽ được chuyển hướng đến trang thanh toán Zypage.</p>
+                    <p>Vui lòng nhập chính xác <strong>Mã sinh viên</strong> của bạn vào phần nội dung thanh toán nếu được yêu cầu.</p>
                 </div>
             </div>
         `;
@@ -324,123 +296,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle plan selection
         modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const plan = e.target.dataset.plan;
-                await createVIPOrder(plan, plans[plan], sepayConfig);
+                const planKey = e.target.dataset.plan;
+                const plan = plans[planKey];
+                
+                // Redirect to Zypage
+                // Construct URL with amount and content (User ID)
+                // NOTE: Replace with your actual Zypage payment URL structure
+                const zypageUrl = `https://zypage.com/payment?amount=${plan.price}&content=${userId}`;
+                
+                log(`Đang chuyển hướng đến trang thanh toán...`);
+                setTimeout(() => {
+                    window.open(zypageUrl, '_blank');
+                    modal.remove();
+                }, 1000);
             });
         });
-
-        // Handle cancel payment
-        // Handle cancel payment - CẬP NHẬT MỚI
-// Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
-modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
-    if (!currentOrder) return;
-    
-    showConfirmModal(
-        'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
-        async () => {
-            // User confirmed - cancel the order
-            const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
-            
-            if (cancelRes && cancelRes.success) {
-                log('✅ Đã hủy đơn hàng thành công');
-                if (paymentCheckInterval) {
-                    clearInterval(paymentCheckInterval);
-                }
-                currentOrder = null;
-                modal.remove();
-            } else {
-                log('❌ Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
-            }
-        },
-        () => {
-            // User cancelled - do nothing
-            log('Tiếp tục chờ thanh toán');
-        }
-    );
-});
-
-
     };
 
-    const createVIPOrder = async (planKey, planData, sepayConfig) => {
-        const orderRes = await backendRequest('createVIPOrder', { userId, plan: planKey });
-
-        if (!orderRes || !orderRes.success) {
-            return log('Không thể tạo đơn hàng', true);
-        }
-
-        currentOrder = orderRes.order;
-        log(`✅ Tạo đơn hàng #${currentOrder.orderCode} thành công`);
-
-        // Show payment section
-        document.getElementById('payment-section').classList.remove('hidden');
-        document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
-        document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
-
-        // Update payment info - use orderCode instead of id
-        const qrUrl = `https://qr.sepay.vn/img?bank=${sepayConfig.bankName}&acc=${sepayConfig.accountNumber}&template=compact&amount=${currentOrder.amount}&des=${currentOrder.orderCode}`;
-        document.getElementById('qr-code').src = qrUrl;
-        document.getElementById('amount-display').textContent = `${currentOrder.amount.toLocaleString('vi-VN')}đ`;
-        document.getElementById('content-display').textContent = currentOrder.orderCode;
-
-        // Start checking payment status
-        startPaymentCheck();
-    };
-
-    const startPaymentCheck = () => {
-    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-    
-    const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
-    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
-    
-    paymentCheckInterval = setInterval(async () => {
-        if (!currentOrder) {
-            clearInterval(paymentCheckInterval);
-            return;
-        }
-        
-        // Check if order has timed out
-        const now = new Date().getTime();
-        if (now - orderCreatedTime > TIMEOUT_MS) {
-            clearInterval(paymentCheckInterval);
-            document.getElementById('payment-status').innerHTML = 
-                '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
-            log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
-            
-            setTimeout(() => {
-                document.getElementById('vip-modal')?.remove();
-                currentOrder = null;
-            }, 3000);
-            return;
-        }
-        
-        // Check payment status
-        const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
-        
-        if (statusRes && statusRes.success) {
-            if (statusRes.order.status === 'Paid') {
-                clearInterval(paymentCheckInterval);
-                document.getElementById('payment-status').innerHTML = 
-                    '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
-                log('Thanh toán VIP thành công!');
-                
-                setTimeout(async () => {
-                    document.getElementById('vip-modal')?.remove();
-                    await checkAndUpdateVIPStatus();
-                }, 2000);
-            } else if (statusRes.order.status === 'Cancelled') {
-                clearInterval(paymentCheckInterval);
-                document.getElementById('payment-status').innerHTML = 
-                    '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
-                log('Đơn hàng đã bị hủy', true);
-                
-                setTimeout(() => {
-                    document.getElementById('vip-modal')?.remove();
-                    currentOrder = null;
-                }, 2000);
-            }
-        }
-    }, 2000); // Check every 2 seconds
+    // Removed createVIPOrder and startPaymentCheck as we are redirecting directly
+    const createVIPOrder = async () => {};
+    const startPaymentCheck = () => {};
 };
 
 

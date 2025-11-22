@@ -11,6 +11,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/zypage-webhook.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "api/admin-handler.js",
       "use": "@vercel/node"
     },
@@ -27,6 +31,10 @@
     {
       "src": "/api/sepay-webhook",
       "dest": "/api/sepay-webhook.js"
+    },
+    {
+      "src": "/api/zypage-webhook",
+      "dest": "/api/zypage-webhook.js"
     },
     {
       "src": "/api/admin-handler",
