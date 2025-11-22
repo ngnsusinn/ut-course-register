@@ -1523,10 +1523,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             return;
         }
         
-        // Get subject code - try multiple sources
+        // Get subject code - try multiple sources (prioritize registeredClass data)
         let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
         
-        // If still not found, search in allScheduleData by maLopHocPhan
+        // If still not found, try to extract from class code pattern (e.g., TT0401 -> TT04)
+        if (!actualSubjectCode && regCode) {
+            // Try to extract subject code from class code (usually remove last 2 digits)
+            const match = regCode.match(/^([A-Z]+\d+)/);
+            if (match) {
+                actualSubjectCode = match[1];
+                console.log('✅ Extracted maHocPhan from class code:', actualSubjectCode);
+            }
+        }
+        
+        // Last resort: search in allScheduleData (may fail if class is locked)
         if (!actualSubjectCode) {
             const matchingClass = allScheduleData.find(cls => 
                 cls.id.toString() === regId || 
@@ -1540,8 +1550,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         if (!actualSubjectCode) {
             log('❌ Không tìm thấy mã học phần của lớp này', true);
-            console.log('Registered class data:', registeredClass);
-            console.log('Tried to find in allScheduleData with:', { regId, regCode });
+            console.log('❌ Debug info:');
+            console.log('  - Registered class data:', registeredClass);
+            console.log('  - Tried to find with:', { regId, regCode });
+            console.log('  - subjectCode from button:', subjectCode);
             return;
         }
         
