@@ -567,14 +567,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-3">Xác nhận hủy thanh toán</h3>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Xác nhận</h3>
                 <p class="text-gray-700 mb-6">${message}</p>
                 <div class="flex space-x-3 justify-center">
-                    <button id="confirm-cancel-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
-                        Xác nhận hủy
+                    <button id="confirm-yes-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Xác nhận
                     </button>
-                    <button id="confirm-keep-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
-                        Tiếp tục thanh toán
+                    <button id="confirm-no-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Hủy
                     </button>
                 </div>
             </div>
@@ -584,12 +584,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     document.body.appendChild(modal);
     
     // Event listeners
-    document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+    document.getElementById('confirm-yes-btn').addEventListener('click', () => {
         modal.remove();
         if (onConfirm) onConfirm();
     });
     
-    document.getElementById('confirm-keep-btn').addEventListener('click', () => {
+    document.getElementById('confirm-no-btn').addEventListener('click', () => {
         modal.remove();
         if (onCancel) onCancel();
     });
@@ -1045,17 +1045,27 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const cancelRegistration = async (registrationId, tenMonHoc, source) => {
-        if (!confirm(`Bạn có chắc muốn hủy môn "${tenMonHoc}" không?`)) return;
-        log(`Đang hủy môn ${tenMonHoc}...`);
+        // Use custom confirmation modal instead of default confirm()
+        showConfirmModal(
+            `Bạn có chắc chắn muốn hủy môn học <strong>"${tenMonHoc}"</strong> không?<br><br>Hành động này không thể hoàn tác.`,
+            async () => {
+                // On confirm
+                log(`Đang hủy môn ${tenMonHoc}...`);
 
-        const result = await backendRequest('cancel', { registrationId, source });
+                const result = await backendRequest('cancel', { registrationId, source });
 
-        if (result && result.success) {
-            log(`✅ Hủy thành công.`);
-            await fetchRegisteredClasses();
-        } else {
-            log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
-        }
+                if (result && result.success) {
+                    log(`✅ Hủy thành công.`);
+                    await fetchRegisteredClasses();
+                } else {
+                    log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
+                }
+            },
+            () => {
+                // On cancel - do nothing
+                log(`Đã hủy thao tác hủy môn ${tenMonHoc}.`);
+            }
+        );
     };
 
     // Swap class function - Cancel registered class and register target class
