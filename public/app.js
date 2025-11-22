@@ -1513,6 +1513,16 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const row = document.createElement('tr');
             row.className = 'bg-white border-b hover:bg-gray-50';
             const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
+            
+            // Try to find maHocPhan from allScheduleData if not present in registered data
+            let maHocPhan = reg.maHocPhan;
+            if (!maHocPhan) {
+                const matchingClass = allScheduleData.find(cls => cls.maLopHocPhan === reg.maLopHocPhan);
+                if (matchingClass) {
+                    maHocPhan = matchingClass.maHocPhan;
+                }
+            }
+            
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
@@ -1527,7 +1537,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                     data-reg-code="${reg.maLopHocPhan ?? ''}" 
                                     data-reg-name="${reg.tenMonHoc ?? ''}" 
                                     data-reg-source="${reg.source ?? ''}"
-                                    data-reg-subject-code="${reg.maHocPhan ?? ''}"
+                                    data-reg-subject-code="${maHocPhan ?? ''}"
                                     data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
                                     class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Đổi lớp</button>
                         `
@@ -1549,16 +1559,30 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             return;
         }
         
-        // Get subject code from registered class if not provided
-        const actualSubjectCode = subjectCode || registeredClass.maHocPhan;
+        // Get subject code - try multiple sources
+        let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
+        
+        // If still not found, search in allScheduleData by maLopHocPhan
+        if (!actualSubjectCode) {
+            const matchingClass = allScheduleData.find(cls => 
+                cls.id.toString() === regId || 
+                cls.maLopHocPhan === regCode
+            );
+            if (matchingClass) {
+                actualSubjectCode = matchingClass.maHocPhan;
+                console.log('✅ Found maHocPhan from allScheduleData:', actualSubjectCode);
+            }
+        }
         
         if (!actualSubjectCode) {
             log('❌ Không tìm thấy mã học phần của lớp này', true);
             console.log('Registered class data:', registeredClass);
+            console.log('Tried to find in allScheduleData with:', { regId, regCode });
             return;
         }
         
-        console.log('Looking for classes with maHocPhan:', actualSubjectCode);
+        console.log('🔍 Looking for classes with maHocPhan:', actualSubjectCode);
+        console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
         
         // Filter available classes for the same subject
         const availableClasses = allScheduleData.filter(cls => {
@@ -1567,8 +1591,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 cls.tenTrangThai !== 'Đã khóa lớp' &&
                 cls.tenTrangThai !== 'Đang lên kế hoạch';
             
-            if (matches) {
-                console.log('Found available class:', cls.maLopHocPhan, cls.tenTrangThai);
+            if (cls.maHocPhan === actualSubjectCode) {
+                console.log('  ➜ Same subject:', cls.maLopHocPhan, '| Status:', cls.tenTrangThai, '| Match:', matches);
             }
             
             return matches;
