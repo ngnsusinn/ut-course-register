@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     const timetableModal = document.getElementById('timetable-modal');
-    const viewTimetableBtn = document.getElementById('view-timetable-btn');
+    // viewTimetableBtn is dynamic, handled via global function or delegation
     const closeTimetableModal = document.getElementById('close-timetable-modal');
     const timetableContent = document.getElementById('timetable-content');
     const timetableTabBtns = document.querySelectorAll('.timetable-tab-btn');
@@ -12,6 +12,46 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPhase = 1; // Default to phase 1
     let registeredData = [];
     let selectedData = [];
+    
+    // Expose show function globally
+    window.showTimetableModal = () => {
+        // Get data from global scope (exposed in app.js)
+        if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
+        if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
+        
+        timetableModal.classList.remove('hidden');
+        generateTimetable(currentPhase);
+    };
+
+    // Close modal
+    if (closeTimetableModal) {
+        closeTimetableModal.addEventListener('click', () => {
+            timetableModal.classList.add('hidden');
+        });
+    }
+    
+    // Close on click outside
+    timetableModal.addEventListener('click', (e) => {
+        if (e.target === timetableModal) {
+            timetableModal.classList.add('hidden');
+        }
+    });
+
+    // Tab switching
+    timetableTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active state
+            timetableTabBtns.forEach(b => {
+                b.classList.remove('bg-blue-50', 'text-blue-600', 'shadow-sm');
+                b.classList.add('text-slate-500');
+            });
+            btn.classList.remove('text-slate-500');
+            btn.classList.add('bg-blue-50', 'text-blue-600', 'shadow-sm');
+            
+            currentPhase = parseInt(btn.dataset.phase);
+            generateTimetable(currentPhase);
+        });
+    });
     
     // Parse periods from string like "3-4" or "10-12"
     const parseTietHoc = (tietHoc) => {
