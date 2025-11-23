@@ -1809,13 +1809,33 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 showConfirmModal(
                     confirmMsg,
                     () => {
-                        // On confirm - Add to swap pending list
+                        // On confirm - Check if there's already a swap for this registered class
+                        // If yes, remove the old entry first (update logic)
+                        let oldSwapEntry = null;
+                        swapPendingClasses.forEach((swap, key) => {
+                            if (swap.registered.id.toString() === regId) {
+                                oldSwapEntry = key;
+                            }
+                        });
+                        
+                        // Remove old swap entry if exists
+                        if (oldSwapEntry) {
+                            swapPendingClasses.delete(oldSwapEntry);
+                            log(`🔄 Cập nhật lớp đổi cho ${regName} (${regCode})`);
+                        }
+                        
+                        // Add new swap entry with target class ID as key
                         swapPendingClasses.set(targetId, {
                             registered: registeredClassFull,
                             target: targetClass
                         });
                         
-                        log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        if (oldSwapEntry) {
+                            log(`✅ Đã cập nhật đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        } else {
+                            log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        }
+                        
                         if (targetClass.phanTramDangKy >= 100) {
                             log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
                         }
