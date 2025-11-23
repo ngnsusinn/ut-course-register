@@ -1159,6 +1159,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         log("🚀 Bắt đầu quá trình chèn lớp...");
 
         const classesBySubject = new Map();
+        const completedSubjects = new Set(); // Track completed subjects
         
         // Add regular selected classes
         selectedClasses.forEach(cls => {
@@ -1184,6 +1185,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const source = classItems[0].class.source;
 
             const intervalId = setInterval(async () => {
+                // Check if this subject already completed
+                if (completedSubjects.has(maHocPhan)) {
+                    clearInterval(intervalId);
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
                 if (isProcessStopped) return;
                 const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
 
@@ -1217,6 +1224,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
                                 swapPendingClasses.delete(matchedItem.class.id.toString());
                                 updateSelectedList();
+                                
+                                // Mark subject as completed to prevent further checks
+                                completedSubjects.add(maHocPhan);
                                 clearInterval(registrationIntervals.get(maHocPhan));
                                 registrationIntervals.delete(maHocPhan);
                                 break;
@@ -1262,6 +1272,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         log("🚀 Bắt đầu đăng ký liên tục...");
 
         const classesBySubject = new Map();
+        const completedSubjects = new Set(); // Track completed subjects
         
         // Add regular selected classes
         selectedClasses.forEach(cls => {
@@ -1286,6 +1297,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const tenMonHoc = classItems[0].class.tenMonHoc;
 
             const intervalId = setInterval(async () => {
+                // Check if this subject already completed
+                if (completedSubjects.has(maHocPhan)) {
+                    clearInterval(intervalId);
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
                 if (isProcessStopped) return;
                 
                 for (const item of classItems) {
@@ -1314,6 +1331,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         if (swapResult) {
                             swapPendingClasses.delete(item.class.id.toString());
                             await updateSelectedList();
+                            
+                            // Mark subject as completed to prevent further checks
+                            completedSubjects.add(maHocPhan);
                             clearInterval(registrationIntervals.get(maHocPhan));
                             registrationIntervals.delete(maHocPhan);
                             if (registrationIntervals.size === 0) await stopProcess();
