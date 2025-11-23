@@ -838,25 +838,50 @@ export default async (req, res) => {
                 const phanTramDangKy = classData.phanTramDangKy || 0;
                 const choDangKy = classData.choDangKy !== false;
                 
-                // Determine if class can be registered
+                // Determine if class can be registered based on status rules:
+                // - "Đang chờ đăng ký": Có thể đăng ký và hủy
+                // - "Đang lên kế hoạch": Lớp bị khóa, không thể đăng ký/hủy
+                // - "Đã mở chính thức": Chỉ có thể đăng ký, không thể hủy
+                // - "Đã khóa lớp": Không thể đăng ký/hủy, chốt lớp
+                
                 let canRegister = true;
                 let isFull = false;
                 let message = 'Lớp có thể đăng ký';
                 
-                // Check locked status
                 if (tenTrangThai === 'Đã khóa lớp') {
+                    // Đã khóa lớp: Không thể đăng ký/hủy
                     canRegister = false;
-                    message = 'Lớp đã bị khóa';
-                } else if (tenTrangThai === 'Đang lên kế hoạch' || tenTrangThai === 'Đang chờ đăng ký') {
+                    message = 'Lớp đã bị khóa (chốt lớp)';
+                } else if (tenTrangThai === 'Đang lên kế hoạch') {
+                    // Đang lên kế hoạch: Không thể đăng ký/hủy
                     canRegister = false;
-                    message = 'Lớp chưa mở đăng ký';
-                } else if (phanTramDangKy >= 100) {
-                    canRegister = false;
-                    isFull = true;
-                    message = 'Lớp đã đầy';
-                } else if (!choDangKy) {
-                    canRegister = false;
-                    message = 'Lớp không cho phép đăng ký';
+                    message = 'Lớp đang lên kế hoạch (bị khóa)';
+                } else if (tenTrangThai === 'Đang chờ đăng ký' || tenTrangThai === 'Đã mở chính thức') {
+                    // Đang chờ đăng ký hoặc Đã mở chính thức: Có thể đăng ký
+                    // Check if class is full
+                    if (phanTramDangKy >= 100) {
+                        canRegister = false;
+                        isFull = true;
+                        message = 'Lớp đã đầy';
+                    } else if (!choDangKy) {
+                        canRegister = false;
+                        message = 'Lớp không cho phép đăng ký';
+                    } else {
+                        canRegister = true;
+                        message = tenTrangThai === 'Đang chờ đăng ký' 
+                            ? 'Lớp có thể đăng ký (giai đoạn chờ)' 
+                            : 'Lớp có thể đăng ký (mở chính thức)';
+                    }
+                } else {
+                    // Unknown status - default to check percentage
+                    if (phanTramDangKy >= 100) {
+                        canRegister = false;
+                        isFull = true;
+                        message = 'Lớp đã đầy';
+                    } else if (!choDangKy) {
+                        canRegister = false;
+                        message = 'Lớp không cho phép đăng ký';
+                    }
                 }
                 
                 result = { 
