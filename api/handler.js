@@ -786,6 +786,116 @@ export default async (req, res) => {
                 break;
             }
 
+            case 'getScheduleDetails': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { classId, source } = payload;
+                const scheduleDetails = await getScheduleDetails(classId, token, source);
+                result = { 
+                    success: !scheduleDetails.error, 
+                    body: scheduleDetails 
+                };
+                break;
+            }
+
+            case 'checkClassAvailability': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { classId, dotId, maHocPhan, source } = payload;
+                
+                // Use getLopHocPhan (same as checkClassStatus) to get accurate phanTramDangKy
+                const classEndpoint = source === 'dkhpdk'
+                    ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
+                    : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                
+                const classListRes = await callApi(classEndpoint, 'GET', token, null, source);
+                
+                if (!classListRes || !classListRes.success || !Array.isArray(classListRes.body)) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        canRegister: false, 
+                        isFull: true,
+                        phanTramDangKy: 0,
+                        tenTrangThai: 'Unknown',
+                        message: 'Không thể lấy thông tin lớp học'
+                    });
+                }
+                
+                // Find the specific class by ID
+                const classData = classListRes.body.find(cls => cls.id.toString() === classId.toString());
+                
+                if (!classData) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        canRegister: false, 
+                        isFull: true,
+                        phanTramDangKy: 0,
+                        tenTrangThai: 'Not Found',
+                        message: 'Không tìm thấy lớp học'
+                    });
+                }
+                
+                // Check class status
+                const tenTrangThai = classData.tenTrangThai || '';
+                const phanTramDangKy = classData.phanTramDangKy || 0;
+                const choDangKy = classData.choDangKy !== false;
+                
+                // Determine if class can be registered based on status rules:
+                // - "Đang chờ đăng ký": Có thể đăng ký và hủy
+                // - "Đang lên kế hoạch": Lớp bị khóa, không thể đăng ký/hủy
+                // - "Đã mở chính thức": Chỉ có thể đăng ký, không thể hủy
+                // - "Đã khóa lớp": Không thể đăng ký/hủy, chốt lớp
+                
+                let canRegister = true;
+                let isFull = false;
+                let message = 'Lớp có thể đăng ký';
+                
+                if (tenTrangThai === 'Đã khóa lớp') {
+                    // Đã khóa lớp: Không thể đăng ký/hủy
+                    canRegister = false;
+                    message = 'Lớp đã bị khóa (chốt lớp)';
+                } else if (tenTrangThai === 'Đang lên kế hoạch') {
+                    // Đang lên kế hoạch: Không thể đăng ký/hủy
+                    canRegister = false;
+                    message = 'Lớp đang lên kế hoạch (bị khóa)';
+                } else if (tenTrangThai === 'Đang chờ đăng ký' || tenTrangThai === 'Đã mở chính thức') {
+                    // Đang chờ đăng ký hoặc Đã mở chính thức: Có thể đăng ký
+                    // Check if class is full
+                    if (phanTramDangKy >= 100) {
+                        canRegister = false;
+                        isFull = true;
+                        message = 'Lớp đã đầy';
+                    } else if (!choDangKy) {
+                        canRegister = false;
+                        message = 'Lớp không cho phép đăng ký';
+                    } else {
+                        canRegister = true;
+                        message = tenTrangThai === 'Đang chờ đăng ký' 
+                            ? 'Lớp có thể đăng ký (giai đoạn chờ)' 
+                            : 'Lớp có thể đăng ký (mở chính thức)';
+                    }
+                } else {
+                    // Unknown status - default to check percentage
+                    if (phanTramDangKy >= 100) {
+                        canRegister = false;
+                        isFull = true;
+                        message = 'Lớp đã đầy';
+                    } else if (!choDangKy) {
+                        canRegister = false;
+                        message = 'Lớp không cho phép đăng ký';
+                    }
+                }
+                
+                result = { 
+                    success: true, 
+                    canRegister,
+                    isFull,
+                    phanTramDangKy,
+                    tenTrangThai,
+                    choDangKy,
+                    message
+                };
+                break;
+            }
+
             // --- WRITE ACTIONS ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });

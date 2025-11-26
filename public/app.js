@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // CSS Toggle Switch (đã được tối ưu với Tailwind)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
+        input:checked~.block{background-color:#a7f3d0}
+        .payment-modal{display:none;position:fixed;z-index:50;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4)}
+        .payment-modal-content{background-color:#fff;margin:5% auto;padding:24px;border:none;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+        .close-modal{color:#6b7280;font-size:1.75rem;font-weight:700;cursor:pointer}
+        .close-modal:hover,.close-modal:focus{color:#1f2937}
+    `;
+    document.head.appendChild(style);
+
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -245,118 +257,191 @@ document.addEventListener('DOMContentLoaded', () => {
             return log('Không thể tải thông tin gói VIP', true);
         }
 
-        // Remove existing modal if any
-        document.getElementById('vip-modal')?.remove();
-
         const modal = document.createElement('div');
+        modal.className = 'payment-modal';
         modal.id = 'vip-modal';
-        modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in';
 
         const plans = plansRes.plans;
+        const sepayConfig = plansRes.sepayConfig;
         
         // Check if user has VIP to show appropriate title
         const isRenewal = vipStatus.hasVIP;
-        const modalTitle = isRenewal ? 'Gia hạn VIP' : 'Nâng cấp VIP';
-        const modalDesc = isRenewal ? 'Gia hạn để duy trì các tính năng đặc biệt' : 'Mở khóa các tính năng mạnh mẽ giúp bạn đăng ký học phần dễ dàng hơn';
+        const modalTitle = isRenewal ? '🔄 Gia hạn VIP' : '🌟 Nâng cấp VIP';
 
         modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            <span class="text-yellow-500">👑</span> ${modalTitle}
-                        </h2>
-                        <p class="text-sm text-slate-500 mt-1">${modalDesc}</p>
-                    </div>
-                    <button class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition close-modal-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                
-                <div class="p-8 overflow-y-auto custom-scrollbar bg-white">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        ${Object.entries(plans).map(([key, plan]) => {
-                            const isPopular = key === 'semester'; // Assuming semester is popular
-                            return `
-                            <div class="relative border ${isPopular ? 'border-blue-500 shadow-blue-100 ring-1 ring-blue-500' : 'border-slate-200'} rounded-2xl p-6 hover:shadow-xl transition-all duration-300 flex flex-col h-full group bg-white">
-                                ${isPopular ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg shadow-blue-500/30">PHỔ BIẾN NHẤT</div>' : ''}
-                                
-                                <h3 class="font-bold text-lg text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">${plan.name}</h3>
-                                <div class="mb-4">
-                                    <span class="text-3xl font-bold text-slate-900">${(plan.price / 1000).toLocaleString('vi-VN')}k</span>
-                                    <span class="text-slate-500 text-sm">/${plan.duration} ngày</span>
-                                </div>
-                                
-                                <ul class="space-y-3 mb-8 flex-1">
-                                    <li class="flex items-start gap-2 text-sm text-slate-600">
-                                        <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        <span>Đăng ký tự động</span>
-                                    </li>
-                                    <li class="flex items-start gap-2 text-sm text-slate-600">
-                                        <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        <span>Săn lớp nhanh chóng</span>
-                                    </li>
-                                    <li class="flex items-start gap-2 text-sm text-slate-600">
-                                        <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        <span>Hỗ trợ 24/7</span>
-                                    </li>
-                                </ul>
-                                
-                                <button class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/30 buy-plan-btn flex items-center justify-center gap-2" data-plan="${key}">
-                                    <span>${isRenewal ? 'Gia hạn ngay' : 'Chọn gói này'}</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                                </button>
-                            </div>
-                        `}).join('')}
-                    </div>
-                    
-                    <div class="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <div class="text-sm text-blue-800">
-                            <p class="font-bold mb-1">Lưu ý quan trọng</p>
-                            <p>Hệ thống sẽ chuyển hướng bạn đến cổng thanh toán Zypage. Vui lòng không tắt trình duyệt trong quá trình thanh toán. Tài khoản sẽ được kích hoạt tự động ngay sau khi thanh toán thành công.</p>
+            <div class="payment-modal-content bg-white rounded-xl shadow-md p-6">
+                <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">${modalTitle}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    ${Object.entries(plans).map(([key, plan]) => `
+                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                            <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
+                            <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
+                            <p class="text-gray-600 mb-4">${isRenewal ? 'Gia hạn thêm' : ''} ${plan.duration} ngày</p>
+                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
+                                ${isRenewal ? 'Gia hạn' : 'Chọn gói này'}
+                            </button>
                         </div>
+                    `).join('')}
+                </div>
+                <div id="payment-section" class="hidden">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 border-t pt-4">Thông tin thanh toán</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
+                            <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
+                            <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
+                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div></p>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
+                            <div class="text-center mb-4">
+                                <img src="https://qr.sepay.vn/assets/img/banklogo/MB.png" class="inline-block" style="max-height:50px">
+                                <p class="font-bold text-gray-800">Ngân hàng ${sepayConfig.bankName}</p>
+                            </div>
+                            <table class="w-full text-sm text-gray-600">
+                                <tbody>
+                                    <tr><td class="py-1 font-medium">Chủ TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountName}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountNumber}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số tiền:</td><td class="font-bold text-gray-800" id="amount-display"></td></tr>
+                                    <tr><td class="py-1 font-medium">Nội dung:</td><td class="font-bold text-gray-800" id="content-display"></td></tr>
+                                </tbody>
+                            </table>
+                            <p class="bg-yellow-50 p-2 rounded mt-4 text-xs text-gray-600">⚠️ Lưu ý: Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="cancel-payment-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
+                            Hủy thanh toán
+                        </button>
                     </div>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
-
-        // Close modal event
-        modal.querySelector('.close-modal-btn').addEventListener('click', () => modal.remove());
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
-        });
+        modal.style.display = 'block';
 
         // Handle plan selection
         modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const planKey = e.currentTarget.dataset.plan;
-                const plan = plans[planKey];
-                
-                // Redirect to Zypage
-                const zypageUrl = `https://zypage.com/payment?amount=${plan.price}&content=${userId}`;
-                
-                // Show loading state on button
-                const btn = e.currentTarget;
-                const originalContent = btn.innerHTML;
-                btn.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
-                btn.disabled = true;
-                
-                log(`Đang chuyển hướng đến trang thanh toán...`);
-                
-                setTimeout(() => {
-                    window.open(zypageUrl, '_blank');
-                    modal.remove();
-                }, 800);
+                const plan = e.target.dataset.plan;
+                await createVIPOrder(plan, plans[plan], sepayConfig);
             });
         });
+
+        // Handle cancel payment
+        // Handle cancel payment - CẬP NHẬT MỚI
+// Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
+modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
+    if (!currentOrder) return;
+    
+    showConfirmModal(
+        'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
+        async () => {
+            // User confirmed - cancel the order
+            const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
+            
+            if (cancelRes && cancelRes.success) {
+                log('✅ Đã hủy đơn hàng thành công');
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                }
+                currentOrder = null;
+                modal.remove();
+            } else {
+                log('❌ Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
+            }
+        },
+        () => {
+            // User cancelled - do nothing
+            log('Tiếp tục chờ thanh toán');
+        }
+    );
+});
+
+
     };
 
-    // Removed createVIPOrder and startPaymentCheck as we are redirecting directly
-    const createVIPOrder = async () => {};
-    const startPaymentCheck = () => {};
+    const createVIPOrder = async (planKey, planData, sepayConfig) => {
+        const orderRes = await backendRequest('createVIPOrder', { userId, plan: planKey });
+
+        if (!orderRes || !orderRes.success) {
+            return log('Không thể tạo đơn hàng', true);
+        }
+
+        currentOrder = orderRes.order;
+        log(`✅ Tạo đơn hàng #${currentOrder.orderCode} thành công`);
+
+        // Show payment section
+        document.getElementById('payment-section').classList.remove('hidden');
+        document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
+        document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
+
+        // Update payment info - use orderCode instead of id
+        const qrUrl = `https://qr.sepay.vn/img?bank=${sepayConfig.bankName}&acc=${sepayConfig.accountNumber}&template=compact&amount=${currentOrder.amount}&des=${currentOrder.orderCode}`;
+        document.getElementById('qr-code').src = qrUrl;
+        document.getElementById('amount-display').textContent = `${currentOrder.amount.toLocaleString('vi-VN')}đ`;
+        document.getElementById('content-display').textContent = currentOrder.orderCode;
+
+        // Start checking payment status
+        startPaymentCheck();
+    };
+
+    const startPaymentCheck = () => {
+    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    
+    const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
+    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    
+    paymentCheckInterval = setInterval(async () => {
+        if (!currentOrder) {
+            clearInterval(paymentCheckInterval);
+            return;
+        }
+        
+        // Check if order has timed out
+        const now = new Date().getTime();
+        if (now - orderCreatedTime > TIMEOUT_MS) {
+            clearInterval(paymentCheckInterval);
+            document.getElementById('payment-status').innerHTML = 
+                '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
+            log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
+            
+            setTimeout(() => {
+                document.getElementById('vip-modal')?.remove();
+                currentOrder = null;
+            }, 3000);
+            return;
+        }
+        
+        // Check payment status
+        const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
+        
+        if (statusRes && statusRes.success) {
+            if (statusRes.order.status === 'Paid') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
+                log('Thanh toán VIP thành công!');
+                
+                setTimeout(async () => {
+                    document.getElementById('vip-modal')?.remove();
+                    await checkAndUpdateVIPStatus();
+                }, 2000);
+            } else if (statusRes.order.status === 'Cancelled') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
+                log('Đơn hàng đã bị hủy', true);
+                
+                setTimeout(() => {
+                    document.getElementById('vip-modal')?.remove();
+                    currentOrder = null;
+                }, 2000);
+            }
+        }
+    }, 2000); // Check every 2 seconds
+};
 
 
     const checkAndUpdateVIPStatus = async () => {
@@ -416,14 +501,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isVip) {
         vipStatusElement.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                </div>
-                <div>
-                    <p class="font-bold text-slate-800 text-sm">Thành viên VIP</p>
-                    <p class="text-xs text-slate-500">Còn lại <span class="font-bold text-orange-500">${vipStatus.daysLeft} ngày</span></p>
-                </div>
+            <div class="text-center">
+                <p class="font-bold text-blue-700 text-lg">⭐ Tài khoản VIP</p>
+                <p class="text-sm text-gray-700">Thời hạn còn lại: <span class="font-semibold text-blue-600">${vipStatus.daysLeft} ngày</span></p>
+                <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
             </div>
         `;
         
@@ -436,21 +517,15 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         upgradeVipBtn.classList.remove('hidden');
 
-        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('opacity-50', 'pointer-events-none');
-        if (prerequisiteToggle) prerequisiteToggle.disabled = false;
+        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
+        if (prerequisiteToggle) prerequisiteToggle.disabled = false; // <-- enable checkbox for VIP
 
         if (fetchBtn) fetchBtn.classList.remove('hidden');
         if (selectedList) selectedList.classList.remove('hidden');
     } else {
         vipStatusElement.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                </div>
-                <div>
-                    <p class="font-bold text-slate-800 text-sm">Tài khoản thường</p>
-                    <p class="text-xs text-slate-500">Nâng cấp để mở khóa tính năng</p>
-                </div>
+            <div class="text-center p-3 bg-gray-100 rounded-lg">
+                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
             </div>
         `;
         
@@ -463,18 +538,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         upgradeVipBtn.classList.remove('hidden');
 
-        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('opacity-50', 'pointer-events-none');
+        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
         if (prerequisiteToggle) {
-            prerequisiteToggle.disabled = true;
-            prerequisiteToggle.checked = false;
-            // Reset visual toggle state
-            const dot = prerequisiteToggle.nextElementSibling?.nextElementSibling;
-            const block = prerequisiteToggle.nextElementSibling;
-            if(dot && block) {
-                dot.classList.remove('translate-x-4');
-                block.classList.add('bg-slate-200');
-                block.classList.remove('bg-blue-500');
-            }
+            prerequisiteToggle.disabled = true; // <-- disable for non-VIP
+            prerequisiteToggle.checked = false; // optional: reset check state
         }
 
         if (fetchBtn) fetchBtn.classList.add('hidden');
@@ -489,24 +556,25 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     
     const modal = document.createElement('div');
     modal.id = 'confirm-modal';
-    modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in';
+    modal.className = 'payment-modal';
+    modal.style.display = 'block';
     
     modal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
-            <div class="p-6 text-center">
-                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-6">
-                    <svg class="h-10 w-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="payment-modal-content" style="max-width: 450px; margin: 15% auto;">
+            <div class="text-center">
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">Xác nhận hành động</h3>
-                <p class="text-slate-500 mb-8">${message}</p>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Xác nhận</h3>
+                <p class="text-gray-700 mb-6">${message}</p>
                 <div class="flex space-x-3 justify-center">
-                    <button id="confirm-cancel-btn" class="flex-1 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold px-4 py-2.5 rounded-xl transition duration-200">
-                        Hủy bỏ
-                    </button>
-                    <button id="confirm-keep-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl transition duration-200 shadow-lg shadow-blue-500/30">
+                    <button id="confirm-yes-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
                         Xác nhận
+                    </button>
+                    <button id="confirm-no-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Hủy
                     </button>
                 </div>
             </div>
@@ -516,14 +584,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     document.body.appendChild(modal);
     
     // Event listeners
-    document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
-        modal.remove();
-        if (onCancel) onCancel();
-    });
-    
-    document.getElementById('confirm-keep-btn').addEventListener('click', () => {
+    document.getElementById('confirm-yes-btn').addEventListener('click', () => {
         modal.remove();
         if (onConfirm) onConfirm();
+    });
+    
+    document.getElementById('confirm-no-btn').addEventListener('click', () => {
+        modal.remove();
+        if (onCancel) onCancel();
     });
     
     // Close on backdrop click
@@ -543,68 +611,47 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (!document.getElementById('user-panel-content')) {
             const panelContainer = document.createElement('div');
             panelContainer.id = 'user-panel-content';
-            panelContainer.className = 'space-y-5 animate-fade-in';
+            panelContainer.className = 'space-y-4';
             panelContainer.innerHTML = `
-                <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
-                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
-                        ${profile.hoDem ? profile.hoDem.charAt(0) : 'U'}
-                    </div>
-                    <div>
-                        <div id="greeting-msg" class="font-bold text-slate-800 text-lg"></div>
-                        <div class="text-xs text-slate-500 font-medium">${profile.maSinhVien || 'Student'}</div>
-                    </div>
-                </div>
+                <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
                 
-                <div id="vip-status-section" class="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                <div id="vip-status-section" class="my-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
                     <div id="vip-status"></div>
                 </div>
                 
-                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition duration-300 flex items-center justify-center space-x-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                     <span>Nâng cấp VIP</span>
                 </button>
                 
-                <div id="prerequisite-toggle-container" class="flex items-center justify-between px-1">
-                    <span class="text-sm font-medium text-slate-600">Bao gồm môn điều kiện</span>
-                    <label for="prerequisite-toggle" class="flex items-center cursor-pointer relative">
-                        <input type="checkbox" id="prerequisite-toggle" class="sr-only" disabled>
-                        <div class="block bg-slate-200 w-10 h-6 rounded-full transition-colors duration-300 ease-in-out peer-checked:bg-blue-500"></div>
-                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 ease-in-out peer-checked:translate-x-4 shadow-sm"></div>
+                <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">
+                    <label for="prerequisite-toggle" class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="prerequisite-toggle" class="sr-only" disabled>
+                            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                        </div>
+                        <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn điều kiện</div>
                     </label>
                 </div>
                 
-                <div id="progress-bar-container" class="hidden space-y-2">
-                    <div class="flex justify-between text-xs font-medium text-slate-500">
-                        <span>Tiến độ</span>
-                        <span id="progress-bar-text">0%</span>
+                <div id="progress-bar-container" class="my-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div id="progress-bar-element" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
+                    <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-3 pt-2">
-                    <button id="fetch-schedule-btn" class="col-span-1 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Lấy lịch</span>
-                    </button>
-
-                    <button id="view-timetable-btn" class="col-span-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Xem TKB</span>
-                    </button>
-                    
-                    <button id="logout-btn" class="col-span-2 border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        <span>Đăng xuất</span>
-                    </button>
-                </div>
+                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Tải lịch học</span>
+                </button>
+                
+                <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
             `;
             loginForm.parentNode.insertBefore(panelContainer, loginForm.nextSibling);
 
@@ -626,25 +673,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', showVIPModal);
-            document.getElementById('view-timetable-btn')?.addEventListener('click', () => {
-                if (window.showTimetableModal) window.showTimetableModal();
-            });
-            prerequisiteToggle.addEventListener('change', fetchRegisteredClasses);
-            
-            // Add toggle listener for custom checkbox style
-            prerequisiteToggle.addEventListener('change', function() {
-                const dot = this.nextElementSibling.nextElementSibling;
-                const block = this.nextElementSibling;
-                if(this.checked) {
-                    dot.classList.add('translate-x-4');
-                    block.classList.remove('bg-slate-200');
-                    block.classList.add('bg-blue-500');
-                } else {
-                    dot.classList.remove('translate-x-4');
-                    block.classList.add('bg-slate-200');
-                    block.classList.remove('bg-blue-500');
-                }
-            });
+            // Removed auto-fetch on prerequisite toggle change - user should manually refresh if needed
         }
 
         greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
@@ -973,9 +1002,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites, userId });
 
         if (scheduleRes && scheduleRes.success) {
-            allScheduleData = scheduleRes.schedule;
+            // Filter out locked classes from the schedule
+            const totalClasses = scheduleRes.schedule.length;
+            const unlockedClasses = scheduleRes.schedule.filter(cls => cls.tenTrangThai !== 'Đã khóa lớp');
+            
+            allScheduleData = unlockedClasses;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-            log(`✅ Đã tải thành công ${allScheduleData.length} lớp học phần.`);
+            
+            log(`✅ Đã tải thành công ${totalClasses} lớp học phần.`);
+            log(`📋 Hiển thị ${unlockedClasses.length} lớp chưa khóa (đã lọc bỏ ${totalClasses - unlockedClasses.length} lớp đã khóa).`);
 
             // Save to cache
             saveCachedData();
@@ -1016,108 +1051,85 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const cancelRegistration = async (registrationId, tenMonHoc, source) => {
-        if (!confirm(`Bạn có chắc muốn hủy môn "${tenMonHoc}" không?`)) return;
-        log(`Đang hủy môn ${tenMonHoc}...`);
+        // Use custom confirmation modal instead of default confirm()
+        showConfirmModal(
+            `Bạn có chắc chắn muốn hủy môn học <strong>"${tenMonHoc}"</strong> không?<br><br>Hành động này không thể hoàn tác.`,
+            async () => {
+                // On confirm
+                log(`Đang hủy môn ${tenMonHoc}...`);
 
-        const result = await backendRequest('cancel', { registrationId, source });
+                const result = await backendRequest('cancel', { registrationId, source });
 
-        if (result && result.success) {
-            log(`✅ Hủy thành công.`);
-            await fetchRegisteredClasses();
-        } else {
-            log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
-        }
+                if (result && result.success) {
+                    log(`✅ Hủy thành công.`);
+                    await fetchRegisteredClasses();
+                } else {
+                    log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
+                }
+            },
+            () => {
+                // On cancel - do nothing
+                log(`Đã hủy thao tác hủy môn ${tenMonHoc}.`);
+            }
+        );
     };
 
-    // Swap class function - Cancel registered class and register target class
+    // Swap class function - Check target slot first, cancel old class, then register new class
     const swapClass = async (registeredData, targetData) => {
         const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
-        const { id: targetId, code: targetCode, name: targetName, source: targetSource } = targetData;
+        const { id: targetId, code: targetCode, name: targetName, source: targetSource, maHocPhan: targetMaHocPhan } = targetData;
         
-        log(`🔄 Bắt đầu đổi lớp: ${regName} → ${targetName}`);
+        log(`🔄 Bắt đầu đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
         
-        // Step 1: Validate registered class can be cancelled
-        log(`🔍 Kiểm tra lớp đã đăng ký ${regCode}...`);
-        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        // Step 1: Check target class availability first
+        log(`🔍 Kiểm tra lớp đích ${targetCode}...`);
         
-        if (!registeredClass) {
-            log(`❌ Không tìm thấy thông tin lớp đã đăng ký ${regCode}`, true);
+        // Extract maHocPhan from targetCode if not available (remove last 2 characters)
+        const maHocPhan = targetMaHocPhan || targetCode.slice(0, -2);
+        
+        const checkResult = await backendRequest('checkClassAvailability', { 
+            classId: targetId, 
+            dotId, 
+            maHocPhan, 
+            source: targetSource 
+        });
+        
+        if (!checkResult || !checkResult.success) {
+            log(`⚠️ Không thể kiểm tra lớp đích, dừng đổi lớp để an toàn`, true);
             return false;
         }
         
-        // Check if registered class can be cancelled based on status
-        const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
-        
-        if (registeredStatus === 'Đã khóa lớp') {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
+        if (checkResult.isFull) {
+            log(`❌ Lớp ${targetCode} đã đầy (${checkResult.phanTramDangKy}%)`, true);
             return false;
         }
         
-        if (registeredStatus === 'Đã mở chính thức') {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
+        if (!checkResult.canRegister) {
+            log(`❌ Lớp ${targetCode} không thể đăng ký - ${checkResult.message}`, true);
             return false;
         }
         
-        if (registeredStatus === 'Đang lên kế hoạch') {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
-            return false;
-        }
+        log(`✅ Lớp ${targetCode} còn chỗ (${checkResult.phanTramDangKy}%), tiếp tục đổi lớp...`);
         
-        if (registeredStatus !== 'Đang chờ đăng ký' && registeredClass.isAllowCancel === false) {
-            log(`❌ Không thể hủy lớp ${regCode} - Trạng thái: ${registeredStatus}`, true);
-            return false;
-        }
-        
-        log(`✓ Lớp ${regCode} có thể hủy (trạng thái: ${registeredStatus})`);
-        
-        // Step 2: Validate target class can be registered
-        log(`📊 Kiểm tra lớp đích ${targetCode}...`);
-        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
-        
-        if (!targetClass) {
-            log(`❌ Không tìm thấy thông tin lớp đích ${targetCode}`, true);
-            return false;
-        }
-        
-        // Check target class status
-        const targetStatus = targetClass.tenTrangThai || '';
-        
-        if (targetStatus === 'Đã khóa lớp') {
-            log(`❌ Không thể đăng ký lớp ${targetCode} - Trạng thái: ${targetStatus}`, true);
-            return false;
-        }
-        
-        if (targetStatus === 'Đang lên kế hoạch') {
-            log(`❌ Không thể đăng ký lớp ${targetCode} - Trạng thái: ${targetStatus}`, true);
-            return false;
-        }
-        
-        // Check if target class has available slots
-        if (targetClass.phanTramDangKy >= 100) {
-            log(`❌ Lớp ${targetCode} đã đầy (${targetClass.phanTramDangKy}%), không thể đổi lớp`, true);
-            return false;
-        }
-        
-        log(`✓ Lớp ${targetCode} có thể đăng ký (trạng thái: ${targetStatus}, ${targetClass.phanTramDangKy}% đã đăng ký)`);
-        
-        // Step 3: Cancel registered class
-        log(`🗑️ Đang hủy lớp ${regName} (${regCode})...`);
+        // Step 2: Cancel old registered class FIRST (before registering new one)
+        log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
         const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
         
         if (!cancelResult || !cancelResult.success) {
-            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi'}`, true);
+            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
             return false;
         }
         
         log(`✅ Đã hủy lớp ${regCode} thành công`);
         
-        // Step 4: Register target class
+        // Step 3: Register target class (after canceling old one)
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
         const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
         
         if (!registerResult || !registerResult.success) {
-            log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi'}`, true);
-            log(`⚠️ LƯU Ý: Bạn đã hủy lớp ${regCode}, vui lòng đăng ký lại thủ công!`, true);
+            log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
+            log(`⚠️ CẢNH BÁO: Đã hủy lớp ${regCode} nhưng không đăng ký được lớp ${targetCode}. Vui lòng đăng ký lại thủ công!`, true);
+            await fetchRegisteredClasses();
             return false;
         }
         
@@ -1147,6 +1159,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         log("🚀 Bắt đầu quá trình chèn lớp...");
 
         const classesBySubject = new Map();
+        const completedSubjects = new Set(); // Track completed subjects
         
         // Add regular selected classes
         selectedClasses.forEach(cls => {
@@ -1172,6 +1185,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const source = classItems[0].class.source;
 
             const intervalId = setInterval(async () => {
+                // Check if this subject already completed
+                if (completedSubjects.has(maHocPhan)) {
+                    clearInterval(intervalId);
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
                 if (isProcessStopped) return;
                 const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
 
@@ -1205,6 +1224,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
                                 swapPendingClasses.delete(matchedItem.class.id.toString());
                                 updateSelectedList();
+                                
+                                // Mark subject as completed to prevent further checks
+                                completedSubjects.add(maHocPhan);
                                 clearInterval(registrationIntervals.get(maHocPhan));
                                 registrationIntervals.delete(maHocPhan);
                                 break;
@@ -1250,6 +1272,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         log("🚀 Bắt đầu đăng ký liên tục...");
 
         const classesBySubject = new Map();
+        const completedSubjects = new Set(); // Track completed subjects
         
         // Add regular selected classes
         selectedClasses.forEach(cls => {
@@ -1274,6 +1297,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const tenMonHoc = classItems[0].class.tenMonHoc;
 
             const intervalId = setInterval(async () => {
+                // Check if this subject already completed
+                if (completedSubjects.has(maHocPhan)) {
+                    clearInterval(intervalId);
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
                 if (isProcessStopped) return;
                 
                 for (const item of classItems) {
@@ -1302,6 +1331,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         if (swapResult) {
                             swapPendingClasses.delete(item.class.id.toString());
                             await updateSelectedList();
+                            
+                            // Mark subject as completed to prevent further checks
+                            completedSubjects.add(maHocPhan);
                             clearInterval(registrationIntervals.get(maHocPhan));
                             registrationIntervals.delete(maHocPhan);
                             if (registrationIntervals.size === 0) await stopProcess();
@@ -1353,41 +1385,25 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const selectedSubject = subjectFilter.value;
         if (allScheduleData.length > 0) {
             const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
-            // Only update if options count changed to avoid resetting selection
-            if (subjectFilter.options.length !== subjects.length + 1) {
-                 const currentVal = subjectFilter.value;
-                 subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-                 subjectFilter.value = currentVal;
-            }
+            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
         // Show all classes including "Đã khóa lớp"
         const filteredData = allScheduleData.filter(cls =>
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
-        
         if (filteredData.length === 0) {
-            scheduleContainer.innerHTML = allScheduleData.length === 0 
-                ? '<div class="flex flex-col items-center justify-center h-48 text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg><p>Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p></div>' 
-                : '<div class="flex flex-col items-center justify-center h-48 text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg><p>Không tìm thấy lớp học phần nào.</p></div>';
+            scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
             return;
         }
-        
         const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left text-slate-600';
+        table.className = 'w-full text-sm text-left text-gray-500';
         table.innerHTML = `
-            <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
-                <tr>
-                    <th scope="col" class="px-6 py-4 font-semibold">Tên môn học & Lịch học</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Mã LHP</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Loại HP</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Số TC</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Trạng thái</th>
-                    <th scope="col" class="px-6 py-4 font-semibold text-right">Đã đăng ký</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100"></tbody>`;
-            
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã đăng ký</th>
+            </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
             const row = document.createElement('tr');
@@ -1401,15 +1417,19 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const hasConflict = conflictCheck.hasConflict;
             
             // Build row class and cursor based on status
-            let rowClass = 'transition-all duration-200 group';
+            let rowClass = 'bg-white border-b transition-colors duration-200';
             if (isLocked) {
-                rowClass += ' bg-slate-50 cursor-not-allowed opacity-60 grayscale';
+                // Locked class - gray background, not clickable
+                rowClass += ' bg-gray-200 cursor-not-allowed opacity-60';
             } else if (hasConflict) {
-                rowClass += ' bg-red-50/50 hover:bg-red-50 cursor-not-allowed';
+                // Conflict - red background, not clickable
+                rowClass += ' bg-red-100 cursor-not-allowed';
             } else if (isSelected) {
-                rowClass += ' bg-blue-50 hover:bg-blue-100 cursor-pointer border-l-4 border-blue-500';
+                // Selected - blue background, clickable
+                rowClass += ' bg-blue-200 cursor-pointer hover:bg-sky-100';
             } else {
-                rowClass += ' bg-white hover:bg-slate-50 cursor-pointer hover:shadow-sm';
+                // Normal - white background, clickable
+                rowClass += ' cursor-pointer hover:bg-sky-100';
             }
             
             row.className = rowClass;
@@ -1428,56 +1448,18 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
-                ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Điều kiện</span>`
+                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`
                 : (isBatBuoc === undefined
-                    ? '<span class="text-slate-400">N/A</span>'
+                    ? 'N/A'
                     : (isBatBuoc
-                        ? `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Bắt buộc</span>`
-                        : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Tự chọn</span>`));
+                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
             
-            // Add warnings below subject name
+            // Add warnings below subject name (only conflict warning, not locked)
             let warnings = '';
             if (hasConflict) {
-<<<<<<< Updated upstream
-                const conflictSummary = conflictCheck.conflicts.map(c => c.registeredClass).join(', ');
-                warnings += `
-                    <div class="mt-2 flex items-start gap-2 text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
-                        <svg class="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="text-sm text-red-700">
-                    <span class="font-bold">Trùng lịch:</span> ${conflictSummary}
-                </div>
-            </div>
-=======
                 const conflictCount = conflictCheck.conflicts.length;
-                const conflictItems = conflictCheck.conflicts.map(c => {
-                    // Find registered class data for swap functionality
-                    const regClass = registeredClassesData.find(reg => reg.maLopHocPhan === c.registeredCode);
-                    const regId = regClass ? regClass.id : '';
-                    const regSource = regClass ? regClass.source : 'dkhp';
-                    const regSubjectCode = regClass ? regClass.maHocPhan : '';
-                    const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
-                    
-                    return `
-                        <div class="flex items-center justify-between py-1">
-                            <span class="text-xs text-red-700">• ${c.registeredClass} (${c.registeredCode})</span>
-                            <button class="swap-from-conflict-btn ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition"
-                                    data-reg-id="${regId}"
-                                    data-reg-code="${c.registeredCode}"
-                                    data-reg-name="${c.registeredClass}"
-                                    data-reg-source="${regSource}"
-                                    data-reg-subject-code="${regSubjectCode}"
-                                    data-reg-status="${regStatus}"
-                                    data-target-id="${cls.id}"
-                                    data-target-code="${cls.maLopHocPhan}"
-                                    data-target-name="${cls.tenMonHoc}">
-                                🔄 Đổi lớp
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-                
+                const conflictSummary = conflictCheck.conflicts.map(c => c.registeredClass).join(', ');
                 warnings += `
                     <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
                         <div class="flex items-start gap-2">
@@ -1485,50 +1467,21 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
                             <div class="flex-1">
-                                <p class="text-xs font-bold text-red-800 mb-1">TRÙNG LỊCH HỌC</p>
-                                <div class="space-y-0.5">
-                                    ${conflictItems}
-                                </div>
+                                <p class="text-xs font-bold text-red-800">TRÙNG LỊCH HỌC</p>
+                                <p class="text-xs text-red-700 mt-0.5">Trùng với: ${conflictSummary}</p>
                             </div>
                         </div>
                     </div>
->>>>>>> Stashed changes
                 `;
             }
             
-            // Status badge
-            let statusBadgeClass = 'bg-slate-100 text-slate-600';
-            if (cls.tenTrangThai === 'Đã mở chính thức') statusBadgeClass = 'bg-emerald-100 text-emerald-700';
-            else if (cls.tenTrangThai === 'Đã khóa lớp') statusBadgeClass = 'bg-rose-100 text-rose-700';
-            else if (cls.tenTrangThai === 'Đang lên kế hoạch') statusBadgeClass = 'bg-amber-100 text-amber-700';
-            else if (cls.tenTrangThai === 'Đang chờ đăng ký') statusBadgeClass = 'bg-blue-100 text-blue-700';
-
-            const statusHtml = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass}">${cls.tenTrangThai || 'N/A'}</span>`;
-
-            // Progress bar for registration percentage
-            const percent = Math.min(cls.phanTramDangKy, 100);
-            const percentColor = percent >= 100 ? 'bg-rose-500' : (percent >= 80 ? 'bg-amber-500' : 'bg-emerald-500');
-            
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4">
-                    <div class="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors">${cls.tenMonHoc}</div>
-                    ${warnings}
-                    <div class="mt-2 space-y-1 text-xs text-slate-500 border-l-2 border-slate-200 pl-3">
-                        ${formatScheduleDetail(cls.scheduleDetails)}
-                    </div>
-                </th>
-                <td class="px-6 py-4 font-mono text-xs font-medium text-slate-500">${cls.maLopHocPhan}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${typeHtml}</td>
-                <td class="px-6 py-4 font-medium text-slate-700">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? '-')}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${statusHtml}</td>
-                <td class="px-6 py-4 text-right">
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="font-bold ${percent >= 100 ? 'text-rose-600' : 'text-emerald-600'}">${cls.phanTramDangKy}%</span>
-                        <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full ${percentColor}" style="width: ${percent}%"></div>
-                        </div>
-                    </div>
-                </td>`;
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${warnings}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
+                <td class="px-6 py-4 whitespace-nowrap" data-label="Loại HP">${typeHtml}</td>
+                <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
             tbody.appendChild(row);
         });
         scheduleContainer.innerHTML = '';
@@ -1537,139 +1490,57 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const renderRegisteredTable = async (data) => {
         if (!data || data.length === 0) {
-            registeredContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-32 text-slate-400 text-sm"><p>Bạn chưa đăng ký học phần nào.</p></div>`;
+            registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
             return;
         }
         const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left text-slate-600';
+        table.className = 'w-full text-sm text-left text-gray-500';
         table.innerHTML = `
-            <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
-                <tr>
-                    <th scope="col" class="px-6 py-4 font-semibold">Tên môn học & Lịch học</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Mã LHP</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Số TC</th>
-                    <th scope="col" class="px-6 py-4 font-semibold">Trạng thái</th>
-                    <th scope="col" class="px-6 py-4 font-semibold text-right">Hành động</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100"></tbody>`;
-            
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>
+                <th scope="col" class="px-6 py-3">Hành động</th>
+            </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         data.forEach(reg => {
             const row = document.createElement('tr');
-            row.className = 'bg-white hover:bg-slate-50 transition-colors';
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
             
-            const sourceBadge = reg.source === 'dkhpdk' 
-                ? `<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">Điều kiện</span>` 
-                : '';
-                
-            // Status badge
-            let statusBadgeClass = 'bg-slate-100 text-slate-600';
-            if (reg.tenTrangThaiLopHocPhan === 'Đã mở chính thức') statusBadgeClass = 'bg-emerald-100 text-emerald-700';
-            else if (reg.tenTrangThaiLopHocPhan === 'Đã khóa lớp') statusBadgeClass = 'bg-rose-100 text-rose-700';
-            else if (reg.tenTrangThaiLopHocPhan === 'Đang lên kế hoạch') statusBadgeClass = 'bg-amber-100 text-amber-700';
-            else if (reg.tenTrangThaiLopHocPhan === 'Đang chờ đăng ký') statusBadgeClass = 'bg-blue-100 text-blue-700';
-
-            const statusHtml = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass}">${reg.tenTrangThaiLopHocPhan || 'N/A'}</span>`;
-
+            // Try to find maHocPhan from allScheduleData if not present in registered data
+            let maHocPhan = reg.maHocPhan;
+            if (!maHocPhan) {
+                const matchingClass = allScheduleData.find(cls => cls.maLopHocPhan === reg.maLopHocPhan);
+                if (matchingClass) {
+                    maHocPhan = matchingClass.maHocPhan;
+                }
+            }
+            
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4">
-                    <div class="font-bold text-slate-800 text-base flex items-center">${reg.tenMonHoc} ${sourceBadge}</div>
-                    <div class="mt-2 space-y-1 text-xs text-slate-500 border-l-2 border-slate-200 pl-3">
-                        ${formatScheduleDetail(reg.scheduleDetails)}
-                    </div>
-                </th>
-                <td class="px-6 py-4 font-mono text-xs font-medium text-slate-500">${reg.maLopHocPhan}</td>
-                <td class="px-6 py-4 font-medium text-slate-700">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? '-')}</td>
-                <td class="px-6 py-4 whitespace-nowrap">${statusHtml}</td>
-                <td class="px-6 py-4 text-right">
-                    <div class="flex justify-end gap-2">
-                    ${
-                        reg.isAllowCancel === false
-                            ? '<span class="text-xs text-slate-400 italic">Không thể hủy</span>'
-                            : `
-                                <button data-reg-id="${reg.id ?? ''}" 
-                                        data-reg-code="${reg.maLopHocPhan ?? ''}" 
-                                        data-reg-name="${reg.tenMonHoc ?? ''}" 
-                                        data-reg-source="${reg.source ?? ''}"
-                                        data-reg-subject-code="${reg.maHocPhan ?? ''}"
-                                        data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
-                                        class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors swap-from-registered-btn flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                                    Đổi lớp
-                                </button>
-                                <button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="text-xs font-bold text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition-colors cancel-btn flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    Hủy
-                                </button>
-                            `
-                    }
-                    </div>
-                </td>`;
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
+                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
+                <td class="px-6 py-4" data-label="Hành động">${
+                    reg.isAllowCancel === false
+                        ? ''
+                        : `
+                            <button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn mr-3">Hủy</button>
+                            <button data-reg-id="${reg.id ?? ''}" 
+                                    data-reg-code="${reg.maLopHocPhan ?? ''}" 
+                                    data-reg-name="${reg.tenMonHoc ?? ''}" 
+                                    data-reg-source="${reg.source ?? ''}"
+                                    data-reg-subject-code="${maHocPhan ?? ''}"
+                                    data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
+                                    class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Đổi lớp</button>
+                        `
+                }</td>`;
             tbody.appendChild(row);
         });
         registeredContainer.innerHTML = '';
         registeredContainer.appendChild(table);
     };
 
-    // Show swap from conflict modal - allows selecting replacement class for conflicting registered class
-    const showSwapFromConflictModal = async (registeredClassData, targetClassData) => {
-        const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
-        const { id: targetId, code: targetCode, name: targetName } = targetClassData;
-        
-        // Find registered class details
-        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
-        if (!registeredClass) {
-            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
-            return;
-        }
-        
-        // Find target class
-        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
-        if (!targetClass) {
-            log('❌ Không tìm thấy thông tin lớp đích', true);
-            return;
-        }
-        
-        // Show modal to confirm swap to the target class directly
-        showConfirmModal(
-            `Xác nhận đổi lớp trùng lịch?<br><br>` +
-            `<div class="bg-gray-50 p-3 rounded mb-2">` +
-            `<p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>` +
-            `<p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>` +
-            `</div>` +
-            `<p class="text-sm text-gray-600">Lớp mới sẽ được thêm vào danh sách đổi lớp.</p>`,
-            () => {
-                // Check if there's already a swap for this registered class and remove it
-                let oldSwapEntry = null;
-                swapPendingClasses.forEach((swap, key) => {
-                    if (swap.registered.id.toString() === regId) {
-                        oldSwapEntry = key;
-                    }
-                });
-                
-                if (oldSwapEntry) {
-                    swapPendingClasses.delete(oldSwapEntry);
-                }
-                
-                // Add to swap pending list
-                swapPendingClasses.set(targetId, {
-                    registered: registeredClass,
-                    target: targetClass
-                });
-                
-                log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
-                updateSelectedList();
-                
-                // Re-render schedule table to update conflict status
-                renderScheduleTable();
-            },
-            () => {
-                // On cancel - do nothing
-            }
-        );
-    };
-    
     // Show swap class modal from registered classes table
     const showSwapClassModal = async (registeredClassData) => {
         const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
@@ -1681,113 +1552,219 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             return;
         }
         
-        // Filter available classes for the same subject
-        const availableClasses = allScheduleData.filter(cls => 
-            cls.maHocPhan === subjectCode && 
-            cls.id.toString() !== regId &&
-            cls.tenTrangThai !== 'Đã khóa lớp' &&
-            cls.tenTrangThai !== 'Đang lên kế hoạch'
-        );
+        // Get subject code - try multiple sources (prioritize registeredClass data)
+        let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
+        
+        // If still not found, extract from maLopHocPhan by removing last 2 characters
+        // Example: DT012301 -> DT0123, TT0401 -> TT04
+        if (!actualSubjectCode && regCode) {
+            actualSubjectCode = regCode.slice(0, -2);
+            console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', actualSubjectCode);
+        }
+        
+        // Last resort: search in allScheduleData (may fail if class is locked)
+        if (!actualSubjectCode) {
+            const matchingClass = allScheduleData.find(cls => 
+                cls.id.toString() === regId || 
+                cls.maLopHocPhan === regCode
+            );
+            if (matchingClass) {
+                actualSubjectCode = matchingClass.maHocPhan;
+                console.log('✅ Found maHocPhan from allScheduleData:', actualSubjectCode);
+            }
+        }
+        
+        if (!actualSubjectCode) {
+            log('❌ Không tìm thấy mã học phần của lớp này', true);
+            console.log('❌ Debug info:');
+            console.log('  - Registered class data:', registeredClass);
+            console.log('  - Tried to find with:', { regId, regCode });
+            console.log('  - subjectCode from button:', subjectCode);
+            return;
+        }
+        
+        console.log('🔍 Looking for classes with maHocPhan:', actualSubjectCode);
+        console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
+        console.log('🔍 Current class code (regCode):', regCode);
+        
+        // Try to find classes in allScheduleData first
+        let availableClasses = allScheduleData.filter(cls => {
+            const matches = cls.maHocPhan === actualSubjectCode && 
+                cls.maLopHocPhan !== regCode &&
+                cls.tenTrangThai !== 'Đã khóa lớp' &&
+                cls.tenTrangThai !== 'Đang lên kế hoạch';
+            
+            if (cls.maHocPhan === actualSubjectCode) {
+                console.log('  ➜ Same subject:', cls.maLopHocPhan, '| isCurrent:', cls.maLopHocPhan === regCode, '| Status:', cls.tenTrangThai, '| Match:', matches);
+            }
+            
+            return matches;
+        });
+        
+        console.log('Classes found in allScheduleData:', availableClasses.length);
+        
+        // If no classes found in cache, fetch from API
+        if (availableClasses.length === 0) {
+            log(`🔍 Không tìm thấy lớp trong cache, đang lấy từ API cho môn ${regName}...`);
+            
+            // Extract maHocPhan from maLopHocPhan: Remove last 2 characters
+            // Example: DT012301 -> DT0123, TT0401 -> TT04
+            let detectedMaHocPhan = actualSubjectCode;
+            
+            if (!detectedMaHocPhan || detectedMaHocPhan.length < 2) {
+                detectedMaHocPhan = regCode.slice(0, -2);
+                console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', detectedMaHocPhan);
+            }
+            
+            console.log('🔍 Using maHocPhan for API call:', detectedMaHocPhan);
+            
+            const checkStatusRes = await backendRequest('checkClassStatus', { 
+                dotId, 
+                maHocPhan: detectedMaHocPhan, 
+                source: regSource 
+            });
+            
+            if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
+                // Get schedule details for each class (don't need to check availability again, data is already accurate)
+                const classesWithDetails = await Promise.all(
+                    checkStatusRes.body.map(async (cls) => {
+                        const scheduleDetails = await backendRequest('getScheduleDetails', {
+                            classId: cls.id,
+                            source: regSource
+                        });
+                        
+                        return {
+                            ...cls,
+                            maHocPhan: detectedMaHocPhan,
+                            tenMonHoc: regName,
+                            source: regSource,
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
+                        };
+                    })
+                );
+                
+                // Filter out current registered class and locked/planning classes
+                availableClasses = classesWithDetails.filter(cls => 
+                    cls.maLopHocPhan !== regCode &&
+                    cls.tenTrangThai !== 'Đã khóa lớp' &&
+                    cls.tenTrangThai !== 'Đang lên kế hoạch'
+                );
+                
+                console.log('Classes fetched from API:', availableClasses.length);
+                log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+            } else {
+                log(`❌ Không thể lấy danh sách lớp từ API`, true);
+            }
+        }
         
         if (availableClasses.length === 0) {
-            log(`❌ Không có lớp nào khác để đổi cho môn ${regName}`, true);
+            log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
             return;
         }
         
         // Create modal
         const modal = document.createElement('div');
         modal.id = 'swap-class-modal';
-        modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
         
         modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                            <span class="text-blue-500">🔄</span> Đổi lớp: ${regName}
-                        </h2>
-                        <p class="text-sm text-slate-500 mt-1">Lớp hiện tại: <span class="font-mono font-bold text-slate-700">${regCode}</span></p>
+                        <h2 class="text-2xl font-bold">🔄 Đổi lớp học phần</h2>
+                        <p class="text-sm text-blue-100 mt-1">Lớp hiện tại: ${regName} (${regCode})</p>
                     </div>
-                    <button class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition close-modal-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    <button id="close-swap-modal" class="text-white hover:text-gray-200 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
                     </button>
                 </div>
                 
-                <div class="p-0 overflow-y-auto custom-scrollbar bg-white flex-1">
-                    <table class="w-full text-sm text-left text-slate-600">
-                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10 shadow-sm">
-                            <tr>
-                                <th scope="col" class="px-6 py-4 font-semibold">Lớp có thể đổi</th>
-                                <th scope="col" class="px-6 py-4 font-semibold">Mã LHP</th>
-                                <th scope="col" class="px-6 py-4 font-semibold">Trạng thái</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-right">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${availableClasses.map(cls => {
-                                const isFull = cls.siSoThuc >= cls.siSoToiDa;
-                                const percent = Math.round((cls.siSoThuc / cls.siSoToiDa) * 100);
-                                const conflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails); // This function needs to be defined or moved
-                                
-                                let statusClass = 'bg-emerald-100 text-emerald-700';
-                                if (isFull) statusClass = 'bg-amber-100 text-amber-700';
-                                
-                                return `
-                                <tr class="bg-white hover:bg-slate-50 transition-colors">
-                                    <th scope="row" class="px-6 py-4">
-                                        <div class="font-bold text-slate-800 text-base">${cls.tenMonHoc}</div>
-                                        <div class="mt-2 space-y-1 text-xs text-slate-500 border-l-2 border-slate-200 pl-3">
-                                            ${formatScheduleDetail(cls.scheduleDetails)}
-                                        </div>
-                                        ${conflict ? '<div class="mt-2 text-xs text-rose-500 font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Trùng lịch với lớp hiện tại</div>' : ''}
-                                    </th>
-                                    <td class="px-6 py-4 font-mono text-xs font-medium text-slate-500">${cls.maLopHocPhan}</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium w-fit ${statusClass}">
-                                                ${isFull ? 'Đã đầy' : 'Còn chỗ'}
-                                            </span>
-                                            <div class="w-24 bg-slate-200 rounded-full h-1.5 mt-1">
-                                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${Math.min(percent, 100)}%"></div>
-                                            </div>
-                                            <span class="text-[10px] text-slate-400">${cls.siSoThuc}/${cls.siSoToiDa} (${percent}%)</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <button 
-                                            data-target-id="${cls.id}"
-                                            data-target-code="${cls.maLopHocPhan}"
-                                            data-target-name="${cls.tenMonHoc}"
-                                            data-target-source="${cls.source}"
-                                            data-has-conflict="${conflict}"
-                                            class="swap-btn bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 hover:text-blue-700 font-bold py-2 px-4 rounded-xl transition-all duration-200 shadow-sm hover:shadow text-xs flex items-center gap-2 ml-auto">
-                                            <span>Chọn đổi</span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                                        </button>
-                                    </td>
+                <div class="p-6 overflow-y-auto flex-1">
+                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">📋 Lịch học hiện tại:</span><br>
+                            <div class="mt-2 text-gray-600">${formatScheduleDetail(registeredClass.scheduleDetails)}</div>
+                        </p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đổi đến:</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Mã LHP</th>
+                                    <th scope="col" class="px-4 py-3">Lịch học</th>
+                                    <th scope="col" class="px-4 py-3">Trạng thái</th>
+                                    <th scope="col" class="px-4 py-3">Đã ĐK</th>
+                                    <th scope="col" class="px-4 py-3">Hành động</th>
                                 </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="p-4 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-500">
-                    Hệ thống sẽ tự động hủy lớp cũ và đăng ký lớp mới. Nếu lớp mới đầy, hệ thống sẽ chờ cho đến khi có chỗ trống.
+                            </thead>
+                            <tbody id="swap-classes-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         `;
         
         document.body.appendChild(modal);
         
-        // Close modal event
-        modal.querySelector('.close-modal-btn').addEventListener('click', () => modal.remove());
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
+        // Render available classes
+        const tbody = modal.querySelector('#swap-classes-tbody');
+        availableClasses.forEach(cls => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            
+            // Check if schedules conflict
+            const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
+            const conflictBadge = hasConflict 
+                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>' 
+                : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Không trùng</span>';
+            
+            const isFull = cls.phanTramDangKy >= 100;
+            const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
+            
+            row.innerHTML = `
+                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}</td>
+                <td class="px-4 py-3">
+                    <div class="text-xs">${formatScheduleDetail(cls.scheduleDetails)}</div>
+                </td>
+                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-4 py-3 ${statusColor}">${cls.phanTramDangKy}%</td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-col gap-2">
+                        ${conflictBadge}
+                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-blue-600 text-white hover:bg-blue-700"
+                                data-target-id="${cls.id}"
+                                data-target-code="${cls.maLopHocPhan}"
+                                data-target-name="${cls.tenMonHoc}"
+                                data-target-source="${cls.source}"
+                                data-has-conflict="${hasConflict}">
+                            🔄 Đổi lớp
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
         });
         
-        // Handle swap button click
-        modal.querySelectorAll('.swap-btn').forEach(btn => {
+        // Close modal handler
+        modal.querySelector('#close-swap-modal').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Execute swap handler
+        modal.querySelectorAll('.execute-swap-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const targetId = btn.dataset.targetId;
                 const targetCode = btn.dataset.targetCode;
@@ -1795,10 +1772,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 const targetSource = btn.dataset.targetSource;
                 const hasConflict = btn.dataset.hasConflict === 'true';
                 
-                // Find target class full info
-                const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+                // Find target class full info from availableClasses (not allScheduleData)
+                const targetClass = availableClasses.find(c => c.id.toString() === targetId);
                 if (!targetClass) {
-                    log('❌ Không tìm thấy thông tin lớp đích', true);
+                    alert('❌ Không tìm thấy thông tin lớp đích');
+                    console.log('❌ Debug: targetId =', targetId);
+                    console.log('❌ Available classes:', availableClasses.map(c => ({ id: c.id, code: c.maLopHocPhan })));
                     return;
                 }
                 
@@ -1809,25 +1788,65 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     return;
                 }
                 
-                const confirmMsg = hasConflict 
-                    ? `⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!<br><br>Bạn vẫn muốn thêm vào danh sách đổi lớp?<br><br><b>Hủy:</b> ${regName} (${regCode})<br><b>Đăng ký:</b> ${targetName} (${targetCode})<br><br>${targetClass.phanTramDangKy >= 100 ? '⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.' : '✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.'}`
-                    : `Xác nhận thêm vào danh sách đổi lớp?<br><br><b>Hủy:</b> ${regName} (${regCode})<br><b>Đăng ký:</b> ${targetName} (${targetCode})<br><br>${targetClass.phanTramDangKy >= 100 ? '⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.' : '✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.'}`;
+                const conflictWarning = hasConflict 
+                    ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!</p></div>'
+                    : '';
                 
-                showConfirmModal(confirmMsg, () => {
-                    // Add to swap pending list
-                    swapPendingClasses.set(targetId, {
-                        registered: registeredClassFull,
-                        target: targetClass
-                    });
-                    
-                    log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
-                    if (targetClass.phanTramDangKy >= 100) {
-                        log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                const slotInfo = targetClass.phanTramDangKy >= 100 
+                    ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.</p>'
+                    : '<p class="text-sm text-green-600 mt-2">✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.</p>';
+                
+                const confirmMsg = `
+                    ${conflictWarning}
+                    <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đổi lớp?</p>
+                    <div class="bg-gray-50 p-3 rounded mb-2">
+                        <p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>
+                        <p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>
+                    </div>
+                    ${slotInfo}
+                `;
+                
+                showConfirmModal(
+                    confirmMsg,
+                    () => {
+                        // On confirm - Check if there's already a swap for this registered class
+                        // If yes, remove the old entry first (update logic)
+                        let oldSwapEntry = null;
+                        swapPendingClasses.forEach((swap, key) => {
+                            if (swap.registered.id.toString() === regId) {
+                                oldSwapEntry = key;
+                            }
+                        });
+                        
+                        // Remove old swap entry if exists
+                        if (oldSwapEntry) {
+                            swapPendingClasses.delete(oldSwapEntry);
+                            log(`🔄 Cập nhật lớp đổi cho ${regName} (${regCode})`);
+                        }
+                        
+                        // Add new swap entry with target class ID as key
+                        swapPendingClasses.set(targetId, {
+                            registered: registeredClassFull,
+                            target: targetClass
+                        });
+                        
+                        if (oldSwapEntry) {
+                            log(`✅ Đã cập nhật đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        } else {
+                            log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        }
+                        
+                        if (targetClass.phanTramDangKy >= 100) {
+                            log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                        }
+                        
+                        updateSelectedList();
+                        modal.remove();
+                    },
+                    () => {
+                        // On cancel - do nothing
                     }
-                    
-                    updateSelectedList();
-                    modal.remove();
-                });
+                );
             });
         });
     };
@@ -1862,15 +1881,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const updateSelectedList = async () => {
-        const selectedCountBadge = document.getElementById('selected-count');
-        if (selectedCountBadge) selectedCountBadge.textContent = selectedClasses.size + swapPendingClasses.size;
-
         if (!vipStatus.hasVIP) {
-            selectedList.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-32 text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                    <span>Nâng cấp VIP để chọn lớp</span>
-                </div>`;
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn. Nâng cấp VIP để chọn lớp.</p>`;
             registrationControls.classList.add('hidden');
             return;
         }
@@ -1878,11 +1890,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const totalCount = selectedClasses.size + swapPendingClasses.size;
         
         if (totalCount === 0) {
-            selectedList.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-32 text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-xl">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                    <span>Chưa chọn lớp nào</span>
-                </div>`;
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
             registrationControls.classList.add('hidden');
             
             // Save to cache even when empty
@@ -1894,70 +1902,63 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Render regular selected classes
         selectedClasses.forEach(cls => {
-            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">ĐK</span>` : '';
+            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
             html += `
-                <div class="group relative bg-white border border-slate-200 p-3 rounded-xl hover:shadow-md hover:border-blue-300 transition-all duration-200">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1 min-w-0">
-                            <p class="font-bold text-sm text-slate-800 truncate pr-2">${cls.tenMonHoc} ${sourceBadge}</p>
-                            <div class="text-xs text-slate-500 mt-1 space-y-0.5">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
-                        </div>
-                        <button class="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-lg hover:bg-rose-50 remove-class-btn" data-id="${cls.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                        </button>
+                <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
+                    <div>
+                        <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
+                        <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
                     </div>
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-xl"></div>
+                    <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
                 </div>`;
         });
         
-        // Render swap pending classes
-        swapPendingClasses.forEach((swap, targetId) => {
+        // Render swap pending classes with strikethrough old class and arrow to new class
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const registeredClass = swap.registered;
             const targetClass = swap.target;
-            const regClass = swap.registered;
+            
+            const regSourceBadge = registeredClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            const targetSourceBadge = targetClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
             
             html += `
-                <div class="group relative bg-white border border-slate-200 p-3 rounded-xl hover:shadow-md hover:border-indigo-300 transition-all duration-200">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1 mb-1">
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">ĐỔI LỚP</span>
-                            </div>
-                            <p class="font-bold text-sm text-slate-800 truncate pr-2">${targetClass.tenMonHoc}</p>
-                            <div class="text-xs text-slate-500 mt-1">
-                                <div class="flex items-center gap-1 text-rose-500"><span class="font-bold">Hủy:</span> ${regClass.maLopHocPhan}</div>
-                                <div class="flex items-center gap-1 text-emerald-600"><span class="font-bold">ĐK:</span> ${targetClass.maLopHocPhan}</div>
-                            </div>
+                <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-2 rounded-md hover:bg-yellow-100">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-xs font-bold text-yellow-800 uppercase">Đổi lớp</span>
                         </div>
-                        <button class="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-lg hover:bg-rose-50 remove-swap-btn" data-id="${targetId}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                        </button>
+                        
+                        <!-- Old class (strikethrough) -->
+                        <div class="mb-1">
+                            <p class="font-semibold text-sm text-gray-500 line-through decoration-2">${registeredClass.tenMonHoc} ${regSourceBadge}</p>
+                            <div class="text-xs text-gray-400 line-through mt-1">${formatSelectedClassDetail(registeredClass, registeredClass.scheduleDetails)}</div>
+                        </div>
+                        
+                        <!-- Arrow -->
+                        <div class="flex items-center gap-2 my-1">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                            <span class="text-xs font-semibold text-green-700">Đổi sang</span>
+                        </div>
+                        
+                        <!-- New class -->
+                        <div>
+                            <p class="font-semibold text-sm text-green-800">${targetClass.tenMonHoc} ${targetSourceBadge}</p>
+                            <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(targetClass, targetClass.scheduleDetails)}</div>
+                        </div>
                     </div>
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 rounded-l-xl"></div>
+                    <button data-target-class-id="${targetClassId}" class="remove-swap-btn text-red-500 hover:text-red-700 ml-2 flex-shrink-0">&times;</button>
                 </div>`;
         });
-
+        
         selectedList.innerHTML = html;
         registrationControls.classList.remove('hidden');
         
-        // Add event listeners for remove buttons
-        document.querySelectorAll('.remove-class-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.dataset.id;
-                selectedClasses.delete(id);
-                updateSelectedList();
-                renderScheduleTable(); // Re-render to update row styling
-            });
-        });
-        
-        document.querySelectorAll('.remove-swap-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.dataset.id;
-                swapPendingClasses.delete(id);
-                updateSelectedList();
-            });
-        });
-        
-        // Save to cache
+        // Save to cache whenever selection changes
         saveCachedData();
     };
 
@@ -2058,34 +2059,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             };
             
             showSwapClassModal(registeredData);
-        }
-        
-        const swapFromConflictBtn = e.target.closest('.swap-from-conflict-btn');
-        if (swapFromConflictBtn) {
-            // Prevent row selection when clicking swap button
-            e.stopPropagation();
-            
-            if (!vipStatus.hasVIP) {
-                log("⚠️ Bạn cần nâng cấp VIP để sử dụng chức năng đổi lớp.", true);
-                return;
-            }
-            
-            const registeredData = {
-                id: swapFromConflictBtn.dataset.regId,
-                code: swapFromConflictBtn.dataset.regCode,
-                name: swapFromConflictBtn.dataset.regName,
-                source: swapFromConflictBtn.dataset.regSource,
-                subjectCode: swapFromConflictBtn.dataset.regSubjectCode,
-                status: swapFromConflictBtn.dataset.regStatus
-            };
-            
-            const targetData = {
-                id: swapFromConflictBtn.dataset.targetId,
-                code: swapFromConflictBtn.dataset.targetCode,
-                name: swapFromConflictBtn.dataset.targetName
-            };
-            
-            showSwapFromConflictModal(registeredData, targetData);
         }
         
         const swapBtn = e.target.closest('.swap-class-btn');
