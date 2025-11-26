@@ -1438,6 +1438,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Add warnings below subject name
             let warnings = '';
             if (hasConflict) {
+<<<<<<< Updated upstream
                 const conflictSummary = conflictCheck.conflicts.map(c => c.registeredClass).join(', ');
                 warnings += `
                     <div class="mt-2 flex items-start gap-2 text-xs text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
@@ -1448,6 +1449,50 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     <span class="font-bold">Trùng lịch:</span> ${conflictSummary}
                 </div>
             </div>
+=======
+                const conflictCount = conflictCheck.conflicts.length;
+                const conflictItems = conflictCheck.conflicts.map(c => {
+                    // Find registered class data for swap functionality
+                    const regClass = registeredClassesData.find(reg => reg.maLopHocPhan === c.registeredCode);
+                    const regId = regClass ? regClass.id : '';
+                    const regSource = regClass ? regClass.source : 'dkhp';
+                    const regSubjectCode = regClass ? regClass.maHocPhan : '';
+                    const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
+                    
+                    return `
+                        <div class="flex items-center justify-between py-1">
+                            <span class="text-xs text-red-700">• ${c.registeredClass} (${c.registeredCode})</span>
+                            <button class="swap-from-conflict-btn ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition"
+                                    data-reg-id="${regId}"
+                                    data-reg-code="${c.registeredCode}"
+                                    data-reg-name="${c.registeredClass}"
+                                    data-reg-source="${regSource}"
+                                    data-reg-subject-code="${regSubjectCode}"
+                                    data-reg-status="${regStatus}"
+                                    data-target-id="${cls.id}"
+                                    data-target-code="${cls.maLopHocPhan}"
+                                    data-target-name="${cls.tenMonHoc}">
+                                🔄 Đổi lớp
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+                warnings += `
+                    <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-red-800 mb-1">TRÙNG LỊCH HỌC</p>
+                                <div class="space-y-0.5">
+                                    ${conflictItems}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+>>>>>>> Stashed changes
                 `;
             }
             
@@ -1567,6 +1612,64 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         registeredContainer.appendChild(table);
     };
 
+    // Show swap from conflict modal - allows selecting replacement class for conflicting registered class
+    const showSwapFromConflictModal = async (registeredClassData, targetClassData) => {
+        const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
+        const { id: targetId, code: targetCode, name: targetName } = targetClassData;
+        
+        // Find registered class details
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        if (!registeredClass) {
+            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+            return;
+        }
+        
+        // Find target class
+        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+        if (!targetClass) {
+            log('❌ Không tìm thấy thông tin lớp đích', true);
+            return;
+        }
+        
+        // Show modal to confirm swap to the target class directly
+        showConfirmModal(
+            `Xác nhận đổi lớp trùng lịch?<br><br>` +
+            `<div class="bg-gray-50 p-3 rounded mb-2">` +
+            `<p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>` +
+            `<p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>` +
+            `</div>` +
+            `<p class="text-sm text-gray-600">Lớp mới sẽ được thêm vào danh sách đổi lớp.</p>`,
+            () => {
+                // Check if there's already a swap for this registered class and remove it
+                let oldSwapEntry = null;
+                swapPendingClasses.forEach((swap, key) => {
+                    if (swap.registered.id.toString() === regId) {
+                        oldSwapEntry = key;
+                    }
+                });
+                
+                if (oldSwapEntry) {
+                    swapPendingClasses.delete(oldSwapEntry);
+                }
+                
+                // Add to swap pending list
+                swapPendingClasses.set(targetId, {
+                    registered: registeredClass,
+                    target: targetClass
+                });
+                
+                log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                updateSelectedList();
+                
+                // Re-render schedule table to update conflict status
+                renderScheduleTable();
+            },
+            () => {
+                // On cancel - do nothing
+            }
+        );
+    };
+    
     // Show swap class modal from registered classes table
     const showSwapClassModal = async (registeredClassData) => {
         const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
@@ -1955,6 +2058,34 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             };
             
             showSwapClassModal(registeredData);
+        }
+        
+        const swapFromConflictBtn = e.target.closest('.swap-from-conflict-btn');
+        if (swapFromConflictBtn) {
+            // Prevent row selection when clicking swap button
+            e.stopPropagation();
+            
+            if (!vipStatus.hasVIP) {
+                log("⚠️ Bạn cần nâng cấp VIP để sử dụng chức năng đổi lớp.", true);
+                return;
+            }
+            
+            const registeredData = {
+                id: swapFromConflictBtn.dataset.regId,
+                code: swapFromConflictBtn.dataset.regCode,
+                name: swapFromConflictBtn.dataset.regName,
+                source: swapFromConflictBtn.dataset.regSource,
+                subjectCode: swapFromConflictBtn.dataset.regSubjectCode,
+                status: swapFromConflictBtn.dataset.regStatus
+            };
+            
+            const targetData = {
+                id: swapFromConflictBtn.dataset.targetId,
+                code: swapFromConflictBtn.dataset.targetCode,
+                name: swapFromConflictBtn.dataset.targetName
+            };
+            
+            showSwapFromConflictModal(registeredData, targetData);
         }
         
         const swapBtn = e.target.closest('.swap-class-btn');
