@@ -1,16 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // CSS Toggle Switch (đã được tối ưu với Tailwind)
-    const style = document.createElement('style');
-    style.innerHTML = `
-        input:checked~.dot{transform:translateX(100%);background-color:#48bb78}
-        input:checked~.block{background-color:#a7f3d0}
-        .payment-modal{display:none;position:fixed;z-index:50;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4)}
-        .payment-modal-content{background-color:#fff;margin:5% auto;padding:24px;border:none;width:90%;max-width:800px;border-radius:1rem;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
-        .close-modal{color:#6b7280;font-size:1.75rem;font-weight:700;cursor:pointer}
-        .close-modal:hover,.close-modal:focus{color:#1f2937}
-    `;
-    document.head.appendChild(style);
-
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -251,6 +239,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- VIP FUNCTIONS ---
+    const showGuideModal = async () => {
+        try {
+            const response = await fetch('guide.html');
+            const guideContent = await response.text();
+            
+            const modal = document.createElement('div');
+            modal.className = 'payment-modal';
+            modal.id = 'guide-modal';
+            modal.style.display = 'block';
+            
+            modal.innerHTML = `
+                <div class="payment-modal-content bg-white rounded-xl shadow-md p-6" style="max-width: 900px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">📖 Hướng dẫn sử dụng</h2>
+                        <span class="close-modal" onclick="document.getElementById('guide-modal').remove()">&times;</span>
+                    </div>
+                    <div class="overflow-y-auto" style="max-height: 70vh;">
+                        ${guideContent}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        } catch (error) {
+            log('❌ Không thể tải hướng dẫn sử dụng', true);
+            console.error('Guide load error:', error);
+        }
+    };
+
     const showVIPModal = async () => {
         const plansRes = await backendRequest('getVIPPlans');
         if (!plansRes || !plansRes.success) {
@@ -1963,6 +1987,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     // --- EVENT LISTENERS ---
+    
+    // Guide button
+    const guideBtn = document.getElementById('guide-btn');
+    if (guideBtn) {
+        guideBtn.addEventListener('click', showGuideModal);
+    }
     
     // Try auto-login on page load
     autoLogin().then(success => {
