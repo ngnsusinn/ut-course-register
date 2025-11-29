@@ -1491,9 +1491,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
                     
                     return `
-                        <div class="flex items-center justify-between py-1">
-                            <span class="text-xs text-red-700">• ${c.registeredClass} (${c.registeredCode})</span>
-                            <button class="swap-from-conflict-btn ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition"
+                        <div class="flex items-center justify-between gap-2 py-1.5 px-2 bg-white rounded border border-red-200">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xs font-mono font-semibold text-red-600 whitespace-nowrap">${c.registeredCode}</span>
+                                <span class="text-xs text-gray-600 truncate">${c.registeredClass}</span>
+                            </div>
+                            <button class="swap-from-conflict-btn flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition whitespace-nowrap"
                                     data-reg-id="${regId}"
                                     data-reg-code="${c.registeredCode}"
                                     data-reg-name="${c.registeredClass}"
@@ -1511,16 +1514,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 
                 warnings += `
                     <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
-                        <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                             </svg>
-                            <div class="flex-1">
-                                <p class="text-xs font-bold text-red-800 mb-1">TRÙNG LỊCH HỌC</p>
-                                <div class="space-y-0.5">
-                                    ${conflictItems}
-                                </div>
-                            </div>
+                            <p class="text-xs font-bold text-red-800">TRÙNG LỊCH HỌC</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${conflictItems}
                         </div>
                     </div>
                 `;
