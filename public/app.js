@@ -2392,7 +2392,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     <span class="font-bold text-lg">TRÙNG LỊCH HỌC</span>
                 </div>
                 ${conflictMessages}
-                <div class="mt-3 pt-2 border-t border-red-500 text-xs text-red-100">
+                <div class="mt-3 pt-2 text-xs text-red-100">
                     💡 Tip: Chọn lớp học khác hoặc hủy đăng ký lớp bị trùng
                 </div>
             `;
