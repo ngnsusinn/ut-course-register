@@ -221,6 +221,9 @@ window.AppTemplates = {
 
     /**
      * Conflict item in warning box
+     * @param {Object} conflict - Conflict data with registeredId, registeredCode, registeredClass
+     * @param {Object} regClass - Full registered class object from cache
+     * @param {Object} targetCls - Target class being considered
      */
     conflictItem: (conflict, regClass, targetCls) => `
         <div class="flex items-center justify-between gap-2 py-1.5 px-2 bg-white rounded border border-red-200">
@@ -229,7 +232,7 @@ window.AppTemplates = {
                 <span class="text-xs text-gray-600 truncate">${conflict.registeredClass}</span>
             </div>
             <button class="swap-from-conflict-btn flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition whitespace-nowrap"
-                    data-reg-id="${regClass?.id || ''}"
+                    data-reg-id="${conflict.registeredId || regClass?.id || ''}"
                     data-reg-code="${conflict.registeredCode}"
                     data-reg-name="${conflict.registeredClass}"
                     data-reg-source="${regClass?.source || 'dkhp'}"

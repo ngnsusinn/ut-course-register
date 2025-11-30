@@ -174,7 +174,8 @@ window.AppVIP = {
                     
                     setTimeout(async () => {
                         document.getElementById('vip-modal')?.remove();
-                        await onVIPStatusChange();
+                        // Re-check VIP status from server after payment
+                        await this.checkAndUpdateStatus();
                     }, 2000);
                 } else if (statusRes.order.status === 'Cancelled') {
                     this._clearPaymentCheck();

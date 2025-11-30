@@ -45,6 +45,7 @@ window.AppConflict = {
                                 
                                 if (!conflictMap.has(key)) {
                                     conflictMap.set(key, {
+                                        registeredId: registered.id,
                                         registeredClass: registered.tenMonHoc,
                                         registeredCode: registered.maLopHocPhan,
                                         conflicts: []
