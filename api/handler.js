@@ -188,6 +188,24 @@ async function getScheduleDetails(classId, token, source) {
 // VIP Plans Management
 // ============================================
 
+// Frontend Configuration (loaded from .env)
+const FRONTEND_CONFIG = {
+    // Timing (in milliseconds)
+    SESSION_DURATION: parseInt(process.env.SESSION_DURATION_HOURS || '24') * 60 * 60 * 1000,
+    CACHE_DURATION: parseInt(process.env.CACHE_DURATION_HOURS || '24') * 60 * 60 * 1000,
+    PAYMENT_TIMEOUT: parseInt(process.env.PAYMENT_TIMEOUT_MINUTES || '15') * 60 * 1000,
+    VIP_CHECK_INTERVAL: parseInt(process.env.VIP_CHECK_INTERVAL_MS || '7000'),
+    PAYMENT_CHECK_INTERVAL: parseInt(process.env.PAYMENT_CHECK_INTERVAL_MS || '2000'),
+    DEFAULT_DELAY: parseInt(process.env.DEFAULT_DELAY_MS || '1000'),
+    
+    // Evening class periods (never conflict)
+    EVENING_PERIODS: (process.env.EVENING_PERIODS || '16,17,18').split(',').map(Number),
+    
+    // Class statuses that prevent actions
+    LOCKED_STATUSES: (process.env.LOCKED_STATUSES || 'Đã khóa lớp,Đã mở chính thức,Đang lên kế hoạch').split(','),
+    TARGET_BLOCKED_STATUSES: (process.env.TARGET_BLOCKED_STATUSES || 'Đã khóa lớp,Đang lên kế hoạch').split(',')
+};
+
 const VIP_PLANS_FALLBACK = {
     '1day': { price: 24000, duration: 1, name: '1 Ngày VIP' },
     '3days': { price: 72000, duration: 3, name: '3 Ngày VIP' },
@@ -706,6 +724,15 @@ export default async (req, res) => {
                     success: true, 
                     plans: vipPlans,
                     sepayConfig: SEPAY_CONFIG
+                };
+                break;
+            }
+
+            case 'getConfig': {
+                // Return frontend configuration from .env
+                result = { 
+                    success: true, 
+                    config: FRONTEND_CONFIG
                 };
                 break;
             }
