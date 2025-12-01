@@ -192,15 +192,25 @@ window.AppTemplates = {
 
     /**
      * Subject type badge
+     * Logic:
+     * - source = 'dkhpdk' → Điều kiện (màu tím) - không cần check isBatBuoc
+     * - isBatBuoc = true → Bắt buộc (màu đỏ)
+     * - isBatBuoc = false → Tự chọn (màu xanh dương)
      */
     subjectTypeBadge: (source, isBatBuoc) => {
+        // source dkhpdk luôn là Điều kiện
         if (source === 'dkhpdk') {
             return `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`;
         }
+        
         if (isBatBuoc === undefined) return 'N/A';
-        return isBatBuoc
-            ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
-            : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`;
+        
+        if (isBatBuoc === true) {
+            return `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Bắt buộc</span>`;
+        }
+        
+        // isBatBuoc = false
+        return `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-blue-200 text-blue-800 whitespace-nowrap">Tự chọn</span>`;
     },
 
     /**

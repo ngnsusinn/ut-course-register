@@ -59,6 +59,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allClasses = [];
         Cache.selectedClasses.forEach(cls => allClasses.push(cls));
         Cache.swapPendingClasses.forEach(swap => allClasses.push(swap.target));
+        console.log('getSelectedClassesData called:', {
+            selectedClassesSize: Cache.selectedClasses.size,
+            swapPendingSize: Cache.swapPendingClasses.size,
+            totalClasses: allClasses.length
+        });
         return allClasses;
     };
 
@@ -892,7 +897,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.dataset.conflictInfo = JSON.stringify(conflictCheck.conflicts);
             }
             
-            const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
+            // Use cls.isBatBuoc directly if available, otherwise lookup from subjectTypeMap
+            const isBatBuoc = cls.isBatBuoc !== undefined ? cls.isBatBuoc : subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = Templates.subjectTypeBadge(cls.source, isBatBuoc);
             
             // Add warnings below subject name (only conflict warning, not locked)

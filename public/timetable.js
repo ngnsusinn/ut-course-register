@@ -13,14 +13,22 @@ document.addEventListener('DOMContentLoaded', function() {
     let registeredData = [];
     let selectedData = [];
     
+    // Forward declaration for updateTimetable (defined later)
+    let updateTimetable;
+    
     // Expose show function globally
     window.showTimetableModal = () => {
         // Get data from global scope (exposed in app.js)
         if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
         if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
         
+        console.log('showTimetableModal - Data loaded:', {
+            registeredCount: registeredData.length,
+            selectedCount: selectedData.length
+        });
+        
         timetableModal.classList.remove('hidden');
-        generateTimetable(currentPhase);
+        updateTimetable(); // Use updateTimetable instead of just generateTimetable
     };
 
     // Close modal
@@ -355,8 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return html;
     };
     
-    // Update timetable display
-    const updateTimetable = () => {
+    // Update timetable display (assign to forward-declared variable)
+    updateTimetable = () => {
         const html = generateTimetable(currentPhase);
         timetableContent.innerHTML = html;
     };
