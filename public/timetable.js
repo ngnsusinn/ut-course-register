@@ -8,13 +8,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeTimetableModal = document.getElementById('close-timetable-modal');
     const timetableContent = document.getElementById('timetable-content');
     const timetableTabBtns = document.querySelectorAll('.timetable-tab-btn');
+    const timetableTitle = document.getElementById('timetable-title');
     
     let currentPhase = 1; // Default to phase 1
     let registeredData = [];
     let selectedData = [];
     
+    // Store phase start dates for header display
+    let phaseStartDates = {
+        1: null, // Earliest date of phase 1
+        2: null  // Phase boundary date (start of phase 2)
+    };
+    
     // Forward declaration for updateTimetable (defined later)
     let updateTimetable;
+    
+    // Update title with phase info
+    const updateTitle = (phase) => {
+        let title = `📅 Thời khóa biểu - Đợt ${phase}`;
+        const startDate = phaseStartDates[phase];
+        if (startDate) {
+            title += ` - ${startDate.toLocaleDateString('vi-VN')}`;
+        }
+        if (timetableTitle) {
+            timetableTitle.textContent = title;
+        }
+    };
     
     // Expose show function globally
     window.showTimetableModal = () => {
@@ -182,6 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log(`  ${value.tenMonHoc} (${key}): ${value.date.toLocaleDateString('vi-VN')}`);
         });
         
+        // Store earliest date as phase 1 start
+        if (uniqueStartDates.length > 0) {
+            phaseStartDates[1] = uniqueStartDates[0];
+        }
+        
         if (uniqueStartDates.length > 1) {
             // Find the largest gap between consecutive start dates
             let maxGap = 0;
@@ -204,13 +228,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // If gap is at least 2 days, use it as phase boundary
             if (maxGapDays >= 2 && maxGapIndex >= 0) {
                 phaseBoundary = uniqueStartDates[maxGapIndex + 1];
+                phaseStartDates[2] = phaseBoundary; // Store phase 2 start date
                 console.log('✓ Phase boundary detected at:', phaseBoundary.toLocaleDateString('vi-VN'));
                 console.log('  Largest gap:', Math.round(maxGapDays), 'days');
                 console.log('  Phase 1: Before', phaseBoundary.toLocaleDateString('vi-VN'));
                 console.log('  Phase 2: From', phaseBoundary.toLocaleDateString('vi-VN'), 'onwards');
             } else {
                 console.log('✗ No significant gap found (largest gap:', Math.round(maxGapDays), 'days). All schedules will be in Phase 1.');
+                phaseStartDates[2] = null;
             }
+        } else {
+            phaseStartDates[2] = null;
         }
         
         // Helper function to determine phase of a schedule
@@ -367,6 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTimetable = () => {
         const html = generateTimetable(currentPhase);
         timetableContent.innerHTML = html;
+        updateTitle(currentPhase); // Update header with phase info
     };
     
     // Event handlers
