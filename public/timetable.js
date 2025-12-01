@@ -23,12 +23,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Forward declaration for updateTimetable (defined later)
     let updateTimetable;
     
+    // Get Monday of the week for a given date
+    const getWeekStartDate = (date) => {
+        const d = new Date(date);
+        const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        // Calculate days to subtract to get to Monday
+        // If Sunday (0), go back 6 days; otherwise go back (day - 1) days
+        const daysToMonday = day === 0 ? 6 : day - 1;
+        d.setDate(d.getDate() - daysToMonday);
+        return d;
+    };
+    
     // Update title with phase info
     const updateTitle = (phase) => {
         let title = `📅 Thời khóa biểu - Đợt ${phase}`;
         const startDate = phaseStartDates[phase];
         if (startDate) {
-            title += ` - ${startDate.toLocaleDateString('vi-VN')}`;
+            // Get Monday of the week
+            const weekStart = getWeekStartDate(startDate);
+            title += ` - ${weekStart.toLocaleDateString('vi-VN')}`;
         }
         if (timetableTitle) {
             timetableTitle.textContent = title;
