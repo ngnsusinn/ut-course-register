@@ -141,9 +141,22 @@ window.AppCache = {
             // Restore data
             cache.allScheduleData = cacheData.allScheduleData || [];
             cache.registeredClassesData = cacheData.registeredClassesData || [];
-            cache.selectedClasses = new Map(cacheData.selectedClasses || []);
-            cache.swapPendingClasses = new Map(cacheData.swapPendingClasses || []);
-            cache.subjectTypeMap = new Map(cacheData.subjectTypeMap || []);
+            
+            // Clear and repopulate Maps (don't reassign to preserve references)
+            cache.selectedClasses.clear();
+            (cacheData.selectedClasses || []).forEach(([key, value]) => {
+                cache.selectedClasses.set(key, value);
+            });
+            
+            cache.swapPendingClasses.clear();
+            (cacheData.swapPendingClasses || []).forEach(([key, value]) => {
+                cache.swapPendingClasses.set(key, value);
+            });
+            
+            cache.subjectTypeMap.clear();
+            (cacheData.subjectTypeMap || []).forEach(([key, value]) => {
+                cache.subjectTypeMap.set(key, value);
+            });
             
             // Rebuild lookup caches
             cache.rebuildScheduleCache();
