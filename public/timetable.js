@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     const timetableModal = document.getElementById('timetable-modal');
-    // viewTimetableBtn is dynamic, handled via global function or delegation
+    const viewTimetableBtn = document.getElementById('view-timetable-btn');
     const closeTimetableModal = document.getElementById('close-timetable-modal');
     const timetableContent = document.getElementById('timetable-content');
     const timetableTabBtns = document.querySelectorAll('.timetable-tab-btn');
@@ -22,6 +22,13 @@ document.addEventListener('DOMContentLoaded', function() {
         timetableModal.classList.remove('hidden');
         generateTimetable(currentPhase);
     };
+
+    // View timetable button click handler
+    if (viewTimetableBtn) {
+        viewTimetableBtn.addEventListener('click', () => {
+            window.showTimetableModal();
+        });
+    }
 
     // Close modal
     if (closeTimetableModal) {
