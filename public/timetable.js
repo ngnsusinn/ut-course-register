@@ -13,53 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let registeredData = [];
     let selectedData = [];
     
-    // Expose show function globally
-    window.showTimetableModal = () => {
-        // Get data from global scope (exposed in app.js)
-        if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
-        if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
-        
-        timetableModal.classList.remove('hidden');
-        generateTimetable(currentPhase);
-    };
-
-    // View timetable button click handler
-    if (viewTimetableBtn) {
-        viewTimetableBtn.addEventListener('click', () => {
-            window.showTimetableModal();
-        });
-    }
-
-    // Close modal
-    if (closeTimetableModal) {
-        closeTimetableModal.addEventListener('click', () => {
-            timetableModal.classList.add('hidden');
-        });
-    }
-    
-    // Close on click outside
-    timetableModal.addEventListener('click', (e) => {
-        if (e.target === timetableModal) {
-            timetableModal.classList.add('hidden');
-        }
-    });
-
-    // Tab switching
-    timetableTabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update active state
-            timetableTabBtns.forEach(b => {
-                b.classList.remove('bg-blue-50', 'text-blue-600', 'shadow-sm');
-                b.classList.add('text-slate-500');
-            });
-            btn.classList.remove('text-slate-500');
-            btn.classList.add('bg-blue-50', 'text-blue-600', 'shadow-sm');
-            
-            currentPhase = parseInt(btn.dataset.phase);
-            generateTimetable(currentPhase);
-        });
-    });
-    
     // Parse periods from string like "3-4" or "10-12"
     const parseTietHoc = (tietHoc) => {
         if (!tietHoc) return [];
@@ -326,6 +279,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         classes.forEach(cls => {
                             const bgColor = cls.isRegistered ? 'rgb(0, 134, 137)' : 'rgb(255, 152, 0)';
+                            // Check if E-Learning
+                            const isELearning = cls.phong && cls.phong.toLowerCase().includes('e-learning');
+                            const roomHtml = isELearning 
+                                ? `<div class="flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    <span>E-Learning</span>
+                                   </div>` 
+                                : '';
+                            
                             html += `
                                 <div class="mb-2 last:mb-0 p-2 rounded text-white text-sm" style="background-color: ${bgColor}">
                                     <p class="font-semibold">${cls.tenMonHoc}</p>
@@ -339,10 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                             <span>${cls.timeRange}</span>
                                         </div>
-                                        <div class="flex items-center gap-1">
-                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                            <span>Phòng: ${cls.phong}</span>
-                                        </div>
+                                        ${roomHtml}
                                         ${cls.lmsLink ? `<a href="${cls.lmsLink}" target="_blank" class="inline-flex items-center gap-1 text-white underline hover:text-yellow-200"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>LMS</a>` : ''}
                                     </div>
                                 </div>
@@ -368,17 +327,37 @@ document.addEventListener('DOMContentLoaded', function() {
         timetableContent.innerHTML = html;
     };
     
-    // Event handlers - viewTimetableBtn is handled in app.js via window.showTimetableModal()
+    // Expose show function globally (must be after generateTimetable is defined)
+    window.showTimetableModal = () => {
+        // Get data from global scope (exposed in app.js)
+        if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
+        if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
+        
+        timetableModal.classList.remove('hidden');
+        updateTimetable();
+    };
+
+    // View timetable button click handler
+    if (viewTimetableBtn) {
+        viewTimetableBtn.addEventListener('click', () => {
+            window.showTimetableModal();
+        });
+    }
     
-    closeTimetableModal?.addEventListener('click', () => {
-        timetableModal.classList.add('hidden');
-    });
-    
-    timetableModal?.addEventListener('click', (e) => {
-        if (e.target === timetableModal) {
+    // Event handlers
+    if (closeTimetableModal) {
+        closeTimetableModal.addEventListener('click', () => {
             timetableModal.classList.add('hidden');
-        }
-    });
+        });
+    }
+    
+    if (timetableModal) {
+        timetableModal.addEventListener('click', (e) => {
+            if (e.target === timetableModal) {
+                timetableModal.classList.add('hidden');
+            }
+        });
+    }
     
     timetableTabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
