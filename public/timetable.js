@@ -361,30 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
         timetableContent.innerHTML = html;
     };
     
-    // Event handlers
-    viewTimetableBtn?.addEventListener('click', () => {
-        // Get registered and selected classes data using getter functions
-        if (typeof window.getRegisteredClassesData === 'function') {
-            registeredData = window.getRegisteredClassesData() || [];
-        }
-        if (typeof window.getSelectedClassesData === 'function') {
-            selectedData = window.getSelectedClassesData() || [];
-        }
-        
-        console.log('Opening timetable with data:', { 
-            registeredCount: registeredData.length, 
-            selectedCount: selectedData.length,
-            registeredData, 
-            selectedData 
-        });
-        
-        if (registeredData.length === 0 && selectedData.length === 0) {
-            console.warn('No data found! Make sure you have fetched registered classes and/or selected some classes.');
-        }
-        
-        timetableModal.classList.remove('hidden');
-        updateTimetable();
-    });
+    // Event handlers - viewTimetableBtn is handled in app.js via window.showTimetableModal()
     
     closeTimetableModal?.addEventListener('click', () => {
         timetableModal.classList.add('hidden');
