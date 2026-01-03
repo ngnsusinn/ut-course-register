@@ -852,11 +852,7 @@ export default async (req, res) => {
                     // Đã khóa lớp: Không thể đăng ký/hủy
                     canRegister = false;
                     message = 'Lớp đã bị khóa (chốt lớp)';
-                } else if (tenTrangThai === 'Đang lên kế hoạch') {
-                    // Đang lên kế hoạch: Không thể đăng ký/hủy
-                    canRegister = false;
-                    message = 'Lớp đang lên kế hoạch (bị khóa)';
-                } else if (tenTrangThai === 'Đang chờ đăng ký' || tenTrangThai === 'Đã mở chính thức') {
+                } else if (tenTrangThai === 'Đang chờ đăng ký' || tenTrangThai === 'Đã mở chính thức' || tenTrangThai === 'Đang lên kế hoạch') {
                     // Đang chờ đăng ký hoặc Đã mở chính thức: Có thể đăng ký
                     // Check if class is full
                     if (phanTramDangKy >= 100) {

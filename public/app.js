@@ -35,22 +35,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentOrder = null;
     let paymentCheckInterval = null;
     let vipExpiryCheckInterval = null;
-    
+
     // Expose data for timetable module
     window.getRegisteredClassesData = () => registeredClassesData;
     window.getSelectedClassesData = () => {
         const allClasses = [];
-        
+
         // Add regular selected classes
         selectedClasses.forEach(cls => {
             allClasses.push(cls);
         });
-        
+
         // Add target classes from swap pending (not registered classes)
         swapPendingClasses.forEach(swap => {
             allClasses.push(swap.target);
         });
-        
+
         return allClasses;
     };
 
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- SCHEDULE CONFLICT DETECTION ---
-    
+
     // Parse period string "1-3" or "4-6" to array [1, 2, 3] or [4, 5, 6]
     const parsePeriods = (tietHoc) => {
         if (!tietHoc) return [];
@@ -139,12 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const eveningPeriods = [16, 17, 18];
         const hasEvening1 = periods1.some(p => eveningPeriods.includes(p));
         const hasEvening2 = periods2.some(p => eveningPeriods.includes(p));
-        
+
         // If either period set is evening class, no conflict
         if (hasEvening1 || hasEvening2) {
             return false;
         }
-        
+
         // Normal conflict check for non-evening periods
         return periods1.some(p => periods2.includes(p));
     };
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (periodsOverlap(schedulePeriods, regPeriods)) {
                                 // Group by registered class code to avoid duplicates
                                 const key = registered.maLopHocPhan;
-                                
+
                                 if (!conflictMap.has(key)) {
                                     conflictMap.set(key, {
                                         registeredClass: registered.tenMonHoc,
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         conflicts: []
                                     });
                                 }
-                                
+
                                 // Add this specific conflict detail
                                 conflictMap.get(key).conflicts.push({
                                     day: formatDayOfWeek(schedule.thu),
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Get unique day-period combinations
             const uniqueConflicts = [];
             const seen = new Set();
-            
+
             for (const c of conflict.conflicts) {
                 const key = `${c.day}-${c.period}-${c.conflictPeriod}`;
                 if (!seen.has(key)) {
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     uniqueConflicts.push(c);
                 }
             }
-            
+
             return {
                 registeredClass: conflict.registeredClass,
                 registeredCode: conflict.registeredCode,
@@ -243,12 +243,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('guide.html');
             const guideContent = await response.text();
-            
+
             const modal = document.createElement('div');
             modal.className = 'payment-modal';
             modal.id = 'guide-modal';
             modal.style.display = 'block';
-            
+
             modal.innerHTML = `
                 <div class="payment-modal-content bg-white rounded-xl shadow-md p-6" style="max-width: 900px;">
                     <div class="flex justify-between items-center mb-4">
@@ -260,9 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
-            
+
             // Close on backdrop click
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const plans = plansRes.plans;
         const sepayConfig = plansRes.sepayConfig;
-        
+
         // Check if user has VIP to show appropriate title
         const isRenewal = vipStatus.hasVIP;
         const modalTitle = isRenewal ? '🔄 Gia hạn VIP' : '🌟 Nâng cấp VIP';
@@ -355,33 +355,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Handle cancel payment
         // Handle cancel payment - CẬP NHẬT MỚI
-// Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
-modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
-    if (!currentOrder) return;
-    
-    showConfirmModal(
-        'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
-        async () => {
-            // User confirmed - cancel the order
-            const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
-            
-            if (cancelRes && cancelRes.success) {
-                log('✅ Đã hủy đơn hàng thành công');
-                if (paymentCheckInterval) {
-                    clearInterval(paymentCheckInterval);
+        // Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
+        modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
+            if (!currentOrder) return;
+
+            showConfirmModal(
+                'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
+                async () => {
+                    // User confirmed - cancel the order
+                    const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
+
+                    if (cancelRes && cancelRes.success) {
+                        log('✅ Đã hủy đơn hàng thành công');
+                        if (paymentCheckInterval) {
+                            clearInterval(paymentCheckInterval);
+                        }
+                        currentOrder = null;
+                        modal.remove();
+                    } else {
+                        log('❌ Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
+                    }
+                },
+                () => {
+                    // User cancelled - do nothing
+                    log('Tiếp tục chờ thanh toán');
                 }
-                currentOrder = null;
-                modal.remove();
-            } else {
-                log('❌ Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
-            }
-        },
-        () => {
-            // User cancelled - do nothing
-            log('Tiếp tục chờ thanh toán');
-        }
-    );
-});
+            );
+        });
 
 
     };
@@ -412,60 +412,60 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
     };
 
     const startPaymentCheck = () => {
-    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-    
-    const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
-    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
-    
-    paymentCheckInterval = setInterval(async () => {
-        if (!currentOrder) {
-            clearInterval(paymentCheckInterval);
-            return;
-        }
-        
-        // Check if order has timed out
-        const now = new Date().getTime();
-        if (now - orderCreatedTime > TIMEOUT_MS) {
-            clearInterval(paymentCheckInterval);
-            document.getElementById('payment-status').innerHTML = 
-                '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
-            log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
-            
-            setTimeout(() => {
-                document.getElementById('vip-modal')?.remove();
-                currentOrder = null;
-            }, 3000);
-            return;
-        }
-        
-        // Check payment status
-        const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
-        
-        if (statusRes && statusRes.success) {
-            if (statusRes.order.status === 'Paid') {
+        if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+
+        const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
+        const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+        paymentCheckInterval = setInterval(async () => {
+            if (!currentOrder) {
                 clearInterval(paymentCheckInterval);
-                document.getElementById('payment-status').innerHTML = 
-                    '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
-                log('Thanh toán VIP thành công!');
-                
-                setTimeout(async () => {
-                    document.getElementById('vip-modal')?.remove();
-                    await checkAndUpdateVIPStatus();
-                }, 2000);
-            } else if (statusRes.order.status === 'Cancelled') {
+                return;
+            }
+
+            // Check if order has timed out
+            const now = new Date().getTime();
+            if (now - orderCreatedTime > TIMEOUT_MS) {
                 clearInterval(paymentCheckInterval);
-                document.getElementById('payment-status').innerHTML = 
-                    '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
-                log('Đơn hàng đã bị hủy', true);
-                
+                document.getElementById('payment-status').innerHTML =
+                    '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
+                log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
+
                 setTimeout(() => {
                     document.getElementById('vip-modal')?.remove();
                     currentOrder = null;
-                }, 2000);
+                }, 3000);
+                return;
             }
-        }
-    }, 2000); // Check every 2 seconds
-};
+
+            // Check payment status
+            const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
+
+            if (statusRes && statusRes.success) {
+                if (statusRes.order.status === 'Paid') {
+                    clearInterval(paymentCheckInterval);
+                    document.getElementById('payment-status').innerHTML =
+                        '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
+                    log('Thanh toán VIP thành công!');
+
+                    setTimeout(async () => {
+                        document.getElementById('vip-modal')?.remove();
+                        await checkAndUpdateVIPStatus();
+                    }, 2000);
+                } else if (statusRes.order.status === 'Cancelled') {
+                    clearInterval(paymentCheckInterval);
+                    document.getElementById('payment-status').innerHTML =
+                        '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
+                    log('Đơn hàng đã bị hủy', true);
+
+                    setTimeout(() => {
+                        document.getElementById('vip-modal')?.remove();
+                        currentOrder = null;
+                    }, 2000);
+                }
+            }
+        }, 2000); // Check every 2 seconds
+    };
 
 
     const checkAndUpdateVIPStatus = async () => {
@@ -474,20 +474,20 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             const previousVIPStatus = vipStatus.hasVIP;
             vipStatus = vipRes.vip;
             updateVIPDisplay();
-            
+
             // If VIP status changed from active to expired
             if (previousVIPStatus && !vipStatus.hasVIP) {
                 log('⚠️ VIP của bạn đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.', true);
-                
+
                 // Reset UI to non-VIP state
                 allScheduleData = [];
                 selectedClasses.clear();
                 updateSelectedList();
                 renderScheduleTable();
-                
+
                 // Clear cache
                 localStorage.removeItem('userDataCache');
-                
+
                 // Show VIP modal
                 setTimeout(() => {
                     showVIPModal();
@@ -495,21 +495,21 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             }
         }
     };
-    
+
     // Start auto-check VIP expiry every 7 seconds
     const startVIPExpiryCheck = () => {
         if (vipExpiryCheckInterval) clearInterval(vipExpiryCheckInterval);
-        
+
         vipExpiryCheckInterval = setInterval(async () => {
             if (!authToken || !userId) {
                 clearInterval(vipExpiryCheckInterval);
                 return;
             }
-            
+
             await checkAndUpdateVIPStatus();
         }, 7000); // Check every 7 seconds
     };
-    
+
     // Stop VIP expiry check
     const stopVIPExpiryCheck = () => {
         if (vipExpiryCheckInterval) {
@@ -517,73 +517,73 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             vipExpiryCheckInterval = null;
         }
     };
-	
+
     const updateVIPDisplay = () => {
-    if (!vipStatusElement) return;
+        if (!vipStatusElement) return;
 
-    const isVip = !!vipStatus.hasVIP;
+        const isVip = !!vipStatus.hasVIP;
 
-    if (isVip) {
-        vipStatusElement.innerHTML = `
+        if (isVip) {
+            vipStatusElement.innerHTML = `
             <div class="text-center">
                 <p class="font-bold text-blue-700 text-lg">⭐ Tài khoản VIP</p>
                 <p class="text-sm text-gray-700">Thời hạn còn lại: <span class="font-semibold text-blue-600">${vipStatus.daysLeft} ngày</span></p>
                 <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
             </div>
         `;
-        
-        // Change button to "Gia hạn VIP" when user has VIP
-        upgradeVipBtn.innerHTML = `
+
+            // Change button to "Gia hạn VIP" when user has VIP
+            upgradeVipBtn.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
             <span>Gia hạn VIP</span>
         `;
-        upgradeVipBtn.classList.remove('hidden');
+            upgradeVipBtn.classList.remove('hidden');
 
-        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
-        if (prerequisiteToggle) prerequisiteToggle.disabled = false; // <-- enable checkbox for VIP
+            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
+            if (prerequisiteToggle) prerequisiteToggle.disabled = false; // <-- enable checkbox for VIP
 
-        if (fetchBtn) fetchBtn.classList.remove('hidden');
-        if (selectedList) selectedList.classList.remove('hidden');
-    } else {
-        vipStatusElement.innerHTML = `
+            if (fetchBtn) fetchBtn.classList.remove('hidden');
+            if (selectedList) selectedList.classList.remove('hidden');
+        } else {
+            vipStatusElement.innerHTML = `
             <div class="text-center p-3 bg-gray-100 rounded-lg">
                 <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
             </div>
         `;
-        
-        // Reset button to "Nâng cấp VIP" when no VIP
-        upgradeVipBtn.innerHTML = `
+
+            // Reset button to "Nâng cấp VIP" when no VIP
+            upgradeVipBtn.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
             <span>Nâng cấp VIP</span>
         `;
-        upgradeVipBtn.classList.remove('hidden');
+            upgradeVipBtn.classList.remove('hidden');
 
-        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
-        if (prerequisiteToggle) {
-            prerequisiteToggle.disabled = true; // <-- disable for non-VIP
-            prerequisiteToggle.checked = false; // optional: reset check state
+            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
+            if (prerequisiteToggle) {
+                prerequisiteToggle.disabled = true; // <-- disable for non-VIP
+                prerequisiteToggle.checked = false; // optional: reset check state
+            }
+
+            if (fetchBtn) fetchBtn.classList.add('hidden');
+            if (selectedList) selectedList.classList.add('hidden');
         }
+    };
 
-        if (fetchBtn) fetchBtn.classList.add('hidden');
-        if (selectedList) selectedList.classList.add('hidden');
-    }
-};
+    // === CUSTOM CONFIRMATION MODAL ===
+    const showConfirmModal = (message, onConfirm, onCancel) => {
+        // Remove existing modal if any
+        document.getElementById('confirm-modal')?.remove();
 
-	// === CUSTOM CONFIRMATION MODAL ===
-const showConfirmModal = (message, onConfirm, onCancel) => {
-    // Remove existing modal if any
-    document.getElementById('confirm-modal')?.remove();
-    
-    const modal = document.createElement('div');
-    modal.id = 'confirm-modal';
-    modal.className = 'payment-modal';
-    modal.style.display = 'block';
-    
-    modal.innerHTML = `
+        const modal = document.createElement('div');
+        modal.id = 'confirm-modal';
+        modal.className = 'payment-modal';
+        modal.style.display = 'block';
+
+        modal.innerHTML = `
         <div class="payment-modal-content" style="max-width: 450px; margin: 15% auto;">
             <div class="text-center">
                 <div class="mb-4">
@@ -604,28 +604,28 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             </div>
         </div>
     `;
-    
-    document.body.appendChild(modal);
-    
-    // Event listeners
-    document.getElementById('confirm-yes-btn').addEventListener('click', () => {
-        modal.remove();
-        if (onConfirm) onConfirm();
-    });
-    
-    document.getElementById('confirm-no-btn').addEventListener('click', () => {
-        modal.remove();
-        if (onCancel) onCancel();
-    });
-    
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
+
+        document.body.appendChild(modal);
+
+        // Event listeners
+        document.getElementById('confirm-yes-btn').addEventListener('click', () => {
+            modal.remove();
+            if (onConfirm) onConfirm();
+        });
+
+        document.getElementById('confirm-no-btn').addEventListener('click', () => {
             modal.remove();
             if (onCancel) onCancel();
-        }
-    });
-};
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                if (onCancel) onCancel();
+            }
+        });
+    };
 
     // --- UI UPDATE FUNCTIONS ---
     const updateUIAfterLogin = (profile) => {
@@ -765,14 +765,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             if (!cached) return false;
 
             const cacheData = JSON.parse(cached);
-            
+
             // Check if cached data belongs to a different user
             if (cacheData.userId && cacheData.userId !== currentUserId) {
                 console.log('Cache belongs to different user, clearing...');
                 localStorage.removeItem('userDataCache');
                 return false;
             }
-            
+
             // Cache expires after 24 hours
             const CACHE_DURATION = 24 * 60 * 60 * 1000;
             if (new Date().getTime() - cacheData.timestamp > CACHE_DURATION) {
@@ -786,7 +786,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             selectedClasses = new Map(cacheData.selectedClasses || []);
             swapPendingClasses = new Map(cacheData.swapPendingClasses || []);
             subjectTypeMap = new Map(cacheData.subjectTypeMap || []);
-            
+
             // Restore prerequisite toggle state
             if (prerequisiteToggle && cacheData.prerequisiteToggleState !== undefined) {
                 prerequisiteToggle.checked = cacheData.prerequisiteToggleState;
@@ -814,14 +814,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
         if (tokenRes && tokenRes.token) {
             authToken = tokenRes.token;
-            
+
             // Save session to localStorage with JWT token
             localStorage.setItem('userSession', JSON.stringify({
                 token: authToken,
                 username: username,
                 loginTime: new Date().getTime()
             }));
-            
+
             log("✅ Đăng nhập thành công.");
             const initialData = await backendRequest('getInitialData');
             if (initialData && initialData.success) {
@@ -830,13 +830,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 vipStatus = initialData.vip || { hasVIP: false };
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
-                
+
                 // Try to load cached data first (check if belongs to current user)
                 const hasCachedData = loadCachedData(userId);
-                
+
                 if (hasCachedData) {
                     log('📦 Đã khôi phục dữ liệu từ cache');
-                    
+
                     // Update UI with cached data
                     if (allScheduleData.length > 0) {
                         renderScheduleTable();
@@ -847,11 +847,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             fetchBtn.originalHTML = fetchBtn.innerHTML;
                         }
                     }
-                    
+
                     if (registeredClassesData.length > 0) {
                         renderRegisteredTable(registeredClassesData);
                     }
-                    
+
                     if (selectedClasses.size > 0) {
                         updateSelectedList();
                     }
@@ -859,7 +859,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     // No cache, fetch fresh data
                     await fetchRegisteredClasses();
                 }
-                
+
                 // Start VIP expiry check
                 startVIPExpiryCheck();
             } else {
@@ -882,17 +882,17 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     action: 'validateToken'
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success && data.valid) {
                 return true;
             }
-            
+
             return false;
         } catch (error) {
             console.error('Token validation failed:', error);
@@ -904,31 +904,31 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const autoLogin = async () => {
         const session = localStorage.getItem('userSession');
         if (!session) return false;
-        
+
         try {
             const { token, loginTime } = JSON.parse(session);
-            
+
             // Session expires after 24 hours
             const SESSION_DURATION = 24 * 60 * 60 * 1000;
             if (new Date().getTime() - loginTime > SESSION_DURATION) {
                 localStorage.removeItem('userSession');
                 return false;
             }
-            
+
             // Validate token with portal API
             const isValid = await validateTokenWithPortal(token);
-            
+
             if (!isValid) {
                 log('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại', true);
                 localStorage.removeItem('userSession');
                 return false;
             }
-            
+
             // Token is valid, restore session
             authToken = token;
-            
+
             log('✅ Đã khôi phục phiên đăng nhập');
-            
+
             const initialData = await backendRequest('getInitialData');
             if (initialData && initialData.success) {
                 dotId = initialData.dot.id;
@@ -936,13 +936,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 vipStatus = initialData.vip || { hasVIP: false };
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
-                
+
                 // Try to load cached data first (check if belongs to current user)
                 const hasCachedData = loadCachedData(userId);
-                
+
                 if (hasCachedData) {
                     log('📦 Đã khôi phục dữ liệu từ cache');
-                    
+
                     // Update UI with cached data
                     if (allScheduleData.length > 0) {
                         renderScheduleTable();
@@ -953,11 +953,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             fetchBtn.originalHTML = fetchBtn.innerHTML;
                         }
                     }
-                    
+
                     if (registeredClassesData.length > 0) {
                         renderRegisteredTable(registeredClassesData);
                     }
-                    
+
                     if (selectedClasses.size > 0) {
                         updateSelectedList();
                     }
@@ -965,10 +965,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     // No cache, fetch fresh data
                     await fetchRegisteredClasses();
                 }
-                
+
                 // Start VIP expiry check
                 startVIPExpiryCheck();
-                
+
                 return true;
             } else {
                 log('❌ Không thể tải dữ liệu, vui lòng đăng nhập lại', true);
@@ -985,15 +985,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const handleLogout = async () => {
         await stopProcess();
-        
+
         // Stop VIP expiry check
         stopVIPExpiryCheck();
-        
+
         authToken = null;
         dotId = null;
         userId = null;
         vipStatus = { hasVIP: false };
-        
+
         // Clear session and cache
         localStorage.removeItem('userSession');
         localStorage.removeItem('userDataCache');
@@ -1029,10 +1029,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Filter out locked classes from the schedule
             const totalClasses = scheduleRes.schedule.length;
             const unlockedClasses = scheduleRes.schedule.filter(cls => cls.tenTrangThai !== 'Đã khóa lớp');
-            
+
             allScheduleData = unlockedClasses;
             subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-            
+
             log(`✅ Đã tải thành công ${totalClasses} lớp học phần.`);
             log(`📋 Hiển thị ${unlockedClasses.length} lớp chưa khóa (đã lọc bỏ ${totalClasses - unlockedClasses.length} lớp đã khóa).`);
 
@@ -1061,10 +1061,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (registeredRes && registeredRes.success) {
             registeredClassesData = registeredRes.body; // Save for conflict detection
             await renderRegisteredTable(registeredRes.body);
-            
+
             // Save to cache
             saveCachedData();
-            
+
             // Re-render schedule table to update conflict highlights
             renderScheduleTable();
             log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
@@ -1102,67 +1102,67 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const swapClass = async (registeredData, targetData) => {
         const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
         const { id: targetId, code: targetCode, name: targetName, source: targetSource, maHocPhan: targetMaHocPhan } = targetData;
-        
+
         log(`🔄 Bắt đầu đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
-        
+
         // Step 1: Check target class availability first
         log(`🔍 Kiểm tra lớp đích ${targetCode}...`);
-        
+
         // Extract maHocPhan from targetCode if not available (remove last 2 characters)
         const maHocPhan = targetMaHocPhan || targetCode.slice(0, -2);
-        
-        const checkResult = await backendRequest('checkClassAvailability', { 
-            classId: targetId, 
-            dotId, 
-            maHocPhan, 
-            source: targetSource 
+
+        const checkResult = await backendRequest('checkClassAvailability', {
+            classId: targetId,
+            dotId,
+            maHocPhan,
+            source: targetSource
         });
-        
+
         if (!checkResult || !checkResult.success) {
             log(`⚠️ Không thể kiểm tra lớp đích, dừng đổi lớp để an toàn`, true);
             return false;
         }
-        
+
         if (checkResult.isFull) {
             log(`❌ Lớp ${targetCode} đã đầy (${checkResult.phanTramDangKy}%)`, true);
             return false;
         }
-        
+
         if (!checkResult.canRegister) {
             log(`❌ Lớp ${targetCode} không thể đăng ký - ${checkResult.message}`, true);
             return false;
         }
-        
+
         log(`✅ Lớp ${targetCode} còn chỗ (${checkResult.phanTramDangKy}%), tiếp tục đổi lớp...`);
-        
+
         // Step 2: Cancel old registered class FIRST (before registering new one)
         log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
         const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
-        
+
         if (!cancelResult || !cancelResult.success) {
             log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
             return false;
         }
-        
+
         log(`✅ Đã hủy lớp ${regCode} thành công`);
-        
+
         // Step 3: Register target class (after canceling old one)
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
         const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
-        
+
         if (!registerResult || !registerResult.success) {
             log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
             log(`⚠️ CẢNH BÁO: Đã hủy lớp ${regCode} nhưng không đăng ký được lớp ${targetCode}. Vui lòng đăng ký lại thủ công!`, true);
             await fetchRegisteredClasses();
             return false;
         }
-        
+
         log(`✅ Đăng ký lớp ${targetCode} thành công!`);
         log(`🎉 Đổi lớp hoàn tất: ${regName} → ${targetName}`);
-        
+
         // Refresh registered classes list
         await fetchRegisteredClasses();
-        
+
         return true;
     };
 
@@ -1171,12 +1171,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             log("⚠️ Bạn cần nâng cấp VIP để thực hiện chèn lớp.", true);
             return;
         }
-        
+
         const totalClasses = selectedClasses.size + swapPendingClasses.size;
         if (totalClasses === 0) {
             return log("Vui lòng chọn lớp để chèn.", true);
         }
-        
+
         stopProcess();
         isProcessStopped = false;
         toggleActionButtons(true);
@@ -1184,24 +1184,24 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
         const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
-        
+
         // Add regular selected classes
         selectedClasses.forEach(cls => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
             classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
         });
-        
+
         // Add swap pending classes (only target classes for insertion)
         swapPendingClasses.forEach((swap, targetClassId) => {
             const targetClass = swap.target;
             if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
-            classesBySubject.get(targetClass.maHocPhan).push({ 
-                type: 'swap', 
+            classesBySubject.get(targetClass.maHocPhan).push({
+                type: 'swap',
                 class: targetClass,
                 registeredClass: swap.registered
             });
         });
-        
+
         const delay = parseInt(delayInput.value, 10) || 1000;
 
         classesBySubject.forEach((classItems, maHocPhan) => {
@@ -1222,13 +1222,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
                 for (const availableClass of statusRes.body) {
                     const matchedItem = classItems.find(item => item.class.id.toString() === availableClass.id.toString());
-                    
+
                     if (matchedItem && availableClass.phanTramDangKy < 100) {
                         if (matchedItem.type === 'swap') {
                             // Handle swap: cancel old class first, then register new class
                             const regClass = matchedItem.registeredClass;
                             log(`[${tenMonHoc}] 🔔 Đổi lớp: ${regClass.maLopHocPhan} → ${availableClass.maLopHocPhan}`);
-                            
+
                             const swapResult = await swapClass(
                                 {
                                     id: regClass.id,
@@ -1243,12 +1243,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                     source: availableClass.source
                                 }
                             );
-                            
+
                             if (swapResult) {
                                 log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
                                 swapPendingClasses.delete(matchedItem.class.id.toString());
                                 updateSelectedList();
-                                
+
                                 // Mark subject as completed to prevent further checks
                                 completedSubjects.add(maHocPhan);
                                 clearInterval(registrationIntervals.get(maHocPhan));
@@ -1284,12 +1284,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             log("⚠️ Bạn cần nâng cấp VIP để thực hiện đăng ký.", true);
             return;
         }
-        
+
         const totalClasses = selectedClasses.size + swapPendingClasses.size;
         if (totalClasses === 0) {
             return log("Vui lòng chọn lớp để đăng ký.", true);
         }
-        
+
         stopProcess();
         isProcessStopped = false;
         toggleActionButtons(true);
@@ -1297,24 +1297,24 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
         const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
-        
+
         // Add regular selected classes
         selectedClasses.forEach(cls => {
             if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
             classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
         });
-        
+
         // Add swap pending classes
         swapPendingClasses.forEach((swap, targetClassId) => {
             const targetClass = swap.target;
             if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
-            classesBySubject.get(targetClass.maHocPhan).push({ 
-                type: 'swap', 
+            classesBySubject.get(targetClass.maHocPhan).push({
+                type: 'swap',
                 class: targetClass,
                 registeredClass: swap.registered
             });
         });
-        
+
         const delay = parseInt(delayInput.value, 10) || 1000;
 
         classesBySubject.forEach((classItems, maHocPhan) => {
@@ -1328,15 +1328,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     return;
                 }
                 if (isProcessStopped) return;
-                
+
                 for (const item of classItems) {
                     if (isProcessStopped) return;
-                    
+
                     if (item.type === 'swap') {
                         // Handle swap registration
                         const regClass = item.registeredClass;
                         log(`[${tenMonHoc}] 🔄 Thử đổi lớp: ${regClass.maLopHocPhan} → ${item.class.maLopHocPhan}`);
-                        
+
                         const swapResult = await swapClass(
                             {
                                 id: regClass.id,
@@ -1351,11 +1351,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 source: item.class.source
                             }
                         );
-                        
+
                         if (swapResult) {
                             swapPendingClasses.delete(item.class.id.toString());
                             await updateSelectedList();
-                            
+
                             // Mark subject as completed to prevent further checks
                             completedSubjects.add(maHocPhan);
                             clearInterval(registrationIntervals.get(maHocPhan));
@@ -1432,14 +1432,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         filteredData.forEach(cls => {
             const row = document.createElement('tr');
             const isSelected = selectedClasses.has(cls.id.toString());
-            
+
             // Check if class is locked
             const isLocked = cls.tenTrangThai === 'Đã khóa lớp';
-            
+
             // Check for schedule conflict
             const conflictCheck = checkScheduleConflict(cls.scheduleDetails, registeredClassesData);
             const hasConflict = conflictCheck.hasConflict;
-            
+
             // Build row class and cursor based on status
             let rowClass = 'bg-white border-b transition-colors duration-200';
             if (isLocked) {
@@ -1455,21 +1455,21 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 // Normal - white background, clickable
                 rowClass += ' cursor-pointer hover:bg-sky-100';
             }
-            
+
             row.className = rowClass;
             row.dataset.classId = cls.id;
-            
+
             // Store locked status
             if (isLocked) {
                 row.dataset.isLocked = 'true';
             }
-            
+
             // Store conflict info for tooltip
             if (hasConflict) {
                 row.dataset.hasConflict = 'true';
                 row.dataset.conflictInfo = JSON.stringify(conflictCheck.conflicts);
             }
-            
+
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
                 ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`
@@ -1478,7 +1478,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     : (isBatBuoc
                         ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
                         : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
-            
+
             // Add warnings below subject name (only conflict warning, not locked)
             let warnings = '';
             if (hasConflict) {
@@ -1489,7 +1489,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     const regSource = regClass ? regClass.source : 'dkhp';
                     const regSubjectCode = regClass ? regClass.maHocPhan : '';
                     const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
-                    
+
                     return `
                         <div class="flex items-center justify-between gap-2 py-1.5 px-2 bg-white rounded border border-red-200">
                             <div class="flex items-center gap-2 min-w-0">
@@ -1511,7 +1511,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         </div>
                     `;
                 }).join('');
-                
+
                 warnings += `
                     <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
                         <div class="flex items-center gap-2 mb-2">
@@ -1526,7 +1526,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     </div>
                 `;
             }
-            
+
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${warnings}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
@@ -1558,7 +1558,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const row = document.createElement('tr');
             row.className = 'bg-white border-b hover:bg-gray-50';
             const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
-            
+
             // Try to find maHocPhan from allScheduleData if not present in registered data
             let maHocPhan = reg.maHocPhan;
             if (!maHocPhan) {
@@ -1567,16 +1567,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     maHocPhan = matchingClass.maHocPhan;
                 }
             }
-            
+
             row.innerHTML = `
                 <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
                 <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
-                <td class="px-6 py-4" data-label="Hành động">${
-                    reg.isAllowCancel === false
-                        ? ''
-                        : `
+                <td class="px-6 py-4" data-label="Hành động">${reg.isAllowCancel === false
+                    ? ''
+                    : `
                             <button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn mr-3">Hủy</button>
                             <button data-reg-id="${reg.id ?? ''}" 
                                     data-reg-code="${reg.maLopHocPhan ?? ''}" 
@@ -1597,21 +1596,21 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const showSwapFromConflictModal = async (registeredClassData, targetClassData) => {
         const { id: regId, code: regCode, name: regName, source: regSource } = registeredClassData;
         const { id: targetId, code: targetCode, name: targetName } = targetClassData;
-        
+
         // Find registered class details
         const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
         if (!registeredClass) {
             log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
             return;
         }
-        
+
         // Find target class
         const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
         if (!targetClass) {
             log('❌ Không tìm thấy thông tin lớp đích', true);
             return;
         }
-        
+
         // Show modal to confirm swap to the target class directly
         showConfirmModal(
             `Xác nhận đổi lớp trùng lịch?<br><br>` +
@@ -1628,20 +1627,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         oldSwapEntry = key;
                     }
                 });
-                
+
                 if (oldSwapEntry) {
                     swapPendingClasses.delete(oldSwapEntry);
                 }
-                
+
                 // Add to swap pending list
                 swapPendingClasses.set(targetId, {
                     registered: registeredClass,
                     target: targetClass
                 });
-                
+
                 log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                 updateSelectedList();
-                
+
                 // Re-render schedule table to update conflict status
                 renderScheduleTable();
             },
@@ -1654,28 +1653,28 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     // Show swap class modal from registered classes table
     const showSwapClassModal = async (registeredClassData) => {
         const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
-        
+
         // Find registered class details
         const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
         if (!registeredClass) {
             log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
             return;
         }
-        
+
         // Get subject code - try multiple sources (prioritize registeredClass data)
         let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
-        
+
         // If still not found, extract from maLopHocPhan by removing last 2 characters
         // Example: DT012301 -> DT0123, TT0401 -> TT04
         if (!actualSubjectCode && regCode) {
             actualSubjectCode = regCode.slice(0, -2);
             console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', actualSubjectCode);
         }
-        
+
         // Last resort: search in allScheduleData (may fail if class is locked)
         if (!actualSubjectCode) {
-            const matchingClass = allScheduleData.find(cls => 
-                cls.id.toString() === regId || 
+            const matchingClass = allScheduleData.find(cls =>
+                cls.id.toString() === regId ||
                 cls.maLopHocPhan === regCode
             );
             if (matchingClass) {
@@ -1683,7 +1682,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 console.log('✅ Found maHocPhan from allScheduleData:', actualSubjectCode);
             }
         }
-        
+
         if (!actualSubjectCode) {
             log('❌ Không tìm thấy mã học phần của lớp này', true);
             console.log('❌ Debug info:');
@@ -1692,48 +1691,48 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             console.log('  - subjectCode from button:', subjectCode);
             return;
         }
-        
+
         console.log('🔍 Looking for classes with maHocPhan:', actualSubjectCode);
         console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
         console.log('🔍 Current class code (regCode):', regCode);
-        
+
         // Try to find classes in allScheduleData first
         let availableClasses = allScheduleData.filter(cls => {
-            const matches = cls.maHocPhan === actualSubjectCode && 
+            const matches = cls.maHocPhan === actualSubjectCode &&
                 cls.maLopHocPhan !== regCode &&
                 cls.tenTrangThai !== 'Đã khóa lớp' &&
                 cls.tenTrangThai !== 'Đang lên kế hoạch';
-            
+
             if (cls.maHocPhan === actualSubjectCode) {
                 console.log('  ➜ Same subject:', cls.maLopHocPhan, '| isCurrent:', cls.maLopHocPhan === regCode, '| Status:', cls.tenTrangThai, '| Match:', matches);
             }
-            
+
             return matches;
         });
-        
+
         console.log('Classes found in allScheduleData:', availableClasses.length);
-        
+
         // If no classes found in cache, fetch from API
         if (availableClasses.length === 0) {
             log(`🔍 Không tìm thấy lớp trong cache, đang lấy từ API cho môn ${regName}...`);
-            
+
             // Extract maHocPhan from maLopHocPhan: Remove last 2 characters
             // Example: DT012301 -> DT0123, TT0401 -> TT04
             let detectedMaHocPhan = actualSubjectCode;
-            
+
             if (!detectedMaHocPhan || detectedMaHocPhan.length < 2) {
                 detectedMaHocPhan = regCode.slice(0, -2);
                 console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', detectedMaHocPhan);
             }
-            
+
             console.log('🔍 Using maHocPhan for API call:', detectedMaHocPhan);
-            
-            const checkStatusRes = await backendRequest('checkClassStatus', { 
-                dotId, 
-                maHocPhan: detectedMaHocPhan, 
-                source: regSource 
+
+            const checkStatusRes = await backendRequest('checkClassStatus', {
+                dotId,
+                maHocPhan: detectedMaHocPhan,
+                source: regSource
             });
-            
+
             if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
                 // Get schedule details for each class (don't need to check availability again, data is already accurate)
                 const classesWithDetails = await Promise.all(
@@ -1742,7 +1741,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             classId: cls.id,
                             source: regSource
                         });
-                        
+
                         return {
                             ...cls,
                             maHocPhan: detectedMaHocPhan,
@@ -1752,31 +1751,30 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         };
                     })
                 );
-                
+
                 // Filter out current registered class and locked/planning classes
-                availableClasses = classesWithDetails.filter(cls => 
+                availableClasses = classesWithDetails.filter(cls =>
                     cls.maLopHocPhan !== regCode &&
-                    cls.tenTrangThai !== 'Đã khóa lớp' &&
-                    cls.tenTrangThai !== 'Đang lên kế hoạch'
+                    cls.tenTrangThai !== 'Đã khóa lớp'
                 );
-                
+
                 console.log('Classes fetched from API:', availableClasses.length);
                 log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
             } else {
                 log(`❌ Không thể lấy danh sách lớp từ API`, true);
             }
         }
-        
+
         if (availableClasses.length === 0) {
             log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
             return;
         }
-        
+
         // Create modal
         const modal = document.createElement('div');
         modal.id = 'swap-class-modal';
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
-        
+
         modal.innerHTML = `
             <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
@@ -1818,24 +1816,24 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Render available classes
         const tbody = modal.querySelector('#swap-classes-tbody');
         availableClasses.forEach(cls => {
             const row = document.createElement('tr');
             row.className = 'bg-white border-b hover:bg-gray-50';
-            
+
             // Check if schedules conflict
             const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
-            const conflictBadge = hasConflict 
-                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>' 
+            const conflictBadge = hasConflict
+                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>'
                 : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Không trùng</span>';
-            
+
             const isFull = cls.phanTramDangKy >= 100;
             const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
-            
+
             row.innerHTML = `
                 <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}</td>
                 <td class="px-4 py-3">
@@ -1857,22 +1855,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     </div>
                 </td>
             `;
-            
+
             tbody.appendChild(row);
         });
-        
+
         // Close modal handler
         modal.querySelector('#close-swap-modal').addEventListener('click', () => {
             modal.remove();
         });
-        
+
         // Click outside to close
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.remove();
             }
         });
-        
+
         // Execute swap handler
         modal.querySelectorAll('.execute-swap-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
@@ -1881,7 +1879,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 const targetName = btn.dataset.targetName;
                 const targetSource = btn.dataset.targetSource;
                 const hasConflict = btn.dataset.hasConflict === 'true';
-                
+
                 // Find target class full info from availableClasses (not allScheduleData)
                 const targetClass = availableClasses.find(c => c.id.toString() === targetId);
                 if (!targetClass) {
@@ -1890,22 +1888,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     console.log('❌ Available classes:', availableClasses.map(c => ({ id: c.id, code: c.maLopHocPhan })));
                     return;
                 }
-                
+
                 // Find registered class full info
                 const registeredClassFull = registeredClassesData.find(c => c.id.toString() === regId);
                 if (!registeredClassFull) {
                     log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
                     return;
                 }
-                
-                const conflictWarning = hasConflict 
+
+                const conflictWarning = hasConflict
                     ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!</p></div>'
                     : '';
-                
-                const slotInfo = targetClass.phanTramDangKy >= 100 
+
+                const slotInfo = targetClass.phanTramDangKy >= 100
                     ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.</p>'
                     : '<p class="text-sm text-green-600 mt-2">✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.</p>';
-                
+
                 const confirmMsg = `
                     ${conflictWarning}
                     <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đổi lớp?</p>
@@ -1915,7 +1913,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     </div>
                     ${slotInfo}
                 `;
-                
+
                 showConfirmModal(
                     confirmMsg,
                     () => {
@@ -1927,29 +1925,29 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 oldSwapEntry = key;
                             }
                         });
-                        
+
                         // Remove old swap entry if exists
                         if (oldSwapEntry) {
                             swapPendingClasses.delete(oldSwapEntry);
                             log(`🔄 Cập nhật lớp đổi cho ${regName} (${regCode})`);
                         }
-                        
+
                         // Add new swap entry with target class ID as key
                         swapPendingClasses.set(targetId, {
                             registered: registeredClassFull,
                             target: targetClass
                         });
-                        
+
                         if (oldSwapEntry) {
                             log(`✅ Đã cập nhật đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                         } else {
                             log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                         }
-                        
+
                         if (targetClass.phanTramDangKy >= 100) {
                             log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
                         }
-                        
+
                         updateSelectedList();
                         modal.remove();
                     },
@@ -1960,20 +1958,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             });
         });
     };
-    
+
     // Check schedule conflict between two specific classes
     const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => {
         if (!schedule1 || !Array.isArray(schedule1) || schedule1.length === 0) return false;
         if (!schedule2 || !Array.isArray(schedule2) || schedule2.length === 0) return false;
-        
+
         for (const s1 of schedule1) {
             const periods1 = parsePeriods(s1.tietHoc);
             if (periods1.length === 0) continue;
-            
+
             for (const s2 of schedule2) {
                 const periods2 = parsePeriods(s2.tietHoc);
                 if (periods2.length === 0) continue;
-                
+
                 // Check if same day of week
                 if (s1.thu === s2.thu) {
                     // Check if date ranges overlap
@@ -1986,7 +1984,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 }
             }
         }
-        
+
         return false;
     };
 
@@ -1996,20 +1994,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             registrationControls.classList.add('hidden');
             return;
         }
-        
+
         const totalCount = selectedClasses.size + swapPendingClasses.size;
-        
+
         if (totalCount === 0) {
             selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
             registrationControls.classList.add('hidden');
-            
+
             // Save to cache even when empty
             saveCachedData();
             return;
         }
-        
+
         let html = '';
-        
+
         // Render regular selected classes
         selectedClasses.forEach(cls => {
             const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
@@ -2022,15 +2020,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
                 </div>`;
         });
-        
+
         // Render swap pending classes with strikethrough old class and arrow to new class
         swapPendingClasses.forEach((swap, targetClassId) => {
             const registeredClass = swap.registered;
             const targetClass = swap.target;
-            
+
             const regSourceBadge = registeredClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
             const targetSourceBadge = targetClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
-            
+
             html += `
                 <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-2 rounded-md hover:bg-yellow-100">
                     <div class="flex-1">
@@ -2064,22 +2062,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     <button data-target-class-id="${targetClassId}" class="remove-swap-btn text-red-500 hover:text-red-700 ml-2 flex-shrink-0">&times;</button>
                 </div>`;
         });
-        
+
         selectedList.innerHTML = html;
         registrationControls.classList.remove('hidden');
-        
+
         // Save to cache whenever selection changes
         saveCachedData();
     };
 
     // --- EVENT LISTENERS ---
-    
+
     // Guide button
     const guideBtn = document.getElementById('guide-btn');
     if (guideBtn) {
         guideBtn.addEventListener('click', showGuideModal);
     }
-    
+
     // Try auto-login on page load
     autoLogin().then(success => {
         if (!success) {
@@ -2087,7 +2085,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             loginForm.classList.remove('hidden');
         }
     });
-    
+
     loginBtn.addEventListener('click', handleLogin);
     refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
     startInsertionBtn.addEventListener('click', startInsertion);
@@ -2105,21 +2103,21 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 log('🔒 Không thể chọn lớp này vì đã bị khóa', true);
                 return;
             }
-            
+
             // Check if row has conflict
             if (scheduleRow.dataset.hasConflict === 'true') {
                 const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
                 const conflictList = conflicts.map((conflict, idx) => {
-                    const details = conflict.uniqueConflicts.map(c => 
+                    const details = conflict.uniqueConflicts.map(c =>
                         `${c.day}, Tiết ${c.conflictPeriod}`
                     ).join(' và ');
                     return `${idx + 1}. ${conflict.registeredClass} (${conflict.registeredCode}) - ${details}`;
                 }).join('\n');
-                
+
                 log(`⚠️ KHÔNG THỂ CHỌN LỚP NÀY\n\n🔴 Trùng lịch học với ${conflicts.length} môn đã đăng ký:\n\n${conflictList}\n\n💡 Vui lòng chọn lớp khác hoặc hủy đăng ký lớp bị trùng.`, true);
                 return;
             }
-            
+
             if (!vipStatus.hasVIP) {
                 log("⚠️ Bạn cần nâng cấp VIP để chọn lớp.", true);
                 return;
@@ -2144,7 +2142,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
             updateSelectedList();
         }
-        
+
         const removeSwapBtn = e.target.closest('.remove-swap-btn');
         if (removeSwapBtn) {
             if (!vipStatus.hasVIP) {
@@ -2156,13 +2154,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             updateSelectedList();
             log("🗑️ Đã hủy yêu cầu đổi lớp");
         }
-        
+
         const cancelBtn = e.target.closest('.cancel-btn');
         if (cancelBtn) {
             const { regId, tenMon, source } = cancelBtn.dataset;
             cancelRegistration(regId, tenMon, source);
         }
-        
+
         const swapFromRegisteredBtn = e.target.closest('.swap-from-registered-btn');
         if (swapFromRegisteredBtn) {
             const registeredData = {
@@ -2173,20 +2171,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 subjectCode: swapFromRegisteredBtn.dataset.regSubjectCode,
                 status: swapFromRegisteredBtn.dataset.regStatus
             };
-            
+
             showSwapClassModal(registeredData);
         }
-        
+
         const swapFromConflictBtn = e.target.closest('.swap-from-conflict-btn');
         if (swapFromConflictBtn) {
             // Prevent row selection when clicking swap button
             e.stopPropagation();
-            
+
             if (!vipStatus.hasVIP) {
                 log("⚠️ Bạn cần nâng cấp VIP để sử dụng chức năng đổi lớp.", true);
                 return;
             }
-            
+
             const registeredData = {
                 id: swapFromConflictBtn.dataset.regId,
                 code: swapFromConflictBtn.dataset.regCode,
@@ -2195,16 +2193,16 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 subjectCode: swapFromConflictBtn.dataset.regSubjectCode,
                 status: swapFromConflictBtn.dataset.regStatus
             };
-            
+
             const targetData = {
                 id: swapFromConflictBtn.dataset.targetId,
                 code: swapFromConflictBtn.dataset.targetCode,
                 name: swapFromConflictBtn.dataset.targetName
             };
-            
+
             showSwapFromConflictModal(registeredData, targetData);
         }
-        
+
         const swapBtn = e.target.closest('.swap-class-btn');
         if (swapBtn) {
             const registeredData = {
@@ -2219,62 +2217,62 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 name: swapBtn.dataset.targetName,
                 source: swapBtn.dataset.targetSource
             };
-            
+
             // Find full class objects from data
             const registeredClass = registeredClassesData.find(c => c.id.toString() === registeredData.id);
             const targetClass = allScheduleData.find(c => c.id.toString() === targetData.id);
-            
+
             if (!registeredClass || !targetClass) {
                 log("❌ Không tìm thấy thông tin đầy đủ của lớp", true);
                 return;
             }
-            
+
             // Validate registered class can be cancelled
             const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
-            
+
             if (registeredStatus === 'Đã khóa lớp') {
                 log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
-            
+
             if (registeredStatus === 'Đã mở chính thức') {
                 log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
-            
+
             if (registeredStatus === 'Đang lên kế hoạch') {
                 log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
-            
+
             if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
                 log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
                 return;
             }
-            
+
             // Validate target class can be registered
             const targetStatus = targetClass.tenTrangThai || '';
-            
+
             if (targetStatus === 'Đã khóa lớp') {
                 log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
                 return;
             }
-            
+
             if (targetStatus === 'Đang lên kế hoạch') {
                 log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
                 return;
             }
-            
+
             // All validations passed - add to swap pending list
             swapPendingClasses.set(targetData.id, {
                 registered: registeredClass,
                 target: targetClass
             });
-            
+
             log(`✅ Đã thêm yêu cầu đổi lớp: ${registeredData.name} → ${targetData.name}`);
             log(`📋 Trạng thái: ${registeredStatus} → ${targetStatus}`);
             updateSelectedList();
-            
+
             // Close tooltip
             if (tooltipElement) {
                 tooltipElement.remove();
@@ -2285,7 +2283,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     // Add hover tooltip for conflict rows
     let tooltipElement = null;
-    
+
     document.addEventListener('mouseover', (e) => {
         const scheduleRow = e.target.closest('#schedule-container tr');
         if (scheduleRow && scheduleRow.dataset.hasConflict === 'true') {
@@ -2294,15 +2292,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 tooltipElement.remove();
                 tooltipElement = null;
             }
-            
+
             // Create tooltip
             const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
             const targetClassId = scheduleRow.dataset.classId;
             const targetClass = allScheduleData.find(c => c.id.toString() === targetClassId);
-            
+
             const conflictMessages = conflicts.map(conflict => {
                 // Format all unique conflicts for this class
-                const conflictDetails = conflict.uniqueConflicts.map(c => 
+                const conflictDetails = conflict.uniqueConflicts.map(c =>
                     `<div class="flex items-center gap-2 mt-1.5 text-xs text-red-100">
                         <span class="flex items-center gap-1">
                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -2318,20 +2316,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         </span>
                     </div>`
                 ).join('');
-                
+
                 // Find the registered class to get its ID and percentage
                 const registeredClass = registeredClassesData.find(r => r.maLopHocPhan === conflict.registeredCode);
-                
+
                 // Check if swap is allowed based on class status
                 let canSwap = false;
                 let swapDisabledReason = '';
-                
+
                 if (!registeredClass) {
                     swapDisabledReason = 'Không tìm thấy thông tin lớp';
                 } else {
                     const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
                     const targetStatus = targetClass?.tenTrangThai || '';
-                    
+
                     // Check registered class can be cancelled
                     if (registeredStatus === 'Đã khóa lớp') {
                         swapDisabledReason = `Trạng thái: ${registeredStatus}`;
@@ -2351,8 +2349,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         canSwap = true;
                     }
                 }
-                
-                const swapButton = canSwap ? 
+
+                const swapButton = canSwap ?
                     `<button class="swap-class-btn mt-2 w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold py-1.5 px-3 rounded transition duration-200 flex items-center justify-center gap-1"
                             data-registered-id="${registeredClass.id}"
                             data-registered-code="${conflict.registeredCode}"
@@ -2366,9 +2364,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                             <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z"/>
                         </svg>
                         Đổi lớp
-                    </button>` 
+                    </button>`
                     : `<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi: ${swapDisabledReason}</p>`;
-                
+
                 return `<div class="py-2 border-b border-red-500 last:border-0">
                     <div class="flex items-start gap-2">
                         <span class="text-red-200 text-lg flex-shrink-0">📚</span>
@@ -2381,7 +2379,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     </div>
                 </div>`;
             }).join('');
-            
+
             tooltipElement = document.createElement('div');
             tooltipElement.className = 'fixed bg-gradient-to-br from-red-600 to-red-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 max-w-md border-2 border-red-500';
             tooltipElement.innerHTML = `
@@ -2396,9 +2394,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     💡 Tip: Chọn lớp học khác hoặc hủy đăng ký lớp bị trùng
                 </div>
             `;
-            
+
             document.body.appendChild(tooltipElement);
-            
+
             // Position tooltip near cursor
             const updateTooltipPosition = (event) => {
                 const x = event.clientX + 15;
@@ -2406,7 +2404,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 tooltipElement.style.left = x + 'px';
                 tooltipElement.style.top = y + 'px';
             };
-            
+
             updateTooltipPosition(e);
             scheduleRow.addEventListener('mousemove', updateTooltipPosition);
             scheduleRow.addEventListener('mouseleave', () => {
