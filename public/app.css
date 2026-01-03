@@ -7,80 +7,148 @@
     --text-secondary: #5f6368;
 }
 
+/* Base Font Setup in CSS as backup */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--google-gray-bg);
+}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes ripple {
+    0% {
+        box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4);
+    }
+
+    100% {
+        box-shadow: 0 0 0 10px rgba(26, 115, 232, 0);
+    }
+}
+
 /* Material Design Utilities */
 .material-card {
     background: var(--surface-white);
-    border-radius: 24px;
-    box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15);
-    transition: box-shadow 0.2s ease-in-out;
+    border-radius: 20px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .material-card:hover {
-    box-shadow: 0 4px 4px 0 rgba(60,64,67,0.3), 0 8px 12px 6px rgba(60,64,67,0.15);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
 }
 
 .material-btn {
     border-radius: 9999px;
-    font-family: 'Google Sans', 'Roboto', sans-serif;
+    /* Pill shape */
+    font-family: 'Outfit', 'Roboto', sans-serif;
     font-weight: 500;
-    letter-spacing: 0.25px;
-    transition: background-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.1px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.material-btn:active {
+    transform: scale(0.96);
+}
+
+/* Custom ripple effect class to be added via JS or used on focus */
+.material-btn:focus-visible {
+    animation: ripple 0.6s linear;
+    outline: none;
 }
 
 .material-input {
     border-radius: 8px;
+    /* Slightly rounded corners */
     border: 1px solid #dadce0;
-    transition: border 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease-in-out;
+    background-color: #ffffff;
+}
+
+.material-input:hover {
+    border-color: #202124;
+    background-color: #f8f9fa;
 }
 
 .material-input:focus {
     border-color: var(--google-blue);
     box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
     outline: none;
+    background-color: #ffffff;
 }
 
 /* Toggle Switch Styles */
 input:checked~.dot {
     transform: translateX(100%);
-    background-color: #48bb78;
+    background-color: #ffffff;
+    box-shadow: -1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-input:checked~.block {
-    background-color: #a7f3d0;
+/* Payment/Modal Styles */
+.payment-modal,
+#timetable-modal,
+#swap-class-modal {
+    backdrop-filter: blur(4px);
+    /* Glassmorphism background */
+    transition: opacity 0.3s ease-out;
 }
 
-/* Payment Modal Styles */
-.payment-modal {
-    display: none;
-    position: fixed;
-    z-index: 50;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
+.payment-modal-content,
+#timetable-modal>div,
+#swap-class-modal>div {
+    animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 28px;
+    /* Material 3 styled corners */
 }
 
-.payment-modal-content {
-    background-color: #fff;
-    margin: 5% auto;
-    padding: 24px;
-    border: none;
-    width: 90%;
-    max-width: 800px;
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* Table Row Animation */
+tbody tr {
+    transition: background-color 0.15s ease;
 }
 
-.close-modal {
-    color: #6b7280;
-    font-size: 1.75rem;
-    font-weight: 700;
-    cursor: pointer;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
 }
 
-.close-modal:hover,
-.close-modal:focus {
-    color: #1f2937;
+::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+    border: 2px solid #f1f3f4;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }

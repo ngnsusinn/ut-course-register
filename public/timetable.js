@@ -277,8 +277,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         html += '<td class="border-l border-gray-100 px-2 py-2 bg-gray-50/30">';
 
-                        classes.forEach(cls => {
+                        classes.forEach((cls, idx) => {
                             const bgColor = cls.isRegistered ? 'rgb(0, 134, 137)' : 'rgb(255, 152, 0)';
+                            const animDelay = idx * 0.1;
                             // Check if E-Learning
                             const isELearning = cls.phong && cls.phong.toLowerCase().includes('e-learning');
                             const roomHtml = isELearning
@@ -289,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 : '';
 
                             html += `
-                                <div class="mb-2 last:mb-0 p-2 rounded text-white text-sm" style="background-color: ${bgColor}">
+                                <div class="mb-2 last:mb-0 p-2 rounded text-white text-sm opacity-0" style="background-color: ${bgColor}; animation: fadeInUp 0.4s ease forwards ${animDelay}s">
                                     <p class="font-semibold">${cls.tenMonHoc}</p>
                                     <div class="mt-1 space-y-0.5 text-xs">
                                         <p class="font-mono">${cls.maLopHocPhan}</p>
