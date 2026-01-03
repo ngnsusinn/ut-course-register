@@ -253,6 +253,29 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
+    // Check conflict between two specific schedule detail arrays
+    const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => {
+        if (!schedule1 || !schedule2 || schedule1.error || schedule2.error) return false;
+
+        for (const s1 of schedule1) {
+            const periods1 = parsePeriods(s1.tietHoc);
+
+            for (const s2 of schedule2) {
+                // Check day of week
+                if (s1.thu !== s2.thu) continue;
+
+                // Check date ranges
+                if (dateRangesOverlap(s1.ngayBatDau, s1.ngayKetThuc, s2.ngayBatDau, s2.ngayKetThuc)) {
+                    const periods2 = parsePeriods(s2.tietHoc);
+                    if (periodsOverlap(periods1, periods2)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    };
+
     // --- VIP FUNCTIONS ---
     const showGuideModal = async () => {
         try {
@@ -1977,34 +2000,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Check schedule conflict between two specific classes
-    const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => {
-        if (!schedule1 || !Array.isArray(schedule1) || schedule1.length === 0) return false;
-        if (!schedule2 || !Array.isArray(schedule2) || schedule2.length === 0) return false;
 
-        for (const s1 of schedule1) {
-            const periods1 = parsePeriods(s1.tietHoc);
-            if (periods1.length === 0) continue;
-
-            for (const s2 of schedule2) {
-                const periods2 = parsePeriods(s2.tietHoc);
-                if (periods2.length === 0) continue;
-
-                // Check if same day of week
-                if (s1.thu === s2.thu) {
-                    // Check if date ranges overlap
-                    if (dateRangesOverlap(s1.ngayBatDau, s1.ngayKetThuc, s2.ngayBatDau, s2.ngayKetThuc)) {
-                        // Check if periods overlap
-                        if (periodsOverlap(periods1, periods2)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-        return false;
-    };
 
     const updateSelectedList = async () => {
         if (!vipStatus.hasVIP) {
