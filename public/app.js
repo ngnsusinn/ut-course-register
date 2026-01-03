@@ -1421,12 +1421,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left text-gray-500';
+        table.className = 'w-full text-sm text-left text-[#202124]';
         table.innerHTML = `
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
-                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
-                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
-                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã đăng ký</th>
+            <thead class="text-xs text-[#5f6368] uppercase bg-white border-b border-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-4 font-medium tracking-wider">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-4 font-medium tracking-wider">Mã LHP</th>
+                <th scope="col" class="px-6 py-4 font-medium tracking-wider">Loại HP</th><th scope="col" class="px-6 py-4 font-medium tracking-wider">Số TC</th>
+                <th scope="col" class="px-6 py-4 font-medium tracking-wider">Trạng thái</th><th scope="col" class="px-6 py-4 font-medium tracking-wider">Đã đăng ký</th>
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
@@ -1441,19 +1441,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const hasConflict = conflictCheck.hasConflict;
 
             // Build row class and cursor based on status
-            let rowClass = 'bg-white border-b transition-colors duration-200';
+            let rowClass = 'border-b border-gray-50 transition-colors duration-200';
             if (isLocked) {
                 // Locked class - gray background, not clickable
-                rowClass += ' bg-gray-200 cursor-not-allowed opacity-60';
+                rowClass += ' bg-gray-100 cursor-not-allowed opacity-60';
             } else if (hasConflict) {
                 // Conflict - red background, not clickable
-                rowClass += ' bg-red-100 cursor-not-allowed';
+                rowClass += ' bg-red-50 cursor-not-allowed';
             } else if (isSelected) {
                 // Selected - blue background, clickable
-                rowClass += ' bg-blue-200 cursor-pointer hover:bg-sky-100';
+                rowClass += ' bg-blue-50 cursor-pointer hover:bg-blue-100';
             } else {
                 // Normal - white background, clickable
-                rowClass += ' cursor-pointer hover:bg-sky-100';
+                rowClass += ' bg-white cursor-pointer hover:bg-gray-50';
             }
 
             row.className = rowClass;
@@ -1472,12 +1472,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
             const typeHtml = cls.source === 'dkhpdk'
-                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`
+                ? `<span class="text-xs font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700 whitespace-nowrap">Điều kiện</span>`
                 : (isBatBuoc === undefined
                     ? 'N/A'
                     : (isBatBuoc
-                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
-                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
+                        ? `<span class="text-xs font-medium px-3 py-1 rounded-full bg-green-100 text-green-700 whitespace-nowrap">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-3 py-1 rounded-full bg-orange-100 text-orange-800 whitespace-nowrap">Tự chọn</span>`));
 
             // Add warnings below subject name (only conflict warning, not locked)
             let warnings = '';
@@ -1491,7 +1491,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
 
                     return `
-                        <div class="flex items-center justify-between gap-2 py-1.5 px-2 bg-white rounded border border-red-200">
+                        <div class="flex items-center justify-between gap-3 py-2 px-3 bg-white rounded-lg border border-red-100 shadow-sm mt-1">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="text-xs font-mono font-semibold text-red-600 whitespace-nowrap">${c.registeredCode}</span>
                                 <span class="text-xs text-gray-600 truncate">${c.registeredClass}</span>
@@ -1513,7 +1513,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).join('');
 
                 warnings += `
-                    <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                    <div class="mt-3 p-3 bg-red-50 border border-red-100 rounded-xl">
                         <div class="flex items-center gap-2 mb-2">
                             <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -1528,12 +1528,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             row.innerHTML = `
-                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${warnings}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <th scope="row" class="px-6 py-4 font-normal text-[#202124]">${cls.tenMonHoc}${warnings}<div class="text-xs mt-1 text-[#5f6368]">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
                 <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
                 <td class="px-6 py-4 whitespace-nowrap" data-label="Loại HP">${typeHtml}</td>
                 <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
                 <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
-                <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
+                <td class="px-6 py-4 font-medium ${cls.phanTramDangKy >= 100 ? 'text-[#ea4335]' : 'text-[#188038]'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
             tbody.appendChild(row);
         });
         scheduleContainer.innerHTML = '';
@@ -1542,22 +1542,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderRegisteredTable = async (data) => {
         if (!data || data.length === 0) {
-            registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
+            registeredContainer.innerHTML = `<p class="text-[#5f6368] text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
             return;
         }
         const table = document.createElement('table');
-        table.className = 'w-full text-sm text-left text-gray-500';
+        table.className = 'w-full text-sm text-left text-[#202124]';
         table.innerHTML = `
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
-                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
-                <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>
-                <th scope="col" class="px-6 py-3">Hành động</th>
+            <thead class="text-xs text-[#5f6368] uppercase bg-white border-b border-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-4 font-medium tracking-wider">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-4 font-medium tracking-wider">Mã LHP</th>
+                <th scope="col" class="px-6 py-4 font-medium tracking-wider">Số TC</th><th scope="col" class="px-6 py-4 font-medium tracking-wider">Trạng thái</th>
+                <th scope="col" class="px-6 py-4 font-medium tracking-wider">Hành động</th>
             </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         data.forEach(reg => {
             const row = document.createElement('tr');
-            row.className = 'bg-white border-b hover:bg-gray-50';
-            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
+            row.className = 'bg-white border-b border-gray-50 hover:bg-gray-50 transition-colors';
+            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Điều kiện</span>` : '';
 
             // Try to find maHocPhan from allScheduleData if not present in registered data
             let maHocPhan = reg.maHocPhan;
@@ -1614,11 +1614,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show modal to confirm swap to the target class directly
         showConfirmModal(
             `Xác nhận đổi lớp trùng lịch?<br><br>` +
-            `<div class="bg-gray-50 p-3 rounded mb-2">` +
-            `<p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>` +
-            `<p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>` +
+            `<div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-3">` +
+            `<p class="text-sm mb-1"><span class="font-medium text-[#ea4335]">Hủy:</span> <span class="text-[#202124]">${regName}</span> <span class="text-[#5f6368]">(${regCode})</span></p>` +
+            `<p class="text-sm"><span class="font-medium text-[#188038]">Đăng ký:</span> <span class="text-[#202124]">${targetName}</span> <span class="text-[#5f6368]">(${targetCode})</span></p>` +
             `</div>` +
-            `<p class="text-sm text-gray-600">Lớp mới sẽ được thêm vào danh sách đổi lớp.</p>`,
+            `<p class="text-sm text-[#5f6368]">Lớp mới sẽ được thêm vào danh sách đổi lớp.</p>`,
             () => {
                 // Check if there's already a swap for this registered class and remove it
                 let oldSwapEntry = null;
@@ -1773,16 +1773,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create modal
         const modal = document.createElement('div');
         modal.id = 'swap-class-modal';
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 transition-opacity';
 
         modal.innerHTML = `
-            <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
+            <div class="bg-white rounded-[28px] shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="px-6 py-4 flex justify-between items-center border-b border-gray-100">
                     <div>
-                        <h2 class="text-2xl font-bold">🔄 Đổi lớp học phần</h2>
-                        <p class="text-sm text-blue-100 mt-1">Lớp hiện tại: ${regName} (${regCode})</p>
+                        <h2 class="text-2xl font-medium text-[#202124]">🔄 Đổi lớp học phần</h2>
+                        <p class="text-sm text-[#5f6368] mt-1">Lớp hiện tại: <span class="font-medium text-[#1a73e8]">${regName} (${regCode})</span></p>
                     </div>
-                    <button id="close-swap-modal" class="text-white hover:text-gray-200 transition">
+                    <button id="close-swap-modal" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#5f6368] transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -1790,24 +1790,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div class="p-6 overflow-y-auto flex-1">
-                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                        <p class="text-sm text-gray-700">
-                            <span class="font-bold">📋 Lịch học hiện tại:</span><br>
-                            <div class="mt-2 text-gray-600">${formatScheduleDetail(registeredClass.scheduleDetails)}</div>
-                        </p>
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
+                        <svg class="w-5 h-5 text-[#1a73e8] mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                        <div>
+                            <span class="font-medium text-[#1a73e8] block mb-1">Lịch học hiện tại</span>
+                            <div class="text-[#5f6368] text-sm">${formatScheduleDetail(registeredClass.scheduleDetails)}</div>
+                        </div>
                     </div>
                     
-                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đổi đến:</h3>
+                    <h3 class="text-lg font-medium text-[#202124] mb-4">Chọn lớp muốn đổi đến</h3>
                     
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left text-gray-500">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <div class="overflow-x-auto border border-gray-100 rounded-lg">
+                        <table class="w-full text-sm text-left text-[#202124]">
+                            <thead class="text-xs text-[#5f6368] uppercase bg-white border-b border-gray-100">
                                 <tr>
-                                    <th scope="col" class="px-4 py-3">Mã LHP</th>
-                                    <th scope="col" class="px-4 py-3">Lịch học</th>
-                                    <th scope="col" class="px-4 py-3">Trạng thái</th>
-                                    <th scope="col" class="px-4 py-3">Đã ĐK</th>
-                                    <th scope="col" class="px-4 py-3">Hành động</th>
+                                    <th scope="col" class="px-6 py-4 font-medium tracking-wider">Mã LHP</th>
+                                    <th scope="col" class="px-6 py-4 font-medium tracking-wider">Lịch học</th>
+                                    <th scope="col" class="px-6 py-4 font-medium tracking-wider">Trạng thái</th>
+                                    <th scope="col" class="px-6 py-4 font-medium tracking-wider">Đã ĐK</th>
+                                    <th scope="col" class="px-6 py-4 font-medium tracking-wider">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody id="swap-classes-tbody"></tbody>
@@ -1823,34 +1824,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = modal.querySelector('#swap-classes-tbody');
         availableClasses.forEach(cls => {
             const row = document.createElement('tr');
-            row.className = 'bg-white border-b hover:bg-gray-50';
-
-            // Check if schedules conflict
-            const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
-            const conflictBadge = hasConflict
-                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>'
-                : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Không trùng</span>';
-
-            const isFull = cls.phanTramDangKy >= 100;
-            const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
+            row.className = `border-b border-gray-50 transition-colors ${hasConflict ? 'bg-red-50 hover:bg-red-50' : 'bg-white hover:bg-gray-50'}`;
 
             row.innerHTML = `
-                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}</td>
-                <td class="px-4 py-3">
-                    <div class="text-xs">${formatScheduleDetail(cls.scheduleDetails)}</div>
+                <td class="px-6 py-4 font-medium">${cls.maLopHocPhan}</td>
+                <td class="px-6 py-4">
+                    <div class="text-xs text-[#5f6368]">${formatScheduleDetail(cls.scheduleDetails)}</div>
+                    ${hasConflict ? `<div class="text-red-600 text-xs font-bold mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg> Trùng lịch</div>` : ''}
                 </td>
-                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}</td>
-                <td class="px-4 py-3 ${statusColor}">${cls.phanTramDangKy}%</td>
-                <td class="px-4 py-3">
+                <td class="px-6 py-4">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-6 py-4 ${statusColor}">${cls.phanTramDangKy}%</td>
+                <td class="px-6 py-4">
                     <div class="flex flex-col gap-2">
                         ${conflictBadge}
-                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-blue-600 text-white hover:bg-blue-700"
+                        <button class="execute-swap-btn material-btn bg-[#1a73e8] text-white py-2 px-4 hover:bg-[#1557b0] shadow hover:shadow-md transition-all text-xs flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                 data-target-id="${cls.id}"
                                 data-target-code="${cls.maLopHocPhan}"
                                 data-target-name="${cls.tenMonHoc}"
                                 data-target-source="${cls.source}"
                                 data-has-conflict="${hasConflict}">
-                            🔄 Đổi lớp
+                            <span>Chọn</span>
                         </button>
                     </div>
                 </td>
@@ -2012,12 +2005,12 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedClasses.forEach(cls => {
             const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
             html += `
-                <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
+                <div class="flex justify-between items-center bg-white border border-gray-200 p-3 rounded-2xl hover:border-blue-300 transition-colors shadow-sm">
                     <div>
-                        <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
-                        <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
+                        <p class="font-medium text-sm text-[#202124]">${cls.tenMonHoc} ${sourceBadge}</p>
+                        <div class="text-xs text-[#5f6368] mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
                     </div>
-                    <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
+                    <button data-class-id="${cls.id}" class="remove-selected-btn w-8 h-8 flex items-center justify-center rounded-full text-[#5f6368] hover:bg-gray-100 hover:text-red-500 transition-colors ml-2">&times;</button>
                 </div>`;
         });
 
@@ -2030,36 +2023,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetSourceBadge = targetClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
 
             html += `
-                <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-2 rounded-md hover:bg-yellow-100">
+                <div class="flex justify-between items-center bg-amber-50 border border-amber-200 p-3 rounded-2xl shadow-sm">
                     <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="text-xs font-bold text-yellow-800 uppercase">Đổi lớp</span>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xs font-bold text-amber-800 uppercase px-2 py-0.5 bg-amber-100 rounded-full">Đổi lớp</span>
                         </div>
                         
                         <!-- Old class (strikethrough) -->
-                        <div class="mb-1">
-                            <p class="font-semibold text-sm text-gray-500 line-through decoration-2">${registeredClass.tenMonHoc} ${regSourceBadge}</p>
-                            <div class="text-xs text-gray-400 line-through mt-1">${formatSelectedClassDetail(registeredClass, registeredClass.scheduleDetails)}</div>
+                        <div class="mb-2 pl-1 border-l-2 border-gray-300">
+                            <p class="font-medium text-sm text-[#5f6368] line-through decoration-2">${registeredClass.tenMonHoc} ${regSourceBadge}</p>
                         </div>
                         
                         <!-- Arrow -->
-                        <div class="flex items-center gap-2 my-1">
-                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        <div class="flex items-center gap-2 my-1 text-[#1a73e8]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17l5-5-5-5M6 12h12"/>
                             </svg>
-                            <span class="text-xs font-semibold text-green-700">Đổi sang</span>
                         </div>
                         
                         <!-- New class -->
-                        <div>
-                            <p class="font-semibold text-sm text-green-800">${targetClass.tenMonHoc} ${targetSourceBadge}</p>
-                            <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(targetClass, targetClass.scheduleDetails)}</div>
+                        <div class="mt-1 pl-1 border-l-2 border-[#1a73e8]">
+                            <p class="font-medium text-sm text-[#1a73e8]">${targetClass.tenMonHoc} ${targetSourceBadge}</p>
+                            <div class="text-xs text-[#5f6368] mt-1">${formatSelectedClassDetail(targetClass, targetClass.scheduleDetails)}</div>
                         </div>
                     </div>
-                    <button data-target-class-id="${targetClassId}" class="remove-swap-btn text-red-500 hover:text-red-700 ml-2 flex-shrink-0">&times;</button>
+                    <button data-target-class-id="${targetClassId}" class="remove-swap-btn w-8 h-8 flex items-center justify-center rounded-full text-[#5f6368] hover:bg-gray-100 hover:text-red-500 transition-colors ml-2 flex-shrink-0">&times;</button>
                 </div>`;
         });
 
