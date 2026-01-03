@@ -1824,6 +1824,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = modal.querySelector('#swap-classes-tbody');
         availableClasses.forEach(cls => {
             const row = document.createElement('tr');
+
+            // Check if schedules conflict
+            const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
+            const conflictBadge = hasConflict
+                ? '<span class="text-xs bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded font-medium">⚠️ Trùng lịch</span>'
+                : '<span class="text-xs bg-green-50 text-green-600 border border-green-100 px-2 py-1 rounded font-medium">✓ Không trùng</span>';
+
+            const isFull = cls.phanTramDangKy >= 100;
+            const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
+
             row.className = `border-b border-gray-50 transition-colors ${hasConflict ? 'bg-red-50 hover:bg-red-50' : 'bg-white hover:bg-gray-50'}`;
 
             row.innerHTML = `
