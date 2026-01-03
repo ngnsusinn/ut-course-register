@@ -14,85 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let registeredData = [];
     let selectedData = [];
     
-    // Store phase start dates for header display
-    let phaseStartDates = {
-        1: null, // Earliest date of phase 1
-        2: null  // Phase boundary date (start of phase 2)
-    };
-    
-    // Forward declaration for updateTimetable (defined later)
-    let updateTimetable;
-    
-    // Get Monday of the week for a given date
-    const getWeekStartDate = (date) => {
-        const d = new Date(date);
-        const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        // Calculate days to subtract to get to Monday
-        // If Sunday (0), go back 6 days; otherwise go back (day - 1) days
-        const daysToMonday = day === 0 ? 6 : day - 1;
-        d.setDate(d.getDate() - daysToMonday);
-        return d;
-    };
-    
-    // Update title with phase info
-    const updateTitle = (phase) => {
-        let title = `📅 Thời khóa biểu - Đợt ${phase}`;
-        const startDate = phaseStartDates[phase];
-        if (startDate) {
-            // Get Monday of the week
-            const weekStart = getWeekStartDate(startDate);
-            title += ` - ${weekStart.toLocaleDateString('vi-VN')}`;
-        }
-        if (timetableTitle) {
-            timetableTitle.textContent = title;
-        }
-    };
-    
-    // Expose show function globally
-    window.showTimetableModal = () => {
-        // Get data from global scope (exposed in app.js)
-        if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
-        if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
-        
-        console.log('showTimetableModal - Data loaded:', {
-            registeredCount: registeredData.length,
-            selectedCount: selectedData.length
-        });
-        
-        timetableModal.classList.remove('hidden');
-        updateTimetable(); // Use updateTimetable instead of just generateTimetable
-    };
-
-    // Close modal
-    if (closeTimetableModal) {
-        closeTimetableModal.addEventListener('click', () => {
-            timetableModal.classList.add('hidden');
-        });
-    }
-    
-    // Close on click outside
-    timetableModal.addEventListener('click', (e) => {
-        if (e.target === timetableModal) {
-            timetableModal.classList.add('hidden');
-        }
-    });
-
-    // Tab switching
-    timetableTabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update active state
-            timetableTabBtns.forEach(b => {
-                b.classList.remove('bg-blue-50', 'text-blue-600', 'shadow-sm');
-                b.classList.add('text-slate-500');
-            });
-            btn.classList.remove('text-slate-500');
-            btn.classList.add('bg-blue-50', 'text-blue-600', 'shadow-sm');
-            
-            currentPhase = parseInt(btn.dataset.phase);
-            generateTimetable(currentPhase);
-        });
-    });
-    
     // Parse periods from string like "3-4" or "10-12"
     const parseTietHoc = (tietHoc) => {
         if (!tietHoc) return [];
@@ -417,40 +338,37 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTitle(currentPhase); // Update header with phase info
     };
     
-    // Event handlers
-    viewTimetableBtn?.addEventListener('click', () => {
-        // Get registered and selected classes data using getter functions
-        if (typeof window.getRegisteredClassesData === 'function') {
-            registeredData = window.getRegisteredClassesData() || [];
-        }
-        if (typeof window.getSelectedClassesData === 'function') {
-            selectedData = window.getSelectedClassesData() || [];
-        }
-        
-        console.log('Opening timetable with data:', { 
-            registeredCount: registeredData.length, 
-            selectedCount: selectedData.length,
-            registeredData, 
-            selectedData 
-        });
-        
-        if (registeredData.length === 0 && selectedData.length === 0) {
-            console.warn('No data found! Make sure you have fetched registered classes and/or selected some classes.');
-        }
+    // Expose show function globally (must be after generateTimetable is defined)
+    window.showTimetableModal = () => {
+        // Get data from global scope (exposed in app.js)
+        if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
+        if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
         
         timetableModal.classList.remove('hidden');
         updateTimetable();
-    });
+    };
+
+    // View timetable button click handler
+    if (viewTimetableBtn) {
+        viewTimetableBtn.addEventListener('click', () => {
+            window.showTimetableModal();
+        });
+    }
     
-    closeTimetableModal?.addEventListener('click', () => {
-        timetableModal.classList.add('hidden');
-    });
-    
-    timetableModal?.addEventListener('click', (e) => {
-        if (e.target === timetableModal) {
+    // Event handlers
+    if (closeTimetableModal) {
+        closeTimetableModal.addEventListener('click', () => {
             timetableModal.classList.add('hidden');
-        }
-    });
+        });
+    }
+    
+    if (timetableModal) {
+        timetableModal.addEventListener('click', (e) => {
+            if (e.target === timetableModal) {
+                timetableModal.classList.add('hidden');
+            }
+        });
+    }
     
     timetableTabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
