@@ -1,16 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    // === LOAD CONFIGURATION FROM BACKEND ===
-    await window.AppConfig.load();
-    const CONFIG = window.AppConfig.get();
-    
-    // Aliases for module functions (for backward compatibility)
-    const Utils = window.AppUtils;
-    const API = window.AppAPI;
-    const Cache = window.AppCache;
-    const Conflict = window.AppConflict;
-    const Swap = window.AppSwap;
-    const Modal = window.AppModal;
-
+document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -32,146 +20,612 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Dynamically created elements
     let userPanel, greetingMsg, prerequisiteToggle, prerequisiteToggleContainer, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, vipStatusElement, upgradeVipBtn;
 
-    // State (app-specific, not in Cache module)
+    // State
     let authToken = null;
     let dotId = null;
     let userId = null;
     let vipStatus = { hasVIP: false };
+    let allScheduleData = [];
+    let registeredClassesData = []; // Store registered classes for conflict detection
+    let selectedClasses = new Map();
+    let swapPendingClasses = new Map(); // Store classes pending swap: key = targetClassId, value = { registered, target }
+    let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
+    let currentOrder = null;
+    let paymentCheckInterval = null;
+    let vipExpiryCheckInterval = null;
     
-    // VIP Module alias
-    const VIP = window.AppVIP;
-    
-    // === DATA STORAGE (using Cache module directly) ===
-    // All data is accessed via Cache module: 
-    // Cache.allScheduleData, Cache.registeredClassesData, 
-    // Cache.selectedClasses, Cache.swapPendingClasses, Cache.subjectTypeMap
-    
-    // Aliases for Maps (direct reference)
-    const selectedClasses = Cache.selectedClasses;
-    const swapPendingClasses = Cache.swapPendingClasses;
-    const subjectTypeMap = Cache.subjectTypeMap;
-    
-    // Expose data for timetable module (using Cache module)
-    window.getRegisteredClassesData = () => Cache.registeredClassesData;
+    // Expose data for timetable module
+    window.getRegisteredClassesData = () => registeredClassesData;
     window.getSelectedClassesData = () => {
         const allClasses = [];
-        Cache.selectedClasses.forEach(cls => allClasses.push(cls));
-        Cache.swapPendingClasses.forEach(swap => allClasses.push(swap.target));
-        console.log('getSelectedClassesData called:', {
-            selectedClassesSize: Cache.selectedClasses.size,
-            swapPendingSize: Cache.swapPendingClasses.size,
-            totalClasses: allClasses.length
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            allClasses.push(cls);
         });
+        
+        // Add target classes from swap pending (not registered classes)
+        swapPendingClasses.forEach(swap => {
+            allClasses.push(swap.target);
+        });
+        
         return allClasses;
     };
-
-    // === USE MODULE FUNCTIONS ===
-    // Cache lookups aliases
-    const getScheduleById = (id) => Cache.getScheduleById(id);
-    const getScheduleByCode = (code) => Cache.getScheduleByCode(code);
-    const getRegisteredById = (id) => Cache.getRegisteredById(id);
-    const getRegisteredByCode = (code) => Cache.getRegisteredByCode(code);
 
     // Assign originalHTML safely
     const buttons = [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn];
     buttons.forEach(btn => { if (btn) btn.originalHTML = btn.innerHTML; });
 
-    // === BACKEND COMMUNICATION (using API module) ===
+    // === BACKEND COMMUNICATION ===
     const backendRequest = async (action, payload = {}) => {
-        API.setToken(authToken);
-        return await API.request(action, payload);
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            const response = await fetch('/api/handler', { method: 'POST', headers, body: JSON.stringify({ action, payload }) });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
+                log(`Lỗi '${action}': ${errorData.message}`, true);
+                return null;
+            }
+            return await response.json();
+        } catch (error) {
+            log(`Lỗi mạng khi gọi backend: ${error.message}`, true);
+            return null;
+        }
     };
 
-    // --- UTILITY FUNCTIONS (aliases to modules) ---
-    const log = (message, isError = false) => Utils.log(message, isError);
-    const toggleLoading = (button, isLoading) => Utils.toggleLoading(button, isLoading);
-    const formatDayOfWeek = (thu) => Utils.formatDayOfWeek(thu);
-    const formatScheduleDetail = (details) => Utils.formatScheduleDetail(details);
-    const formatSelectedClassDetail = (cls, details) => Utils.formatSelectedClassDetail(cls, details);
+    // --- UTILITY FUNCTIONS ---
+    const log = (message, isError = false) => {
+        const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
+        const logEntry = document.createElement('p');
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.className = isError ? 'text-red-400' : 'text-green-300';
+        logOutput.appendChild(logEntry);
+        logOutput.scrollTop = logOutput.scrollHeight;
+    };
 
-    // --- SCHEDULE CONFLICT DETECTION (using Conflict module) ---
-    const checkScheduleConflict = (classScheduleDetails, registeredData) => 
-        Conflict.checkScheduleConflict(classScheduleDetails, registeredData);
+    const toggleLoading = (button, isLoading) => {
+        if (!button) return;
+        if (isLoading) {
+            button.disabled = true;
+            button.innerHTML = `<div class="loader"></div>`;
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.originalHTML;
+        }
+    };
+
+    const formatDayOfWeek = (thu) => {
+        if (thu === 8) return 'Chủ nhật';
+        return `Thứ ${thu}`;
+    };
+
+    const formatScheduleDetail = (details) => {
+        if (!details || details.error || !Array.isArray(details) || details.length === 0) {
+            return 'Không có thông tin lịch học';
+        }
+        return details.map(d => `<div class="font-medium">${formatDayOfWeek(d.thu)} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
+    };
+
+    const formatSelectedClassDetail = (cls, details) => {
+        if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
+        if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
+        return details.map(detail => `<span>${cls.maLopHocPhan} | ${formatDayOfWeek(detail.thu)} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+    };
+
+    // --- SCHEDULE CONFLICT DETECTION ---
     
-    const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => 
-        Conflict.checkConflictBetweenTwo(schedule1, schedule2);
-    
-    // --- SWAP VALIDATION (using Swap module) ---
-    const canSwapClass = (registeredClass, targetClass) => 
-        Swap.canSwapClass(registeredClass, targetClass);
+    // Parse period string "1-3" or "4-6" to array [1, 2, 3] or [4, 5, 6]
+    const parsePeriods = (tietHoc) => {
+        if (!tietHoc) return [];
+        const parts = tietHoc.toString().split('-');
+        if (parts.length !== 2) return [];
+        const start = parseInt(parts[0]);
+        const end = parseInt(parts[1]);
+        const periods = [];
+        for (let i = start; i <= end; i++) {
+            periods.push(i);
+        }
+        return periods;
+    };
 
-    // --- MODAL FUNCTIONS ---
-    const showGuideModal = () => Modal.showGuide();
-    const showConfirmModal = (message, onConfirm, onCancel) => Modal.showConfirm(message, onConfirm, onCancel);
+    // Check if two period arrays overlap
+    // Example: [1,2,3] and [2,3,4] overlap, [1,2,3] and [4,5,6] don't overlap
+    // Exception: Period 16-18 (evening class) never conflicts with any other periods
+    const periodsOverlap = (periods1, periods2) => {
+        // Check if either period set contains evening periods (16, 17, 18)
+        const eveningPeriods = [16, 17, 18];
+        const hasEvening1 = periods1.some(p => eveningPeriods.includes(p));
+        const hasEvening2 = periods2.some(p => eveningPeriods.includes(p));
+        
+        // If either period set is evening class, no conflict
+        if (hasEvening1 || hasEvening2) {
+            return false;
+        }
+        
+        // Normal conflict check for non-evening periods
+        return periods1.some(p => periods2.includes(p));
+    };
 
-    // Templates alias
-    const Templates = window.AppTemplates;
-    
-    // SwapModal alias
-    const SwapModal = window.AppSwapModal;
+    // Check if two date ranges overlap
+    const dateRangesOverlap = (start1, end1, start2, end2) => {
+        const s1 = new Date(start1).getTime();
+        const e1 = new Date(end1).getTime();
+        const s2 = new Date(start2).getTime();
+        const e2 = new Date(end2).getTime();
+        return s1 <= e2 && s2 <= e1;
+    };
 
-    // --- VIP MODULE INITIALIZATION ---
-    // Initialize VIP module with callbacks (will be fully set up after updateVIPDisplay is defined)
-    const initVIPModule = () => {
-        VIP.init({
-            backendRequest,
-            log,
-            getConfig: () => CONFIG,
-            getUserId: () => userId,
-            getVIPStatus: () => vipStatus,
-            onVIPStatusChange: async (newVipStatus) => {
-                if (newVipStatus) {
-                    vipStatus = newVipStatus;
+    // Check if a class schedule conflicts with registered classes
+    const checkScheduleConflict = (classScheduleDetails, registeredClassesData) => {
+        if (!classScheduleDetails || !Array.isArray(classScheduleDetails) || classScheduleDetails.length === 0) {
+            return { hasConflict: false, conflicts: [] };
+        }
+
+        // Use Map to group conflicts by registered class (maLopHocPhan)
+        const conflictMap = new Map();
+
+        for (const schedule of classScheduleDetails) {
+            const schedulePeriods = parsePeriods(schedule.tietHoc);
+            if (schedulePeriods.length === 0) continue;
+
+            for (const registered of registeredClassesData) {
+                if (!registered.scheduleDetails || !Array.isArray(registered.scheduleDetails)) continue;
+
+                for (const regSchedule of registered.scheduleDetails) {
+                    const regPeriods = parsePeriods(regSchedule.tietHoc);
+                    if (regPeriods.length === 0) continue;
+
+                    // Check if same day of week
+                    if (schedule.thu === regSchedule.thu) {
+                        // Check if date ranges overlap
+                        if (dateRangesOverlap(
+                            schedule.ngayBatDau, schedule.ngayKetThuc,
+                            regSchedule.ngayBatDau, regSchedule.ngayKetThuc
+                        )) {
+                            // Check if periods overlap
+                            if (periodsOverlap(schedulePeriods, regPeriods)) {
+                                // Group by registered class code to avoid duplicates
+                                const key = registered.maLopHocPhan;
+                                
+                                if (!conflictMap.has(key)) {
+                                    conflictMap.set(key, {
+                                        registeredClass: registered.tenMonHoc,
+                                        registeredCode: registered.maLopHocPhan,
+                                        conflicts: []
+                                    });
+                                }
+                                
+                                // Add this specific conflict detail
+                                conflictMap.get(key).conflicts.push({
+                                    day: formatDayOfWeek(schedule.thu),
+                                    period: schedule.tietHoc,
+                                    conflictPeriod: regSchedule.tietHoc
+                                });
+                            }
+                        }
+                    }
                 }
-                updateVIPDisplay();
-            },
-            onVIPExpired: () => {
+            }
+        }
+
+        // Convert map to array and format conflicts
+        const conflicts = Array.from(conflictMap.values()).map(conflict => {
+            // Get unique day-period combinations
+            const uniqueConflicts = [];
+            const seen = new Set();
+            
+            for (const c of conflict.conflicts) {
+                const key = `${c.day}-${c.period}-${c.conflictPeriod}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueConflicts.push(c);
+                }
+            }
+            
+            return {
+                registeredClass: conflict.registeredClass,
+                registeredCode: conflict.registeredCode,
+                uniqueConflicts: uniqueConflicts // Keep detailed conflict info for tooltip
+            };
+        });
+
+        return {
+            hasConflict: conflicts.length > 0,
+            conflicts: conflicts
+        };
+    };
+
+    // --- VIP FUNCTIONS ---
+    const showGuideModal = async () => {
+        try {
+            const response = await fetch('guide.html');
+            const guideContent = await response.text();
+            
+            const modal = document.createElement('div');
+            modal.className = 'payment-modal';
+            modal.id = 'guide-modal';
+            modal.style.display = 'block';
+            
+            modal.innerHTML = `
+                <div class="payment-modal-content bg-white rounded-xl shadow-md p-6" style="max-width: 900px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">📖 Hướng dẫn sử dụng</h2>
+                        <span class="close-modal" onclick="document.getElementById('guide-modal').remove()">&times;</span>
+                    </div>
+                    <div class="overflow-y-auto" style="max-height: 70vh;">
+                        ${guideContent}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        } catch (error) {
+            log('❌ Không thể tải hướng dẫn sử dụng', true);
+            console.error('Guide load error:', error);
+        }
+    };
+
+    const showVIPModal = async () => {
+        const plansRes = await backendRequest('getVIPPlans');
+        if (!plansRes || !plansRes.success) {
+            return log('Không thể tải thông tin gói VIP', true);
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'payment-modal';
+        modal.id = 'vip-modal';
+
+        const plans = plansRes.plans;
+        const sepayConfig = plansRes.sepayConfig;
+        
+        // Check if user has VIP to show appropriate title
+        const isRenewal = vipStatus.hasVIP;
+        const modalTitle = isRenewal ? '🔄 Gia hạn VIP' : '🌟 Nâng cấp VIP';
+
+        modal.innerHTML = `
+            <div class="payment-modal-content bg-white rounded-xl shadow-md p-6">
+                <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">${modalTitle}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    ${Object.entries(plans).map(([key, plan]) => `
+                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                            <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
+                            <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
+                            <p class="text-gray-600 mb-4">${isRenewal ? 'Gia hạn thêm' : ''} ${plan.duration} ngày</p>
+                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
+                                ${isRenewal ? 'Gia hạn' : 'Chọn gói này'}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div id="payment-section" class="hidden">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 border-t pt-4">Thông tin thanh toán</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
+                            <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
+                            <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
+                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div></p>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
+                            <div class="text-center mb-4">
+                                <img src="https://qr.sepay.vn/assets/img/banklogo/MB.png" class="inline-block" style="max-height:50px">
+                                <p class="font-bold text-gray-800">Ngân hàng ${sepayConfig.bankName}</p>
+                            </div>
+                            <table class="w-full text-sm text-gray-600">
+                                <tbody>
+                                    <tr><td class="py-1 font-medium">Chủ TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountName}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountNumber}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số tiền:</td><td class="font-bold text-gray-800" id="amount-display"></td></tr>
+                                    <tr><td class="py-1 font-medium">Nội dung:</td><td class="font-bold text-gray-800" id="content-display"></td></tr>
+                                </tbody>
+                            </table>
+                            <p class="bg-yellow-50 p-2 rounded mt-4 text-xs text-gray-600">⚠️ Lưu ý: Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="cancel-payment-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
+                            Hủy thanh toán
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+
+        // Handle plan selection
+        modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const plan = e.target.dataset.plan;
+                await createVIPOrder(plan, plans[plan], sepayConfig);
+            });
+        });
+
+        // Handle cancel payment
+        // Handle cancel payment - CẬP NHẬT MỚI
+// Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
+modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
+    if (!currentOrder) return;
+    
+    showConfirmModal(
+        'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
+        async () => {
+            // User confirmed - cancel the order
+            const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
+            
+            if (cancelRes && cancelRes.success) {
+                log('✅ Đã hủy đơn hàng thành công');
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                }
+                currentOrder = null;
+                modal.remove();
+            } else {
+                log('❌ Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
+            }
+        },
+        () => {
+            // User cancelled - do nothing
+            log('Tiếp tục chờ thanh toán');
+        }
+    );
+});
+
+
+    };
+
+    const createVIPOrder = async (planKey, planData, sepayConfig) => {
+        const orderRes = await backendRequest('createVIPOrder', { userId, plan: planKey });
+
+        if (!orderRes || !orderRes.success) {
+            return log('Không thể tạo đơn hàng', true);
+        }
+
+        currentOrder = orderRes.order;
+        log(`✅ Tạo đơn hàng #${currentOrder.orderCode} thành công`);
+
+        // Show payment section
+        document.getElementById('payment-section').classList.remove('hidden');
+        document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
+        document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
+
+        // Update payment info - use orderCode instead of id
+        const qrUrl = `https://qr.sepay.vn/img?bank=${sepayConfig.bankName}&acc=${sepayConfig.accountNumber}&template=compact&amount=${currentOrder.amount}&des=${currentOrder.orderCode}`;
+        document.getElementById('qr-code').src = qrUrl;
+        document.getElementById('amount-display').textContent = `${currentOrder.amount.toLocaleString('vi-VN')}đ`;
+        document.getElementById('content-display').textContent = currentOrder.orderCode;
+
+        // Start checking payment status
+        startPaymentCheck();
+    };
+
+    const startPaymentCheck = () => {
+    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    
+    const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
+    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    
+    paymentCheckInterval = setInterval(async () => {
+        if (!currentOrder) {
+            clearInterval(paymentCheckInterval);
+            return;
+        }
+        
+        // Check if order has timed out
+        const now = new Date().getTime();
+        if (now - orderCreatedTime > TIMEOUT_MS) {
+            clearInterval(paymentCheckInterval);
+            document.getElementById('payment-status').innerHTML = 
+                '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
+            log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
+            
+            setTimeout(() => {
+                document.getElementById('vip-modal')?.remove();
+                currentOrder = null;
+            }, 3000);
+            return;
+        }
+        
+        // Check payment status
+        const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
+        
+        if (statusRes && statusRes.success) {
+            if (statusRes.order.status === 'Paid') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
+                log('Thanh toán VIP thành công!');
+                
+                setTimeout(async () => {
+                    document.getElementById('vip-modal')?.remove();
+                    await checkAndUpdateVIPStatus();
+                }, 2000);
+            } else if (statusRes.order.status === 'Cancelled') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
+                log('Đơn hàng đã bị hủy', true);
+                
+                setTimeout(() => {
+                    document.getElementById('vip-modal')?.remove();
+                    currentOrder = null;
+                }, 2000);
+            }
+        }
+    }, 2000); // Check every 2 seconds
+};
+
+
+    const checkAndUpdateVIPStatus = async () => {
+        const vipRes = await backendRequest('checkVIPStatus', { userId });
+        if (vipRes && vipRes.success) {
+            const previousVIPStatus = vipStatus.hasVIP;
+            vipStatus = vipRes.vip;
+            updateVIPDisplay();
+            
+            // If VIP status changed from active to expired
+            if (previousVIPStatus && !vipStatus.hasVIP) {
+                log('⚠️ VIP của bạn đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.', true);
+                
                 // Reset UI to non-VIP state
-                Cache.allScheduleData = [];
+                allScheduleData = [];
                 selectedClasses.clear();
                 updateSelectedList();
                 renderScheduleTable();
+                
+                // Clear cache
                 localStorage.removeItem('userDataCache');
+                
+                // Show VIP modal
+                setTimeout(() => {
+                    showVIPModal();
+                }, 1000);
             }
-        });
-    };
-
-    // VIP function aliases (using VIP module)
-    const showVIPModal = () => VIP.showModal();
-    const checkAndUpdateVIPStatus = () => VIP.checkAndUpdateStatus();
-    const startVIPExpiryCheck = () => VIP.startExpiryCheck();
-    const stopVIPExpiryCheck = () => VIP.stopExpiryCheck();
-	
-    const updateVIPDisplay = () => {
-        if (!vipStatusElement) return;
-
-        const isVip = !!vipStatus.hasVIP;
-
-        if (isVip) {
-            vipStatusElement.innerHTML = Templates.vipStatusActive(vipStatus.daysLeft, vipStatus.expiryDate);
-            upgradeVipBtn.innerHTML = Templates.vipButton(true);
-            upgradeVipBtn.classList.remove('hidden');
-
-            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
-            if (prerequisiteToggle) prerequisiteToggle.disabled = false;
-            if (fetchBtn) fetchBtn.classList.remove('hidden');
-            if (selectedList) selectedList.classList.remove('hidden');
-        } else {
-            vipStatusElement.innerHTML = Templates.vipStatusInactive;
-            upgradeVipBtn.innerHTML = Templates.vipButton(false);
-            upgradeVipBtn.classList.remove('hidden');
-
-            if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
-            if (prerequisiteToggle) {
-                prerequisiteToggle.disabled = true;
-                prerequisiteToggle.checked = false;
-            }
-            if (fetchBtn) fetchBtn.classList.add('hidden');
-            if (selectedList) selectedList.classList.add('hidden');
         }
     };
+    
+    // Start auto-check VIP expiry every 7 seconds
+    const startVIPExpiryCheck = () => {
+        if (vipExpiryCheckInterval) clearInterval(vipExpiryCheckInterval);
+        
+        vipExpiryCheckInterval = setInterval(async () => {
+            if (!authToken || !userId) {
+                clearInterval(vipExpiryCheckInterval);
+                return;
+            }
+            
+            await checkAndUpdateVIPStatus();
+        }, 7000); // Check every 7 seconds
+    };
+    
+    // Stop VIP expiry check
+    const stopVIPExpiryCheck = () => {
+        if (vipExpiryCheckInterval) {
+            clearInterval(vipExpiryCheckInterval);
+            vipExpiryCheckInterval = null;
+        }
+    };
+	
+    const updateVIPDisplay = () => {
+    if (!vipStatusElement) return;
+
+    const isVip = !!vipStatus.hasVIP;
+
+    if (isVip) {
+        vipStatusElement.innerHTML = `
+            <div class="text-center">
+                <p class="font-bold text-blue-700 text-lg">⭐ Tài khoản VIP</p>
+                <p class="text-sm text-gray-700">Thời hạn còn lại: <span class="font-semibold text-blue-600">${vipStatus.daysLeft} ngày</span></p>
+                <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            </div>
+        `;
+        
+        // Change button to "Gia hạn VIP" when user has VIP
+        upgradeVipBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Gia hạn VIP</span>
+        `;
+        upgradeVipBtn.classList.remove('hidden');
+
+        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.remove('hidden');
+        if (prerequisiteToggle) prerequisiteToggle.disabled = false; // <-- enable checkbox for VIP
+
+        if (fetchBtn) fetchBtn.classList.remove('hidden');
+        if (selectedList) selectedList.classList.remove('hidden');
+    } else {
+        vipStatusElement.innerHTML = `
+            <div class="text-center p-3 bg-gray-100 rounded-lg">
+                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
+            </div>
+        `;
+        
+        // Reset button to "Nâng cấp VIP" when no VIP
+        upgradeVipBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Nâng cấp VIP</span>
+        `;
+        upgradeVipBtn.classList.remove('hidden');
+
+        if (prerequisiteToggleContainer) prerequisiteToggleContainer.classList.add('hidden');
+        if (prerequisiteToggle) {
+            prerequisiteToggle.disabled = true; // <-- disable for non-VIP
+            prerequisiteToggle.checked = false; // optional: reset check state
+        }
+
+        if (fetchBtn) fetchBtn.classList.add('hidden');
+        if (selectedList) selectedList.classList.add('hidden');
+    }
+};
+
+	// === CUSTOM CONFIRMATION MODAL ===
+const showConfirmModal = (message, onConfirm, onCancel) => {
+    // Remove existing modal if any
+    document.getElementById('confirm-modal')?.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'confirm-modal';
+    modal.className = 'payment-modal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="payment-modal-content" style="max-width: 450px; margin: 15% auto;">
+            <div class="text-center">
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Xác nhận</h3>
+                <p class="text-gray-700 mb-6">${message}</p>
+                <div class="flex space-x-3 justify-center">
+                    <button id="confirm-yes-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Xác nhận
+                    </button>
+                    <button id="confirm-no-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Hủy
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Event listeners
+    document.getElementById('confirm-yes-btn').addEventListener('click', () => {
+        modal.remove();
+        if (onConfirm) onConfirm();
+    });
+    
+    document.getElementById('confirm-no-btn').addEventListener('click', () => {
+        modal.remove();
+        if (onCancel) onCancel();
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            if (onCancel) onCancel();
+        }
+    });
+};
 
     // --- UI UPDATE FUNCTIONS ---
     const updateUIAfterLogin = (profile) => {
@@ -182,7 +636,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             const panelContainer = document.createElement('div');
             panelContainer.id = 'user-panel-content';
             panelContainer.className = 'space-y-4';
-            panelContainer.innerHTML = Templates.userPanel;
+            panelContainer.innerHTML = `
+                <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
+                
+                <div id="vip-status-section" class="my-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                    <div id="vip-status"></div>
+                </div>
+                
+                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span>Nâng cấp VIP</span>
+                </button>
+                
+                <div id="prerequisite-toggle-container" class="flex items-center justify-center my-3">
+                    <label for="prerequisite-toggle" class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="prerequisite-toggle" class="sr-only" disabled>
+                            <div class="block bg-gray-600 w-14 h-8 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                        </div>
+                        <div class="ml-3 text-gray-700 font-medium">Lấy dữ liệu môn điều kiện</div>
+                    </label>
+                </div>
+                
+                <div id="progress-bar-container" class="my-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
+                </div>
+                
+                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Tải lịch học</span>
+                </button>
+                
+                <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
+            `;
             loginForm.parentNode.insertBefore(panelContainer, loginForm.nextSibling);
 
             // Re-assign element variables
@@ -203,6 +697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', showVIPModal);
+            // Removed auto-fetch on prerequisite toggle change - user should manually refresh if needed
         }
 
         greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
@@ -222,13 +717,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         logOutput.innerHTML = '';
         subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
         searchInput.value = '';
-        Cache.allScheduleData = [];
+        allScheduleData = [];
         selectedClasses.clear();
         swapPendingClasses.clear();
         updateSelectedList();
 
-        // Cleanup VIP module
-        VIP.cleanup();
+        if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+        currentOrder = null;
     };
 
     const updateProgressBar = (current, total, message = '') => {
@@ -244,58 +739,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // --- CORE LOGIC FUNCTIONS ---
-    // Save cached data to localStorage (delegate to Cache module)
-    const saveCachedData = () => Cache.saveToStorage(userId);
-
-    // Load cached data from localStorage (delegate to Cache module)
-    const loadCachedData = (currentUserId) => Cache.loadFromStorage(currentUserId);
-
-    // Restore UI from cached data
-    const restoreCachedUI = () => {
-        log('📦 Đã khôi phục dữ liệu từ cache');
-        
-        // Update UI with cached data
-        if (Cache.allScheduleData.length > 0) {
-            renderScheduleTable();
-            // Update button text to "Tải lại"
-            if (fetchBtn) {
-                const btnSpan = fetchBtn.querySelector('span');
-                if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
-                fetchBtn.originalHTML = fetchBtn.innerHTML;
-            }
-        }
-        
-        if (Cache.registeredClassesData.length > 0) {
-            renderRegisteredTable(Cache.registeredClassesData);
-        }
-        
-        if (selectedClasses.size > 0) {
-            updateSelectedList();
+    // Save cached data to localStorage (include user info)
+    const saveCachedData = () => {
+        try {
+            const cacheData = {
+                userId: userId, // Store current userId to verify cache ownership
+                allScheduleData,
+                registeredClassesData,
+                selectedClasses: Array.from(selectedClasses.entries()),
+                swapPendingClasses: Array.from(swapPendingClasses.entries()),
+                subjectTypeMap: Array.from(subjectTypeMap.entries()),
+                prerequisiteToggleState: prerequisiteToggle?.checked || false,
+                timestamp: new Date().getTime()
+            };
+            localStorage.setItem('userDataCache', JSON.stringify(cacheData));
+        } catch (error) {
+            console.error('Failed to save cache:', error);
         }
     };
 
-    // Prepare classes grouped by subject for registration/insertion
-    const prepareClassesBySubject = () => {
-        const classesBySubject = new Map();
-        
-        // Add regular selected classes
-        selectedClasses.forEach(cls => {
-            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
-            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
-        });
-        
-        // Add swap pending classes
-        swapPendingClasses.forEach((swap, targetClassId) => {
-            const targetClass = swap.target;
-            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
-            classesBySubject.get(targetClass.maHocPhan).push({ 
-                type: 'swap', 
-                class: targetClass,
-                registeredClass: swap.registered
-            });
-        });
-        
-        return classesBySubject;
+    // Load cached data from localStorage (check user ID match)
+    const loadCachedData = (currentUserId) => {
+        try {
+            const cached = localStorage.getItem('userDataCache');
+            if (!cached) return false;
+
+            const cacheData = JSON.parse(cached);
+            
+            // Check if cached data belongs to a different user
+            if (cacheData.userId && cacheData.userId !== currentUserId) {
+                console.log('Cache belongs to different user, clearing...');
+                localStorage.removeItem('userDataCache');
+                return false;
+            }
+            
+            // Cache expires after 24 hours
+            const CACHE_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - cacheData.timestamp > CACHE_DURATION) {
+                localStorage.removeItem('userDataCache');
+                return false;
+            }
+
+            // Restore data
+            allScheduleData = cacheData.allScheduleData || [];
+            registeredClassesData = cacheData.registeredClassesData || [];
+            selectedClasses = new Map(cacheData.selectedClasses || []);
+            swapPendingClasses = new Map(cacheData.swapPendingClasses || []);
+            subjectTypeMap = new Map(cacheData.subjectTypeMap || []);
+            
+            // Restore prerequisite toggle state
+            if (prerequisiteToggle && cacheData.prerequisiteToggleState !== undefined) {
+                prerequisiteToggle.checked = cacheData.prerequisiteToggleState;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Failed to load cache:', error);
+            localStorage.removeItem('userDataCache');
+            return false;
+        }
     };
 
     const handleLogin = async () => {
@@ -333,7 +835,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const hasCachedData = loadCachedData(userId);
                 
                 if (hasCachedData) {
-                    restoreCachedUI();
+                    log('📦 Đã khôi phục dữ liệu từ cache');
+                    
+                    // Update UI with cached data
+                    if (allScheduleData.length > 0) {
+                        renderScheduleTable();
+                        // Update button text to "Tải lại"
+                        if (fetchBtn) {
+                            const btnSpan = fetchBtn.querySelector('span');
+                            if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
+                            fetchBtn.originalHTML = fetchBtn.innerHTML;
+                        }
+                    }
+                    
+                    if (registeredClassesData.length > 0) {
+                        renderRegisteredTable(registeredClassesData);
+                    }
+                    
+                    if (selectedClasses.size > 0) {
+                        updateSelectedList();
+                    }
                 } else {
                     // No cache, fetch fresh data
                     await fetchRegisteredClasses();
@@ -387,8 +908,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { token, loginTime } = JSON.parse(session);
             
-            // Session expires based on CONFIG
-            if (new Date().getTime() - loginTime > CONFIG.SESSION_DURATION) {
+            // Session expires after 24 hours
+            const SESSION_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - loginTime > SESSION_DURATION) {
                 localStorage.removeItem('userSession');
                 return false;
             }
@@ -419,7 +941,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const hasCachedData = loadCachedData(userId);
                 
                 if (hasCachedData) {
-                    restoreCachedUI();
+                    log('📦 Đã khôi phục dữ liệu từ cache');
+                    
+                    // Update UI with cached data
+                    if (allScheduleData.length > 0) {
+                        renderScheduleTable();
+                        // Update button text to "Tải lại"
+                        if (fetchBtn) {
+                            const btnSpan = fetchBtn.querySelector('span');
+                            if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
+                            fetchBtn.originalHTML = fetchBtn.innerHTML;
+                        }
+                    }
+                    
+                    if (registeredClassesData.length > 0) {
+                        renderRegisteredTable(registeredClassesData);
+                    }
+                    
+                    if (selectedClasses.size > 0) {
+                        updateSelectedList();
+                    }
                 } else {
                     // No cache, fetch fresh data
                     await fetchRegisteredClasses();
@@ -489,11 +1030,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const totalClasses = scheduleRes.schedule.length;
             const unlockedClasses = scheduleRes.schedule.filter(cls => cls.tenTrangThai !== 'Đã khóa lớp');
             
-            Cache.allScheduleData = unlockedClasses;
-            Cache.subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
-            
-            // Rebuild cache for fast lookups
-            Cache.rebuildScheduleCache();
+            allScheduleData = unlockedClasses;
+            subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
             
             log(`✅ Đã tải thành công ${totalClasses} lớp học phần.`);
             log(`📋 Hiển thị ${unlockedClasses.length} lớp chưa khóa (đã lọc bỏ ${totalClasses - unlockedClasses.length} lớp đã khóa).`);
@@ -521,11 +1059,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites, userId });
 
         if (registeredRes && registeredRes.success) {
-            Cache.registeredClassesData = registeredRes.body; // Save for conflict detection
-            
-            // Rebuild cache for fast lookups
-            Cache.rebuildRegisteredCache();
-            
+            registeredClassesData = registeredRes.body; // Save for conflict detection
             await renderRegisteredTable(registeredRes.body);
             
             // Save to cache
@@ -648,8 +1182,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleActionButtons(true);
         log("🚀 Bắt đầu quá trình chèn lớp...");
 
-        const classesBySubject = prepareClassesBySubject();
+        const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
+            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
+        });
+        
+        // Add swap pending classes (only target classes for insertion)
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const targetClass = swap.target;
+            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
+            classesBySubject.get(targetClass.maHocPhan).push({ 
+                type: 'swap', 
+                class: targetClass,
+                registeredClass: swap.registered
+            });
+        });
         
         const delay = parseInt(delayInput.value, 10) || 1000;
 
@@ -744,8 +1295,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleActionButtons(true);
         log("🚀 Bắt đầu đăng ký liên tục...");
 
-        const classesBySubject = prepareClassesBySubject();
+        const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
+            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
+        });
+        
+        // Add swap pending classes
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const targetClass = swap.target;
+            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
+            classesBySubject.get(targetClass.maHocPhan).push({ 
+                type: 'swap', 
+                class: targetClass,
+                registeredClass: swap.registered
+            });
+        });
         
         const delay = parseInt(delayInput.value, 10) || 1000;
 
@@ -839,22 +1407,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderScheduleTable = async () => {
         const query = searchInput.value.toLowerCase();
         const selectedSubject = subjectFilter.value;
-        if (Cache.allScheduleData.length > 0) {
-            const subjects = [...new Set(Cache.allScheduleData.map(cls => cls.tenMonHoc))].sort();
+        if (allScheduleData.length > 0) {
+            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
             subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
         }
         // Show all classes including "Đã khóa lớp"
-        const filteredData = Cache.allScheduleData.filter(cls =>
+        const filteredData = allScheduleData.filter(cls =>
             (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
             (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
         );
         if (filteredData.length === 0) {
-            scheduleContainer.innerHTML = Templates.emptySchedule(Cache.allScheduleData.length > 0);
+            scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
             return;
         }
         const table = document.createElement('table');
         table.className = 'w-full text-sm text-left text-gray-500';
-        table.innerHTML = Templates.scheduleTableHeader;
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã đăng ký</th>
+            </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         filteredData.forEach(cls => {
             const row = document.createElement('tr');
@@ -864,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isLocked = cls.tenTrangThai === 'Đã khóa lớp';
             
             // Check for schedule conflict
-            const conflictCheck = checkScheduleConflict(cls.scheduleDetails, Cache.registeredClassesData);
+            const conflictCheck = checkScheduleConflict(cls.scheduleDetails, registeredClassesData);
             const hasConflict = conflictCheck.hasConflict;
             
             // Build row class and cursor based on status
@@ -897,20 +1470,61 @@ document.addEventListener('DOMContentLoaded', async () => {
                 row.dataset.conflictInfo = JSON.stringify(conflictCheck.conflicts);
             }
             
-            // Use cls.isBatBuoc directly if available, otherwise lookup from subjectTypeMap
-            const isBatBuoc = cls.isBatBuoc !== undefined ? cls.isBatBuoc : subjectTypeMap.get(cls.maHocPhan);
-            const typeHtml = Templates.subjectTypeBadge(cls.source, isBatBuoc);
+            const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
+            const typeHtml = cls.source === 'dkhpdk'
+                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`
+                : (isBatBuoc === undefined
+                    ? 'N/A'
+                    : (isBatBuoc
+                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
             
             // Add warnings below subject name (only conflict warning, not locked)
             let warnings = '';
             if (hasConflict) {
-                const conflictItemsHtml = conflictCheck.conflicts.map(c => {
-                    // Use registeredId from conflict data for O(1) lookup
-                    const regClass = getRegisteredById(c.registeredId);
-                    return Templates.conflictItem(c, regClass, cls);
+                const conflictItems = conflictCheck.conflicts.map(c => {
+                    // Find registered class data for swap functionality
+                    const regClass = registeredClassesData.find(reg => reg.maLopHocPhan === c.registeredCode);
+                    const regId = regClass ? regClass.id : '';
+                    const regSource = regClass ? regClass.source : 'dkhp';
+                    const regSubjectCode = regClass ? regClass.maHocPhan : '';
+                    const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
+                    
+                    return `
+                        <div class="flex items-center justify-between gap-2 py-1.5 px-2 bg-white rounded border border-red-200">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xs font-mono font-semibold text-red-600 whitespace-nowrap">${c.registeredCode}</span>
+                                <span class="text-xs text-gray-600 truncate">${c.registeredClass}</span>
+                            </div>
+                            <button class="swap-from-conflict-btn flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition whitespace-nowrap"
+                                    data-reg-id="${regId}"
+                                    data-reg-code="${c.registeredCode}"
+                                    data-reg-name="${c.registeredClass}"
+                                    data-reg-source="${regSource}"
+                                    data-reg-subject-code="${regSubjectCode}"
+                                    data-reg-status="${regStatus}"
+                                    data-target-id="${cls.id}"
+                                    data-target-code="${cls.maLopHocPhan}"
+                                    data-target-name="${cls.tenMonHoc}">
+                                🔄 Đổi lớp
+                            </button>
+                        </div>
+                    `;
                 }).join('');
                 
-                warnings = Templates.conflictWarningBox(conflictItemsHtml);
+                warnings += `
+                    <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <p class="text-xs font-bold text-red-800">TRÙNG LỊCH HỌC</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${conflictItems}
+                        </div>
+                    </div>
+                `;
             }
             
             row.innerHTML = `
@@ -926,71 +1540,459 @@ document.addEventListener('DOMContentLoaded', async () => {
         scheduleContainer.appendChild(table);
     };
 
-    // Render module alias
-    const Render = window.AppRender;
-
     const renderRegisteredTable = async (data) => {
         if (!data || data.length === 0) {
-            registeredContainer.innerHTML = Render.emptyRegisteredTable();
+            registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
             return;
         }
         const table = document.createElement('table');
         table.className = 'w-full text-sm text-left text-gray-500';
-        table.innerHTML = Render.registeredTableHeader();
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>
+                <th scope="col" class="px-6 py-3">Hành động</th>
+            </tr></thead><tbody></tbody>`;
         const tbody = table.querySelector('tbody');
         data.forEach(reg => {
             const row = document.createElement('tr');
             row.className = 'bg-white border-b hover:bg-gray-50';
-            const sourceBadge = Templates.sourceBadge(reg.source);
+            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
             
-            // Try to find maHocPhan from cache if not present in registered data
+            // Try to find maHocPhan from allScheduleData if not present in registered data
             let maHocPhan = reg.maHocPhan;
             if (!maHocPhan) {
-                const matchingClass = getScheduleByCode(reg.maLopHocPhan);
+                const matchingClass = allScheduleData.find(cls => cls.maLopHocPhan === reg.maLopHocPhan);
                 if (matchingClass) {
                     maHocPhan = matchingClass.maHocPhan;
                 }
             }
             
-            row.innerHTML = Render.registeredTableRow(reg, sourceBadge, formatScheduleDetail(reg.scheduleDetails), maHocPhan);
+            row.innerHTML = `
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
+                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
+                <td class="px-6 py-4" data-label="Hành động">${
+                    reg.isAllowCancel === false
+                        ? ''
+                        : `
+                            <button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn mr-3">Hủy</button>
+                            <button data-reg-id="${reg.id ?? ''}" 
+                                    data-reg-code="${reg.maLopHocPhan ?? ''}" 
+                                    data-reg-name="${reg.tenMonHoc ?? ''}" 
+                                    data-reg-source="${reg.source ?? ''}"
+                                    data-reg-subject-code="${maHocPhan ?? ''}"
+                                    data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
+                                    class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Đổi lớp</button>
+                        `
+                }</td>`;
             tbody.appendChild(row);
         });
         registeredContainer.innerHTML = '';
         registeredContainer.appendChild(table);
     };
 
-    // Show swap from conflict modal - delegate to SwapModal module
+    // Show swap from conflict modal - allows swapping directly from conflict warning
     const showSwapFromConflictModal = async (registeredClassData, targetClassData) => {
-        await SwapModal.showFromConflict({
-            registeredClassData,
-            targetClassData,
-            getRegisteredById,
-            getScheduleById,
-            log,
-            updateSelectedList,
-            renderScheduleTable
-        });
+        const { id: regId, code: regCode, name: regName, source: regSource } = registeredClassData;
+        const { id: targetId, code: targetCode, name: targetName } = targetClassData;
+        
+        // Find registered class details
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        if (!registeredClass) {
+            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+            return;
+        }
+        
+        // Find target class
+        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+        if (!targetClass) {
+            log('❌ Không tìm thấy thông tin lớp đích', true);
+            return;
+        }
+        
+        // Show modal to confirm swap to the target class directly
+        showConfirmModal(
+            `Xác nhận đổi lớp trùng lịch?<br><br>` +
+            `<div class="bg-gray-50 p-3 rounded mb-2">` +
+            `<p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>` +
+            `<p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>` +
+            `</div>` +
+            `<p class="text-sm text-gray-600">Lớp mới sẽ được thêm vào danh sách đổi lớp.</p>`,
+            () => {
+                // Check if there's already a swap for this registered class and remove it
+                let oldSwapEntry = null;
+                swapPendingClasses.forEach((swap, key) => {
+                    if (swap.registered.id.toString() === regId) {
+                        oldSwapEntry = key;
+                    }
+                });
+                
+                if (oldSwapEntry) {
+                    swapPendingClasses.delete(oldSwapEntry);
+                }
+                
+                // Add to swap pending list
+                swapPendingClasses.set(targetId, {
+                    registered: registeredClass,
+                    target: targetClass
+                });
+                
+                log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                updateSelectedList();
+                
+                // Re-render schedule table to update conflict status
+                renderScheduleTable();
+            },
+            () => {
+                // On cancel - do nothing
+            }
+        );
     };
 
-    // Show swap class modal from registered classes table - delegate to SwapModal module
+    // Show swap class modal from registered classes table
     const showSwapClassModal = async (registeredClassData) => {
-        await SwapModal.showFromRegistered({
-            registeredClassData,
-            dotId,
-            getRegisteredById,
-            getScheduleById,
-            getScheduleByCode,
-            backendRequest,
-            log,
-            updateSelectedList,
-            formatScheduleDetail,
-            checkScheduleConflictBetweenTwo
+        const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
+        
+        // Find registered class details
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        if (!registeredClass) {
+            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+            return;
+        }
+        
+        // Get subject code - try multiple sources (prioritize registeredClass data)
+        let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
+        
+        // If still not found, extract from maLopHocPhan by removing last 2 characters
+        // Example: DT012301 -> DT0123, TT0401 -> TT04
+        if (!actualSubjectCode && regCode) {
+            actualSubjectCode = regCode.slice(0, -2);
+            console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', actualSubjectCode);
+        }
+        
+        // Last resort: search in allScheduleData (may fail if class is locked)
+        if (!actualSubjectCode) {
+            const matchingClass = allScheduleData.find(cls => 
+                cls.id.toString() === regId || 
+                cls.maLopHocPhan === regCode
+            );
+            if (matchingClass) {
+                actualSubjectCode = matchingClass.maHocPhan;
+                console.log('✅ Found maHocPhan from allScheduleData:', actualSubjectCode);
+            }
+        }
+        
+        if (!actualSubjectCode) {
+            log('❌ Không tìm thấy mã học phần của lớp này', true);
+            console.log('❌ Debug info:');
+            console.log('  - Registered class data:', registeredClass);
+            console.log('  - Tried to find with:', { regId, regCode });
+            console.log('  - subjectCode from button:', subjectCode);
+            return;
+        }
+        
+        console.log('🔍 Looking for classes with maHocPhan:', actualSubjectCode);
+        console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
+        console.log('🔍 Current class code (regCode):', regCode);
+        
+        // Try to find classes in allScheduleData first
+        let availableClasses = allScheduleData.filter(cls => {
+            const matches = cls.maHocPhan === actualSubjectCode && 
+                cls.maLopHocPhan !== regCode &&
+                cls.tenTrangThai !== 'Đã khóa lớp' &&
+                cls.tenTrangThai !== 'Đang lên kế hoạch';
+            
+            if (cls.maHocPhan === actualSubjectCode) {
+                console.log('  ➜ Same subject:', cls.maLopHocPhan, '| isCurrent:', cls.maLopHocPhan === regCode, '| Status:', cls.tenTrangThai, '| Match:', matches);
+            }
+            
+            return matches;
         });
+        
+        console.log('Classes found in allScheduleData:', availableClasses.length);
+        
+        // If no classes found in cache, fetch from API
+        if (availableClasses.length === 0) {
+            log(`🔍 Không tìm thấy lớp trong cache, đang lấy từ API cho môn ${regName}...`);
+            
+            // Extract maHocPhan from maLopHocPhan: Remove last 2 characters
+            // Example: DT012301 -> DT0123, TT0401 -> TT04
+            let detectedMaHocPhan = actualSubjectCode;
+            
+            if (!detectedMaHocPhan || detectedMaHocPhan.length < 2) {
+                detectedMaHocPhan = regCode.slice(0, -2);
+                console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', detectedMaHocPhan);
+            }
+            
+            console.log('🔍 Using maHocPhan for API call:', detectedMaHocPhan);
+            
+            const checkStatusRes = await backendRequest('checkClassStatus', { 
+                dotId, 
+                maHocPhan: detectedMaHocPhan, 
+                source: regSource 
+            });
+            
+            if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
+                // Get schedule details for each class (don't need to check availability again, data is already accurate)
+                const classesWithDetails = await Promise.all(
+                    checkStatusRes.body.map(async (cls) => {
+                        const scheduleDetails = await backendRequest('getScheduleDetails', {
+                            classId: cls.id,
+                            source: regSource
+                        });
+                        
+                        return {
+                            ...cls,
+                            maHocPhan: detectedMaHocPhan,
+                            tenMonHoc: regName,
+                            source: regSource,
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
+                        };
+                    })
+                );
+                
+                // Filter out current registered class and locked/planning classes
+                availableClasses = classesWithDetails.filter(cls => 
+                    cls.maLopHocPhan !== regCode &&
+                    cls.tenTrangThai !== 'Đã khóa lớp' &&
+                    cls.tenTrangThai !== 'Đang lên kế hoạch'
+                );
+                
+                console.log('Classes fetched from API:', availableClasses.length);
+                log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+            } else {
+                log(`❌ Không thể lấy danh sách lớp từ API`, true);
+            }
+        }
+        
+        if (availableClasses.length === 0) {
+            log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
+            return;
+        }
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.id = 'swap-class-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">🔄 Đổi lớp học phần</h2>
+                        <p class="text-sm text-blue-100 mt-1">Lớp hiện tại: ${regName} (${regCode})</p>
+                    </div>
+                    <button id="close-swap-modal" class="text-white hover:text-gray-200 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto flex-1">
+                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">📋 Lịch học hiện tại:</span><br>
+                            <div class="mt-2 text-gray-600">${formatScheduleDetail(registeredClass.scheduleDetails)}</div>
+                        </p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đổi đến:</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Mã LHP</th>
+                                    <th scope="col" class="px-4 py-3">Lịch học</th>
+                                    <th scope="col" class="px-4 py-3">Trạng thái</th>
+                                    <th scope="col" class="px-4 py-3">Đã ĐK</th>
+                                    <th scope="col" class="px-4 py-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="swap-classes-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Render available classes
+        const tbody = modal.querySelector('#swap-classes-tbody');
+        availableClasses.forEach(cls => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            
+            // Check if schedules conflict
+            const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
+            const conflictBadge = hasConflict 
+                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>' 
+                : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Không trùng</span>';
+            
+            const isFull = cls.phanTramDangKy >= 100;
+            const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
+            
+            row.innerHTML = `
+                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}</td>
+                <td class="px-4 py-3">
+                    <div class="text-xs">${formatScheduleDetail(cls.scheduleDetails)}</div>
+                </td>
+                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-4 py-3 ${statusColor}">${cls.phanTramDangKy}%</td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-col gap-2">
+                        ${conflictBadge}
+                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-blue-600 text-white hover:bg-blue-700"
+                                data-target-id="${cls.id}"
+                                data-target-code="${cls.maLopHocPhan}"
+                                data-target-name="${cls.tenMonHoc}"
+                                data-target-source="${cls.source}"
+                                data-has-conflict="${hasConflict}">
+                            🔄 Đổi lớp
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+        
+        // Close modal handler
+        modal.querySelector('#close-swap-modal').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Execute swap handler
+        modal.querySelectorAll('.execute-swap-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const targetId = btn.dataset.targetId;
+                const targetCode = btn.dataset.targetCode;
+                const targetName = btn.dataset.targetName;
+                const targetSource = btn.dataset.targetSource;
+                const hasConflict = btn.dataset.hasConflict === 'true';
+                
+                // Find target class full info from availableClasses (not allScheduleData)
+                const targetClass = availableClasses.find(c => c.id.toString() === targetId);
+                if (!targetClass) {
+                    alert('❌ Không tìm thấy thông tin lớp đích');
+                    console.log('❌ Debug: targetId =', targetId);
+                    console.log('❌ Available classes:', availableClasses.map(c => ({ id: c.id, code: c.maLopHocPhan })));
+                    return;
+                }
+                
+                // Find registered class full info
+                const registeredClassFull = registeredClassesData.find(c => c.id.toString() === regId);
+                if (!registeredClassFull) {
+                    log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+                    return;
+                }
+                
+                const conflictWarning = hasConflict 
+                    ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!</p></div>'
+                    : '';
+                
+                const slotInfo = targetClass.phanTramDangKy >= 100 
+                    ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.</p>'
+                    : '<p class="text-sm text-green-600 mt-2">✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.</p>';
+                
+                const confirmMsg = `
+                    ${conflictWarning}
+                    <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đổi lớp?</p>
+                    <div class="bg-gray-50 p-3 rounded mb-2">
+                        <p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>
+                        <p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>
+                    </div>
+                    ${slotInfo}
+                `;
+                
+                showConfirmModal(
+                    confirmMsg,
+                    () => {
+                        // On confirm - Check if there's already a swap for this registered class
+                        // If yes, remove the old entry first (update logic)
+                        let oldSwapEntry = null;
+                        swapPendingClasses.forEach((swap, key) => {
+                            if (swap.registered.id.toString() === regId) {
+                                oldSwapEntry = key;
+                            }
+                        });
+                        
+                        // Remove old swap entry if exists
+                        if (oldSwapEntry) {
+                            swapPendingClasses.delete(oldSwapEntry);
+                            log(`🔄 Cập nhật lớp đổi cho ${regName} (${regCode})`);
+                        }
+                        
+                        // Add new swap entry with target class ID as key
+                        swapPendingClasses.set(targetId, {
+                            registered: registeredClassFull,
+                            target: targetClass
+                        });
+                        
+                        if (oldSwapEntry) {
+                            log(`✅ Đã cập nhật đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        } else {
+                            log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                        }
+                        
+                        if (targetClass.phanTramDangKy >= 100) {
+                            log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                        }
+                        
+                        updateSelectedList();
+                        modal.remove();
+                    },
+                    () => {
+                        // On cancel - do nothing
+                    }
+                );
+            });
+        });
+    };
+    
+    // Check schedule conflict between two specific classes
+    const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => {
+        if (!schedule1 || !Array.isArray(schedule1) || schedule1.length === 0) return false;
+        if (!schedule2 || !Array.isArray(schedule2) || schedule2.length === 0) return false;
+        
+        for (const s1 of schedule1) {
+            const periods1 = parsePeriods(s1.tietHoc);
+            if (periods1.length === 0) continue;
+            
+            for (const s2 of schedule2) {
+                const periods2 = parsePeriods(s2.tietHoc);
+                if (periods2.length === 0) continue;
+                
+                // Check if same day of week
+                if (s1.thu === s2.thu) {
+                    // Check if date ranges overlap
+                    if (dateRangesOverlap(s1.ngayBatDau, s1.ngayKetThuc, s2.ngayBatDau, s2.ngayKetThuc)) {
+                        // Check if periods overlap
+                        if (periodsOverlap(periods1, periods2)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
     };
 
     const updateSelectedList = async () => {
         if (!vipStatus.hasVIP) {
-            selectedList.innerHTML = Templates.emptySelectedList(false);
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn. Nâng cấp VIP để chọn lớp.</p>`;
             registrationControls.classList.add('hidden');
             return;
         }
@@ -998,8 +2000,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalCount = selectedClasses.size + swapPendingClasses.size;
         
         if (totalCount === 0) {
-            selectedList.innerHTML = Templates.emptySelectedList(true);
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
             registrationControls.classList.add('hidden');
+            
+            // Save to cache even when empty
             saveCachedData();
             return;
         }
@@ -1008,33 +2012,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Render regular selected classes
         selectedClasses.forEach(cls => {
-            const sourceBadge = Templates.sourceBadge(cls.source);
-            html += Templates.selectedClassItem(cls, formatSelectedClassDetail(cls, cls.scheduleDetails), sourceBadge);
+            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            html += `
+                <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
+                    <div>
+                        <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
+                        <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
+                    </div>
+                    <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
+                </div>`;
         });
         
-        // Render swap pending classes
+        // Render swap pending classes with strikethrough old class and arrow to new class
         swapPendingClasses.forEach((swap, targetClassId) => {
-            const { registered: registeredClass, target: targetClass } = swap;
-            const regSourceBadge = Templates.sourceBadge(registeredClass.source);
-            const targetSourceBadge = Templates.sourceBadge(targetClass.source);
+            const registeredClass = swap.registered;
+            const targetClass = swap.target;
+            
+            const regSourceBadge = registeredClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            const targetSourceBadge = targetClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
             
             html += `
                 <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-2 rounded-md hover:bg-yellow-100">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
-                            ${Templates.swapIcon}
+                            <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>
                             <span class="text-xs font-bold text-yellow-800 uppercase">Đổi lớp</span>
                         </div>
+                        
+                        <!-- Old class (strikethrough) -->
                         <div class="mb-1">
                             <p class="font-semibold text-sm text-gray-500 line-through decoration-2">${registeredClass.tenMonHoc} ${regSourceBadge}</p>
                             <div class="text-xs text-gray-400 line-through mt-1">${formatSelectedClassDetail(registeredClass, registeredClass.scheduleDetails)}</div>
                         </div>
+                        
+                        <!-- Arrow -->
                         <div class="flex items-center gap-2 my-1">
                             <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                             </svg>
                             <span class="text-xs font-semibold text-green-700">Đổi sang</span>
                         </div>
+                        
+                        <!-- New class -->
                         <div>
                             <p class="font-semibold text-sm text-green-800">${targetClass.tenMonHoc} ${targetSourceBadge}</p>
                             <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(targetClass, targetClass.scheduleDetails)}</div>
@@ -1052,9 +2073,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // --- EVENT LISTENERS ---
-    
-    // Initialize VIP module
-    initVIPModule();
     
     // Guide button
     const guideBtn = document.getElementById('guide-btn');
@@ -1107,7 +2125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             const classId = scheduleRow.dataset.classId;
-            const cls = getScheduleById(classId);
+            const cls = allScheduleData.find(c => c.id.toString() === classId);
             if (!cls) return;
             if (selectedClasses.has(classId)) selectedClasses.delete(classId);
             else selectedClasses.set(classId, cls);
@@ -1202,19 +2220,48 @@ document.addEventListener('DOMContentLoaded', async () => {
                 source: swapBtn.dataset.targetSource
             };
             
-            // Find full class objects using cache
-            const registeredClass = getRegisteredById(registeredData.id);
-            const targetClass = getScheduleById(targetData.id);
+            // Find full class objects from data
+            const registeredClass = registeredClassesData.find(c => c.id.toString() === registeredData.id);
+            const targetClass = allScheduleData.find(c => c.id.toString() === targetData.id);
             
             if (!registeredClass || !targetClass) {
                 log("❌ Không tìm thấy thông tin đầy đủ của lớp", true);
                 return;
             }
             
-            // Use helper function to validate swap
-            const swapValidation = canSwapClass(registeredClass, targetClass);
-            if (!swapValidation.canSwap) {
-                log(`❌ Không thể đổi lớp ${registeredData.code} - ${swapValidation.reason}`, true);
+            // Validate registered class can be cancelled
+            const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+            
+            if (registeredStatus === 'Đã khóa lớp') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            if (registeredStatus === 'Đã mở chính thức') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            if (registeredStatus === 'Đang lên kế hoạch') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            // Validate target class can be registered
+            const targetStatus = targetClass.tenTrangThai || '';
+            
+            if (targetStatus === 'Đã khóa lớp') {
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
+                return;
+            }
+            
+            if (targetStatus === 'Đang lên kế hoạch') {
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
                 return;
             }
             
@@ -1251,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Create tooltip
             const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
             const targetClassId = scheduleRow.dataset.classId;
-            const targetClass = getScheduleById(targetClassId);
+            const targetClass = allScheduleData.find(c => c.id.toString() === targetClassId);
             
             const conflictMessages = conflicts.map(conflict => {
                 // Format all unique conflicts for this class
@@ -1272,13 +2319,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>`
                 ).join('');
                 
-                // Use registeredId from conflict data for O(1) lookup
-                const registeredClass = getRegisteredById(conflict.registeredId);
+                // Find the registered class to get its ID and percentage
+                const registeredClass = registeredClassesData.find(r => r.maLopHocPhan === conflict.registeredCode);
                 
-                // Use helper function to check swap eligibility
-                const swapValidation = canSwapClass(registeredClass, targetClass);
+                // Check if swap is allowed based on class status
+                let canSwap = false;
+                let swapDisabledReason = '';
                 
-                const swapButton = swapValidation.canSwap ? 
+                if (!registeredClass) {
+                    swapDisabledReason = 'Không tìm thấy thông tin lớp';
+                } else {
+                    const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+                    const targetStatus = targetClass?.tenTrangThai || '';
+                    
+                    // Check registered class can be cancelled
+                    if (registeredStatus === 'Đã khóa lớp') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    } else if (registeredStatus === 'Đã mở chính thức') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    } else if (registeredStatus === 'Đang lên kế hoạch') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    } else if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    }
+                    // Check target class can be registered
+                    else if (targetStatus === 'Đã khóa lớp') {
+                        swapDisabledReason = `Lớp đích - Trạng thái: ${targetStatus}`;
+                    } else if (targetStatus === 'Đang lên kế hoạch') {
+                        swapDisabledReason = `Lớp đích - Trạng thái: ${targetStatus}`;
+                    } else {
+                        canSwap = true;
+                    }
+                }
+                
+                const swapButton = canSwap ? 
                     `<button class="swap-class-btn mt-2 w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold py-1.5 px-3 rounded transition duration-200 flex items-center justify-center gap-1"
                             data-registered-id="${registeredClass.id}"
                             data-registered-code="${conflict.registeredCode}"
@@ -1293,7 +2367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </svg>
                         Đổi lớp
                     </button>` 
-                    : `<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi: ${swapValidation.reason}</p>`;
+                    : `<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi: ${swapDisabledReason}</p>`;
                 
                 return `<div class="py-2 border-b border-red-500 last:border-0">
                     <div class="flex items-start gap-2">
