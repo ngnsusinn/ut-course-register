@@ -26,6 +26,16 @@ body {
     }
 }
 
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
 @keyframes scaleIn {
     from {
         opacity: 0;
@@ -36,6 +46,28 @@ body {
         opacity: 1;
         transform: scale(1);
     }
+}
+
+@keyframes scaleOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+.animate-out {
+    animation: fadeOut 0.2s ease-out forwards;
+}
+
+.animate-out .material-card,
+.animate-out .payment-modal-content,
+.animate-out>div {
+    animation: scaleOut 0.2s ease-out forwards;
 }
 
 @keyframes ripple {

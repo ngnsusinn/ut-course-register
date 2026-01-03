@@ -346,16 +346,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Event handlers
-    if (closeTimetableModal) {
-        closeTimetableModal.addEventListener('click', () => {
+    const closeTimetableWithAnimation = () => {
+        timetableModal.classList.add('animate-out');
+        setTimeout(() => {
+            timetableModal.classList.remove('animate-out');
             timetableModal.classList.add('hidden');
-        });
+        }, 190);
+    };
+
+    if (closeTimetableModal) {
+        closeTimetableModal.addEventListener('click', closeTimetableWithAnimation);
     }
 
     if (timetableModal) {
         timetableModal.addEventListener('click', (e) => {
             if (e.target === timetableModal) {
-                timetableModal.classList.add('hidden');
+                closeTimetableWithAnimation();
             }
         });
     }

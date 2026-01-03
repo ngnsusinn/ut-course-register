@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Helper: Close modal with animation
+    window.closeModal = (modal) => {
+        if (!modal) return;
+        modal.classList.add('animate-out');
+        setTimeout(() => {
+            modal.classList.remove('animate-out');
+            modal.classList.add('hidden');
+            if (modal.id === 'swap-class-modal') modal.remove();
+        }, 190);
+    };
+
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -17,8 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const registrationControls = document.getElementById('registration-controls');
     const loginForm = document.getElementById('login-form');
 
+    // Assign VIP elements
+    const vipStatusElement = document.getElementById('vip-status');
+    const upgradeVipBtn = document.getElementById('upgrade-vip-btn');
+
     // Dynamically created elements
-    let userPanel, greetingMsg, prerequisiteToggle, prerequisiteToggleContainer, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, vipStatusElement, upgradeVipBtn;
+    let userPanel, greetingMsg, prerequisiteToggle, prerequisiteToggleContainer, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText;
 
     // State
     let authToken = null;
@@ -1864,13 +1879,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Close modal handler
         modal.querySelector('#close-swap-modal').addEventListener('click', () => {
-            modal.remove();
+            closeModal(modal);
         });
 
         // Click outside to close
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                modal.remove();
+                closeModal(modal);
             }
         });
 
@@ -2151,6 +2166,11 @@ document.addEventListener('DOMContentLoaded', () => {
             swapPendingClasses.delete(targetClassId);
             updateSelectedList();
             log("🗑️ Đã hủy yêu cầu đổi lớp");
+        }
+
+        const upgradeVipBtnClick = e.target.closest('#upgrade-vip-btn');
+        if (upgradeVipBtnClick) {
+            showVIPModal();
         }
 
         const cancelBtn = e.target.closest('.cancel-btn');
