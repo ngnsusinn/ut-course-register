@@ -1701,8 +1701,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         let availableClasses = allScheduleData.filter(cls => {
             const matches = cls.maHocPhan === actualSubjectCode && 
                 cls.maLopHocPhan !== regCode &&
-                cls.tenTrangThai !== 'Đã khóa lớp' &&
-                cls.tenTrangThai !== 'Đang lên kế hoạch';
+                cls.tenTrangThai !== 'Đã khóa lớp';
             
             if (cls.maHocPhan === actualSubjectCode) {
                 console.log('  ➜ Same subject:', cls.maLopHocPhan, '| isCurrent:', cls.maLopHocPhan === regCode, '| Status:', cls.tenTrangThai, '| Match:', matches);
