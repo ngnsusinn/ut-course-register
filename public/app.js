@@ -1755,8 +1755,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 // Filter out current registered class and locked/planning classes
                 availableClasses = classesWithDetails.filter(cls => 
                     cls.maLopHocPhan !== regCode &&
-                    cls.tenTrangThai !== 'Đã khóa lớp' &&
-                    cls.tenTrangThai !== 'Đang lên kế hoạch'
+                    cls.tenTrangThai !== 'Đã khóa lớp'
                 );
                 
                 console.log('Classes fetched from API:', availableClasses.length);
