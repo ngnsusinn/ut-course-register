@@ -38,7 +38,8 @@ const filesToProcess = [
 ];
 
 async function build() {
-    // Update footer date in HTML files
+    // Update version and footer date in HTML files
+    updateVersion();
     updateFooterDate();
 
     for (const file of filesToProcess) {
@@ -96,6 +97,40 @@ async function build() {
     console.log('✅ Build completed! Files are minified and obfuscated.');
 }
 
+// Get ISO week number
+function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+// Update version: v{year}.{week}.{dayOfWeek}
+function updateVersion() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const week = getWeekNumber(now);
+    const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+
+    const newVersion = `v${year}.${week}.${dayOfWeek}`;
+
+    const htmlFiles = ['public/index.html'];
+    const pattern = /v\d{4}\.\d{1,2}\.\d{1}/g;
+
+    htmlFiles.forEach(file => {
+        const filePath = path.join(__dirname, file);
+        if (fs.existsSync(filePath)) {
+            let content = fs.readFileSync(filePath, 'utf8');
+            if (pattern.test(content)) {
+                content = content.replace(pattern, newVersion);
+                fs.writeFileSync(filePath, content, 'utf8');
+                console.log(`🏷️  Updated version in ${file}: ${newVersion}`);
+            }
+        }
+    });
+}
+
 // Update "Cập nhật lần cuối" in HTML footer
 function updateFooterDate() {
     const now = new Date();
@@ -123,4 +158,5 @@ function updateFooterDate() {
 }
 
 build().catch(console.error);
+
 
