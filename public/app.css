@@ -83,7 +83,7 @@ input:checked~.block {
 
 /* Dark mode table styles - use !important to override inline classes */
 .dark table {
-    background-color: #1f2937 !important;
+    background-color: transparent !important;
 }
 
 .dark table th {
@@ -98,7 +98,7 @@ input:checked~.block {
 }
 
 .dark table tbody tr {
-    background-color: #1f2937 !important;
+    background-color: transparent !important;
 }
 
 .dark table tbody tr:hover {
@@ -107,12 +107,12 @@ input:checked~.block {
 
 /* Override .bg-white class in dark mode */
 .dark .bg-white {
-    background-color: #1f2937 !important;
+    background-color: inherit !important;
 }
 
 .dark tr.bg-white,
-.dark div.bg-white {
-    background-color: #1f2937 !important;
+.dark div.bg-white:not(.payment-modal-content) {
+    background-color: inherit !important;
 }
 
 /* Override hover states */
