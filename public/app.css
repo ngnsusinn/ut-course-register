@@ -32,6 +32,13 @@ input:checked~.block {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+@media (prefers-color-scheme: dark) {
+    .payment-modal-content {
+        background-color: #1f2937;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+}
+
 .close-modal {
     color: #6b7280;
     font-size: 1.75rem;
@@ -42,4 +49,41 @@ input:checked~.block {
 .close-modal:hover,
 .close-modal:focus {
     color: #1f2937;
+}
+
+@media (prefers-color-scheme: dark) {
+    .close-modal {
+        color: #9ca3af;
+    }
+
+    .close-modal:hover,
+    .close-modal:focus {
+        color: #f3f4f6;
+    }
+}
+
+/* Dark mode input styles */
+@media (prefers-color-scheme: dark) {
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select {
+        background-color: #374151;
+        border-color: #4b5563;
+        color: #f3f4f6;
+    }
+
+    input[type="text"]::placeholder,
+    input[type="password"]::placeholder,
+    input[type="number"]::placeholder {
+        color: #9ca3af;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+        border-color: #3b82f6;
+    }
 }
