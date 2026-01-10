@@ -32,11 +32,9 @@ input:checked~.block {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-    .payment-modal-content {
-        background-color: #1f2937;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    }
+.dark .payment-modal-content {
+    background-color: #1f2937;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .close-modal {
@@ -51,39 +49,125 @@ input:checked~.block {
     color: #1f2937;
 }
 
-@media (prefers-color-scheme: dark) {
-    .close-modal {
-        color: #9ca3af;
-    }
+.dark .close-modal {
+    color: #9ca3af;
+}
 
-    .close-modal:hover,
-    .close-modal:focus {
-        color: #f3f4f6;
-    }
+.dark .close-modal:hover,
+.dark .close-modal:focus {
+    color: #f3f4f6;
 }
 
 /* Dark mode input styles */
-@media (prefers-color-scheme: dark) {
+.dark input[type="text"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark select {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
 
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    select {
-        background-color: #374151;
-        border-color: #4b5563;
-        color: #f3f4f6;
-    }
+.dark input[type="text"]::placeholder,
+.dark input[type="password"]::placeholder,
+.dark input[type="number"]::placeholder {
+    color: #9ca3af;
+}
 
-    input[type="text"]::placeholder,
-    input[type="password"]::placeholder,
-    input[type="number"]::placeholder {
-        color: #9ca3af;
-    }
+.dark input[type="text"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="number"]:focus,
+.dark select:focus {
+    border-color: #3b82f6;
+}
 
-    input[type="text"]:focus,
-    input[type="password"]:focus,
-    input[type="number"]:focus,
-    select:focus {
-        border-color: #3b82f6;
-    }
+/* Dark mode table styles */
+.dark table {
+    background-color: #1f2937;
+}
+
+.dark table th {
+    background-color: #374151;
+    color: #f3f4f6;
+    border-color: #4b5563;
+}
+
+.dark table td {
+    border-color: #4b5563;
+    color: #e5e7eb;
+}
+
+.dark table tbody tr:hover {
+    background-color: #374151;
+}
+
+/* Dark mode text colors */
+.dark .text-gray-500 {
+    color: #9ca3af;
+}
+
+.dark .text-gray-600 {
+    color: #9ca3af;
+}
+
+.dark .text-gray-700 {
+    color: #d1d5db;
+}
+
+/* Dark mode border colors */
+.dark .border-b {
+    border-color: #4b5563;
+}
+
+.dark .border-t {
+    border-color: #4b5563;
+}
+
+/* Dark mode info boxes */
+.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+.dark .bg-yellow-50 {
+    background-color: rgba(234, 179, 8, 0.15);
+}
+
+.dark .bg-green-50 {
+    background-color: rgba(34, 197, 94, 0.15);
+}
+
+.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.15);
+}
+
+.dark .bg-gray-100 {
+    background-color: #374151;
+}
+
+/* Dark mode version badge */
+.dark .bg-gray-200 {
+    background-color: #4b5563;
+}
+
+.dark .text-gray-700.rounded-full {
+    color: #e5e7eb;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+    background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Dark mode loader */
+.dark .loader {
+    border-color: #374151;
+    border-top-color: #60a5fa;
 }
