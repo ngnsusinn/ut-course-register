@@ -38,6 +38,9 @@ const filesToProcess = [
 ];
 
 async function build() {
+    // Update footer date in HTML files
+    updateFooterDate();
+
     for (const file of filesToProcess) {
         const inputPath = path.join(__dirname, file.input);
         const backupPath = path.join(__dirname, file.backup);
@@ -93,4 +96,31 @@ async function build() {
     console.log('✅ Build completed! Files are minified and obfuscated.');
 }
 
+// Update "Cập nhật lần cuối" in HTML footer
+function updateFooterDate() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+
+    const htmlFiles = ['public/index.html'];
+    const pattern = /Cập nhật lần cuối: \d{1,2}\/\d{1,2}\/\d{4}/g;
+    const replacement = `Cập nhật lần cuối: ${dateStr}`;
+
+    htmlFiles.forEach(file => {
+        const filePath = path.join(__dirname, file);
+        if (fs.existsSync(filePath)) {
+            let content = fs.readFileSync(filePath, 'utf8');
+            if (pattern.test(content)) {
+                content = content.replace(pattern, replacement);
+                fs.writeFileSync(filePath, content, 'utf8');
+                console.log(`📅 Updated footer date in ${file}: ${dateStr}\n`);
+            }
+        }
+    });
+}
+
 build().catch(console.error);
+
