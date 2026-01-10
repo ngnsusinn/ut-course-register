@@ -1,46 +1,26 @@
 {
-  "name": "uth-secure-tool",
-  "version": "2.2.0",
-  "description": "Secure UTH Course Registration Tool with VIP features and SePay Payment (MoMo Removed)",
-  "main": "api/handler.js",
+  "name": "ut-course-register",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod",
-    "test:db": "node scripts/test-connection.js",
-    "migrate": "node scripts/migrate.js",
-    "postinstall": "echo '✅ Dependencies installed. Run npm run migrate to setup database.'",
-    "obfuscate": "node scripts/obfuscate.js",
-    "restore": "node scripts/restore.js",
-    "build": "npm run obfuscate"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
-    "node-fetch": "^2.6.7",
-    "mysql2": "^3.6.5",
-    "abort-controller": "^3.0.0",
-    "@vercel/speed-insights": "^1.0.2",
-    "@vercel/analytics": "^1.1.1"
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
-    "vercel": "^33.0.0",
-    "dotenv": "^16.3.1",
-    "javascript-obfuscator": "^4.1.0"
-  },
-  "engines": {
-    "node": ">=14.x"
-  },
-  "keywords": [
-    "uth",
-    "course-registration",
-    "sepay",
-    "payment",
-    "vip",
-    "education",
-    "vietnam"
-  ],
-  "author": "UTH Dev Team",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/ut-course-register"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
