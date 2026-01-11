@@ -114,6 +114,45 @@ input:checked~.block {
     background-color: #374151 !important;
 }
 
+/* Fix misaligned background colors in table cells for dark mode */
+.dark table td[class*="bg-"],
+.dark table td .bg-blue-100,
+.dark table td .bg-purple-100,
+.dark table td .bg-green-100,
+.dark table td .bg-yellow-100,
+.dark table td .bg-red-100,
+.dark table td .bg-gray-100,
+.dark table td .bg-indigo-100,
+.dark table td .bg-pink-100,
+.dark table td .bg-sky-100,
+.dark table td .bg-white {
+    background: transparent !important;
+}
+
+/* Override all bg-* classes inside table cells in dark mode */
+.dark table td div[class*="bg-"],
+.dark table td span[class*="bg-"] {
+    background: transparent !important;
+}
+
+/* Keep badge/tag styles but with dark mode compatible colors */
+.dark table td .bg-blue-100.text-blue-800,
+.dark table td .bg-purple-100.text-purple-800,
+.dark table td .bg-green-100.text-green-800 {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #93c5fd !important;
+}
+
+.dark table td .bg-purple-100.text-purple-800 {
+    background-color: rgba(139, 92, 246, 0.2) !important;
+    color: #c4b5fd !important;
+}
+
+.dark table td .bg-green-100.text-green-800 {
+    background-color: rgba(34, 197, 94, 0.2) !important;
+    color: #86efac !important;
+}
+
 /* Override .bg-white class for table rows in dark mode */
 .dark table tr.bg-white,
 .dark tbody tr.bg-white,
@@ -124,6 +163,36 @@ input:checked~.block {
 .dark table tr.bg-white:hover,
 .dark tbody tr.bg-white:hover {
     background-color: #374151 !important;
+}
+
+/* Fix rows with bg-sky-100, bg-blue-100, bg-blue-200 classes */
+.dark table tr[class*="bg-sky"],
+.dark table tr[class*="bg-blue"],
+.dark table tr.bg-sky-100,
+.dark table tr.bg-blue-100,
+.dark table tr.bg-blue-200,
+.dark tbody tr[class*="bg-sky"],
+.dark tbody tr[class*="bg-blue"],
+.dark tbody tr.bg-sky-100,
+.dark tbody tr.bg-blue-100,
+.dark tbody tr.bg-blue-200 {
+    background: transparent !important;
+}
+
+.dark table tr[class*="bg-sky"]:hover,
+.dark table tr[class*="bg-blue"]:hover,
+.dark tbody tr[class*="bg-sky"]:hover,
+.dark tbody tr[class*="bg-blue"]:hover {
+    background-color: #374151 !important;
+}
+
+/* Fix td cells that have direct background classes */
+.dark table td.bg-sky-100,
+.dark table td.bg-blue-100,
+.dark table td.bg-blue-200,
+.dark table td[class*="bg-sky"],
+.dark table td[class*="bg-blue"] {
+    background: transparent !important;
 }
 
 /* Override hover states */
