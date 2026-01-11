@@ -9,25 +9,39 @@ console.log('📦 Starting build process (minify + obfuscate)...\n');
 const obfuscationOptions = {
     compact: true,
     controlFlowFlattening: true,
-    controlFlowFlatteningThreshold: 0.75,
+    controlFlowFlatteningThreshold: 1, // Tăng từ 0.75 lên 1 (100%)
     deadCodeInjection: true,
-    deadCodeInjectionThreshold: 0.4,
-    debugProtection: false,
-    disableConsoleOutput: false,
-    identifierNamesGenerator: 'hexadecimal',
+    deadCodeInjectionThreshold: 0.5, // Tăng từ 0.4 lên 0.5
+    debugProtection: true, // Bật để chống debug (lưu ý: có thể gây khó chịu khi dev)
+    debugProtectionInterval: 500, // Kiểm tra debug mỗi 2 giây
+    disableConsoleOutput: true, // Tắt console.log trong production
+    domainLock: [], // Thêm domain nếu muốn lock code chỉ chạy trên domain cụ thể
+    identifierNamesGenerator: 'mangled-shuffled', // Mạnh hơn 'hexadecimal'
+    identifiersPrefix: '',
     numbersToExpressions: true,
-    renameGlobals: false,
+    renameGlobals: true, // Bật để đổi tên global variables
+    renameProperties: false, // Cẩn thận với option này, có thể break code
     rotateStringArray: true,
     selfDefending: true,
     shuffleStringArray: true,
     simplify: true,
     splitStrings: true,
-    splitStringsChunkLength: 10,
+    splitStringsChunkLength: 5, // Giảm từ 10 xuống 5 để chia nhỏ hơn
     stringArray: true,
-    stringArrayEncoding: ['base64'],
-    stringArrayThreshold: 0.75,
+    stringArrayCallsTransform: true, // Thêm - làm rối cách gọi string array
+    stringArrayCallsTransformThreshold: 0.75,
+    stringArrayEncoding: ['rc4'], // Đổi từ 'base64' sang 'rc4' (mạnh hơn)
+    stringArrayIndexesType: ['hexadecimal-number', 'hexadecimal-numeric-string'],
+    stringArrayIndexShift: true,
+    stringArrayRotate: true,
+    stringArrayShuffle: true,
+    stringArrayWrappersCount: 2, // Thêm wrappers
+    stringArrayWrappersChainedCalls: true,
+    stringArrayWrappersParametersMaxCount: 4,
+    stringArrayWrappersType: 'function',
+    stringArrayThreshold: 1, // Tăng lên 1 (100%)
     transformObjectKeys: true,
-    unicodeEscapeSequence: false
+    unicodeEscapeSequence: true // Bật để chuyển đổi sang unicode
 };
 
 // Files to process
