@@ -19,7 +19,7 @@ const obfuscationOptions = {
     identifierNamesGenerator: 'mangled-shuffled', // Mạnh hơn 'hexadecimal'
     identifiersPrefix: '',
     numbersToExpressions: true,
-    renameGlobals: true, // Bật để đổi tên global variables
+    renameGlobals: false, // Tắt vì gây conflict khi có nhiều file JS sử dụng chung globals (window functions)
     renameProperties: false, // Cẩn thận với option này, có thể break code
     rotateStringArray: true,
     selfDefending: true,
