@@ -715,9 +715,8 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
                 const { dotId, fetchPrerequisites, userId } = payload;
-                const vipStatus = await checkVIPStatus(userId);
                 
-                const sources = (fetchPrerequisites && vipStatus.hasVIP) ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
 
@@ -758,8 +757,7 @@ export default async (req, res) => {
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites, userId } = payload;
-                const vipStatus = await checkVIPStatus(userId);
-                const sources = (fetchPrerequisites && vipStatus.hasVIP) ? ['dkhp', 'dkhpdk'] : ['dkhp'];
+                const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
 
                 for (const source of sources) {
