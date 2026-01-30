@@ -44,11 +44,11 @@ const obfuscationOptions = {
     unicodeEscapeSequence: true // Bật để chuyển đổi sang unicode
 };
 
-// Files to process
+// Files to process with unique prefixes to avoid identifier conflicts
 const filesToProcess = [
-    { input: 'public/app.js', backup: 'public/app.original.js' },
-    { input: 'public/admin-panel.js', backup: 'public/admin-panel.original.js' },
-    { input: 'public/timetable.js', backup: 'public/timetable.original.js' }
+    { input: 'public/app.js', backup: 'public/app.original.js', prefix: '_a' },
+    { input: 'public/admin-panel.js', backup: 'public/admin-panel.original.js', prefix: '_b' },
+    { input: 'public/timetable.js', backup: 'public/timetable.original.js', prefix: '_c' }
 ];
 
 async function build() {
@@ -88,8 +88,13 @@ async function build() {
                 charset: 'utf8'
             });
 
-            // Step 2: Obfuscate
-            const obfuscated = JavaScriptObfuscator.obfuscate(minified.code, obfuscationOptions);
+            // Step 2: Obfuscate with unique prefix for each file
+            const fileObfuscationOptions = {
+                ...obfuscationOptions,
+                identifiersPrefix: file.prefix,
+                seed: file.prefix.charCodeAt(1) * 12345 // Different seed per file
+            };
+            const obfuscated = JavaScriptObfuscator.obfuscate(minified.code, fileObfuscationOptions);
             const finalCode = obfuscated.getObfuscatedCode();
 
             // Write final code
