@@ -322,14 +322,16 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 
                 const [result] = await connection.execute(query, values);
                 
-                // affectedRows for batch: 1 per insert, 2 per update
-                // Calculate approximate counts based on affectedRows
+                // With ON DUPLICATE KEY UPDATE:
+                // - Insert new row = 1 affectedRow
+                // - Update existing = 2 affectedRows
+                // So we count batch.length as synced (either inserted or updated)
                 const batchAffected = result.affectedRows || 0;
-                // Since we can't distinguish exactly, count batch size as affected
-                insertedCount += Math.min(batch.length, batchAffected);
-                if (batchAffected > batch.length) {
-                    updatedCount += batchAffected - batch.length;
-                }
+                const batchUpdates = batchAffected - batch.length; // Extra rows = updates (each counts as 2)
+                const batchInserts = batch.length - batchUpdates;
+                
+                insertedCount += Math.max(0, batchInserts);
+                updatedCount += Math.max(0, batchUpdates);
             } catch (batchError) {
                 console.warn(`⚠️ Batch insert failed, falling back to individual inserts:`, batchError.message);
                 // Fallback: try individual inserts for this batch
