@@ -1025,16 +1025,17 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             log(`✅ Đã tải thành công ${totalClasses} lớp học phần.`);
             log(`📋 Hiển thị ${unlockedClasses.length} lớp chưa khóa (đã lọc bỏ ${totalClasses - unlockedClasses.length} lớp đã khóa).`);
 
-            // Save to cache
-            saveCachedData();
-            
-            // Sync to shared database for community
-            await syncToSharedDatabase(scheduleRes.schedule, scheduleRes.subjectTypes);
-
             // Update button's originalHTML to its new state before toggling loading off
             fetchBtn.originalHTML = fetchBtn.originalHTML.replace('Tải lịch học', 'Tải lại lịch học');
 
+            // Render table first for better UX
             await renderScheduleTable();
+            
+            // Save to cache
+            saveCachedData();
+            
+            // Sync to shared database in background (don't await)
+            syncToSharedDatabase(scheduleRes.schedule, scheduleRes.subjectTypes);
         } else {
             log("❌ Lỗi khi tải lịch học từ server.", true);
         }
