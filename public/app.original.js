@@ -115,6 +115,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return details.map(detail => `<span>${cls.maLopHocPhan} | ${formatDayOfWeek(detail.thu)} | Tiết ${detail.tietHoc}</span>`).join('<br>');
     };
 
+    // Format relative time for shared DB data
+    const formatLastUpdated = (timestamp) => {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) return 'Vừa xong';
+        if (diffMins < 60) return `${diffMins} phút trước`;
+        if (diffHours < 24) return `${diffHours} giờ trước`;
+        if (diffDays < 7) return `${diffDays} ngày trước`;
+        return date.toLocaleDateString('vi-VN');
+    };
+
     // --- SCHEDULE CONFLICT DETECTION ---
     
     // Parse period string "1-3" or "4-6" to array [1, 2, 3] or [4, 5, 6]
@@ -1010,6 +1027,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
             // Save to cache
             saveCachedData();
+            
+            // Sync to shared database for community
+            await syncToSharedDatabase(scheduleRes.schedule, scheduleRes.subjectTypes);
 
             // Update button's originalHTML to its new state before toggling loading off
             fetchBtn.originalHTML = fetchBtn.originalHTML.replace('Tải lịch học', 'Tải lại lịch học');
@@ -1020,6 +1040,82 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         }
         updateProgressBar(-1);
         toggleLoading(fetchBtn, false);
+    };
+    
+    // Sync class data to shared database for community
+    const syncToSharedDatabase = async (classData, subjectTypes) => {
+        if (!classData || classData.length === 0) return;
+        if (!dotId || !userId) {
+            console.warn('Cannot sync: missing dotId or userId');
+            return;
+        }
+        
+        try {
+            log('📤 Đang đồng bộ dữ liệu vào CSDL cộng đồng...');
+            
+            // Group by source
+            const dkhpClasses = classData.filter(c => c.source !== 'dkhpdk');
+            const dkhpdkClasses = classData.filter(c => c.source === 'dkhpdk');
+            
+            let totalSynced = 0;
+            
+            // Sync dkhp classes
+            if (dkhpClasses.length > 0) {
+                const syncResult = await backendRequest('syncClassData', {
+                    dotId,
+                    userId,
+                    source: 'dkhp',
+                    classData: dkhpClasses.map(cls => ({
+                        id: cls.id,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        maHocPhan: cls.maHocPhan,
+                        tenMonHoc: cls.tenMonHoc,
+                        soTinChi: cls.soTinChi || 0,
+                        tenTrangThai: cls.tenTrangThai,
+                        phanTramDangKy: cls.phanTramDangKy || 0,
+                        choDangKy: cls.choDangKy !== false,
+                        scheduleDetails: cls.scheduleDetails || [],
+                        isBatBuoc: subjectTypes ? (typeof subjectTypes === 'object' ? subjectTypes[cls.maHocPhan] : undefined) : undefined
+                    }))
+                });
+                
+                if (syncResult && syncResult.success) {
+                    totalSynced += syncResult.total || 0;
+                }
+            }
+            
+            // Sync dkhpdk classes
+            if (dkhpdkClasses.length > 0) {
+                const syncResult = await backendRequest('syncClassData', {
+                    dotId,
+                    userId,
+                    source: 'dkhpdk',
+                    classData: dkhpdkClasses.map(cls => ({
+                        id: cls.id,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        maHocPhan: cls.maHocPhan,
+                        tenMonHoc: cls.tenMonHoc,
+                        soTinChi: cls.soTinChi || 0,
+                        tenTrangThai: cls.tenTrangThai,
+                        phanTramDangKy: cls.phanTramDangKy || 0,
+                        choDangKy: cls.choDangKy !== false,
+                        scheduleDetails: cls.scheduleDetails || [],
+                        isBatBuoc: null
+                    }))
+                });
+                
+                if (syncResult && syncResult.success) {
+                    totalSynced += syncResult.total || 0;
+                }
+            }
+            
+            if (totalSynced > 0) {
+                log(`📦 Đã đồng bộ ${totalSynced} lớp vào CSDL cộng đồng`);
+            }
+        } catch (error) {
+            console.error('Sync to shared DB failed:', error);
+            // Don't show error to user - sync is optional
+        }
     };
 
     const fetchRegisteredClasses = async () => {
@@ -1706,10 +1802,30 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 source: regSource 
             });
             
+            // Track if data is from shared database
+            let isFromSharedDB = checkStatusRes?.fromSharedDB || false;
+            
             if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
-                // Get schedule details for each class (don't need to check availability again, data is already accurate)
+                // Check if data came from shared DB
+                if (isFromSharedDB) {
+                    log(`📦 Sử dụng dữ liệu từ CSDL cộng đồng`);
+                }
+                
+                // Get schedule details for each class (skip if already has scheduleDetails from shared DB)
                 const classesWithDetails = await Promise.all(
                     checkStatusRes.body.map(async (cls) => {
+                        // If class already has scheduleDetails (from shared DB), use it
+                        if (cls.scheduleDetails && !cls.scheduleDetails.error) {
+                            return {
+                                ...cls,
+                                maHocPhan: detectedMaHocPhan,
+                                tenMonHoc: cls.tenMonHoc || regName,
+                                source: regSource,
+                                fromSharedDB: cls.fromSharedDB || isFromSharedDB
+                            };
+                        }
+                        
+                        // Otherwise fetch schedule details
                         const scheduleDetails = await backendRequest('getScheduleDetails', {
                             classId: cls.id,
                             source: regSource
@@ -1718,9 +1834,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         return {
                             ...cls,
                             maHocPhan: detectedMaHocPhan,
-                            tenMonHoc: regName,
+                            tenMonHoc: cls.tenMonHoc || regName,
                             source: regSource,
-                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true }
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true },
+                            fromSharedDB: isFromSharedDB
                         };
                     })
                 );
@@ -1732,11 +1849,19 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 );
                 
                 console.log('Classes fetched from API:', availableClasses.length);
-                log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+                
+                if (isFromSharedDB) {
+                    log(`✅ Đã lấy ${availableClasses.length} lớp từ CSDL cộng đồng`);
+                } else {
+                    log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+                }
             } else {
                 log(`❌ Không thể lấy danh sách lớp từ API`, true);
             }
         }
+        
+        // Check if any classes are from shared DB
+        const hasSharedDBClasses = availableClasses.some(cls => cls.fromSharedDB);
         
         if (availableClasses.length === 0) {
             log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
@@ -1747,6 +1872,17 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const modal = document.createElement('div');
         modal.id = 'swap-class-modal';
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        
+        // Shared DB notice
+        const sharedDBNotice = hasSharedDBClasses ? `
+            <div class="mb-4 p-3 bg-cyan-50 border-l-4 border-cyan-500 rounded flex items-start gap-2">
+                <span class="text-xl">📦</span>
+                <div>
+                    <p class="font-bold text-sm text-cyan-800">Dữ liệu từ CSDL cộng đồng</p>
+                    <p class="text-xs text-cyan-700 mt-1">Một số lớp được lấy từ cơ sở dữ liệu chia sẻ. Thông tin % đăng ký có thể chưa cập nhật mới nhất.</p>
+                </div>
+            </div>
+        ` : '';
         
         modal.innerHTML = `
             <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -1763,6 +1899,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 </div>
                 
                 <div class="p-6 overflow-y-auto flex-1">
+                    ${sharedDBNotice}
                     <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
                         <p class="text-sm text-gray-700">
                             <span class="font-bold">📋 Lịch học hiện tại:</span><br>
@@ -1807,12 +1944,22 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const isFull = cls.phanTramDangKy >= 100;
             const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
             
+            // Shared DB badge
+            const sharedDBBadge = cls.fromSharedDB 
+                ? '<span class="ml-1 text-xs bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded">📦</span>' 
+                : '';
+            
+            // Format last updated time for shared DB classes
+            const lastUpdatedInfo = cls.fromSharedDB && cls.lastUpdatedAt
+                ? `<div class="text-xs text-gray-400 mt-1">Cập nhật: ${formatLastUpdated(cls.lastUpdatedAt)}</div>`
+                : '';
+            
             row.innerHTML = `
-                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}</td>
+                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}${sharedDBBadge}</td>
                 <td class="px-4 py-3">
                     <div class="text-xs">${formatScheduleDetail(cls.scheduleDetails)}</div>
                 </td>
-                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}${lastUpdatedInfo}</td>
                 <td class="px-4 py-3 ${statusColor}">${cls.phanTramDangKy}%</td>
                 <td class="px-4 py-3">
                     <div class="flex flex-col gap-2">

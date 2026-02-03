@@ -185,6 +185,300 @@ async function getScheduleDetails(classId, token, source) {
 }
 
 // ============================================
+// Shared Class Data Functions
+// ============================================
+
+/**
+ * Sync class data to shared database
+ * @param {number} dotId - ID đợt đăng ký
+ * @param {string} userId - User ID contributor
+ * @param {string} source - Source (dkhp/dkhpdk)
+ * @param {Array} classData - Array of class data to sync
+ * @returns {Object} - Sync result with counts
+ */
+async function syncClassDataToDB(dotId, userId, source, classData) {
+    let connection;
+    try {
+        // Validate inputs
+        if (!dotId || !userId || !source) {
+            return {
+                success: false,
+                error: 'Missing required parameters: dotId, userId, or source',
+                inserted: 0,
+                updated: 0,
+                total: 0
+            };
+        }
+        
+        if (!Array.isArray(classData) || classData.length === 0) {
+            return {
+                success: true,
+                inserted: 0,
+                updated: 0,
+                total: 0,
+                message: 'No data to sync'
+            };
+        }
+        
+        connection = await getPool().getConnection();
+        
+        let insertedCount = 0;
+        let updatedCount = 0;
+        let skippedCount = 0;
+        
+        for (const cls of classData) {
+            try {
+                // Validate required fields
+                if (!cls.maLopHocPhan || !cls.maHocPhan || !cls.tenMonHoc) {
+                    console.warn('⚠️ Skipping class with missing required fields:', cls.maLopHocPhan || 'unknown');
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Safely stringify schedule details
+                let scheduleJson = null;
+                try {
+                    if (cls.scheduleDetails && Array.isArray(cls.scheduleDetails)) {
+                        scheduleJson = JSON.stringify(cls.scheduleDetails);
+                    }
+                } catch (jsonError) {
+                    console.warn('Failed to stringify scheduleDetails for:', cls.maLopHocPhan);
+                }
+                
+                const [result] = await connection.execute(`
+                INSERT INTO shared_class_data (
+                    dot_id, ma_lop_hoc_phan, ma_hoc_phan, ten_mon_hoc, so_tin_chi,
+                    class_id, ten_trang_thai, phan_tram_dang_ky, cho_dang_ky,
+                    schedule_details, source, is_bat_buoc,
+                    contributed_by, last_updated_by, contributor_count
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                ON DUPLICATE KEY UPDATE
+                    ten_mon_hoc = VALUES(ten_mon_hoc),
+                    so_tin_chi = VALUES(so_tin_chi),
+                    class_id = VALUES(class_id),
+                    ten_trang_thai = VALUES(ten_trang_thai),
+                    phan_tram_dang_ky = VALUES(phan_tram_dang_ky),
+                    cho_dang_ky = VALUES(cho_dang_ky),
+                    schedule_details = VALUES(schedule_details),
+                    is_bat_buoc = COALESCE(VALUES(is_bat_buoc), is_bat_buoc),
+                    last_updated_by = VALUES(last_updated_by),
+                    contributor_count = contributor_count + 1
+            `, [
+                dotId,
+                cls.maLopHocPhan,
+                cls.maHocPhan,
+                cls.tenMonHoc,
+                cls.soTinChi || 0,
+                cls.id || 0,
+                cls.tenTrangThai || null,
+                cls.phanTramDangKy || 0,
+                cls.choDangKy !== false ? 1 : 0,
+                scheduleJson,
+                source,
+                cls.isBatBuoc !== undefined ? (cls.isBatBuoc ? 1 : 0) : null,
+                userId,
+                userId
+            ]);
+            
+            // affectedRows = 1 for insert, 2 for update
+            if (result.affectedRows === 1) {
+                insertedCount++;
+            } else if (result.affectedRows === 2) {
+                updatedCount++;
+            }
+            } catch (classError) {
+                console.warn(`⚠️ Failed to sync class ${cls.maLopHocPhan}:`, classError.message);
+                skippedCount++;
+            }
+        }
+        
+        // Update contribution stats
+        const totalAffected = insertedCount + updatedCount;
+        if (totalAffected > 0) {
+            try {
+                await connection.execute(`
+                    INSERT INTO class_data_contributions (
+                        user_id, dot_id, classes_contributed, sync_count,
+                        first_contribution_at, last_contribution_at
+                    ) VALUES (?, ?, ?, 1, NOW(), NOW())
+                    ON DUPLICATE KEY UPDATE
+                        classes_contributed = classes_contributed + ?,
+                        sync_count = sync_count + 1,
+                        last_contribution_at = NOW()
+                `, [userId, dotId, totalAffected, totalAffected]);
+            } catch (statsError) {
+                console.warn('Failed to update contribution stats:', statsError.message);
+            }
+        }
+        
+        console.log(`✅ Synced ${insertedCount} new, ${updatedCount} updated, ${skippedCount} skipped for dot ${dotId}`);
+        
+        return {
+            success: true,
+            inserted: insertedCount,
+            updated: updatedCount,
+            total: totalAffected
+        };
+    } catch (error) {
+        console.error('❌ Error syncing class data:', error.message);
+        return {
+            success: false,
+            error: error.message,
+            inserted: 0,
+            updated: 0,
+            total: 0
+        };
+    } finally {
+        if (connection) {
+            try {
+                connection.release();
+            } catch (err) {
+                console.error('Error releasing connection:', err);
+            }
+        }
+    }
+}
+
+/**
+ * Get shared class data from database
+ * @param {number} dotId - ID đợt đăng ký
+ * @param {string} maHocPhan - Mã học phần (optional)
+ * @param {string} source - Source filter (optional)
+ * @returns {Array} - Array of class data
+ */
+async function getSharedClassDataFromDB(dotId, maHocPhan = null, source = null) {
+    let connection;
+    try {
+        connection = await getPool().getConnection();
+        
+        let query = `
+            SELECT 
+                class_id as id,
+                ma_lop_hoc_phan as maLopHocPhan,
+                ma_hoc_phan as maHocPhan,
+                ten_mon_hoc as tenMonHoc,
+                so_tin_chi as soTinChi,
+                ten_trang_thai as tenTrangThai,
+                phan_tram_dang_ky as phanTramDangKy,
+                cho_dang_ky as choDangKy,
+                schedule_details as scheduleDetails,
+                source,
+                is_bat_buoc as isBatBuoc,
+                updated_at as lastUpdatedAt,
+                contributor_count as contributorCount
+            FROM shared_class_data
+            WHERE dot_id = ?
+        `;
+        
+        const params = [dotId];
+        
+        if (maHocPhan) {
+            query += ' AND ma_hoc_phan = ?';
+            params.push(maHocPhan);
+        }
+        
+        if (source) {
+            query += ' AND source = ?';
+            params.push(source);
+        }
+        
+        query += ' ORDER BY ma_hoc_phan, ma_lop_hoc_phan';
+        
+        const [rows] = await connection.execute(query, params);
+        
+        // Parse schedule_details JSON and convert boolean fields
+        const classes = rows.map(row => {
+            let scheduleDetails = [];
+            try {
+                if (row.scheduleDetails) {
+                    scheduleDetails = typeof row.scheduleDetails === 'string' 
+                        ? JSON.parse(row.scheduleDetails) 
+                        : row.scheduleDetails;
+                }
+            } catch (parseError) {
+                console.warn('Failed to parse scheduleDetails for class:', row.maLopHocPhan);
+                scheduleDetails = [];
+            }
+            
+            return {
+                ...row,
+                choDangKy: row.choDangKy === 1,
+                isBatBuoc: row.isBatBuoc === null ? null : row.isBatBuoc === 1,
+                scheduleDetails: scheduleDetails,
+                fromSharedDB: true
+            };
+        });
+        
+        return classes;
+    } catch (error) {
+        console.error('❌ Error getting shared class data:', error.message);
+        return [];
+    } finally {
+        if (connection) {
+            try {
+                connection.release();
+            } catch (err) {
+                console.error('Error releasing connection:', err);
+            }
+        }
+    }
+}
+
+/**
+ * Get shared data statistics for a dot
+ * @param {number} dotId - ID đợt đăng ký
+ * @returns {Object} - Statistics
+ */
+async function getSharedDataStats(dotId) {
+    let connection;
+    try {
+        connection = await getPool().getConnection();
+        
+        // Get class counts
+        const [classStats] = await connection.execute(`
+            SELECT 
+                COUNT(*) as totalClasses,
+                COUNT(DISTINCT ma_hoc_phan) as totalSubjects,
+                SUM(CASE WHEN source = 'dkhp' THEN 1 ELSE 0 END) as dkhpClasses,
+                SUM(CASE WHEN source = 'dkhpdk' THEN 1 ELSE 0 END) as dkhpdkClasses,
+                MAX(updated_at) as lastUpdatedAt
+            FROM shared_class_data
+            WHERE dot_id = ?
+        `, [dotId]);
+        
+        // Get contributor count
+        const [contribStats] = await connection.execute(`
+            SELECT 
+                COUNT(DISTINCT user_id) as totalContributors,
+                SUM(sync_count) as totalSyncs
+            FROM class_data_contributions
+            WHERE dot_id = ?
+        `, [dotId]);
+        
+        return {
+            totalClasses: classStats[0]?.totalClasses || 0,
+            totalSubjects: classStats[0]?.totalSubjects || 0,
+            dkhpClasses: classStats[0]?.dkhpClasses || 0,
+            dkhpdkClasses: classStats[0]?.dkhpdkClasses || 0,
+            lastUpdatedAt: classStats[0]?.lastUpdatedAt || null,
+            totalContributors: contribStats[0]?.totalContributors || 0,
+            totalSyncs: contribStats[0]?.totalSyncs || 0
+        };
+    } catch (error) {
+        console.error('❌ Error getting shared data stats:', error.message);
+        return null;
+    } finally {
+        if (connection) {
+            try {
+                connection.release();
+            } catch (err) {
+                console.error('Error releasing connection:', err);
+            }
+        }
+    }
+}
+
+// ============================================
 // VIP Plans Management
 // ============================================
 
@@ -780,7 +1074,25 @@ export default async (req, res) => {
                 const classEndpoint = source === 'dkhpdk'
                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
+                
                 result = await callApi(classEndpoint, 'GET', token, null, source);
+                
+                // Fallback to shared database if API returns empty/error
+                if (!result.success || !Array.isArray(result.body) || result.body.length === 0) {
+                    console.log(`⚠️ API returned empty for ${maHocPhan}, falling back to shared DB`);
+                    
+                    const sharedData = await getSharedClassDataFromDB(dotId, maHocPhan, source);
+                    
+                    if (sharedData && sharedData.length > 0) {
+                        console.log(`✅ Found ${sharedData.length} classes in shared DB for ${maHocPhan}`);
+                        result = {
+                            success: true,
+                            body: sharedData,
+                            fromSharedDB: true,
+                            message: 'Dữ liệu từ CSDL chia sẻ cộng đồng'
+                        };
+                    }
+                }
                 break;
             }
 
@@ -906,6 +1218,94 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { registrationId, source } = payload;
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
+                break;
+            }
+
+            // --- SHARED CLASS DATA ACTIONS ---
+            case 'syncClassData': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                
+                const { dotId, userId, source, classData } = payload;
+                
+                if (!dotId || !userId || !source || !Array.isArray(classData)) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Missing required fields: dotId, userId, source, classData' 
+                    });
+                }
+                
+                if (classData.length === 0) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        message: 'No data to sync',
+                        inserted: 0,
+                        updated: 0,
+                        total: 0
+                    });
+                }
+                
+                const syncResult = await syncClassDataToDB(dotId, userId, source, classData);
+                
+                result = {
+                    success: syncResult.success,
+                    inserted: syncResult.inserted,
+                    updated: syncResult.updated,
+                    total: syncResult.total,
+                    message: syncResult.success 
+                        ? `Đã đồng bộ ${syncResult.total} lớp vào CSDL cộng đồng`
+                        : syncResult.error
+                };
+                break;
+            }
+
+            case 'getSharedClassData': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                
+                const { dotId, maHocPhan, source } = payload;
+                
+                if (!dotId) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Missing required field: dotId' 
+                    });
+                }
+                
+                const sharedData = await getSharedClassDataFromDB(dotId, maHocPhan, source);
+                
+                result = {
+                    success: true,
+                    body: sharedData,
+                    count: sharedData.length,
+                    fromSharedDB: true
+                };
+                break;
+            }
+
+            case 'getSharedDataStats': {
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                
+                const { dotId } = payload;
+                
+                if (!dotId) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Missing required field: dotId' 
+                    });
+                }
+                
+                const stats = await getSharedDataStats(dotId);
+                
+                if (stats) {
+                    result = {
+                        success: true,
+                        stats: stats
+                    };
+                } else {
+                    result = {
+                        success: false,
+                        message: 'Không thể lấy thống kê'
+                    };
+                }
                 break;
             }
 
