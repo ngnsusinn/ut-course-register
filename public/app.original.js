@@ -1044,13 +1044,18 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     
     // Sync class data to shared database for community
     const syncToSharedDatabase = async (classData, subjectTypes) => {
-        if (!classData || classData.length === 0) return;
+        if (!classData || classData.length === 0) {
+            console.warn('Cannot sync: no class data');
+            return;
+        }
         if (!dotId || !userId) {
-            console.warn('Cannot sync: missing dotId or userId');
+            console.warn('Cannot sync: missing dotId or userId', { dotId, userId });
+            log('⚠️ Không thể đồng bộ: thiếu thông tin đợt/người dùng');
             return;
         }
         
         try {
+            console.log('Starting sync with:', { dotId, userId, classCount: classData.length });
             log('📤 Đang đồng bộ dữ liệu vào CSDL cộng đồng...');
             
             // Group by source
@@ -1061,6 +1066,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             // Sync dkhp classes
             if (dkhpClasses.length > 0) {
+                console.log('Syncing dkhp classes:', dkhpClasses.length);
                 const syncResult = await backendRequest('syncClassData', {
                     dotId,
                     userId,
@@ -1078,6 +1084,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         isBatBuoc: subjectTypes ? (typeof subjectTypes === 'object' ? subjectTypes[cls.maHocPhan] : undefined) : undefined
                     }))
                 });
+                console.log('Sync dkhp result:', syncResult);
                 
                 if (syncResult && syncResult.success) {
                     totalSynced += syncResult.total || 0;
@@ -1086,6 +1093,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             // Sync dkhpdk classes
             if (dkhpdkClasses.length > 0) {
+                console.log('Syncing dkhpdk classes:', dkhpdkClasses.length);
                 const syncResult = await backendRequest('syncClassData', {
                     dotId,
                     userId,
@@ -1103,6 +1111,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         isBatBuoc: null
                     }))
                 });
+                console.log('Sync dkhpdk result:', syncResult);
                 
                 if (syncResult && syncResult.success) {
                     totalSynced += syncResult.total || 0;
@@ -1111,10 +1120,12 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             
             if (totalSynced > 0) {
                 log(`📦 Đã đồng bộ ${totalSynced} lớp vào CSDL cộng đồng`);
+            } else {
+                console.warn('Sync completed but totalSynced is 0');
             }
         } catch (error) {
             console.error('Sync to shared DB failed:', error);
-            // Don't show error to user - sync is optional
+            log('⚠️ Đồng bộ CSDL cộng đồng thất bại');
         }
     };
 
