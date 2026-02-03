@@ -226,69 +226,146 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
         let updatedCount = 0;
         let skippedCount = 0;
         
+        // Prepare batch data
+        const validClasses = [];
         for (const cls of classData) {
+            // Validate required fields
+            if (!cls.maLopHocPhan || !cls.maHocPhan || !cls.tenMonHoc) {
+                console.warn('⚠️ Skipping class with missing required fields:', cls.maLopHocPhan || 'unknown');
+                skippedCount++;
+                continue;
+            }
+            
+            // Safely stringify schedule details
+            let scheduleJson = null;
             try {
-                // Validate required fields
-                if (!cls.maLopHocPhan || !cls.maHocPhan || !cls.tenMonHoc) {
-                    console.warn('⚠️ Skipping class with missing required fields:', cls.maLopHocPhan || 'unknown');
-                    skippedCount++;
-                    continue;
+                if (cls.scheduleDetails && Array.isArray(cls.scheduleDetails)) {
+                    scheduleJson = JSON.stringify(cls.scheduleDetails);
                 }
-                
-                // Safely stringify schedule details
-                let scheduleJson = null;
-                try {
-                    if (cls.scheduleDetails && Array.isArray(cls.scheduleDetails)) {
-                        scheduleJson = JSON.stringify(cls.scheduleDetails);
-                    }
-                } catch (jsonError) {
-                    console.warn('Failed to stringify scheduleDetails for:', cls.maLopHocPhan);
-                }
-                
-                const [result] = await connection.execute(`
-                INSERT INTO shared_class_data (
-                    dot_id, ma_lop_hoc_phan, ma_hoc_phan, ten_mon_hoc, so_tin_chi,
-                    class_id, ten_trang_thai, phan_tram_dang_ky, cho_dang_ky,
-                    schedule_details, source, is_bat_buoc,
-                    contributed_by, last_updated_by, contributor_count
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-                ON DUPLICATE KEY UPDATE
-                    ten_mon_hoc = VALUES(ten_mon_hoc),
-                    so_tin_chi = VALUES(so_tin_chi),
-                    class_id = VALUES(class_id),
-                    ten_trang_thai = VALUES(ten_trang_thai),
-                    phan_tram_dang_ky = VALUES(phan_tram_dang_ky),
-                    cho_dang_ky = VALUES(cho_dang_ky),
-                    schedule_details = VALUES(schedule_details),
-                    is_bat_buoc = COALESCE(VALUES(is_bat_buoc), is_bat_buoc),
-                    last_updated_by = VALUES(last_updated_by),
-                    contributor_count = contributor_count + 1
-            `, [
+            } catch (jsonError) {
+                console.warn('Failed to stringify scheduleDetails for:', cls.maLopHocPhan);
+            }
+            
+            validClasses.push({
                 dotId,
-                cls.maLopHocPhan,
-                cls.maHocPhan,
-                cls.tenMonHoc,
-                cls.soTinChi || 0,
-                cls.id || 0,
-                cls.tenTrangThai || null,
-                cls.phanTramDangKy || 0,
-                cls.choDangKy !== false ? 1 : 0,
+                maLopHocPhan: cls.maLopHocPhan,
+                maHocPhan: cls.maHocPhan,
+                tenMonHoc: cls.tenMonHoc,
+                soTinChi: cls.soTinChi || 0,
+                classId: cls.id || 0,
+                tenTrangThai: cls.tenTrangThai || null,
+                phanTramDangKy: cls.phanTramDangKy || 0,
+                choDangKy: cls.choDangKy !== false ? 1 : 0,
                 scheduleJson,
                 source,
-                cls.isBatBuoc !== undefined ? (cls.isBatBuoc ? 1 : 0) : null,
-                userId,
+                isBatBuoc: cls.isBatBuoc !== undefined ? (cls.isBatBuoc ? 1 : 0) : null,
                 userId
-            ]);
+            });
+        }
+        
+        if (validClasses.length === 0) {
+            return {
+                success: true,
+                inserted: 0,
+                updated: 0,
+                total: 0,
+                skipped: skippedCount,
+                message: 'No valid data to sync'
+            };
+        }
+        
+        // Batch insert in chunks of 50 for better performance
+        const BATCH_SIZE = 50;
+        
+        for (let i = 0; i < validClasses.length; i += BATCH_SIZE) {
+            const batch = validClasses.slice(i, i + BATCH_SIZE);
             
-            // affectedRows = 1 for insert, 2 for update
-            if (result.affectedRows === 1) {
-                insertedCount++;
-            } else if (result.affectedRows === 2) {
-                updatedCount++;
-            }
-            } catch (classError) {
-                console.warn(`⚠️ Failed to sync class ${cls.maLopHocPhan}:`, classError.message);
-                skippedCount++;
+            try {
+                // Build batch INSERT query
+                const placeholders = batch.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)').join(', ');
+                const values = batch.flatMap(cls => [
+                    cls.dotId,
+                    cls.maLopHocPhan,
+                    cls.maHocPhan,
+                    cls.tenMonHoc,
+                    cls.soTinChi,
+                    cls.classId,
+                    cls.tenTrangThai,
+                    cls.phanTramDangKy,
+                    cls.choDangKy,
+                    cls.scheduleJson,
+                    cls.source,
+                    cls.isBatBuoc,
+                    cls.userId,
+                    cls.userId
+                ]);
+                
+                const query = `
+                    INSERT INTO shared_class_data (
+                        dot_id, ma_lop_hoc_phan, ma_hoc_phan, ten_mon_hoc, so_tin_chi,
+                        class_id, ten_trang_thai, phan_tram_dang_ky, cho_dang_ky,
+                        schedule_details, source, is_bat_buoc,
+                        contributed_by, last_updated_by, contributor_count
+                    ) VALUES ${placeholders}
+                    ON DUPLICATE KEY UPDATE
+                        ten_mon_hoc = VALUES(ten_mon_hoc),
+                        so_tin_chi = VALUES(so_tin_chi),
+                        class_id = VALUES(class_id),
+                        ten_trang_thai = VALUES(ten_trang_thai),
+                        phan_tram_dang_ky = VALUES(phan_tram_dang_ky),
+                        cho_dang_ky = VALUES(cho_dang_ky),
+                        schedule_details = VALUES(schedule_details),
+                        is_bat_buoc = COALESCE(VALUES(is_bat_buoc), is_bat_buoc),
+                        last_updated_by = VALUES(last_updated_by),
+                        contributor_count = contributor_count + 1
+                `;
+                
+                const [result] = await connection.execute(query, values);
+                
+                // affectedRows for batch: 1 per insert, 2 per update
+                // Calculate approximate counts based on affectedRows
+                const batchAffected = result.affectedRows || 0;
+                // Since we can't distinguish exactly, count batch size as affected
+                insertedCount += Math.min(batch.length, batchAffected);
+                if (batchAffected > batch.length) {
+                    updatedCount += batchAffected - batch.length;
+                }
+            } catch (batchError) {
+                console.warn(`⚠️ Batch insert failed, falling back to individual inserts:`, batchError.message);
+                // Fallback: try individual inserts for this batch
+                for (const cls of batch) {
+                    try {
+                        const [result] = await connection.execute(`
+                            INSERT INTO shared_class_data (
+                                dot_id, ma_lop_hoc_phan, ma_hoc_phan, ten_mon_hoc, so_tin_chi,
+                                class_id, ten_trang_thai, phan_tram_dang_ky, cho_dang_ky,
+                                schedule_details, source, is_bat_buoc,
+                                contributed_by, last_updated_by, contributor_count
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                            ON DUPLICATE KEY UPDATE
+                                ten_mon_hoc = VALUES(ten_mon_hoc),
+                                so_tin_chi = VALUES(so_tin_chi),
+                                class_id = VALUES(class_id),
+                                ten_trang_thai = VALUES(ten_trang_thai),
+                                phan_tram_dang_ky = VALUES(phan_tram_dang_ky),
+                                cho_dang_ky = VALUES(cho_dang_ky),
+                                schedule_details = VALUES(schedule_details),
+                                is_bat_buoc = COALESCE(VALUES(is_bat_buoc), is_bat_buoc),
+                                last_updated_by = VALUES(last_updated_by),
+                                contributor_count = contributor_count + 1
+                        `, [
+                            cls.dotId, cls.maLopHocPhan, cls.maHocPhan, cls.tenMonHoc, cls.soTinChi,
+                            cls.classId, cls.tenTrangThai, cls.phanTramDangKy, cls.choDangKy,
+                            cls.scheduleJson, cls.source, cls.isBatBuoc, cls.userId, cls.userId
+                        ]);
+                        
+                        if (result.affectedRows === 1) insertedCount++;
+                        else if (result.affectedRows === 2) updatedCount++;
+                    } catch (singleError) {
+                        console.warn(`⚠️ Failed to sync class ${cls.maLopHocPhan}:`, singleError.message);
+                        skippedCount++;
+                    }
+                }
             }
         }
         
