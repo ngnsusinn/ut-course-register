@@ -1281,81 +1281,96 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 registeredClass: swap.registered
             });
         });
-        
-        const delay = parseInt(delayInput.value, 10) || 1000;
 
         classesBySubject.forEach((classItems, maHocPhan) => {
             const tenMonHoc = classItems[0].class.tenMonHoc || maHocPhan;
             const source = classItems[0].class.source;
 
-            const intervalId = setInterval(async () => {
+            // Use recursive call to prevent request piling - no delay between requests
+            const runInsertionLoop = async () => {
                 // Check if this subject already completed
                 if (completedSubjects.has(maHocPhan)) {
-                    clearInterval(intervalId);
                     registrationIntervals.delete(maHocPhan);
                     return;
                 }
-                if (isProcessStopped) return;
-                const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
+                if (isProcessStopped) {
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
+                
+                try {
+                    const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
 
-                if (!statusRes || !statusRes.success) return;
-
-                for (const availableClass of statusRes.body) {
-                    const matchedItem = classItems.find(item => item.class.id.toString() === availableClass.id.toString());
-                    
-                    if (matchedItem && availableClass.phanTramDangKy < 100) {
-                        if (matchedItem.type === 'swap') {
-                            // Handle swap: cancel old class first, then register new class
-                            const regClass = matchedItem.registeredClass;
-                            log(`[${tenMonHoc}] 🔔 Đổi lớp: ${regClass.maLopHocPhan} → ${availableClass.maLopHocPhan}`);
+                    if (statusRes && statusRes.success) {
+                        for (const availableClass of statusRes.body) {
+                            const matchedItem = classItems.find(item => item.class.id.toString() === availableClass.id.toString());
                             
-                            const swapResult = await swapClass(
-                                {
-                                    id: regClass.id,
-                                    code: regClass.maLopHocPhan,
-                                    name: regClass.tenMonHoc,
-                                    source: regClass.source
-                                },
-                                {
-                                    id: availableClass.id,
-                                    code: availableClass.maLopHocPhan,
-                                    name: availableClass.tenMonHoc,
-                                    source: availableClass.source
+                            if (matchedItem && availableClass.phanTramDangKy < 100) {
+                                if (matchedItem.type === 'swap') {
+                                    // Handle swap: cancel old class first, then register new class
+                                    const regClass = matchedItem.registeredClass;
+                                    log(`[${tenMonHoc}] 🔔 Đổi lớp: ${regClass.maLopHocPhan} → ${availableClass.maLopHocPhan}`);
+                                    
+                                    const swapResult = await swapClass(
+                                        {
+                                            id: regClass.id,
+                                            code: regClass.maLopHocPhan,
+                                            name: regClass.tenMonHoc,
+                                            source: regClass.source
+                                        },
+                                        {
+                                            id: availableClass.id,
+                                            code: availableClass.maLopHocPhan,
+                                            name: availableClass.tenMonHoc,
+                                            source: availableClass.source
+                                        }
+                                    );
+                                    
+                                    if (swapResult) {
+                                        log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
+                                        swapPendingClasses.delete(matchedItem.class.id.toString());
+                                        updateSelectedList();
+                                        
+                                        // Mark subject as completed to prevent further checks
+                                        completedSubjects.add(maHocPhan);
+                                        registrationIntervals.delete(maHocPhan);
+                                        return; // Exit loop completely
+                                    }
+                                } else {
+                                    // Handle regular registration
+                                    log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
+                                    const regResult = await backendRequest('register', { classId: availableClass.id, source });
+
+                                    if (regResult && regResult.success) {
+                                        log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
+                                        registrationIntervals.delete(maHocPhan);
+                                        selectedClasses.delete(availableClass.id.toString());
+                                        completedSubjects.add(maHocPhan);
+                                        await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                                        if (registrationIntervals.size === 0) await stopProcess();
+                                        return; // Exit loop completely
+                                    } else {
+                                        log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                                    }
                                 }
-                            );
-                            
-                            if (swapResult) {
-                                log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
-                                swapPendingClasses.delete(matchedItem.class.id.toString());
-                                updateSelectedList();
-                                
-                                // Mark subject as completed to prevent further checks
-                                completedSubjects.add(maHocPhan);
-                                clearInterval(registrationIntervals.get(maHocPhan));
-                                registrationIntervals.delete(maHocPhan);
-                                break;
-                            }
-                        } else {
-                            // Handle regular registration
-                            log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                            const regResult = await backendRequest('register', { classId: availableClass.id, source });
-
-                            if (regResult && regResult.success) {
-                                log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
-                                clearInterval(registrationIntervals.get(maHocPhan));
-                                registrationIntervals.delete(maHocPhan);
-                                selectedClasses.delete(availableClass.id.toString());
-                                await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
-                                if (registrationIntervals.size === 0) await stopProcess();
-                                return;
-                            } else {
-                                log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
                             }
                         }
                     }
+                } catch (error) {
+                    log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
                 }
-            }, delay);
-            registrationIntervals.set(maHocPhan, intervalId);
+                
+                // Call next iteration immediately after current one completes (no delay)
+                if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
+                    // Use setTimeout(0) to avoid blocking UI and allow stop to work
+                    const timeoutId = setTimeout(runInsertionLoop, 0);
+                    registrationIntervals.set(maHocPhan, timeoutId);
+                }
+            };
+            
+            // Start the first iteration immediately
+            runInsertionLoop();
+            registrationIntervals.set(maHocPhan, true); // Mark as active
         });
     };
 
@@ -1394,82 +1409,99 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 registeredClass: swap.registered
             });
         });
-        
-        const delay = parseInt(delayInput.value, 10) || 1000;
 
         classesBySubject.forEach((classItems, maHocPhan) => {
             const tenMonHoc = classItems[0].class.tenMonHoc;
 
-            const intervalId = setInterval(async () => {
+            // Use recursive call to prevent request piling - no delay between requests
+            const runRegistrationLoop = async () => {
                 // Check if this subject already completed
                 if (completedSubjects.has(maHocPhan)) {
-                    clearInterval(intervalId);
                     registrationIntervals.delete(maHocPhan);
                     return;
                 }
-                if (isProcessStopped) return;
+                if (isProcessStopped) {
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
                 
-                for (const item of classItems) {
-                    if (isProcessStopped) return;
-                    
-                    if (item.type === 'swap') {
-                        // Handle swap registration
-                        const regClass = item.registeredClass;
-                        log(`[${tenMonHoc}] 🔄 Thử đổi lớp: ${regClass.maLopHocPhan} → ${item.class.maLopHocPhan}`);
-                        
-                        const swapResult = await swapClass(
-                            {
-                                id: regClass.id,
-                                code: regClass.maLopHocPhan,
-                                name: regClass.tenMonHoc,
-                                source: regClass.source
-                            },
-                            {
-                                id: item.class.id,
-                                code: item.class.maLopHocPhan,
-                                name: item.class.tenMonHoc,
-                                source: item.class.source
-                            }
-                        );
-                        
-                        if (swapResult) {
-                            swapPendingClasses.delete(item.class.id.toString());
-                            await updateSelectedList();
-                            
-                            // Mark subject as completed to prevent further checks
-                            completedSubjects.add(maHocPhan);
-                            clearInterval(registrationIntervals.get(maHocPhan));
+                try {
+                    for (const item of classItems) {
+                        if (isProcessStopped) {
                             registrationIntervals.delete(maHocPhan);
-                            if (registrationIntervals.size === 0) await stopProcess();
                             return;
                         }
-                    } else {
-                        // Handle regular registration
-                        log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
-                        const result = await backendRequest('register', { classId: item.class.id, source: item.class.source });
+                        
+                        if (item.type === 'swap') {
+                            // Handle swap registration
+                            const regClass = item.registeredClass;
+                            log(`[${tenMonHoc}] 🔄 Thử đổi lớp: ${regClass.maLopHocPhan} → ${item.class.maLopHocPhan}`);
+                            
+                            const swapResult = await swapClass(
+                                {
+                                    id: regClass.id,
+                                    code: regClass.maLopHocPhan,
+                                    name: regClass.tenMonHoc,
+                                    source: regClass.source
+                                },
+                                {
+                                    id: item.class.id,
+                                    code: item.class.maLopHocPhan,
+                                    name: item.class.tenMonHoc,
+                                    source: item.class.source
+                                }
+                            );
+                            
+                            if (swapResult) {
+                                swapPendingClasses.delete(item.class.id.toString());
+                                await updateSelectedList();
+                                
+                                // Mark subject as completed to prevent further checks
+                                completedSubjects.add(maHocPhan);
+                                registrationIntervals.delete(maHocPhan);
+                                if (registrationIntervals.size === 0) await stopProcess();
+                                return; // Exit loop completely
+                            }
+                        } else {
+                            // Handle regular registration
+                            log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
+                            const result = await backendRequest('register', { classId: item.class.id, source: item.class.source });
 
-                        if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
-                            log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
-                            clearInterval(registrationIntervals.get(maHocPhan));
-                            registrationIntervals.delete(maHocPhan);
-                            selectedClasses.delete(item.class.id.toString());
-                            await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
-                            if (registrationIntervals.size === 0) await stopProcess();
-                            return;
-                        } else if (result) {
-                            log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
+                            if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
+                                log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
+                                registrationIntervals.delete(maHocPhan);
+                                selectedClasses.delete(item.class.id.toString());
+                                completedSubjects.add(maHocPhan);
+                                await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                                if (registrationIntervals.size === 0) await stopProcess();
+                                return; // Exit loop completely
+                            } else if (result) {
+                                log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
+                            }
                         }
                     }
+                } catch (error) {
+                    log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
                 }
-            }, delay);
-            registrationIntervals.set(maHocPhan, intervalId);
+                
+                // Call next iteration immediately after current one completes (no delay)
+                if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
+                    // Use setTimeout(0) to avoid blocking UI and allow stop to work
+                    const timeoutId = setTimeout(runRegistrationLoop, 0);
+                    registrationIntervals.set(maHocPhan, timeoutId);
+                }
+            };
+            
+            // Start the first iteration immediately
+            runRegistrationLoop();
+            registrationIntervals.set(maHocPhan, true); // Mark as active
         });
     };
 
     const stopProcess = async () => {
         isProcessStopped = true;
         log("🛑 Đang dừng tất cả các quá trình...");
-        registrationIntervals.forEach(clearInterval);
+        registrationIntervals.forEach(clearTimeout);
         registrationIntervals.clear();
         toggleActionButtons(false);
         log("🛑 Đã dừng tất cả quá trình.");
@@ -1477,7 +1509,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const toggleActionButtons = (isProcessing) => {
         if (vipStatus.hasVIP) {
-            startInsertionBtn.classList.toggle('hidden', isProcessing);
+            // Only show registration button, insertion button is hidden
             startRegistrationBtn.classList.toggle('hidden', isProcessing);
         }
         stopBtn.classList.toggle('hidden', !isProcessing);
@@ -1665,7 +1697,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                     data-reg-source="${reg.source ?? ''}"
                                     data-reg-subject-code="${maHocPhan ?? ''}"
                                     data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
-                                    class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Đổi lớp</button>
+                                    class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Xem lớp khác</button>
                         `
                 }</td>`;
             tbody.appendChild(row);
@@ -1900,8 +1932,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
                     <div>
-                        <h2 class="text-2xl font-bold">🔄 Đổi lớp học phần</h2>
-                        <p class="text-sm text-blue-100 mt-1">Lớp hiện tại: ${regName} (${regCode})</p>
+                        <h2 class="text-2xl font-bold">� Xem lớp khác</h2>
+                        <p class="text-sm text-blue-100 mt-1">Môn học: ${regName} (${regCode})</p>
                     </div>
                     <button id="close-swap-modal" class="text-white hover:text-gray-200 transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1919,7 +1951,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         </p>
                     </div>
                     
-                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đổi đến:</h3>
+                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đăng ký:</h3>
                     
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-500">
@@ -1976,13 +2008,13 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 <td class="px-4 py-3">
                     <div class="flex flex-col gap-2">
                         ${conflictBadge}
-                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-blue-600 text-white hover:bg-blue-700"
+                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-green-600 text-white hover:bg-green-700"
                                 data-target-id="${cls.id}"
                                 data-target-code="${cls.maLopHocPhan}"
                                 data-target-name="${cls.tenMonHoc}"
                                 data-target-source="${cls.source}"
                                 data-has-conflict="${hasConflict}">
-                            🔄 Đổi lớp
+                            ✓ Chọn đăng ký
                         </button>
                     </div>
                 </td>
@@ -2003,7 +2035,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             }
         });
         
-        // Execute swap handler
+        // Execute select for registration handler
         modal.querySelectorAll('.execute-swap-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const targetId = btn.dataset.targetId;
@@ -2015,32 +2047,30 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 // Find target class full info from availableClasses (not allScheduleData)
                 const targetClass = availableClasses.find(c => c.id.toString() === targetId);
                 if (!targetClass) {
-                    alert('❌ Không tìm thấy thông tin lớp đích');
+                    alert('❌ Không tìm thấy thông tin lớp');
                     console.log('❌ Debug: targetId =', targetId);
                     console.log('❌ Available classes:', availableClasses.map(c => ({ id: c.id, code: c.maLopHocPhan })));
                     return;
                 }
                 
-                // Find registered class full info
-                const registeredClassFull = registeredClassesData.find(c => c.id.toString() === regId);
-                if (!registeredClassFull) {
-                    log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+                // Check if already selected
+                if (selectedClasses.has(targetId)) {
+                    log(`⚠️ Lớp ${targetCode} đã có trong danh sách chọn`, true);
                     return;
                 }
                 
                 const conflictWarning = hasConflict 
-                    ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp hiện tại!</p></div>'
+                    ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp đã đăng ký!</p></div>'
                     : '';
                 
                 const slotInfo = targetClass.phanTramDangKy >= 100 
-                    ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đích đang đầy, hệ thống sẽ tự động chờ và đổi khi có chỗ trống.</p>'
-                    : '<p class="text-sm text-green-600 mt-2">✅ Lớp đích còn chỗ, sẽ đổi ngay khi bắt đầu chèn/đăng ký.</p>';
+                    ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đang đầy, hệ thống sẽ tự động chờ và đăng ký khi có chỗ trống.</p>'
+                    : '<p class="text-sm text-green-600 mt-2">✅ Lớp còn chỗ, sẽ đăng ký ngay khi bắt đầu.</p>';
                 
                 const confirmMsg = `
                     ${conflictWarning}
-                    <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đổi lớp?</p>
+                    <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đăng ký?</p>
                     <div class="bg-gray-50 p-3 rounded mb-2">
-                        <p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>
                         <p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>
                     </div>
                     ${slotInfo}
@@ -2049,38 +2079,17 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 showConfirmModal(
                     confirmMsg,
                     () => {
-                        // On confirm - Check if there's already a swap for this registered class
-                        // If yes, remove the old entry first (update logic)
-                        let oldSwapEntry = null;
-                        swapPendingClasses.forEach((swap, key) => {
-                            if (swap.registered.id.toString() === regId) {
-                                oldSwapEntry = key;
-                            }
-                        });
+                        // On confirm - Add to selected classes (same as selecting from schedule table)
+                        selectedClasses.set(targetId, targetClass);
                         
-                        // Remove old swap entry if exists
-                        if (oldSwapEntry) {
-                            swapPendingClasses.delete(oldSwapEntry);
-                            log(`🔄 Cập nhật lớp đổi cho ${regName} (${regCode})`);
-                        }
-                        
-                        // Add new swap entry with target class ID as key
-                        swapPendingClasses.set(targetId, {
-                            registered: registeredClassFull,
-                            target: targetClass
-                        });
-                        
-                        if (oldSwapEntry) {
-                            log(`✅ Đã cập nhật đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
-                        } else {
-                            log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
-                        }
+                        log(`✅ Đã thêm lớp ${targetName} (${targetCode}) vào danh sách đăng ký`);
                         
                         if (targetClass.phanTramDangKy >= 100) {
-                            log(`⏳ Lớp đích đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                            log(`⏳ Lớp đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
                         }
                         
                         updateSelectedList();
+                        renderScheduleTable(); // Re-render to update selection status
                         modal.remove();
                     },
                     () => {
