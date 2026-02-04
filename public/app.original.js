@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');

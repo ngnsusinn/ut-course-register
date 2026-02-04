@@ -1,4 +1,4 @@
-const API_URL = '/api/admin-handler';
+﻿const API_URL = '/api/admin-handler';
 let currentUser = null;
 let allData = {
     users: [],
