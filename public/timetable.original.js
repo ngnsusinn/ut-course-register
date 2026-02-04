@@ -40,6 +40,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return '';
     };
     
+    // Check if schedule is only one day (ngayBatDau = ngayKetThuc)
+    const isSingleDaySchedule = (schedule) => {
+        if (!schedule.ngayBatDau || !schedule.ngayKetThuc) return false;
+        const startDate = new Date(schedule.ngayBatDau).toDateString();
+        const endDate = new Date(schedule.ngayKetThuc).toDateString();
+        return startDate === endDate;
+    };
+
     // Get time range from periods
     const getTimeRange = (periods) => {
         if (!periods || periods.length === 0) return '';
@@ -178,6 +186,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
             
             cls.scheduleDetails.forEach(schedule => {
+                // Skip single-day schedules (ngayBatDau = ngayKetThuc)
+                if (isSingleDaySchedule(schedule)) return;
+                
                 // Filter by phase
                 if (getSchedulePhase(schedule) !== phase) return;
                 
@@ -216,6 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
             
             cls.scheduleDetails.forEach(schedule => {
+                // Skip single-day schedules (ngayBatDau = ngayKetThuc)
+                if (isSingleDaySchedule(schedule)) return;
+                
                 // Filter by phase
                 if (getSchedulePhase(schedule) !== phase) return;
                 
