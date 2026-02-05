@@ -6,7 +6,7 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
   
-  <!-- Trang chủ - Công cụ Đăng ký Học phần UTH -->
+  <!-- Trang chủ - Tool DKHP UTH - Đăng ký Học phần UTH -->
   <url>
     <loc>https://dkhp.ddns.net/</loc>
     <lastmod>2026-02-05</lastmod>
@@ -15,12 +15,12 @@
     <xhtml:link rel="alternate" hreflang="vi" href="https://dkhp.ddns.net/"/>
     <image:image>
       <image:loc>https://dkhp.ddns.net/og-image.png</image:loc>
-      <image:title>Công cụ Đăng ký Học phần UTH</image:title>
-      <image:caption>Đăng ký học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM</image:caption>
+      <image:title>Tool DKHP UTH - Đăng ký Học phần UTH Tự Động</image:title>
+      <image:caption>Tool DKHP - Công cụ đăng ký học phần, đăng kí học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM - UTH Tool</image:caption>
     </image:image>
   </url>
   
-  <!-- Trang hướng dẫn sử dụng -->
+  <!-- Trang hướng dẫn sử dụng Tool đăng ký học phần UTH -->
   <url>
     <loc>https://dkhp.ddns.net/guide</loc>
     <lastmod>2026-02-05</lastmod>

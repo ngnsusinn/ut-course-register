@@ -1,7 +1,7 @@
 {
-  "name": "DKHP UTH",
-  "short_name": "DKHP",
-  "description": "Công cụ đăng ký học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM",
+  "name": "Tool DKHP UTH - Đăng ký Học phần UTH",
+  "short_name": "DKHP UTH",
+  "description": "Tool DKHP UTH - Công cụ đăng ký học phần, đăng kí học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM. UTH Tool chèn lớp, xem thời khóa biểu.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f9fafb",

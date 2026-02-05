@@ -1,5 +1,6 @@
-# Robots.txt for DKHP UTH - Công cụ Đăng ký Học phần UTH
+# Robots.txt for Tool DKHP UTH - Đăng ký Học phần UTH
 # https://dkhp.ddns.net
+# Tool đăng ký học phần, đăng kí học phần UTH tự động
 # Last updated: 2026-02-05
 
 # Cho phép tất cả search engines
