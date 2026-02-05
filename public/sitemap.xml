@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  
+  <!-- Trang chủ - Công cụ Đăng ký Học phần UTH -->
+  <url>
+    <loc>https://dkhp.ddns.net/</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://dkhp.ddns.net/"/>
+    <image:image>
+      <image:loc>https://dkhp.ddns.net/og-image.png</image:loc>
+      <image:title>Công cụ Đăng ký Học phần UTH</image:title>
+      <image:caption>Đăng ký học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- Trang hướng dẫn sử dụng -->
+  <url>
+    <loc>https://dkhp.ddns.net/guide</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="vi" href="https://dkhp.ddns.net/guide"/>
+  </url>
+  
+</urlset>

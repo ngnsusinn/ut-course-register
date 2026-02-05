@@ -1,0 +1,36 @@
+# Robots.txt for DKHP UTH - Công cụ Đăng ký Học phần UTH
+# https://dkhp.ddns.net
+# Last updated: 2026-02-05
+
+# Cho phép tất cả search engines
+User-agent: *
+Allow: /
+Allow: /guide
+Allow: /index.html
+Allow: /guide.html
+Allow: /app.css
+Allow: /app.js
+
+# Không cho phép crawl trang admin và API
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /admin-panel.js
+Disallow: /api/
+
+# Google Bot
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+# Bing Bot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://dkhp.ddns.net/sitemap.xml
+
+# Host
+Host: https://dkhp.ddns.net

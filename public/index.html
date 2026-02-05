@@ -4,11 +4,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UTH Course Registration Tool</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="app.css">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  
+  <!-- Primary Meta Tags -->
+  <title>Đăng ký Học phần UTH - Công cụ ĐKHP Tự Động 2026</title>
+  <meta name="title" content="Đăng ký Học phần UTH - Công cụ ĐKHP Tự Động 2026">
+  <meta name="description" content="Công cụ đăng ký học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM. Hỗ trợ chèn lớp, xem thời khóa biểu, đăng ký nhanh chóng và hiệu quả.">
+  <meta name="keywords" content="đăng ký học phần UTH, DKHP UTH, đăng ký môn học UTH, công cụ đăng ký tự động, đại học giao thông vận tải, sinh viên UTH, thời khóa biểu UTH, chèn lớp học phần, portal UTH">
+  <meta name="author" content="UTH Dev Team">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow">
+  <meta name="bingbot" content="index, follow">
+  <link rel="canonical" href="https://dkhp.ddns.net/">
+  
+  <!-- Hreflang for language targeting -->
+  <link rel="alternate" hreflang="vi" href="https://dkhp.ddns.net/">
+  <link rel="alternate" hreflang="x-default" href="https://dkhp.ddns.net/">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://dkhp.ddns.net/">
+  <meta property="og:title" content="Đăng ký Học phần UTH - Công cụ ĐKHP Tự Động">
+  <meta property="og:description" content="Công cụ đăng ký học phần tự động cho sinh viên UTH. Hỗ trợ chèn lớp, xem thời khóa biểu, đăng ký nhanh chóng.">
+  <meta property="og:image" content="https://dkhp.ddns.net/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Công cụ Đăng ký Học phần UTH">
+  <meta property="og:locale" content="vi_VN">
+  <meta property="og:site_name" content="DKHP UTH - Công cụ Đăng ký Học phần">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://dkhp.ddns.net/">
+  <meta name="twitter:title" content="Đăng ký Học phần UTH - Công cụ Tự Động">
+  <meta name="twitter:description" content="Công cụ hỗ trợ đăng ký học phần tự động cho sinh viên UTH. Đăng ký nhanh, chèn lớp tự động.">
+  <meta name="twitter:image" content="https://dkhp.ddns.net/og-image.png">
+  <meta name="twitter:image:alt" content="Công cụ Đăng ký Học phần UTH">
+  
+  <!-- Additional SEO & PWA -->
+  <meta name="theme-color" content="#2563eb">
+  <meta name="msapplication-TileColor" content="#2563eb">
+  <meta name="application-name" content="DKHP UTH">
+  <meta name="apple-mobile-web-app-title" content="DKHP UTH">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="app.css">
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
@@ -119,27 +176,30 @@
 
 <body class="bg-gray-50 text-gray-800 transition-colors duration-300">
   <!-- Header -->
-  <header class="bg-white shadow-md sticky top-0 z-40">
+  <header class="bg-white shadow-md sticky top-0 z-40" role="banner">
     <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+      <a href="/" class="flex items-center space-x-3" aria-label="Trang chủ DKHP UTH">
+        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true" role="img">
+          <title>Logo DKHP UTH</title>
           <path
             d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
         </svg>
         <div>
-          <h1 class="text-lg lg:text-xl font-bold text-blue-600">UTH Course Registration</h1>
-          <p class="text-xs text-gray-500 hidden lg:block">Công cụ đăng ký học phần tự động</p>
+          <h1 class="text-lg lg:text-xl font-bold text-blue-600">Đăng ký Học phần UTH</h1>
+          <p class="text-xs text-gray-500 hidden lg:block">Công cụ đăng ký học phần tự động cho sinh viên UTH</p>
         </div>
-      </div>
+      </a>
 
-      <button id="guide-btn"
-        class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span class="font-semibold">Hướng dẫn</span>
-      </button>
+      <nav role="navigation" aria-label="Menu chính">
+        <button id="guide-btn" aria-label="Xem hướng dẫn sử dụng"
+          class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 shadow-md">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="font-semibold">Hướng dẫn</span>
+        </button>
+      </nav>
     </div>
   </header>
 
@@ -281,10 +341,17 @@
       </main>
     </div>
 
-    <footer class="text-center text-sm text-gray-500 mt-8 py-6 border-t bg-white rounded-xl shadow-md">
-      <p class="font-semibold">UTH Course Registration Tool <span
+    <!-- Footer with SEO-friendly content -->
+    <footer class="text-center text-sm text-gray-500 mt-8 py-6 border-t bg-white rounded-xl shadow-md" role="contentinfo">
+      <p class="font-semibold">DKHP UTH - Công cụ Đăng ký Học phần <span
           class="font-mono text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-1">v2026.6.3</span></p>
-      <p class="mt-2">Cập nhật lần cuối: 04/02/2026</p>
+      <p class="mt-2">Cập nhật lần cuối: 05/02/2026</p>
+      <p class="mt-2 text-xs text-gray-400">Công cụ hỗ trợ đăng ký học phần tự động cho sinh viên <a href="https://uth.edu.vn" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline" title="Đại học Giao thông Vận tải TP.HCM">Đại học Giao thông Vận tải TP.HCM (UTH)</a></p>
+      <nav class="mt-3 text-xs" aria-label="Footer navigation">
+        <a href="/" class="text-blue-500 hover:underline mx-2" title="Trang chủ DKHP UTH">Trang chủ</a>
+        <span class="text-gray-300">|</span>
+        <a href="/guide" class="text-blue-500 hover:underline mx-2" title="Hướng dẫn sử dụng DKHP UTH">Hướng dẫn</a>
+      </nav>
     </footer>
   </div>
 
@@ -322,6 +389,149 @@
   <script src="timetable.js" defer></script>
 
 
+
+  <!-- Structured Data - JSON-LD for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "DKHP UTH - Công cụ Đăng ký Học phần",
+    "alternateName": ["Đăng ký Học phần UTH", "UTH Course Registration", "DKHP UTH"],
+    "description": "Công cụ hỗ trợ đăng ký học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM. Hỗ trợ chèn lớp, xem thời khóa biểu, đăng ký nhanh chóng.",
+    "url": "https://dkhp.ddns.net/",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "softwareVersion": "2026.6.3",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "VND",
+      "availability": "https://schema.org/InStock"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "UTH Dev Team",
+      "url": "https://dkhp.ddns.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "DKHP UTH",
+      "url": "https://dkhp.ddns.net/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://dkhp.ddns.net/og-image.png"
+      }
+    },
+    "audience": {
+      "@type": "EducationalAudience",
+      "educationalRole": "student",
+      "audienceType": "Sinh viên Đại học Giao thông Vận tải TP.HCM"
+    },
+    "inLanguage": "vi-VN",
+    "isAccessibleForFree": true,
+    "datePublished": "2024-01-01",
+    "dateModified": "2026-02-05"
+  }
+  </script>
+
+  <!-- WebSite Schema for Search Box -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "DKHP UTH - Đăng ký Học phần UTH",
+    "alternateName": "Công cụ Đăng ký Học phần Đại học Giao thông Vận tải",
+    "url": "https://dkhp.ddns.net/",
+    "description": "Công cụ đăng ký học phần tự động cho sinh viên UTH",
+    "inLanguage": "vi-VN",
+    "publisher": {
+      "@type": "Organization",
+      "name": "DKHP UTH"
+    }
+  }
+  </script>
+
+  <!-- BreadcrumbList Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Trang chủ",
+        "item": "https://dkhp.ddns.net/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Hướng dẫn sử dụng",
+        "item": "https://dkhp.ddns.net/guide"
+      }
+    ]
+  }
+  </script>
+
+  <!-- FAQ Schema for common questions -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "DKHP UTH là gì?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "DKHP UTH là công cụ hỗ trợ đăng ký học phần tự động cho sinh viên Đại học Giao thông Vận tải TP.HCM. Công cụ giúp sinh viên đăng ký môn học nhanh chóng, chèn lớp tự động và xem thời khóa biểu trực quan."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Làm thế nào để sử dụng công cụ đăng ký học phần UTH?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Để sử dụng, bạn cần đăng nhập bằng tài khoản Portal UTH, sau đó chọn các lớp học phần muốn đăng ký và nhấn nút đăng ký. Công cụ sẽ tự động thực hiện đăng ký cho bạn."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Công cụ đăng ký học phần UTH có miễn phí không?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Công cụ có phiên bản miễn phí với các tính năng cơ bản. Để sử dụng đầy đủ tính năng như chèn lớp tự động, bạn cần nâng cấp lên VIP."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Organization Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "Đại học Giao thông Vận tải TP.HCM",
+    "alternateName": ["UTH", "University of Transport Ho Chi Minh City"],
+    "url": "https://uth.edu.vn",
+    "logo": "https://uth.edu.vn/logo.png",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Số 2 Võ Oanh",
+      "addressLocality": "Quận Bình Thạnh",
+      "addressRegion": "Thành phố Hồ Chí Minh",
+      "postalCode": "700000",
+      "addressCountry": "VN"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer service",
+      "availableLanguage": "Vietnamese"
+    }
+  }
+  </script>
 
   <!-- Vercel Speed Insights -->
   <script>
