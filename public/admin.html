@@ -4,24 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <!-- SEO Meta Tags -->
     <title>Admin Panel - UTH Course Registration | Quản lý hệ thống</title>
-    <meta name="description" content="Trang quản trị hệ thống đăng ký học phần UTH. Quản lý người dùng, VIP và các tính năng hệ thống.">
+    <meta name="description"
+        content="Trang quản trị hệ thống đăng ký học phần UTH. Quản lý người dùng, VIP và các tính năng hệ thống.">
     <meta name="robots" content="noindex, nofollow">
     <meta name="author" content="UTH Dev Team">
-    
+
     <!-- Theme -->
-    <meta name="theme-color" content="#0d9488">
-    
+    <meta name="theme-color" content="#2563eb">
+
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
-    
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Be Vietnam Pro', sans-serif;
@@ -51,12 +54,12 @@
         }
 
         .tab-btn:hover {
-            background-color: #f3f4f6;
+            background-color: #eff6ff;
         }
 
         .tab-active {
-            border-bottom-color: #0d9488;
-            color: #0d9488;
+            border-bottom-color: #2563eb;
+            color: #2563eb;
         }
 
         .tab-content {
@@ -122,13 +125,20 @@
     </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-50 min-h-screen text-gray-800 transition-colors duration-300">
     <!-- Login Screen -->
-    <div id="loginScreen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-500 to-blue-600 p-4">
+    <div id="loginScreen"
+        class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 p-4">
         <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-800">🔐 Admin Panel</h1>
-                <p class="text-gray-600 mt-2">UTH Course Registration Tool</p>
+                <div class="flex justify-center mb-4">
+                    <svg class="w-12 h-12 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-blue-600">🔐 Admin Panel</h1>
+                <p class="text-gray-600 mt-2">Tool DKHP UTH - Quản trị hệ thống</p>
             </div>
 
             <div id="loginError" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -138,21 +148,26 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
-                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" placeholder="Nhập tên đăng nhập">
+                    <input type="text" id="username"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        placeholder="Nhập tên đăng nhập">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
-                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" placeholder="Nhập mật khẩu" onkeypress="if(event.key==='Enter')login()">
+                    <input type="password" id="password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                        placeholder="Nhập mật khẩu" onkeypress="if(event.key==='Enter')login()">
                 </div>
 
-                <button onclick="login()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                <button onclick="login()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2">
                     🚀 Đăng nhập
                 </button>
             </div>
 
             <div class="mt-6 text-center">
-                <a href="/" class="text-teal-600 hover:text-teal-700 text-sm">← Quay lại trang chủ</a>
+                <a href="/" class="text-blue-600 hover:text-blue-700 text-sm">← Quay lại trang chủ</a>
             </div>
         </div>
     </div>
@@ -160,16 +175,28 @@
     <!-- Admin Dashboard -->
     <div id="adminDashboard" class="hidden">
         <!-- Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">🎛️</span>
-                    <h1 class="text-xl font-bold text-gray-800">Admin Panel</h1>
-                </div>
+        <header class="bg-white shadow-md sticky top-0 z-40">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <a href="/" class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                    </svg>
+                    <div>
+                        <h1 class="text-lg lg:text-xl font-bold text-blue-600">Admin Panel</h1>
+                        <p class="text-xs text-gray-500 hidden lg:block">Tool DKHP UTH - Quản trị hệ thống</p>
+                    </div>
+                </a>
                 <div class="flex items-center gap-4">
-                    <span class="text-gray-600">👤 <span id="adminUsername"></span></span>
-                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-                        🚪 Đăng xuất
+                    <span class="text-gray-600 hidden sm:inline">👤 <span id="adminUsername"></span></span>
+                    <button onclick="logout()"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span class="hidden sm:inline">Đăng xuất</span>
                     </button>
                 </div>
             </div>
@@ -180,18 +207,25 @@
             <div class="max-w-7xl mx-auto px-4">
                 <!-- Desktop Tabs -->
                 <div class="hidden md:flex overflow-x-auto">
-                    <button class="tab-btn tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
-                    <button class="tab-btn text-gray-600" data-tab="users" onclick="switchTab('users')">👥 Users</button>
-                    <button class="tab-btn text-gray-600" data-tab="vipPlans" onclick="switchTab('vipPlans')">💎 VIP Plans</button>
-                    <button class="tab-btn text-gray-600" data-tab="subscriptions" onclick="switchTab('subscriptions')">🎫 Subscriptions</button>
-                    <button class="tab-btn text-gray-600" data-tab="orders" onclick="switchTab('orders')">🛒 Orders</button>
-                    <button class="tab-btn text-gray-600" data-tab="transactions" onclick="switchTab('transactions')">💰 Transactions</button>
+                    <button class="tab-btn tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">📊
+                        Dashboard</button>
+                    <button class="tab-btn text-gray-600" data-tab="users" onclick="switchTab('users')">👥
+                        Users</button>
+                    <button class="tab-btn text-gray-600" data-tab="vipPlans" onclick="switchTab('vipPlans')">💎 VIP
+                        Plans</button>
+                    <button class="tab-btn text-gray-600" data-tab="subscriptions"
+                        onclick="switchTab('subscriptions')">🎫 Subscriptions</button>
+                    <button class="tab-btn text-gray-600" data-tab="orders" onclick="switchTab('orders')">🛒
+                        Orders</button>
+                    <button class="tab-btn text-gray-600" data-tab="transactions" onclick="switchTab('transactions')">💰
+                        Transactions</button>
                     <button class="tab-btn text-gray-600" data-tab="logs" onclick="switchTab('logs')">📝 Logs</button>
                 </div>
 
                 <!-- Mobile Tab Selector -->
                 <div class="md:hidden py-3">
-                    <select id="mobileTabSelect" onchange="switchTab(this.value)" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    <select id="mobileTabSelect" onchange="switchTab(this.value)"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         <option value="dashboard">📊 Dashboard</option>
                         <option value="users">👥 Users</option>
                         <option value="vipPlans">💎 VIP Plans</option>
@@ -283,8 +317,11 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800">👥 Quản lý Users</h3>
                         <div class="flex gap-3">
-                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm user..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" oninput="renderUsers()">
-                            <button onclick="refreshData('users')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <input type="text" id="usersSearch" placeholder="🔍 Tìm kiếm user..."
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                oninput="renderUsers()">
+                            <button onclick="refreshData('users')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 🔄 Refresh
                             </button>
                         </div>
@@ -300,14 +337,24 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Info</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VIP Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        User Info</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        VIP Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Expiry</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="4" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -321,10 +368,12 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800">💎 Quản lý VIP Plans</h3>
                         <div class="flex gap-3">
-                            <button onclick="openCreatePlanModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <button onclick="openCreatePlanModal()"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 ➕ Tạo gói mới
                             </button>
-                            <button onclick="refreshData('vipPlans')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <button onclick="refreshData('vipPlans')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 🔄 Refresh
                             </button>
                         </div>
@@ -335,15 +384,27 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Info</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Plan Info</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Duration</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Price</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="vipPlansTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="5" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -357,13 +418,17 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800">🎫 Quản lý Subscriptions</h3>
                         <div class="flex gap-3">
-                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" oninput="renderSubscriptions()">
-                            <select id="subscriptionsFilter" class="px-4 py-2 border border-gray-300 rounded-lg" onchange="renderSubscriptions()">
+                            <input type="text" id="subscriptionsSearch" placeholder="🔍 Tìm kiếm..."
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                oninput="renderSubscriptions()">
+                            <select id="subscriptionsFilter" class="px-4 py-2 border border-gray-300 rounded-lg"
+                                onchange="renderSubscriptions()">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="active">Active</option>
                                 <option value="expired">Expired</option>
                             </select>
-                            <button onclick="refreshData('subscriptions')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <button onclick="refreshData('subscriptions')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 🔄 Refresh
                             </button>
                         </div>
@@ -374,16 +439,30 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        User</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Plan</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Start Date</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        End Date</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Source</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="subscriptionsTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="6" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                <tr>
+                                    <td colspan="6" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -397,14 +476,18 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800">🛒 Quản lý Orders</h3>
                         <div class="flex gap-3">
-                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" oninput="renderOrders()">
-                            <select id="ordersFilter" class="px-4 py-2 border border-gray-300 rounded-lg" onchange="renderOrders()">
+                            <input type="text" id="ordersSearch" placeholder="🔍 Tìm kiếm..."
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                oninput="renderOrders()">
+                            <select id="ordersFilter" class="px-4 py-2 border border-gray-300 rounded-lg"
+                                onchange="renderOrders()">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="paid">Đã thanh toán</option>
                                 <option value="pending">Chờ thanh toán</option>
                                 <option value="cancelled">Đã hủy</option>
                             </select>
-                            <button onclick="refreshData('orders')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <button onclick="refreshData('orders')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 🔄 Refresh
                             </button>
                         </div>
@@ -415,16 +498,30 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Code</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Order Code</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        User</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Plan</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Amount</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Created</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="6" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                <tr>
+                                    <td colspan="6" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -438,9 +535,14 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800">💰 Quản lý Transactions</h3>
                         <div class="flex gap-3">
-                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" oninput="renderTransactions()">
-                            <input type="number" id="amountFilter" placeholder="💵 Số tiền tối thiểu" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" oninput="renderTransactions()">
-                            <button onclick="refreshData('transactions')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <input type="text" id="transactionsSearch" placeholder="🔍 Tìm kiếm..."
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                oninput="renderTransactions()">
+                            <input type="number" id="amountFilter" placeholder="💵 Số tiền tối thiểu"
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                oninput="renderTransactions()">
+                            <button onclick="refreshData('transactions')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 🔄 Refresh
                             </button>
                         </div>
@@ -451,15 +553,27 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Content</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gateway</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        ID</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Content</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Amount</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Gateway</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Date</th>
                                 </tr>
                             </thead>
                             <tbody id="transactionsTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="5" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -473,15 +587,19 @@
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800">📝 Activity Logs</h3>
                         <div class="flex gap-3">
-                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" oninput="renderLogs()">
-                            <select id="logsFilter" class="px-4 py-2 border border-gray-300 rounded-lg" onchange="renderLogs()">
+                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm..."
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                oninput="renderLogs()">
+                            <select id="logsFilter" class="px-4 py-2 border border-gray-300 rounded-lg"
+                                onchange="renderLogs()">
                                 <option value="">Tất cả actions</option>
                                 <option value="USER_LOGIN">Login</option>
                                 <option value="VIP_ADDED">VIP Added</option>
                                 <option value="ORDER_CREATED">Order Created</option>
                                 <option value="ORDER_PAID">Order Paid</option>
                             </select>
-                            <button onclick="refreshData('logs')" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            <button onclick="refreshData('logs')"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
                                 🔄 Refresh
                             </button>
                         </div>
@@ -492,14 +610,24 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Time</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        User</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Action</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Details</th>
                                 </tr>
                             </thead>
                             <tbody id="logsTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="4" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -507,6 +635,21 @@
                 </div>
             </div>
         </main>
+
+        <!-- Footer -->
+        <footer class="text-center text-sm text-gray-500 mt-8 py-6 border-t bg-white" role="contentinfo">
+            <div class="container mx-auto px-4">
+                <p class="font-semibold">Admin Panel - Tool DKHP UTH <span
+                        class="font-mono text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-1">v2026.6.3</span></p>
+                <p class="mt-2 text-xs text-gray-400">Quản trị hệ thống đăng ký học phần UTH</p>
+                <nav class="mt-3 text-xs" aria-label="Footer navigation">
+                    <a href="/" class="text-blue-500 hover:underline mx-2" title="Tool DKHP UTH - Trang chủ">Trang
+                        chủ</a>
+                    <span class="text-gray-300">|</span>
+                    <a href="/guide" class="text-blue-500 hover:underline mx-2" title="Hướng dẫn sử dụng">Hướng dẫn</a>
+                </nav>
+            </div>
+        </footer>
     </div>
 
     <!-- Add VIP Modal -->
@@ -520,17 +663,21 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                    <input type="text" id="vipUserId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="Nhập User ID">
+                    <input type="text" id="vipUserId"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nhập User ID">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Gói VIP</label>
-                    <select id="vipPlanType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500">
+                    <select id="vipPlanType"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                         <option value="">Chọn gói VIP</option>
                     </select>
                 </div>
 
-                <button id="submitVIPBtn" onclick="submitAddVIP()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-lg transition">
+                <button id="submitVIPBtn" onclick="submitAddVIP()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
                     ✅ Thêm VIP
                 </button>
             </div>
@@ -544,10 +691,12 @@
             <p id="confirmMessage" class="text-gray-600 mb-6">Bạn có chắc chắn muốn thực hiện hành động này?</p>
 
             <div class="flex gap-3">
-                <button onclick="closeConfirmModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">
+                <button onclick="closeConfirmModal()"
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-lg transition">
                     Hủy
                 </button>
-                <button id="confirmActionBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition">
+                <button id="confirmActionBtn"
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition">
                     Xác nhận
                 </button>
             </div>
@@ -566,37 +715,54 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan Key <span class="text-red-500">*</span></label>
-                    <input type="text" id="planKey" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="vip_1_month (chữ thường, số, gạch dưới)">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Plan Key <span
+                            class="text-red-500">*</span></label>
+                    <input type="text" id="planKey"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="vip_1_month (chữ thường, số, gạch dưới)">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tên gói <span class="text-red-500">*</span></label>
-                    <input type="text" id="planName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="VIP 1 Tháng">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tên gói <span
+                            class="text-red-500">*</span></label>
+                    <input type="text" id="planName"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="VIP 1 Tháng">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Thời hạn (ngày) <span class="text-red-500">*</span></label>
-                        <input type="number" id="planDuration" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="30">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Thời hạn (ngày) <span
+                                class="text-red-500">*</span></label>
+                        <input type="number" id="planDuration"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="30">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Giá (VND) <span class="text-red-500">*</span></label>
-                        <input type="number" id="planPrice" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="50000">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Giá (VND) <span
+                                class="text-red-500">*</span></label>
+                        <input type="number" id="planPrice"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="50000">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Thứ tự hiển thị</label>
-                    <input type="number" id="planSortOrder" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="0" value="0">
+                    <input type="number" id="planSortOrder"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="0" value="0">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
-                    <textarea id="planDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="Mô tả gói VIP..."></textarea>
+                    <textarea id="planDescription" rows="3"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Mô tả gói VIP..."></textarea>
                 </div>
 
-                <button id="submitPlanBtn" onclick="submitPlan()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-lg transition">
+                <button id="submitPlanBtn" onclick="submitPlan()"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">
                     💾 Lưu
                 </button>
             </div>
@@ -607,7 +773,7 @@
     <script src="admin-panel.js"></script>
     <script>
         // Auto login on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             autoLogin();
         });
     </script>
