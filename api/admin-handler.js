@@ -23,6 +23,11 @@ try {
 }
 
 export default async function handler(req, res) {
+    // Helper to extract IP and User-Agent
+    const getClientInfo = (r) => ({
+        ip: r?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || r?.headers?.['x-real-ip'] || r?.socket?.remoteAddress || null,
+        ua: r?.headers?.['user-agent'] || null
+    });
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -44,15 +49,15 @@ export default async function handler(req, res) {
             case 'getAllLogs': result = await getAllLogs(); break;
             case 'getUserActivity': result = await getUserActivity(payload); break;
             case 'getActiveUsers': result = await getActiveUsers(); break;
-            case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
-            case 'deleteSubscription': result = await deleteSubscription(payload); break;
-            case 'deleteUser': result = await deleteUser(payload); break;
+            case 'addVIPSubscription': result = await addVIPSubscription(payload, req); break;
+            case 'deleteSubscription': result = await deleteSubscription(payload, req); break;
+            case 'deleteUser': result = await deleteUser(payload, req); break;
             case 'getDashboardStats': result = await getDashboardStats(); break;
             case 'getAllVIPPlans': result = await getAllVIPPlans(); break;
-            case 'createVIPPlan': result = await createVIPPlan(payload); break;
-            case 'updateVIPPlan': result = await updateVIPPlan(payload); break;
-            case 'deleteVIPPlan': result = await deleteVIPPlan(payload); break;
-            case 'toggleVIPPlanStatus': result = await toggleVIPPlanStatus(payload); break;
+            case 'createVIPPlan': result = await createVIPPlan(payload, req); break;
+            case 'updateVIPPlan': result = await updateVIPPlan(payload, req); break;
+            case 'deleteVIPPlan': result = await deleteVIPPlan(payload, req); break;
+            case 'toggleVIPPlanStatus': result = await toggleVIPPlanStatus(payload, req); break;
             default: return res.status(400).json({ success: false, message: 'Unknown action' });
         }
         return res.status(200).json(result);
@@ -156,7 +161,7 @@ async function getAllSubscriptions() {
     }
 }
 
-async function addVIPSubscription(payload) {
+async function addVIPSubscription(payload, req = null) {
     const { userId, planType } = payload;
     if (!userId || !planType) {
         return { success: false, message: 'userId and planType required' };
@@ -262,10 +267,11 @@ async function addVIPSubscription(payload) {
             ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
             : `Admin added ${planName} (${planType}) VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES (?, 'ADMIN_ADD_VIP', ?, NOW())`,
-            [userId, logDetails]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES (?, 'ADMIN_ADD_VIP', ?, ?, ?, NOW())`,
+            [userId, logDetails, _ci.ip, _ci.ua]
         );
 
         await connection.commit();
@@ -287,7 +293,7 @@ async function addVIPSubscription(payload) {
     }
 }
 
-async function deleteSubscription(payload) {
+async function deleteSubscription(payload, req = null) {
     const { subscriptionId } = payload;
     if (!subscriptionId) {
         return { success: false, message: 'subscriptionId required' };
@@ -315,10 +321,11 @@ async function deleteSubscription(payload) {
             [subscriptionId]
         );
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES (?, 'ADMIN_DELETE_VIP', ?, NOW())`,
-            [userId, `Admin deleted VIP subscription #${subscriptionId}`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES (?, 'ADMIN_DELETE_VIP', ?, ?, ?, NOW())`,
+            [userId, `Admin deleted VIP subscription #${subscriptionId}`, _ci.ip, _ci.ua]
         );
 
         await connection.commit();
@@ -332,7 +339,7 @@ async function deleteSubscription(payload) {
     }
 }
 
-async function deleteUser(payload) {
+async function deleteUser(payload, req = null) {
     const { userId } = payload;
     if (!userId) {
         return { success: false, message: 'userId required' };
@@ -349,10 +356,11 @@ async function deleteUser(payload) {
             [userId]
         );
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES (?, 'ADMIN_DELETE_USER', ?, NOW())`,
-            [userId, `Admin deleted user ${userId} and all related data`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES (?, 'ADMIN_DELETE_USER', ?, ?, ?, NOW())`,
+            [userId, `Admin deleted user ${userId} and all related data`, _ci.ip, _ci.ua]
         );
 
         await connection.commit();
@@ -798,7 +806,7 @@ async function getAllVIPPlans() {
     }
 }
 
-async function createVIPPlan(payload) {
+async function createVIPPlan(payload, req = null) {
     const { planKey, planName, durationDays, price, sortOrder, description } = payload;
     
     if (!planKey || !planName || !durationDays || !price) {
@@ -828,10 +836,11 @@ async function createVIPPlan(payload) {
             [planKey, planName, durationDays, price, sortOrder || 0, description || null]
         );
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES ('admin', 'ADMIN_CREATE_PLAN', ?, NOW())`,
-            [`Admin created VIP plan: ${planName} (${planKey})`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES ('admin', 'ADMIN_CREATE_PLAN', ?, ?, ?, NOW())`,
+            [`Admin created VIP plan: ${planName} (${planKey})`, _ci.ip, _ci.ua]
         );
 
         await connection.commit();
@@ -845,7 +854,7 @@ async function createVIPPlan(payload) {
     }
 }
 
-async function updateVIPPlan(payload) {
+async function updateVIPPlan(payload, req = null) {
     const { id, planKey, planName, durationDays, price, sortOrder, description, isActive } = payload;
     
     if (!id) {
@@ -900,10 +909,11 @@ async function updateVIPPlan(payload) {
             );
         }
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES ('admin', 'ADMIN_UPDATE_PLAN', ?, NOW())`,
-            [`Admin updated VIP plan ID: ${id}`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES ('admin', 'ADMIN_UPDATE_PLAN', ?, ?, ?, NOW())`,
+            [`Admin updated VIP plan ID: ${id}`, _ci.ip, _ci.ua]
         );
 
         await connection.commit();
@@ -917,7 +927,7 @@ async function updateVIPPlan(payload) {
     }
 }
 
-async function deleteVIPPlan(payload) {
+async function deleteVIPPlan(payload, req = null) {
     const { id } = payload;
     
     if (!id) {
@@ -958,10 +968,11 @@ async function deleteVIPPlan(payload) {
             [id]
         );
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES ('admin', 'ADMIN_DELETE_PLAN', ?, NOW())`,
-            [`Admin deleted VIP plan: ${plan[0].plan_name} (${plan[0].plan_key})`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES ('admin', 'ADMIN_DELETE_PLAN', ?, ?, ?, NOW())`,
+            [`Admin deleted VIP plan: ${plan[0].plan_name} (${plan[0].plan_key})`, _ci.ip, _ci.ua]
         );
 
         await connection.commit();
@@ -975,7 +986,7 @@ async function deleteVIPPlan(payload) {
     }
 }
 
-async function toggleVIPPlanStatus(payload) {
+async function toggleVIPPlanStatus(payload, req = null) {
     const { id } = payload;
     
     if (!id) {
@@ -1003,10 +1014,11 @@ async function toggleVIPPlanStatus(payload) {
             [newStatus, id]
         );
 
+        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES ('admin', 'ADMIN_TOGGLE_PLAN', ?, NOW())`,
-            [`Admin ${newStatus ? 'enabled' : 'disabled'} VIP plan: ${plan[0].plan_name}`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES ('admin', 'ADMIN_TOGGLE_PLAN', ?, ?, ?, NOW())`,
+            [`Admin ${newStatus ? 'enabled' : 'disabled'} VIP plan: ${plan[0].plan_name}`, _ci.ip, _ci.ua]
         );
 
         await connection.commit();

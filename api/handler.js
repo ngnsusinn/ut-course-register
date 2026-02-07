@@ -46,16 +46,18 @@ const getPool = () => {
  * @param {string} userId - User identifier
  * @param {string} action - Action type (e.g. 'FETCH_SCHEDULE', 'REGISTER_CLASS')
  * @param {string} details - Human-readable details
- * @param {object} [metadata] - Optional JSON metadata for structured data
+ * @param {object} [req] - Express request object (to extract IP + User-Agent)
  */
-async function logActivity(userId, action, details, metadata = null) {
+async function logActivity(userId, action, details, req = null) {
     let connection;
     try {
+        const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null) : null;
+        const ua = req ? (req.headers['user-agent'] || null) : null;
         connection = await getPool().getConnection();
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, created_at) 
-             VALUES (?, ?, ?, ?, NOW())`,
-            [userId || 'anonymous', action, details, metadata ? JSON.stringify(metadata) : null]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [userId || 'anonymous', action, details, ip, ua]
         );
     } catch (error) {
         console.error('⚠️ Failed to log activity:', error.message);
@@ -82,7 +84,7 @@ function generateOrderCode() {
  * Save or update user info in database
  * NOW: Links to users.user_id (unique key)
  */
-async function saveUserInfo(profile) {
+async function saveUserInfo(profile, req = null) {
     let connection;
     try {
         connection = await getPool().getConnection();
@@ -118,10 +120,12 @@ async function saveUserInfo(profile) {
         }
         
         // Log login activity  
+        const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null) : null;
+        const ua = req ? (req.headers['user-agent'] || null) : null;
         await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES (?, 'USER_LOGIN', ?, NOW())`,
-            [userId, `Đăng nhập hệ thống - ${fullName || userId}`]
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
+             VALUES (?, 'USER_LOGIN', ?, ?, ?, NOW())`,
+            [userId, `Đăng nhập hệ thống - ${fullName || userId}`, ip, ua]
         );
         
         return userId;
@@ -1017,7 +1021,7 @@ export default async (req, res) => {
                 // Save user info to database (now returns userId)
                 let savedUserId = null;
                 if (profileRes.success && profileRes.body) {
-                    savedUserId = await saveUserInfo(profileRes.body);
+                    savedUserId = await saveUserInfo(profileRes.body, req);
                 }
                 
                 // Check VIP status
@@ -1060,7 +1064,7 @@ export default async (req, res) => {
                 const { userId, plan } = payload;
                 
                 // Log: user creating VIP order
-                await logActivity(userId, 'CREATE_VIP_ORDER', `Tạo đơn mua VIP gói ${plan}`);
+                await logActivity(userId, 'CREATE_VIP_ORDER', `Tạo đơn mua VIP gói ${plan}`, req);
                 
                 // Validate plan exists
                 const vipPlans = await getVIPPlansFromDB();
@@ -1119,7 +1123,7 @@ export default async (req, res) => {
                 const { dotId, fetchPrerequisites, userId } = payload;
                 
                 // Log: user fetching full schedule
-                await logActivity(userId, 'FETCH_SCHEDULE', `Tải danh sách lớp học phần - Đợt ${dotId}${fetchPrerequisites ? ' (có ĐKHP điều kiện)' : ''}`);
+                await logActivity(userId, 'FETCH_SCHEDULE', `Tải danh sách lớp học phần - Đợt ${dotId}${fetchPrerequisites ? ' (có ĐKHP điều kiện)' : ''}`, req);
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
@@ -1157,7 +1161,7 @@ export default async (req, res) => {
                 }
                 
                 // Log result count
-                await logActivity(userId, 'FETCH_SCHEDULE_DONE', `Đã tải ${allClassData.length} lớp học phần - Đợt ${dotId}`);
+                await logActivity(userId, 'FETCH_SCHEDULE_DONE', `Đã tải ${allClassData.length} lớp học phần - Đợt ${dotId}`, req);
                 
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
@@ -1168,7 +1172,7 @@ export default async (req, res) => {
                 const { dotId, fetchPrerequisites, userId } = payload;
                 
                 // Log: user fetching registered classes
-                await logActivity(userId, 'FETCH_REGISTERED', `Tải lớp đã đăng ký - Đợt ${dotId}`);
+                await logActivity(userId, 'FETCH_REGISTERED', `Tải lớp đã đăng ký - Đợt ${dotId}`, req);
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
@@ -1231,7 +1235,7 @@ export default async (req, res) => {
                 const { classId, dotId, maHocPhan, source, userId: availUserId } = payload;
                 
                 // Log: checking class availability (auto-register cycle)
-                await logActivity(availUserId, 'CHECK_AVAILABILITY', `Kiểm tra chỗ trống lớp ${maHocPhan} (${source})`);
+                await logActivity(availUserId, 'CHECK_AVAILABILITY', `Kiểm tra chỗ trống lớp ${maHocPhan} (${source})`, req);
                 
                 // Use getLopHocPhan (same as checkClassStatus) to get accurate phanTramDangKy
                 const classEndpoint = source === 'dkhpdk'
@@ -1334,15 +1338,15 @@ export default async (req, res) => {
                 const { classId, source, userId, className } = payload;
                 
                 // Log: user registering a class
-                await logActivity(userId, 'REGISTER_CLASS', `Đăng ký lớp ${className || classId} (${source})`, JSON.stringify({ classId, source }));
+                await logActivity(userId, 'REGISTER_CLASS', `Đăng ký lớp ${className || classId} (${source})`, req);
                 
                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
                 
                 // Log result
                 if (result.success) {
-                    await logActivity(userId, 'REGISTER_SUCCESS', `Đăng ký thành công lớp ${className || classId}`);
+                    await logActivity(userId, 'REGISTER_SUCCESS', `Đăng ký thành công lớp ${className || classId}`, req);
                 } else {
-                    await logActivity(userId, 'REGISTER_FAILED', `Đăng ký thất bại lớp ${className || classId}: ${result.message || 'Unknown error'}`);
+                    await logActivity(userId, 'REGISTER_FAILED', `Đăng ký thất bại lớp ${className || classId}: ${result.message || 'Unknown error'}`, req);
                 }
                 break;
             }
@@ -1352,15 +1356,15 @@ export default async (req, res) => {
                 const { registrationId, source, userId, className } = payload;
                 
                 // Log: user cancelling a registration
-                await logActivity(userId, 'CANCEL_CLASS', `Hủy đăng ký lớp ${className || registrationId} (${source})`, JSON.stringify({ registrationId, source }));
+                await logActivity(userId, 'CANCEL_CLASS', `Hủy đăng ký lớp ${className || registrationId} (${source})`, req);
                 
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
                 
                 // Log result
                 if (result.success) {
-                    await logActivity(userId, 'CANCEL_SUCCESS', `Hủy thành công lớp ${className || registrationId}`);
+                    await logActivity(userId, 'CANCEL_SUCCESS', `Hủy thành công lớp ${className || registrationId}`, req);
                 } else {
-                    await logActivity(userId, 'CANCEL_FAILED', `Hủy thất bại lớp ${className || registrationId}: ${result.message || 'Unknown error'}`);
+                    await logActivity(userId, 'CANCEL_FAILED', `Hủy thất bại lớp ${className || registrationId}: ${result.message || 'Unknown error'}`, req);
                 }
                 break;
             }
@@ -1389,13 +1393,13 @@ export default async (req, res) => {
                 }
                 
                 // Log: user syncing class data
-                await logActivity(userId, 'SYNC_DATA', `Đồng bộ ${classData.length} lớp vào CSDL cộng đồng - Đợt ${dotId} (${source})`);
+                await logActivity(userId, 'SYNC_DATA', `Đồng bộ ${classData.length} lớp vào CSDL cộng đồng - Đợt ${dotId} (${source})`, req);
                 
                 const syncResult = await syncClassDataToDB(dotId, userId, source, classData);
                 
                 // Log sync result
                 if (syncResult.success) {
-                    await logActivity(userId, 'SYNC_DATA_DONE', `Đồng bộ hoàn tất: ${syncResult.inserted} mới, ${syncResult.updated} cập nhật`);
+                    await logActivity(userId, 'SYNC_DATA_DONE', `Đồng bộ hoàn tất: ${syncResult.inserted} mới, ${syncResult.updated} cập nhật`, req);
                 }
                 
                 result = {
@@ -1486,7 +1490,7 @@ export default async (req, res) => {
                 
                 // Only allow whitelisted actions from frontend
                 const safeAction = allowedActions.includes(logAction) ? logAction : 'USER_ACTION';
-                await logActivity(logUserId, safeAction, logDetails || logAction);
+                await logActivity(logUserId, safeAction, logDetails || logAction, req);
                 
                 result = { success: true };
                 break;
