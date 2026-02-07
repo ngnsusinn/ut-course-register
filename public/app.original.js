@@ -494,18 +494,12 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             
             // If VIP status changed from active to expired
             if (previousVIPStatus && !vipStatus.hasVIP) {
-                log('⚠️ VIP của bạn đã hết hạn. Vui lòng gia hạn để tiếp tục sử dụng.', true);
+                log('⚠️ VIP của bạn đã hết hạn. Chức năng tự động đăng ký đã bị tắt.', true);
                 
-                // Reset UI to non-VIP state
-                allScheduleData = [];
-                selectedClasses.clear();
-                updateSelectedList();
-                renderScheduleTable();
+                // Stop any running auto-register processes
+                await stopProcess();
                 
-                // Clear cache
-                localStorage.removeItem('userDataCache');
-                
-                // Show VIP modal
+                // Show VIP modal to suggest renewal
                 setTimeout(() => {
                     showVIPModal();
                 }, 1000);
@@ -557,13 +551,10 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             <span>Gia hạn VIP</span>
         `;
         upgradeVipBtn.classList.remove('hidden');
-
-        if (fetchBtn) fetchBtn.classList.remove('hidden');
-        if (selectedList) selectedList.classList.remove('hidden');
     } else {
         vipStatusElement.innerHTML = `
             <div class="text-center p-3 bg-gray-100 rounded-lg">
-                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng đầy đủ tính năng!</p>
+                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng chức năng tự động đăng ký!</p>
             </div>
         `;
         
@@ -575,10 +566,11 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             <span>Nâng cấp VIP</span>
         `;
         upgradeVipBtn.classList.remove('hidden');
-
-        if (fetchBtn) fetchBtn.classList.add('hidden');
-        if (selectedList) selectedList.classList.add('hidden');
     }
+
+    // Always show fetchBtn and selectedList regardless of VIP status
+    if (fetchBtn) fetchBtn.classList.remove('hidden');
+    if (selectedList) selectedList.classList.remove('hidden');
 };
 
 	// === CUSTOM CONFIRMATION MODAL ===
@@ -1002,10 +994,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const fetchFullSchedule = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
-        if (!vipStatus.hasVIP) {
-            log("⚠️ Bạn cần nâng cấp VIP để lấy dữ liệu lịch học.", true);
-            return;
-        }
         toggleLoading(fetchBtn, true);
         isProcessStopped = false;
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
@@ -1508,10 +1496,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const toggleActionButtons = (isProcessing) => {
-        if (vipStatus.hasVIP) {
-            // Only show registration button, insertion button is hidden
-            startRegistrationBtn.classList.toggle('hidden', isProcessing);
-        }
+        // Always show registration button when not processing (VIP check is in startRegistration)
+        startRegistrationBtn.classList.toggle('hidden', isProcessing);
         stopBtn.classList.toggle('hidden', !isProcessing);
     };
 
@@ -2130,12 +2116,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const updateSelectedList = async () => {
-        if (!vipStatus.hasVIP) {
-            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn. Nâng cấp VIP để chọn lớp.</p>`;
-            registrationControls.classList.add('hidden');
-            return;
-        }
-        
         const totalCount = selectedClasses.size + swapPendingClasses.size;
         
         if (totalCount === 0) {
@@ -2259,10 +2239,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 return;
             }
             
-            if (!vipStatus.hasVIP) {
-                log("⚠️ Bạn cần nâng cấp VIP để chọn lớp.", true);
-                return;
-            }
             const classId = scheduleRow.dataset.classId;
             const cls = allScheduleData.find(c => c.id.toString() === classId);
             if (!cls) return;
@@ -2273,10 +2249,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         }
         const removeBtn = e.target.closest('.remove-selected-btn');
         if (removeBtn) {
-            if (!vipStatus.hasVIP) {
-                log("⚠️ Bạn cần nâng cấp VIP để chỉnh sửa danh sách lớp.", true);
-                return;
-            }
             const classId = removeBtn.dataset.classId;
             selectedClasses.delete(classId);
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
@@ -2286,10 +2258,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         const removeSwapBtn = e.target.closest('.remove-swap-btn');
         if (removeSwapBtn) {
-            if (!vipStatus.hasVIP) {
-                log("⚠️ Bạn cần nâng cấp VIP để chỉnh sửa danh sách lớp.", true);
-                return;
-            }
             const targetClassId = removeSwapBtn.dataset.targetClassId;
             swapPendingClasses.delete(targetClassId);
             updateSelectedList();
@@ -2320,11 +2288,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (swapFromConflictBtn) {
             // Prevent row selection when clicking swap button
             e.stopPropagation();
-            
-            if (!vipStatus.hasVIP) {
-                log("⚠️ Bạn cần nâng cấp VIP để sử dụng chức năng đổi lớp.", true);
-                return;
-            }
             
             const registeredData = {
                 id: swapFromConflictBtn.dataset.regId,
