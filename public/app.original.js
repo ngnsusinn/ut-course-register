@@ -933,7 +933,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 dotId = initialData.dot.id;
                 userId = initialData.profile.maSinhVien || initialData.profile.username;
                 vipStatus = initialData.vip || { hasVIP: false };
-                logUserAction('AUTO_LOGIN', `Tự động đăng nhập: ${userId}`);
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
@@ -2236,7 +2235,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Show login form if auto-login failed
             loginForm.classList.remove('hidden');
         }
-        logUserAction('PAGE_LOAD', `Mở trang - ${navigator.userAgent.substring(0, 100)}`);
     });
     
     loginBtn.addEventListener('click', handleLogin);
@@ -2247,20 +2245,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     startInsertionBtn.addEventListener('click', startInsertion);
     startRegistrationBtn.addEventListener('click', startRegistration);
     stopBtn.addEventListener('click', stopProcess);
-    let searchLogTimeout;
-    searchInput.addEventListener('input', () => {
-        renderScheduleTable();
-        clearTimeout(searchLogTimeout);
-        searchLogTimeout = setTimeout(() => {
-            if (searchInput.value.trim()) {
-                logUserAction('SEARCH_SCHEDULE', `Tìm kiếm: "${searchInput.value.trim()}"`);
-            }
-        }, 1000);
-    });
-    subjectFilter.addEventListener('change', () => {
-        logUserAction('FILTER_SUBJECT', `Lọc môn: ${subjectFilter.options[subjectFilter.selectedIndex]?.text || subjectFilter.value}`);
-        renderScheduleTable();
-    });
+    searchInput.addEventListener('input', () => renderScheduleTable());
+    subjectFilter.addEventListener('change', () => renderScheduleTable());
     passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
 
     document.addEventListener('click', (e) => {

@@ -1467,7 +1467,7 @@ export default async (req, res) => {
                 
                 // Whitelist of allowed frontend actions
                 const allowedActions = [
-                    'LOGIN_SUCCESS', 'AUTO_LOGIN', 'LOGOUT',
+                    'LOGIN_SUCCESS', 'LOGOUT',
                     'START_AUTO_REGISTER', 'STOP_AUTO_REGISTER',
                     'START_AUTO_INSERT', 'STOP_AUTO_INSERT',
                     'SELECT_CLASS', 'DESELECT_CLASS',
@@ -1477,9 +1477,7 @@ export default async (req, res) => {
                     'CHECK_VIP_STATUS', 'OPEN_VIP_MODAL', 'OPEN_GUIDE',
                     'SWAP_CLASS', 'SWAP_CLASS_SETUP', 'SWAP_FROM_REGISTERED',
                     'SELECT_FROM_SWAP_MODAL', 'OPEN_SWAP_MODAL',
-                    'BUY_VIP_PLAN', 'CANCEL_PAYMENT', 'CANCEL_CLASS_CONFIRM',
-                    'SEARCH_SCHEDULE', 'FILTER_SUBJECT',
-                    'PAGE_LOAD', 'PAGE_UNLOAD'
+                    'BUY_VIP_PLAN', 'CANCEL_PAYMENT', 'CANCEL_CLASS_CONFIRM'
                 ];
                 
                 if (!logUserId || !logAction) {
