@@ -42,6 +42,8 @@ export default async function handler(req, res) {
             case 'getAllOrders': result = await getAllOrders(); break;
             case 'getAllTransactions': result = await getAllTransactions(); break;
             case 'getAllLogs': result = await getAllLogs(); break;
+            case 'getUserActivity': result = await getUserActivity(payload); break;
+            case 'getActiveUsers': result = await getActiveUsers(); break;
             case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
             case 'deleteSubscription': result = await deleteSubscription(payload); break;
             case 'deleteUser': result = await deleteUser(payload); break;
@@ -437,12 +439,176 @@ async function getAllLogs() {
                 admin_id,
                 action,
                 details,
+                ip_address,
                 created_at
             FROM activity_logs
             ORDER BY created_at DESC
-            LIMIT 500
+            LIMIT 1000
         `);
         return { success: true, logs };
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+/**
+ * Get detailed user activity with filtering, search, and user-centric view
+ */
+async function getUserActivity(payload) {
+    const { userId, action, dateFrom, dateTo, page = 1, limit = 50 } = payload || {};
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        
+        // Build dynamic WHERE clause
+        const conditions = [];
+        const params = [];
+        
+        if (userId) {
+            conditions.push('al.user_id LIKE ?');
+            params.push(`%${userId}%`);
+        }
+        if (action) {
+            conditions.push('al.action = ?');
+            params.push(action);
+        }
+        if (dateFrom) {
+            conditions.push('al.created_at >= ?');
+            params.push(dateFrom);
+        }
+        if (dateTo) {
+            conditions.push('al.created_at <= ?');
+            params.push(dateTo + ' 23:59:59');
+        }
+        
+        const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+        
+        // Get total count for pagination
+        const [countResult] = await connection.execute(
+            `SELECT COUNT(*) as total FROM activity_logs al ${whereClause}`,
+            params
+        );
+        const total = countResult[0].total;
+        
+        // Get paginated logs
+        const offset = (page - 1) * limit;
+        const [logs] = await connection.execute(
+            `SELECT 
+                al.id,
+                al.user_id,
+                al.admin_id,
+                al.action,
+                al.details,
+                al.ip_address,
+                al.created_at,
+                u.full_name,
+                u.email
+            FROM activity_logs al
+            LEFT JOIN users u ON al.user_id = u.user_id
+            ${whereClause}
+            ORDER BY al.created_at DESC
+            LIMIT ? OFFSET ?`,
+            [...params, limit, offset]
+        );
+        
+        // Get user activity summary (top active users)
+        const [userSummary] = await connection.execute(`
+            SELECT 
+                al.user_id,
+                u.full_name,
+                COUNT(*) as total_actions,
+                MAX(al.created_at) as last_activity,
+                SUM(CASE WHEN al.action = 'USER_LOGIN' THEN 1 ELSE 0 END) as login_count,
+                SUM(CASE WHEN al.action IN ('REGISTER_CLASS', 'REGISTER_SUCCESS') THEN 1 ELSE 0 END) as register_count,
+                SUM(CASE WHEN al.action IN ('START_AUTO_REGISTER', 'START_AUTO_INSERT') THEN 1 ELSE 0 END) as auto_register_count,
+                SUM(CASE WHEN al.action = 'FETCH_SCHEDULE' THEN 1 ELSE 0 END) as fetch_count
+            FROM activity_logs al
+            LEFT JOIN users u ON al.user_id = u.user_id
+            WHERE al.user_id != 'admin' AND al.user_id != 'anonymous' AND al.user_id != 'system'
+            GROUP BY al.user_id, u.full_name
+            ORDER BY last_activity DESC
+            LIMIT 50
+        `);
+        
+        // Get action type distribution
+        const [actionStats] = await connection.execute(`
+            SELECT action, COUNT(*) as count
+            FROM activity_logs
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            GROUP BY action
+            ORDER BY count DESC
+        `);
+        
+        // Get currently active users (activity in last 15 minutes)
+        const [activeNow] = await connection.execute(`
+            SELECT DISTINCT 
+                al.user_id,
+                u.full_name,
+                MAX(al.created_at) as last_activity,
+                (SELECT al2.action FROM activity_logs al2 
+                 WHERE al2.user_id = al.user_id 
+                 ORDER BY al2.created_at DESC LIMIT 1) as last_action,
+                (SELECT al3.details FROM activity_logs al3 
+                 WHERE al3.user_id = al.user_id 
+                 ORDER BY al3.created_at DESC LIMIT 1) as last_details
+            FROM activity_logs al
+            LEFT JOIN users u ON al.user_id = u.user_id
+            WHERE al.created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+            AND al.user_id != 'admin' AND al.user_id != 'anonymous' AND al.user_id != 'system'
+            GROUP BY al.user_id, u.full_name
+            ORDER BY last_activity DESC
+        `);
+        
+        return { 
+            success: true, 
+            logs,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            userSummary,
+            actionStats,
+            activeNow
+        };
+    } catch (error) {
+        console.error('❌ Error getting user activity:', error.message);
+        return { success: false, message: 'Failed to get user activity', error: error.message };
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+/**
+ * Get real-time active users (activity in last 15 minutes)
+ */
+async function getActiveUsers() {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const [activeUsers] = await connection.execute(`
+            SELECT DISTINCT 
+                al.user_id,
+                u.full_name,
+                u.email,
+                MAX(al.created_at) as last_activity,
+                COUNT(*) as action_count_15min,
+                (SELECT al2.action FROM activity_logs al2 
+                 WHERE al2.user_id = al.user_id 
+                 ORDER BY al2.created_at DESC LIMIT 1) as last_action,
+                (SELECT al3.details FROM activity_logs al3 
+                 WHERE al3.user_id = al.user_id 
+                 ORDER BY al3.created_at DESC LIMIT 1) as last_details
+            FROM activity_logs al
+            LEFT JOIN users u ON al.user_id = u.user_id
+            WHERE al.created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+            AND al.user_id != 'admin' AND al.user_id != 'anonymous' AND al.user_id != 'system'
+            GROUP BY al.user_id, u.full_name, u.email
+            ORDER BY last_activity DESC
+        `);
+        return { success: true, activeUsers };
+    } catch (error) {
+        console.error('❌ Error getting active users:', error.message);
+        return { success: false, message: 'Failed to get active users', error: error.message };
     } finally {
         if (connection) connection.release();
     }

@@ -76,6 +76,18 @@
         }
     };
 
+    // === LOG USER ACTION (fire-and-forget) ===
+    const logUserAction = (action, details = '') => {
+        try {
+            if (!userId) return;
+            fetch('/api/handler', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'logUserAction', payload: { userId, action, details } })
+            }).catch(() => {}); // Fire and forget - don't block UI
+        } catch (e) { /* ignore logging errors */ }
+    };
+
     // --- UTILITY FUNCTIONS ---
     const log = (message, isError = false) => {
         const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
@@ -366,6 +378,7 @@
         modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const plan = e.target.dataset.plan;
+                logUserAction('BUY_VIP_PLAN', `Mua gói VIP: ${plan} - ${plans[plan].price.toLocaleString('vi-VN')}đ`);
                 await createVIPOrder(plan, plans[plan], sepayConfig);
             });
         });
@@ -375,6 +388,7 @@
 // Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
 modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
     if (!currentOrder) return;
+    logUserAction('CANCEL_PAYMENT', `Hủy thanh toán đơn #${currentOrder.orderCode}`);
     
     showConfirmModal(
         'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
@@ -683,7 +697,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             if (logoutBtn) logoutBtn.originalHTML = logoutBtn.innerHTML;
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
-            upgradeVipBtn.addEventListener('click', showVIPModal);
+            upgradeVipBtn.addEventListener('click', () => {
+                logUserAction('OPEN_VIP_MODAL', 'Mở modal VIP');
+                showVIPModal();
+            });
             // Removed auto-fetch on prerequisite toggle change - user should manually refresh if needed
         }
 
@@ -809,6 +826,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 dotId = initialData.dot.id;
                 userId = initialData.profile.maSinhVien || initialData.profile.username;
                 vipStatus = initialData.vip || { hasVIP: false };
+                logUserAction('LOGIN_SUCCESS', `Đăng nhập thành công: ${username}`);
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
@@ -915,6 +933,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 dotId = initialData.dot.id;
                 userId = initialData.profile.maSinhVien || initialData.profile.username;
                 vipStatus = initialData.vip || { hasVIP: false };
+                logUserAction('AUTO_LOGIN', `Tự động đăng nhập: ${userId}`);
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
@@ -965,6 +984,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const handleLogout = async () => {
+        logUserAction('LOGOUT', `Đăng xuất: ${userId}`);
         await stopProcess();
         
         // Stop VIP expiry check
@@ -994,6 +1014,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const fetchFullSchedule = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
+        logUserAction('FETCH_SCHEDULE_BTN', 'Bấm nút tải lịch học');
         toggleLoading(fetchBtn, true);
         isProcessStopped = false;
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
@@ -1143,6 +1164,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const cancelRegistration = async (registrationId, tenMonHoc, source) => {
+        logUserAction('CANCEL_CLASS_CONFIRM', `Bấm hủy đăng ký: ${tenMonHoc}`);
         // Use custom confirmation modal instead of default confirm()
         showConfirmModal(
             `Bạn có chắc chắn muốn hủy môn học <strong>"${tenMonHoc}"</strong> không?<br><br>Hành động này không thể hoàn tác.`,
@@ -1150,7 +1172,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 // On confirm
                 log(`Đang hủy môn ${tenMonHoc}...`);
 
-                const result = await backendRequest('cancel', { registrationId, source });
+                const result = await backendRequest('cancel', { registrationId, source, userId, className: tenMonHoc });
 
                 if (result && result.success) {
                     log(`✅ Hủy thành công.`);
@@ -1183,7 +1205,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             classId: targetId, 
             dotId, 
             maHocPhan, 
-            source: targetSource 
+            source: targetSource,
+            userId
         });
         
         if (!checkResult || !checkResult.success) {
@@ -1205,7 +1228,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Step 2: Cancel old registered class FIRST (before registering new one)
         log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
-        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource });
+        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource, userId, className: `${regName} (${regCode})` });
         
         if (!cancelResult || !cancelResult.success) {
             log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
@@ -1216,7 +1239,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Step 3: Register target class (after canceling old one)
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
-        const registerResult = await backendRequest('register', { classId: targetId, source: targetSource });
+        const registerResult = await backendRequest('register', { classId: targetId, source: targetSource, userId, className: `${targetName} (${targetCode})` });
         
         if (!registerResult || !registerResult.success) {
             log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
@@ -1249,6 +1272,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu quá trình chèn lớp...");
+        logUserAction('START_AUTO_INSERT', `Bắt đầu tự động chèn ${totalClasses} lớp`);
 
         const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
@@ -1327,7 +1351,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 } else {
                                     // Handle regular registration
                                     log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                                    const regResult = await backendRequest('register', { classId: availableClass.id, source });
+                                    const regResult = await backendRequest('register', { classId: availableClass.id, source, userId, className: `${tenMonHoc} (${availableClass.maLopHocPhan})` });
 
                                     if (regResult && regResult.success) {
                                         log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
@@ -1377,6 +1401,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu đăng ký liên tục...");
+        logUserAction('START_AUTO_REGISTER', `Bắt đầu tự động đăng ký ${totalClasses} lớp`);
 
         const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
@@ -1453,7 +1478,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         } else {
                             // Handle regular registration
                             log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
-                            const result = await backendRequest('register', { classId: item.class.id, source: item.class.source });
+                            const result = await backendRequest('register', { classId: item.class.id, source: item.class.source, userId, className: `${tenMonHoc} (${item.class.maLopHocPhan})` });
 
                             if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
                                 log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
@@ -1489,6 +1514,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const stopProcess = async () => {
         isProcessStopped = true;
         log("🛑 Đang dừng tất cả các quá trình...");
+        logUserAction('STOP_AUTO_REGISTER', 'Dừng tất cả quá trình tự động');
         registrationIntervals.forEach(clearTimeout);
         registrationIntervals.clear();
         toggleActionButtons(false);
@@ -1738,6 +1764,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     target: targetClass
                 });
                 
+                logUserAction('SWAP_CLASS_SETUP', `Đổi lớp (conflict): ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                 log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                 updateSelectedList();
                 
@@ -2068,6 +2095,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         // On confirm - Add to selected classes (same as selecting from schedule table)
                         selectedClasses.set(targetId, targetClass);
                         
+                        logUserAction('SELECT_FROM_SWAP_MODAL', `Chọn từ modal đổi lớp: ${targetName} (${targetCode})`);
                         log(`✅ Đã thêm lớp ${targetName} (${targetCode}) vào danh sách đăng ký`);
                         
                         if (targetClass.phanTramDangKy >= 100) {
@@ -2196,7 +2224,10 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     // Guide button
     const guideBtn = document.getElementById('guide-btn');
     if (guideBtn) {
-        guideBtn.addEventListener('click', showGuideModal);
+        guideBtn.addEventListener('click', () => {
+            logUserAction('OPEN_GUIDE', 'Mở hướng dẫn sử dụng');
+            showGuideModal();
+        });
     }
     
     // Try auto-login on page load
@@ -2205,15 +2236,31 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             // Show login form if auto-login failed
             loginForm.classList.remove('hidden');
         }
+        logUserAction('PAGE_LOAD', `Mở trang - ${navigator.userAgent.substring(0, 100)}`);
     });
     
     loginBtn.addEventListener('click', handleLogin);
-    refreshRegisteredBtn.addEventListener('click', fetchRegisteredClasses);
+    refreshRegisteredBtn.addEventListener('click', () => {
+        logUserAction('REFRESH_REGISTERED', 'Bấm làm mới danh sách đã đăng ký');
+        fetchRegisteredClasses();
+    });
     startInsertionBtn.addEventListener('click', startInsertion);
     startRegistrationBtn.addEventListener('click', startRegistration);
     stopBtn.addEventListener('click', stopProcess);
-    searchInput.addEventListener('input', () => renderScheduleTable());
-    subjectFilter.addEventListener('change', () => renderScheduleTable());
+    let searchLogTimeout;
+    searchInput.addEventListener('input', () => {
+        renderScheduleTable();
+        clearTimeout(searchLogTimeout);
+        searchLogTimeout = setTimeout(() => {
+            if (searchInput.value.trim()) {
+                logUserAction('SEARCH_SCHEDULE', `Tìm kiếm: "${searchInput.value.trim()}"`);
+            }
+        }, 1000);
+    });
+    subjectFilter.addEventListener('change', () => {
+        logUserAction('FILTER_SUBJECT', `Lọc môn: ${subjectFilter.options[subjectFilter.selectedIndex]?.text || subjectFilter.value}`);
+        renderScheduleTable();
+    });
     passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
 
     document.addEventListener('click', (e) => {
@@ -2242,14 +2289,21 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const classId = scheduleRow.dataset.classId;
             const cls = allScheduleData.find(c => c.id.toString() === classId);
             if (!cls) return;
-            if (selectedClasses.has(classId)) selectedClasses.delete(classId);
-            else selectedClasses.set(classId, cls);
+            if (selectedClasses.has(classId)) {
+                selectedClasses.delete(classId);
+                logUserAction('DESELECT_CLASS', `Bỏ chọn: ${cls.tenMonHoc} (${cls.maLopHocPhan})`);
+            } else {
+                selectedClasses.set(classId, cls);
+                logUserAction('SELECT_CLASS', `Chọn: ${cls.tenMonHoc} (${cls.maLopHocPhan})`);
+            }
             scheduleRow.classList.toggle('bg-blue-200');
             updateSelectedList();
         }
         const removeBtn = e.target.closest('.remove-selected-btn');
         if (removeBtn) {
             const classId = removeBtn.dataset.classId;
+            const removedClass = selectedClasses.get(classId);
+            logUserAction('REMOVE_SELECTED', `Xóa khỏi danh sách: ${removedClass?.tenMonHoc || classId} (${removedClass?.maLopHocPhan || ''})`);
             selectedClasses.delete(classId);
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
             if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
@@ -2259,6 +2313,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const removeSwapBtn = e.target.closest('.remove-swap-btn');
         if (removeSwapBtn) {
             const targetClassId = removeSwapBtn.dataset.targetClassId;
+            const removedSwap = swapPendingClasses.get(targetClassId);
+            logUserAction('REMOVE_SWAP', `Hủy đổi lớp: ${removedSwap?.registered?.tenMonHoc || ''} → ${removedSwap?.target?.tenMonHoc || targetClassId}`);
             swapPendingClasses.delete(targetClassId);
             updateSelectedList();
             log("🗑️ Đã hủy yêu cầu đổi lớp");
@@ -2272,6 +2328,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         const swapFromRegisteredBtn = e.target.closest('.swap-from-registered-btn');
         if (swapFromRegisteredBtn) {
+            logUserAction('OPEN_SWAP_MODAL', `Mở đổi lớp: ${swapFromRegisteredBtn.dataset.regName} (${swapFromRegisteredBtn.dataset.regCode})`);
             const registeredData = {
                 id: swapFromRegisteredBtn.dataset.regId,
                 code: swapFromRegisteredBtn.dataset.regCode,
@@ -2363,6 +2420,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 target: targetClass
             });
             
+            logUserAction('SWAP_FROM_REGISTERED', `Đổi lớp: ${registeredData.name} (${registeredData.code}) → ${targetData.name} (${targetData.code})`);
             log(`✅ Đã thêm yêu cầu đổi lớp: ${registeredData.name} → ${targetData.name}`);
             log(`📋 Trạng thái: ${registeredStatus} → ${targetStatus}`);
             updateSelectedList();

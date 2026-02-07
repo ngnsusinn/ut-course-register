@@ -6,7 +6,8 @@ let allData = {
     orders: [],
     transactions: [],
     logs: [],
-    vipPlans: []
+    vipPlans: [],
+    userActivity: { logs: [], userSummary: [], actionStats: [], activeNow: [], total: 0, page: 1, totalPages: 1 }
 };
 
 // Pagination state
@@ -367,6 +368,11 @@ async function refreshData(type) {
         await loadDashboard();
         return;
     }
+    
+    if (type === 'userActivity') {
+        await refreshUserActivity();
+        return;
+    }
 
     // Special mapping for vipPlans action
     let action = type === 'vipPlans' ? 'getAllVIPPlans' : `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
@@ -418,6 +424,7 @@ function renderTable(type) {
         case 'orders': renderOrders(); break;
         case 'transactions': renderTransactions(); break;
         case 'logs': renderLogs(); break;
+        case 'userActivity': renderUserActivityData(); break;
     }
 }
 
@@ -708,15 +715,64 @@ function getActionColor(action) {
         case 'ADMIN_ADD_VIP': return 'bg-purple-100 text-purple-800';
         case 'ADMIN_DELETE_VIP': return 'bg-red-100 text-red-800';
         case 'ADMIN_DELETE_USER': return 'bg-red-100 text-red-800';
+        case 'ADMIN_CREATE_PLAN': return 'bg-purple-100 text-purple-800';
+        case 'ADMIN_UPDATE_PLAN': return 'bg-purple-100 text-purple-800';
+        case 'ADMIN_DELETE_PLAN': return 'bg-red-100 text-red-800';
+        case 'ADMIN_TOGGLE_PLAN': return 'bg-purple-100 text-purple-800';
         case 'ORDER_CREATED': return 'bg-blue-100 text-blue-800';
         case 'ORDER_PAID': return 'bg-green-100 text-green-800';
         case 'ORDER_CANCELLED': return 'bg-red-100 text-red-800';
         case 'ORDER_AUTO_CANCELLED': return 'bg-orange-100 text-orange-800';
+        case 'CREATE_VIP_ORDER': return 'bg-yellow-100 text-yellow-800';
         case 'VIP_ACTIVATED': return 'bg-green-100 text-green-800';
         case 'VIP_EXTENDED': return 'bg-blue-100 text-blue-800';
         case 'VIP_EXPIRED': return 'bg-yellow-100 text-yellow-800';
         case 'PAYMENT_RECEIVED': return 'bg-green-100 text-green-800';
         case 'WEBHOOK_PROCESSED': return 'bg-indigo-100 text-indigo-800';
+        // New user action types
+        case 'FETCH_SCHEDULE': return 'bg-cyan-100 text-cyan-800';
+        case 'FETCH_SCHEDULE_DONE': return 'bg-cyan-100 text-cyan-800';
+        case 'FETCH_REGISTERED': return 'bg-teal-100 text-teal-800';
+        case 'REGISTER_CLASS': return 'bg-indigo-100 text-indigo-800';
+        case 'REGISTER_SUCCESS': return 'bg-green-100 text-green-800';
+        case 'REGISTER_FAILED': return 'bg-red-100 text-red-800';
+        case 'CANCEL_CLASS': return 'bg-orange-100 text-orange-800';
+        case 'CANCEL_SUCCESS': return 'bg-green-100 text-green-800';
+        case 'CANCEL_FAILED': return 'bg-red-100 text-red-800';
+        case 'CHECK_AVAILABILITY': return 'bg-yellow-100 text-yellow-800';
+        case 'SYNC_DATA': return 'bg-indigo-100 text-indigo-800';
+        case 'SYNC_DATA_DONE': return 'bg-indigo-100 text-indigo-800';
+        case 'START_AUTO_REGISTER': return 'bg-emerald-100 text-emerald-800';
+        case 'STOP_AUTO_REGISTER': return 'bg-gray-100 text-gray-800';
+        case 'START_AUTO_INSERT': return 'bg-emerald-100 text-emerald-800';
+        case 'STOP_AUTO_INSERT': return 'bg-gray-100 text-gray-800';
+        case 'SELECT_CLASS': return 'bg-sky-100 text-sky-800';
+        case 'DESELECT_CLASS': return 'bg-gray-100 text-gray-800';
+        case 'VIEW_TIMETABLE': return 'bg-blue-100 text-blue-800';
+        case 'EXPORT_TIMETABLE': return 'bg-blue-100 text-blue-800';
+        case 'CHECK_VIP_STATUS': return 'bg-yellow-100 text-yellow-800';
+        case 'OPEN_VIP_MODAL': return 'bg-yellow-100 text-yellow-800';
+        case 'SWAP_CLASS': return 'bg-purple-100 text-purple-800';
+        case 'SWAP_CLASS_SETUP': return 'bg-purple-100 text-purple-800';
+        case 'SWAP_FROM_REGISTERED': return 'bg-purple-100 text-purple-800';
+        case 'SELECT_FROM_SWAP_MODAL': return 'bg-sky-100 text-sky-800';
+        case 'OPEN_SWAP_MODAL': return 'bg-purple-100 text-purple-800';
+        case 'REMOVE_SELECTED': return 'bg-orange-100 text-orange-800';
+        case 'REMOVE_SWAP': return 'bg-orange-100 text-orange-800';
+        case 'LOGIN_SUCCESS': return 'bg-blue-100 text-blue-800';
+        case 'AUTO_LOGIN': return 'bg-blue-100 text-blue-800';
+        case 'LOGOUT': return 'bg-gray-100 text-gray-800';
+        case 'FETCH_SCHEDULE_BTN': return 'bg-cyan-100 text-cyan-800';
+        case 'REFRESH_REGISTERED': return 'bg-teal-100 text-teal-800';
+        case 'OPEN_GUIDE': return 'bg-indigo-100 text-indigo-800';
+        case 'BUY_VIP_PLAN': return 'bg-yellow-100 text-yellow-800';
+        case 'CANCEL_PAYMENT': return 'bg-red-100 text-red-800';
+        case 'CANCEL_CLASS_CONFIRM': return 'bg-orange-100 text-orange-800';
+        case 'SEARCH_SCHEDULE': return 'bg-gray-100 text-gray-800';
+        case 'FILTER_SUBJECT': return 'bg-gray-100 text-gray-800';
+        case 'PAGE_LOAD': return 'bg-gray-100 text-gray-800';
+        case 'PAGE_UNLOAD': return 'bg-gray-100 text-gray-800';
+        case 'USER_ACTION': return 'bg-gray-100 text-gray-800';
         default: return 'bg-gray-100 text-gray-800';
     }
 }
@@ -728,16 +784,65 @@ function getActionText(action) {
         case 'ADMIN_ADD_VIP': return '⭐ Admin thêm VIP';
         case 'ADMIN_DELETE_VIP': return '🗑️ Admin xóa VIP';
         case 'ADMIN_DELETE_USER': return '🗑️ Admin xóa User';
+        case 'ADMIN_CREATE_PLAN': return '➕ Admin tạo gói';
+        case 'ADMIN_UPDATE_PLAN': return '✏️ Admin sửa gói';
+        case 'ADMIN_DELETE_PLAN': return '🗑️ Admin xóa gói';
+        case 'ADMIN_TOGGLE_PLAN': return '🔄 Admin đổi trạng thái gói';
         case 'ORDER_CREATED': return '📝 Tạo đơn hàng';
         case 'ORDER_PAID': return '💰 Thanh toán thành công';
         case 'ORDER_CANCELLED': return '❌ Hủy đơn hàng';
         case 'ORDER_AUTO_CANCELLED': return '⏰ Tự động hủy đơn';
+        case 'CREATE_VIP_ORDER': return '🛒 Tạo đơn VIP';
         case 'VIP_ACTIVATED': return '✅ Kích hoạt VIP';
         case 'VIP_EXTENDED': return '🔄 Gia hạn VIP';
         case 'VIP_EXPIRED': return '⌛ VIP hết hạn';
         case 'PAYMENT_RECEIVED': return '💳 Nhận thanh toán';
         case 'WEBHOOK_PROCESSED': return '🔗 Xử lý webhook';
-        default: return action.replace(/_/g, ' ');
+        // New user action types
+        case 'FETCH_SCHEDULE': return '📋 Tải lịch học';
+        case 'FETCH_SCHEDULE_DONE': return '✅ Tải lịch xong';
+        case 'FETCH_REGISTERED': return '📑 Tải lớp đã ĐK';
+        case 'REGISTER_CLASS': return '📝 Đăng ký lớp';
+        case 'REGISTER_SUCCESS': return '✅ ĐK thành công';
+        case 'REGISTER_FAILED': return '❌ ĐK thất bại';
+        case 'CANCEL_CLASS': return '🗑️ Hủy đăng ký';
+        case 'CANCEL_SUCCESS': return '✅ Hủy thành công';
+        case 'CANCEL_FAILED': return '❌ Hủy thất bại';
+        case 'CHECK_AVAILABILITY': return '🔍 Kiểm tra chỗ trống';
+        case 'SYNC_DATA': return '🔄 Đồng bộ dữ liệu';
+        case 'SYNC_DATA_DONE': return '✅ Đồng bộ xong';
+        case 'START_AUTO_REGISTER': return '🤖 Bắt đầu tự động ĐK';
+        case 'STOP_AUTO_REGISTER': return '⏹️ Dừng tự động ĐK';
+        case 'START_AUTO_INSERT': return '🤖 Bắt đầu tự động chèn';
+        case 'STOP_AUTO_INSERT': return '⏹️ Dừng tự động chèn';
+        case 'SELECT_CLASS': return '✓ Chọn lớp';
+        case 'DESELECT_CLASS': return '✗ Bỏ chọn lớp';
+        case 'VIEW_TIMETABLE': return '📅 Xem thời khóa biểu';
+        case 'EXPORT_TIMETABLE': return '📤 Xuất thời khóa biểu';
+        case 'CHECK_VIP_STATUS': return '🔍 Kiểm tra VIP';
+        case 'OPEN_VIP_MODAL': return '💎 Mở mua VIP';
+        case 'SWAP_CLASS': return '🔀 Hoán đổi lớp';
+        case 'SWAP_CLASS_SETUP': return '🔀 Thiết lập đổi lớp';
+        case 'SWAP_FROM_REGISTERED': return '🔀 Đổi lớp từ đã ĐK';
+        case 'SELECT_FROM_SWAP_MODAL': return '✅ Chọn từ modal đổi';
+        case 'OPEN_SWAP_MODAL': return '🔀 Mở modal đổi lớp';
+        case 'REMOVE_SELECTED': return '❌ Xóa lớp đã chọn';
+        case 'REMOVE_SWAP': return '❌ Hủy đổi lớp';
+        case 'LOGIN_SUCCESS': return '🔐 Đăng nhập thành công';
+        case 'AUTO_LOGIN': return '🔄 Tự động đăng nhập';
+        case 'LOGOUT': return '🚪 Đăng xuất';
+        case 'FETCH_SCHEDULE_BTN': return '📋 Bấm tải lịch học';
+        case 'REFRESH_REGISTERED': return '🔄 Làm mới lớp đã ĐK';
+        case 'OPEN_GUIDE': return '📖 Mở hướng dẫn';
+        case 'BUY_VIP_PLAN': return '💳 Bấm mua VIP';
+        case 'CANCEL_PAYMENT': return '❌ Hủy thanh toán';
+        case 'CANCEL_CLASS_CONFIRM': return '🗑️ Bấm hủy đăng ký';
+        case 'SEARCH_SCHEDULE': return '🔍 Tìm kiếm lịch học';
+        case 'FILTER_SUBJECT': return '📊 Lọc môn học';
+        case 'PAGE_LOAD': return '🌐 Mở trang';
+        case 'PAGE_UNLOAD': return '👋 Đóng trang';
+        case 'USER_ACTION': return '📌 Hành động';
+        default: return action ? action.replace(/_/g, ' ') : 'Unknown';
     }
 }
 
@@ -1002,6 +1107,303 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// ===== USER ACTIVITY FUNCTIONS =====
+
+/**
+ * Refresh User Activity tab - loads active users and summary
+ */
+async function refreshUserActivity() {
+    try {
+        // Load initial data without filters
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'getUserActivity', payload: { page: 1, limit: 50 } })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            allData.userActivity = data;
+            renderUserActivityData();
+        } else {
+            showToast('Lỗi tải dữ liệu hoạt động: ' + (data.message || ''), 'error');
+        }
+    } catch (error) {
+        console.error('Error refreshing user activity:', error);
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Search user activity with filters
+ */
+async function searchUserActivity(page = 1) {
+    const userId = document.getElementById('activitySearchUser').value.trim();
+    const action = document.getElementById('activitySearchAction').value;
+    const dateFrom = document.getElementById('activityDateFrom').value;
+    const dateTo = document.getElementById('activityDateTo').value;
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'getUserActivity', 
+                payload: { userId, action, dateFrom, dateTo, page, limit: 50 } 
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            allData.userActivity = data;
+            renderUserActivityData();
+            
+            // Scroll to results
+            document.getElementById('activityLogsTableBody').closest('.bg-white').scrollIntoView({ 
+                behavior: 'smooth', block: 'start' 
+            });
+        } else {
+            showToast('Lỗi tìm kiếm: ' + (data.message || ''), 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
+}
+
+/**
+ * View a specific user's activity
+ */
+function viewUserActivity(userId) {
+    document.getElementById('activitySearchUser').value = userId;
+    document.getElementById('activitySearchAction').value = '';
+    document.getElementById('activityDateFrom').value = '';
+    document.getElementById('activityDateTo').value = '';
+    searchUserActivity(1);
+}
+
+/**
+ * Render all User Activity data
+ */
+function renderUserActivityData() {
+    const data = allData.userActivity;
+    
+    // Render active users cards
+    renderActiveUsersGrid(data.activeNow || []);
+    
+    // Render activity stats
+    renderActivityStats(data.actionStats || []);
+    
+    // Render user summary table
+    renderUserSummaryTable(data.userSummary || []);
+    
+    // Render activity logs
+    renderActivityLogs(data.logs || [], data.total || 0, data.page || 1, data.totalPages || 1);
+}
+
+/**
+ * Render active users grid cards
+ */
+function renderActiveUsersGrid(activeNow) {
+    const container = document.getElementById('activeUsersGrid');
+    
+    if (!activeNow || activeNow.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4 col-span-full">Không có user nào đang hoạt động</p>';
+        return;
+    }
+    
+    container.innerHTML = activeNow.map(user => {
+        const timeDiff = Math.floor((new Date() - new Date(user.last_activity)) / 1000 / 60);
+        const timeText = timeDiff < 1 ? 'Vừa xong' : `${timeDiff} phút trước`;
+        const isVeryActive = timeDiff < 2;
+        
+        return `
+        <div class="border ${isVeryActive ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'} rounded-lg p-4 hover:shadow-md transition cursor-pointer" onclick="viewUserActivity('${user.user_id}')">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-3 h-3 rounded-full ${isVeryActive ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}"></div>
+                <div class="font-semibold text-gray-900">${user.user_id}</div>
+            </div>
+            ${user.full_name ? `<div class="text-sm text-gray-600 mb-1">${user.full_name}</div>` : ''}
+            <div class="text-xs text-gray-500 mb-2">⏱️ ${timeText}</div>
+            <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-xs font-semibold ${getActionColor(user.last_action)}">
+                    ${getActionText(user.last_action)}
+                </span>
+            </div>
+            ${user.last_details ? `<div class="text-xs text-gray-500 mt-1 truncate" title="${user.last_details}">${user.last_details}</div>` : ''}
+        </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Render activity statistics cards
+ */
+function renderActivityStats(actionStats) {
+    const container = document.getElementById('activityStatsCards');
+    if (!actionStats || actionStats.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    // Calculate totals
+    const total24h = actionStats.reduce((sum, s) => sum + s.count, 0);
+    const loginCount = actionStats.filter(s => s.action === 'USER_LOGIN').reduce((sum, s) => sum + s.count, 0);
+    const registerCount = actionStats.filter(s => ['REGISTER_CLASS', 'REGISTER_SUCCESS'].includes(s.action)).reduce((sum, s) => sum + s.count, 0);
+    const autoRegCount = actionStats.filter(s => ['START_AUTO_REGISTER', 'CHECK_AVAILABILITY'].includes(s.action)).reduce((sum, s) => sum + s.count, 0);
+    
+    container.innerHTML = `
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+            <div class="text-3xl font-bold text-blue-600">${total24h}</div>
+            <div class="text-sm text-gray-600">Hành động (24h)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+            <div class="text-3xl font-bold text-green-600">${loginCount}</div>
+            <div class="text-sm text-gray-600">Đăng nhập (24h)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+            <div class="text-3xl font-bold text-purple-600">${registerCount}</div>
+            <div class="text-sm text-gray-600">Đăng ký lớp (24h)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+            <div class="text-3xl font-bold text-orange-600">${autoRegCount}</div>
+            <div class="text-sm text-gray-600">Tự động ĐK (24h)</div>
+        </div>
+    `;
+}
+
+/**
+ * Render user summary table
+ */
+function renderUserSummaryTable(userSummary) {
+    const tbody = document.getElementById('userSummaryTableBody');
+    
+    if (!userSummary || userSummary.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">Chưa có dữ liệu</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = userSummary.map(user => {
+        const lastActivity = new Date(user.last_activity);
+        const isRecentlyActive = (new Date() - lastActivity) < 15 * 60 * 1000; // 15 minutes
+        
+        return `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-4 py-3" data-label="User">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full ${isRecentlyActive ? 'bg-green-500' : 'bg-gray-300'}"></div>
+                    <div>
+                        <div class="font-semibold text-gray-900">${user.user_id}</div>
+                        ${user.full_name ? `<div class="text-xs text-gray-500">${user.full_name}</div>` : ''}
+                    </div>
+                </div>
+            </td>
+            <td class="px-4 py-3 font-bold text-blue-600" data-label="Tổng">${user.total_actions}</td>
+            <td class="px-4 py-3 text-sm" data-label="Login">${user.login_count || 0}</td>
+            <td class="px-4 py-3 text-sm" data-label="Register">${user.register_count || 0}</td>
+            <td class="px-4 py-3 text-sm" data-label="Auto">${user.auto_register_count || 0}</td>
+            <td class="px-4 py-3 text-sm" data-label="Fetch">${user.fetch_count || 0}</td>
+            <td class="px-4 py-3 text-sm text-gray-600" data-label="Last">${formatDateTime(user.last_activity)}</td>
+            <td class="px-4 py-3" data-label="Actions">
+                <button onclick="viewUserActivity('${user.user_id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-sm transition">
+                    🔍 Xem
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Render activity logs with pagination
+ */
+function renderActivityLogs(logs, total, page, totalPages) {
+    const tbody = document.getElementById('activityLogsTableBody');
+    const infoDiv = document.getElementById('activityResultInfo');
+    
+    // Update result info
+    if (total > 0) {
+        const start = (page - 1) * 50 + 1;
+        const end = Math.min(page * 50, total);
+        infoDiv.textContent = `Hiển thị ${start} - ${end} / ${total} kết quả`;
+    } else {
+        infoDiv.textContent = '';
+    }
+    
+    if (!logs || logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-500">Không tìm thấy kết quả</td></tr>';
+        renderActivityPagination(0, 1, 1);
+        return;
+    }
+    
+    tbody.innerHTML = logs.map(log => `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap" data-label="Time">${formatDateTime(log.created_at)}</td>
+            <td class="px-4 py-3" data-label="User">
+                <div class="font-semibold text-gray-900 cursor-pointer hover:text-blue-600" onclick="viewUserActivity('${log.user_id}')">${log.user_id || 'System'}</div>
+                ${log.full_name ? `<div class="text-xs text-gray-500">${log.full_name}</div>` : ''}
+            </td>
+            <td class="px-4 py-3" data-label="Action">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${getActionColor(log.action)}">
+                    ${getActionText(log.action)}
+                </span>
+            </td>
+            <td class="px-4 py-3" data-label="Details">
+                <div class="max-w-md text-sm text-gray-700" title="${log.details || ''}">${log.details || 'N/A'}</div>
+                ${log.ip_address ? `<div class="text-xs text-gray-400 mt-0.5">📍 ${log.ip_address}</div>` : ''}
+            </td>
+        </tr>
+    `).join('');
+    
+    // Render pagination
+    renderActivityPagination(total, page, totalPages);
+}
+
+/**
+ * Render activity logs pagination
+ */
+function renderActivityPagination(total, currentPage, totalPages) {
+    const container = document.getElementById('activityPagination');
+    if (!container) return;
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    const start = (currentPage - 1) * 50 + 1;
+    const end = Math.min(currentPage * 50, total);
+    
+    // Generate page numbers
+    let pages = [];
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else if (currentPage <= 4) {
+        pages = [1, 2, 3, 4, 5, '...', totalPages];
+    } else if (currentPage >= totalPages - 3) {
+        pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    } else {
+        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+    }
+    
+    const pageButtons = pages.map(p => {
+        if (p === '...') return '<span class="px-3 py-2 text-gray-500">...</span>';
+        return `<button onclick="searchUserActivity(${p})" class="px-3 py-2 rounded ${p === currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'} border text-sm font-medium">${p}</button>`;
+    }).join('');
+    
+    container.innerHTML = `
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+                Hiển thị <span class="font-medium">${start}</span> đến <span class="font-medium">${end}</span> trong tổng <span class="font-medium">${total}</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button onclick="searchUserActivity(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-2 rounded bg-white text-gray-700 hover:bg-gray-100 border text-sm disabled:opacity-50 disabled:cursor-not-allowed">← Trước</button>
+                ${pageButtons}
+                <button onclick="searchUserActivity(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-3 py-2 rounded bg-white text-gray-700 hover:bg-gray-100 border text-sm disabled:opacity-50 disabled:cursor-not-allowed">Sau →</button>
+            </div>
+        </div>
+    `;
 }
 
 // ===== DASHBOARD FUNCTIONS =====

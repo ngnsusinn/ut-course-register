@@ -42,6 +42,31 @@ const getPool = () => {
 // ============================================
 
 /**
+ * Log user activity to database
+ * @param {string} userId - User identifier
+ * @param {string} action - Action type (e.g. 'FETCH_SCHEDULE', 'REGISTER_CLASS')
+ * @param {string} details - Human-readable details
+ * @param {object} [metadata] - Optional JSON metadata for structured data
+ */
+async function logActivity(userId, action, details, metadata = null) {
+    let connection;
+    try {
+        connection = await getPool().getConnection();
+        await connection.execute(
+            `INSERT INTO activity_logs (user_id, action, details, ip_address, created_at) 
+             VALUES (?, ?, ?, ?, NOW())`,
+            [userId || 'anonymous', action, details, metadata ? JSON.stringify(metadata) : null]
+        );
+    } catch (error) {
+        console.error('⚠️ Failed to log activity:', error.message);
+    } finally {
+        if (connection) {
+            try { connection.release(); } catch (e) {}
+        }
+    }
+}
+
+/**
  * Generate random order code: DKHP + 12 random alphanumeric characters
  */
 function generateOrderCode() {
@@ -92,17 +117,17 @@ async function saveUserInfo(profile) {
             console.log(`✅ Updated user: ${userId}`);
         }
         
-        // Log login activity
+        // Log login activity  
         await connection.execute(
             `INSERT INTO activity_logs (user_id, action, details, created_at) 
-             VALUES (?, 'USER_LOGIN', 'User logged in from web interface', NOW())`,
-            [userId]
+             VALUES (?, 'USER_LOGIN', ?, NOW())`,
+            [userId, `Đăng nhập hệ thống - ${fullName || userId}`]
         );
         
-        return true;
+        return userId;
     } catch (error) {
         console.error('❌ Error saving user info:', error.message);
-        return false;
+        return null;
     } finally {
         if (connection) {
             try {
@@ -989,13 +1014,14 @@ export default async (req, res) => {
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
                 
-                // Save user info to database
+                // Save user info to database (now returns userId)
+                let savedUserId = null;
                 if (profileRes.success && profileRes.body) {
-                    await saveUserInfo(profileRes.body);
+                    savedUserId = await saveUserInfo(profileRes.body);
                 }
                 
                 // Check VIP status
-                const userId = profileRes.body?.maSinhVien || profileRes.body?.username;
+                const userId = savedUserId || profileRes.body?.maSinhVien || profileRes.body?.username;
                 const vipStatus = await checkVIPStatus(userId);
                 
                 result = {
@@ -1032,6 +1058,9 @@ export default async (req, res) => {
             case 'createVIPOrder': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { userId, plan } = payload;
+                
+                // Log: user creating VIP order
+                await logActivity(userId, 'CREATE_VIP_ORDER', `Tạo đơn mua VIP gói ${plan}`);
                 
                 // Validate plan exists
                 const vipPlans = await getVIPPlansFromDB();
@@ -1089,6 +1118,9 @@ export default async (req, res) => {
                 
                 const { dotId, fetchPrerequisites, userId } = payload;
                 
+                // Log: user fetching full schedule
+                await logActivity(userId, 'FETCH_SCHEDULE', `Tải danh sách lớp học phần - Đợt ${dotId}${fetchPrerequisites ? ' (có ĐKHP điều kiện)' : ''}`);
+                
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
@@ -1123,6 +1155,10 @@ export default async (req, res) => {
 
                     allClassData.push(...detailedClasses);
                 }
+                
+                // Log result count
+                await logActivity(userId, 'FETCH_SCHEDULE_DONE', `Đã tải ${allClassData.length} lớp học phần - Đợt ${dotId}`);
+                
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
             }
@@ -1130,6 +1166,10 @@ export default async (req, res) => {
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites, userId } = payload;
+                
+                // Log: user fetching registered classes
+                await logActivity(userId, 'FETCH_REGISTERED', `Tải lớp đã đăng ký - Đợt ${dotId}`);
+                
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
 
@@ -1188,7 +1228,10 @@ export default async (req, res) => {
 
             case 'checkClassAvailability': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, dotId, maHocPhan, source } = payload;
+                const { classId, dotId, maHocPhan, source, userId: availUserId } = payload;
+                
+                // Log: checking class availability (auto-register cycle)
+                await logActivity(availUserId, 'CHECK_AVAILABILITY', `Kiểm tra chỗ trống lớp ${maHocPhan} (${source})`);
                 
                 // Use getLopHocPhan (same as checkClassStatus) to get accurate phanTramDangKy
                 const classEndpoint = source === 'dkhpdk'
@@ -1288,15 +1331,37 @@ export default async (req, res) => {
             // --- WRITE ACTIONS ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source } = payload;
+                const { classId, source, userId, className } = payload;
+                
+                // Log: user registering a class
+                await logActivity(userId, 'REGISTER_CLASS', `Đăng ký lớp ${className || classId} (${source})`, JSON.stringify({ classId, source }));
+                
                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
+                
+                // Log result
+                if (result.success) {
+                    await logActivity(userId, 'REGISTER_SUCCESS', `Đăng ký thành công lớp ${className || classId}`);
+                } else {
+                    await logActivity(userId, 'REGISTER_FAILED', `Đăng ký thất bại lớp ${className || classId}: ${result.message || 'Unknown error'}`);
+                }
                 break;
             }
 
             case 'cancel': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { registrationId, source } = payload;
+                const { registrationId, source, userId, className } = payload;
+                
+                // Log: user cancelling a registration
+                await logActivity(userId, 'CANCEL_CLASS', `Hủy đăng ký lớp ${className || registrationId} (${source})`, JSON.stringify({ registrationId, source }));
+                
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
+                
+                // Log result
+                if (result.success) {
+                    await logActivity(userId, 'CANCEL_SUCCESS', `Hủy thành công lớp ${className || registrationId}`);
+                } else {
+                    await logActivity(userId, 'CANCEL_FAILED', `Hủy thất bại lớp ${className || registrationId}: ${result.message || 'Unknown error'}`);
+                }
                 break;
             }
 
@@ -1323,7 +1388,15 @@ export default async (req, res) => {
                     });
                 }
                 
+                // Log: user syncing class data
+                await logActivity(userId, 'SYNC_DATA', `Đồng bộ ${classData.length} lớp vào CSDL cộng đồng - Đợt ${dotId} (${source})`);
+                
                 const syncResult = await syncClassDataToDB(dotId, userId, source, classData);
+                
+                // Log sync result
+                if (syncResult.success) {
+                    await logActivity(userId, 'SYNC_DATA_DONE', `Đồng bộ hoàn tất: ${syncResult.inserted} mới, ${syncResult.updated} cập nhật`);
+                }
                 
                 result = {
                     success: syncResult.success,
@@ -1385,6 +1458,39 @@ export default async (req, res) => {
                         message: 'Không thể lấy thống kê'
                     };
                 }
+                break;
+            }
+
+            // --- LOGGING ACTION ---
+            case 'logUserAction': {
+                const { userId: logUserId, action: logAction, details: logDetails } = payload;
+                
+                // Whitelist of allowed frontend actions
+                const allowedActions = [
+                    'LOGIN_SUCCESS', 'AUTO_LOGIN', 'LOGOUT',
+                    'START_AUTO_REGISTER', 'STOP_AUTO_REGISTER',
+                    'START_AUTO_INSERT', 'STOP_AUTO_INSERT',
+                    'SELECT_CLASS', 'DESELECT_CLASS',
+                    'REMOVE_SELECTED', 'REMOVE_SWAP',
+                    'FETCH_SCHEDULE_BTN', 'REFRESH_REGISTERED',
+                    'VIEW_TIMETABLE', 'EXPORT_TIMETABLE',
+                    'CHECK_VIP_STATUS', 'OPEN_VIP_MODAL', 'OPEN_GUIDE',
+                    'SWAP_CLASS', 'SWAP_CLASS_SETUP', 'SWAP_FROM_REGISTERED',
+                    'SELECT_FROM_SWAP_MODAL', 'OPEN_SWAP_MODAL',
+                    'BUY_VIP_PLAN', 'CANCEL_PAYMENT', 'CANCEL_CLASS_CONFIRM',
+                    'SEARCH_SCHEDULE', 'FILTER_SUBJECT',
+                    'PAGE_LOAD', 'PAGE_UNLOAD'
+                ];
+                
+                if (!logUserId || !logAction) {
+                    return res.status(400).json({ success: false, message: 'userId and action required' });
+                }
+                
+                // Only allow whitelisted actions from frontend
+                const safeAction = allowedActions.includes(logAction) ? logAction : 'USER_ACTION';
+                await logActivity(logUserId, safeAction, logDetails || logAction);
+                
+                result = { success: true };
                 break;
             }
 
