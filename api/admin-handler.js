@@ -113,15 +113,20 @@ async function getAllUsers() {
         // Use improved schema with user_id as primary identifier
         const [users] = await connection.execute(`
             SELECT 
+                u.id,
                 u.user_id,
+                u.username,
                 u.full_name,
                 u.email,
                 u.is_active,
+                u.last_login,
+                u.created_at,
+                u.updated_at,
                 MAX(vs.expiry_date) as expiry_date,
                 CASE WHEN MAX(vs.expiry_date) > NOW() THEN 1 ELSE 0 END as is_vip
             FROM users u
             LEFT JOIN vip_subscriptions vs ON u.user_id = vs.user_id
-            GROUP BY u.user_id, u.full_name, u.email, u.is_active
+            GROUP BY u.id, u.user_id, u.username, u.full_name, u.email, u.is_active, u.last_login, u.created_at, u.updated_at
             ORDER BY u.user_id ASC
         `);
         return { success: true, users };
@@ -149,7 +154,8 @@ async function getAllSubscriptions() {
                 vp.plan_name,
                 vs.expiry_date,
                 vs.created_by_admin,
-                vs.created_at
+                vs.created_at,
+                vs.updated_at
             FROM vip_subscriptions vs
             LEFT JOIN vip_plans vp ON vs.plan_id = vp.id
             LEFT JOIN orders o ON vs.order_id = o.id
@@ -388,11 +394,14 @@ async function getAllOrders() {
                 o.order_code,
                 o.user_id,
                 o.plan_id,
+                o.plan_type,
                 o.plan_name,
                 o.amount,
                 o.payment_status,
+                o.transaction_ref,
                 o.gateway,
                 o.created_at,
+                o.updated_at,
                 o.paid_at,
                 o.cancelled_at
             FROM orders o
@@ -418,9 +427,16 @@ async function getAllTransactions() {
                 t.order_id,
                 o.order_code,
                 t.gateway,
+                t.transaction_date,
+                t.account_number,
+                t.sub_account,
                 t.amount_in,
+                t.amount_out,
+                t.accumulated,
+                t.code,
                 t.transaction_content,
                 t.reference_number,
+                t.body,
                 t.received_at
             FROM transactions t
             LEFT JOIN orders o ON t.order_id = o.id
@@ -448,7 +464,9 @@ async function getAllLogs() {
                 action,
                 details,
                 ip_address,
-                created_at
+                user_agent,
+                created_at,
+                created_date
             FROM activity_logs
             ORDER BY created_at DESC
             LIMIT 1000
@@ -508,7 +526,9 @@ async function getUserActivity(payload) {
                 al.action,
                 al.details,
                 al.ip_address,
+                al.user_agent,
                 al.created_at,
+                al.created_date,
                 u.full_name,
                 u.email
             FROM activity_logs al

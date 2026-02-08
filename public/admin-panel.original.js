@@ -447,10 +447,17 @@ function renderUsers() {
 
         return `
         <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${user.id || ''}</td>
             <td class="px-6 py-4" data-label="User Info">
                 <div class="font-semibold text-gray-900">${user.user_id}</div>
+                ${user.username ? `<div class="text-xs text-gray-500 font-mono mt-0.5">@${user.username}</div>` : ''}
                 ${user.full_name ? `<div class="text-sm text-gray-600 mt-0.5">${user.full_name}</div>` : ''}
                 ${user.email ? `<div class="text-sm text-gray-500 mt-0.5">📧 ${user.email}</div>` : ''}
+            </td>
+            <td class="px-6 py-4" data-label="Active">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    ${user.is_active ? '✅ Active' : '❌ Inactive'}
+                </span>
             </td>
             <td class="px-6 py-4" data-label="VIP Status">
                 <span class="px-2 py-1 rounded-full text-xs font-semibold ${isVip && !isExpired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
@@ -464,6 +471,11 @@ function renderUsers() {
                     </div>
                 ` : '<span class="text-gray-400 text-sm">N/A</span>'}
             </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Last Login">
+                ${user.last_login ? formatDateTime(user.last_login) : '<span class="text-gray-400">N/A</span>'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${user.created_at ? formatDateTime(user.created_at) : 'N/A'}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Updated">${user.updated_at ? formatDateTime(user.updated_at) : 'N/A'}</td>
             <td class="px-6 py-4 flex gap-2" data-label="Actions">
                 <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-sm transition">
                     ➕ Thêm VIP
@@ -537,6 +549,9 @@ function renderSubscriptions() {
                 <div class="font-semibold text-gray-900">${sub.user_id}</div>
                 ${sub.plan_name ? `<div class="text-sm text-gray-600 mt-0.5">${sub.plan_name}</div>` : ''}
             </td>
+            <td class="px-6 py-4" data-label="Plan ID">
+                <span class="text-xs text-gray-500 font-mono">${sub.plan_id || 'N/A'}</span>
+            </td>
             <td class="px-6 py-4" data-label="Plan">
                 <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">${sub.plan_type}</span>
             </td>
@@ -555,6 +570,7 @@ function renderSubscriptions() {
                 </div>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${formatDateTime(sub.created_at)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Updated">${sub.updated_at ? formatDateTime(sub.updated_at) : 'N/A'}</td>
             <td class="px-6 py-4" data-label="Actions">
                 <button onclick="showConfirmModal('Xóa VIP Subscription', 'Bạn có chắc muốn xóa subscription này không?', () => deleteSubscription(${sub.id}))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
                     🗑️ Xóa
@@ -601,6 +617,7 @@ function renderOrders() {
             <td class="px-6 py-4" data-label="Plan">
                 <div>
                     <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">${order.plan_name}</span>
+                    ${order.plan_type ? `<div class="text-xs text-gray-500 mt-1">📋 ${order.plan_type}</div>` : ''}
                     ${order.gateway ? `<div class="text-sm text-gray-600 mt-1">💳 ${order.gateway}</div>` : ''}
                 </div>
             </td>
@@ -613,10 +630,17 @@ function renderOrders() {
                     ${isCancelled ? '❌ Cancelled' : isPaid ? '✅ Paid' : '⏳ Unpaid'}
                 </span>
             </td>
+            <td class="px-6 py-4" data-label="Transaction Ref">
+                <span class="text-xs font-mono text-gray-600">${order.transaction_ref || 'N/A'}</span>
+            </td>
             <td class="px-6 py-4" data-label="Paid At">
                 ${order.paid_at ? `<div class="text-green-600 font-semibold text-sm">${formatDateTime(order.paid_at)}</div>` : '<span class="text-gray-400 text-sm">N/A</span>'}
             </td>
+            <td class="px-6 py-4" data-label="Cancelled At">
+                ${order.cancelled_at ? `<div class="text-red-600 font-semibold text-sm">${formatDateTime(order.cancelled_at)}</div>` : '<span class="text-gray-400 text-sm">N/A</span>'}
+            </td>
             <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${formatDateTime(order.created_at)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Updated">${order.updated_at ? formatDateTime(order.updated_at) : 'N/A'}</td>
         </tr>
     `}).join('');
 
@@ -652,14 +676,33 @@ function renderTransactions() {
             <td class="px-6 py-4" data-label="Gateway">
                 <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-semibold">💳 ${trans.gateway}</span>
             </td>
-            <td class="px-6 py-4 font-bold text-green-600" data-label="Amount">
+            <td class="px-6 py-4" data-label="Account">
+                <div class="text-sm text-gray-700">${trans.account_number || 'N/A'}</div>
+                ${trans.sub_account ? `<div class="text-xs text-gray-500 mt-0.5">Sub: ${trans.sub_account}</div>` : ''}
+            </td>
+            <td class="px-6 py-4 font-bold text-green-600" data-label="Amount In">
                 <div class="text-base">${parseFloat(trans.amount_in).toLocaleString('vi-VN')}đ</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Amount Out">
+                ${trans.amount_out ? `${parseFloat(trans.amount_out).toLocaleString('vi-VN')}đ` : '0đ'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Accumulated">
+                ${trans.accumulated ? `${parseFloat(trans.accumulated).toLocaleString('vi-VN')}đ` : 'N/A'}
+            </td>
+            <td class="px-6 py-4" data-label="Code">
+                <span class="text-xs font-mono text-gray-600">${trans.code || 'N/A'}</span>
             </td>
             <td class="px-6 py-4" data-label="Content">
                 <div class="max-w-xs truncate text-sm text-gray-700" title="${trans.transaction_content || 'N/A'}">${trans.transaction_content || 'N/A'}</div>
             </td>
             <td class="px-6 py-4 text-xs font-mono bg-gray-50 text-gray-600" data-label="Reference">${trans.reference_number || 'N/A'}</td>
-            <td class="px-6 py-4" data-label="Time">
+            <td class="px-6 py-4" data-label="Body">
+                <div class="max-w-xs truncate text-xs text-gray-500" title="${trans.body || 'N/A'}">${trans.body || 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4" data-label="Txn Date">
+                <div class="text-sm text-gray-600">${trans.transaction_date ? formatDateTime(trans.transaction_date) : 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4" data-label="Received">
                 <div class="text-sm text-gray-600">${formatDateTime(trans.received_at)}</div>
             </td>
         </tr>
@@ -700,6 +743,11 @@ function renderLogs() {
             <td class="px-6 py-4" data-label="Details">
                 <div class="max-w-md truncate text-sm text-gray-700" title="${log.details || 'N/A'}">${log.details || 'N/A'}</div>
             </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="IP">${log.ip_address || 'N/A'}</td>
+            <td class="px-6 py-4" data-label="User Agent">
+                <div class="max-w-xs truncate text-xs text-gray-500" title="${log.user_agent || 'N/A'}">${log.user_agent || 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Date">${log.created_date || ''}</td>
             <td class="px-6 py-4 text-sm text-gray-600" data-label="Time">${formatDateTime(log.created_at)}</td>
         </tr>
     `).join('');
@@ -1352,6 +1400,7 @@ function renderActivityLogs(logs, total, page, totalPages) {
             <td class="px-4 py-3" data-label="Details">
                 <div class="max-w-md text-sm text-gray-700" title="${log.details || ''}">${log.details || 'N/A'}</div>
                 ${log.ip_address ? `<div class="text-xs text-gray-400 mt-0.5">📍 ${log.ip_address}</div>` : ''}
+                ${log.user_agent ? `<div class="text-xs text-gray-400 mt-0.5 truncate max-w-xs" title="${log.user_agent}">🌐 ${log.user_agent}</div>` : ''}
             </td>
         </tr>
     `).join('');
