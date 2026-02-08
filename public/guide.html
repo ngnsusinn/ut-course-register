@@ -3,7 +3,7 @@
     <div class="border-b pb-4">
         <h3 class="text-2xl font-bold text-blue-600 mb-2">📚 Hướng Dẫn Sử Dụng Chi Tiết</h3>
         <p class="text-gray-600 text-sm">Công cụ hỗ trợ đăng ký học phần tự động dành cho sinh viên UTH</p>
-        <p class="text-xs text-gray-400 mt-1">Phiên bản: v2026.5.5 | Cập nhật: 30/01/2026</p>
+        <p class="text-xs text-gray-400 mt-1">Phiên bản: v2026.6.0 | Cập nhật: 08/02/2026</p>
     </div>
 
     <!-- Mục lục -->
@@ -18,8 +18,9 @@
             <a href="#section-swap" class="text-blue-600 hover:underline">6. Đổi lớp học phần</a>
             <a href="#section-register" class="text-blue-600 hover:underline">7. Chế độ đăng ký</a>
             <a href="#section-timetable" class="text-blue-600 hover:underline">8. Xem thời khóa biểu</a>
-            <a href="#section-status" class="text-blue-600 hover:underline">9. Giải thích trạng thái lớp</a>
-            <a href="#section-tips" class="text-blue-600 hover:underline">10. Mẹo sử dụng hiệu quả</a>
+            <a href="#section-cancel" class="text-blue-600 hover:underline">9. Hủy lớp đã đăng ký</a>
+            <a href="#section-status" class="text-blue-600 hover:underline">10. Giải thích trạng thái lớp</a>
+            <a href="#section-tips" class="text-blue-600 hover:underline">11. Mẹo sử dụng hiệu quả</a>
         </div>
     </div>
 
@@ -38,7 +39,7 @@
                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li>Nhập <strong>Tên đăng nhập</strong> (MSSV hoặc username Portal)</li>
                         <li>Nhập <strong>Mật khẩu</strong> Portal UTH</li>
-                        <li>Nhấn nút <strong>"Đăng Nhập"</strong></li>
+                        <li>Nhấn nút <strong>"Đăng Nhập"</strong> hoặc nhấn phím <strong>Enter</strong> ở ô mật khẩu</li>
                         <li>Chờ hệ thống xác thực và tải thông tin cá nhân</li>
                     </ol>
                 </div>
@@ -50,6 +51,11 @@
                         <li><strong>Khôi phục dữ liệu:</strong> Khi đăng nhập lại, dữ liệu lịch học và lớp đã chọn sẽ được khôi phục từ cache</li>
                         <li><strong>Tự động chọn đợt:</strong> Hệ thống tự động chọn đợt đăng ký hiện tại</li>
                     </ul>
+                </div>
+                
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-gray-800 mb-2">🚪 Đăng xuất:</p>
+                    <p class="text-sm text-gray-700">Nhấn nút <strong>"Đăng xuất"</strong> để thoát phiên làm việc. Tất cả dữ liệu cache và phiên đăng nhập sẽ được xóa sạch.</p>
                 </div>
                 
                 <div class="bg-red-50 p-3 rounded-lg border-l-4 border-red-500">
@@ -66,41 +72,52 @@
                 ⭐ Nâng Cấp & Gia Hạn VIP
             </h4>
             <div class="space-y-3">
-                <p class="text-sm text-gray-700">VIP là yêu cầu bắt buộc để sử dụng đầy đủ các tính năng của công cụ.</p>
+                <p class="text-sm text-gray-700">VIP là yêu cầu bắt buộc để chạy chế độ đăng ký tự động.</p>
                 
-                <div class="bg-purple-50 p-3 rounded-lg">
-                    <p class="font-semibold text-sm text-purple-800 mb-2">🎁 Quyền lợi VIP:</p>
-                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
-                        <li>Tải và xem toàn bộ danh sách lớp học phần</li>
-                        <li>Chọn lớp để đăng ký</li>
-                        <li>Sử dụng chế độ chèn lớp tự động</li>
-                        <li>Sử dụng chế độ đăng ký liên tục</li>
-                        <li>Đổi lớp học phần</li>
-                    </ul>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <p class="font-semibold text-sm text-green-800 mb-2">🆓 Tính năng miễn phí:</p>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
+                            <li>Tải và xem danh sách lớp học phần</li>
+                            <li>Chọn lớp để đăng ký</li>
+                            <li>Xem thời khóa biểu</li>
+                            <li>Phát hiện trùng lịch học</li>
+                            <li>Thiết lập đổi lớp (thêm vào danh sách)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <p class="font-semibold text-sm text-purple-800 mb-2">🎁 Yêu cầu VIP:</p>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
+                            <li>Chạy chế độ <strong>chèn lớp</strong> tự động</li>
+                            <li>Chạy chế độ <strong>đăng ký liên tục</strong></li>
+                            <li>Thực hiện đổi lớp (chạy qua chế độ đăng ký)</li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <div class="bg-blue-50 p-3 rounded-lg">
                     <p class="font-semibold text-sm text-blue-800 mb-2">💳 Cách thanh toán:</p>
                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li>Click nút <strong>"Nâng cấp VIP"</strong> hoặc <strong>"Gia hạn VIP"</strong></li>
-                        <li>Chọn gói phù hợp (1 ngày, 3 ngày, 7 ngày, 30 ngày)</li>
+                        <li>Chọn gói phù hợp từ danh sách các gói hiển thị</li>
                         <li>Thanh toán theo một trong hai cách:
                             <ul class="list-disc ml-6 mt-1">
                                 <li><strong>Cách 1:</strong> Quét mã QR bằng app ngân hàng</li>
-                                <li><strong>Cách 2:</strong> Chuyển khoản thủ công theo thông tin hiển thị</li>
+                                <li><strong>Cách 2:</strong> Chuyển khoản thủ công theo thông tin hiển thị (MB Bank)</li>
                             </ul>
                         </li>
                         <li>Chờ hệ thống tự động xác nhận (cập nhật mỗi 2 giây)</li>
+                        <li>Có thể nhấn <strong>"Hủy thanh toán"</strong> nếu muốn hủy đơn hàng</li>
                     </ol>
                 </div>
                 
                 <div class="bg-yellow-50 p-3 rounded-lg">
                     <p class="font-semibold text-sm text-yellow-800 mb-1">⚠️ Lưu ý quan trọng:</p>
                     <ul class="list-disc list-inside text-xs text-yellow-700 space-y-1 ml-2">
-                        <li>Giữ nguyên <strong>nội dung chuyển khoản</strong> để hệ thống tự động nhận diện</li>
+                        <li>Giữ nguyên <strong>nội dung chuyển khoản</strong> (mã đơn hàng) để hệ thống tự động nhận diện</li>
                         <li>Đơn hàng sẽ hết hạn sau <strong>15 phút</strong> nếu chưa thanh toán</li>
                         <li>Nếu đã có VIP, thời hạn mới sẽ được <strong>cộng thêm</strong> vào thời hạn còn lại</li>
-                        <li>Hệ thống kiểm tra VIP hết hạn mỗi 7 giây và thông báo khi VIP hết hạn</li>
+                        <li>Hệ thống kiểm tra VIP hết hạn mỗi 7 giây và tự động dừng đăng ký + thông báo khi VIP hết hạn</li>
                     </ul>
                 </div>
             </div>
@@ -113,14 +130,15 @@
                 📥 Tải Danh Sách Lớp Học
             </h4>
             <div class="space-y-3">
-                <p class="text-sm text-gray-700">Sau khi đăng nhập và có VIP, bạn cần tải danh sách các lớp học phần đang mở.</p>
+                <p class="text-sm text-gray-700">Sau khi đăng nhập, bạn cần tải danh sách các lớp học phần đang mở.</p>
                 
                 <div class="bg-blue-50 p-3 rounded-lg">
                     <p class="font-semibold text-sm text-blue-800 mb-2">Các bước thực hiện:</p>
                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li>Click nút <strong>"Tải lịch học"</strong> trong bảng điều khiển</li>
-                        <li>Chờ hệ thống tải dữ liệu từ server</li>
+                        <li>Theo dõi thanh tiến trình tải dữ liệu</li>
                         <li>Danh sách lớp sẽ hiển thị trong bảng "Lịch học chi tiết"</li>
+                        <li>Sau khi tải xong, nút chuyển thành <strong>"Tải lại lịch học"</strong> để làm mới</li>
                     </ol>
                 </div>
                 
@@ -129,8 +147,16 @@
                     <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li>Dữ liệu được lưu vào cache với thời hạn 24 giờ</li>
                         <li>Khi đăng nhập lại, dữ liệu tự động khôi phục từ cache</li>
-                        <li>Click <strong>"Tải lại lịch học"</strong> để làm mới dữ liệu</li>
                         <li>Cache tự động xóa khi đăng xuất hoặc đổi tài khoản</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-purple-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-purple-800 mb-2">📦 CSDL Cộng đồng:</p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
+                        <li>Sau khi tải lịch học, dữ liệu lớp sẽ được <strong>tự động đồng bộ</strong> lên CSDL cộng đồng ở nền</li>
+                        <li>Dữ liệu cộng đồng được dùng để hỗ trợ tính năng đổi lớp khi bạn chưa tải dữ liệu đầy đủ</li>
+                        <li>Lớp từ CSDL cộng đồng hiển thị badge <strong>📦</strong> kèm thời gian cập nhật gần nhất</li>
                     </ul>
                 </div>
                 
@@ -139,6 +165,14 @@
                     <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li><strong>Ô tìm kiếm:</strong> Nhập tên môn, mã lớp, mã học phần để tìm nhanh</li>
                         <li><strong>Dropdown lọc:</strong> Chọn môn học cụ thể để xem tất cả các lớp của môn đó</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-yellow-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-yellow-800 mb-1">💡 Lưu ý:</p>
+                    <ul class="list-disc list-inside text-xs text-yellow-700 space-y-1 ml-2">
+                        <li>Lớp ở trạng thái <strong>"Đã khóa lớp"</strong> sẽ tự động bị ẩn khỏi danh sách</li>
+                        <li>Dữ liệu bao gồm cả lớp thường (ĐKHP) và lớp điều kiện (ĐKHP điều kiện)</li>
                     </ul>
                 </div>
             </div>
@@ -161,6 +195,7 @@
                         <li>Lớp được chọn sẽ có <strong>nền màu xanh</strong></li>
                         <li>Click lại vào hàng để <strong>bỏ chọn</strong></li>
                         <li>Xem danh sách lớp đã chọn ở mục <strong>"Các lớp học phần đã chọn"</strong></li>
+                        <li>Nhấn nút <strong>×</strong> bên cạnh mỗi lớp trong danh sách đã chọn để xóa</li>
                     </ol>
                 </div>
                 
@@ -169,16 +204,21 @@
                         <p class="font-semibold text-sm text-green-800 mb-1">✅ Có thể chọn:</p>
                         <ul class="list-disc list-inside text-xs text-green-700 space-y-1">
                             <li>Lớp có nền trắng (chưa chọn)</li>
-                            <li>Lớp có nền xanh (đã chọn)</li>
+                            <li>Lớp có nền xanh (đã chọn - click để bỏ)</li>
                         </ul>
                     </div>
                     <div class="bg-red-50 p-3 rounded-lg">
                         <p class="font-semibold text-sm text-red-800 mb-1">❌ Không thể chọn:</p>
                         <ul class="list-disc list-inside text-xs text-red-700 space-y-1">
-                            <li>Lớp có nền <strong>đỏ</strong> (trùng lịch)</li>
+                            <li>Lớp có nền <strong>đỏ</strong> (trùng lịch với lớp đã ĐK)</li>
                             <li>Lớp có nền <strong>xám</strong> (đã khóa)</li>
                         </ul>
                     </div>
+                </div>
+                
+                <div class="bg-yellow-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-yellow-800 mb-2">🔄 Lớp chờ đổi:</p>
+                    <p class="text-sm text-gray-700">Khi bạn thiết lập đổi lớp, lớp chờ đổi sẽ hiển thị với <strong>nền vàng có viền</strong> trong danh sách đã chọn. Hiển thị lớp cũ (gạch ngang) → lớp mới. Nhấn × để hủy đổi.</p>
                 </div>
                 
                 <div class="bg-gray-50 p-3 rounded-lg">
@@ -186,10 +226,10 @@
                     <div class="grid grid-cols-2 gap-2 text-xs text-gray-700">
                         <div>• <strong>Tên môn học:</strong> Tên đầy đủ</div>
                         <div>• <strong>Mã LHP:</strong> Mã lớp học phần</div>
-                        <div>• <strong>Loại HP:</strong> Bắt buộc / Tự chọn / Điều kiện</div>
+                        <div>• <strong>Loại HP:</strong> <span class="text-green-600">Bắt buộc</span> / <span class="text-red-600">Tự chọn</span> / <span class="text-purple-600">Điều kiện</span></div>
                         <div>• <strong>Số TC:</strong> Số tín chỉ</div>
                         <div>• <strong>Trạng thái:</strong> Trạng thái lớp</div>
-                        <div>• <strong>Đã ĐK:</strong> % sinh viên đã đăng ký</div>
+                        <div>• <strong>Đã ĐK:</strong> % sinh viên đã đăng ký (<span class="text-green-500">&lt;100%</span> / <span class="text-red-500">≥100%</span>)</div>
                         <div>• <strong>Lịch học:</strong> Thứ, tiết, ngày bắt đầu - kết thúc</div>
                     </div>
                 </div>
@@ -241,13 +281,13 @@
                 <p class="text-sm text-gray-700">Tính năng đổi lớp cho phép bạn chuyển từ lớp đã đăng ký sang lớp khác cùng môn học.</p>
                 
                 <div class="bg-blue-50 p-3 rounded-lg">
-                    <p class="font-semibold text-sm text-blue-800 mb-2">📌 Cách 1: Đổi từ bảng "Lớp đã đăng ký"</p>
+                    <p class="font-semibold text-sm text-blue-800 mb-2">📌 Cách 1: Xem lớp khác từ bảng "Lớp đã đăng ký"</p>
                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li>Tìm lớp muốn đổi trong bảng "Lớp đã đăng ký"</li>
-                        <li>Click nút <strong>"Đổi lớp"</strong> ở cột Hành động</li>
-                        <li>Popup hiển thị danh sách lớp có thể đổi đến</li>
-                        <li>Xem thông tin lịch học, trạng thái, % đăng ký của từng lớp</li>
-                        <li>Click <strong>"🔄 Đổi lớp"</strong> để thêm vào danh sách đổi</li>
+                        <li>Click nút <strong>"Xem lớp khác"</strong> ở cột Hành động</li>
+                        <li>Popup hiển thị danh sách tất cả lớp cùng môn có thể đổi đến</li>
+                        <li>Mỗi lớp hiển thị: lịch học, trạng thái, % đăng ký, và kiểm tra trùng lịch (✓ Không trùng / ⚠️ Trùng lịch)</li>
+                        <li>Click <strong>"✓ Chọn đăng ký"</strong> để thêm lớp mới vào danh sách đã chọn</li>
                     </ol>
                 </div>
                 
@@ -255,8 +295,17 @@
                     <p class="font-semibold text-sm text-purple-800 mb-2">📌 Cách 2: Đổi từ cảnh báo trùng lịch</p>
                     <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
                         <li>Tìm lớp mới muốn đăng ký (có nền đỏ do trùng lịch)</li>
-                        <li>Trong cảnh báo, click nút <strong>"🔄 Đổi lớp"</strong> bên cạnh môn bị trùng</li>
-                        <li>Xác nhận đổi lớp trong popup</li>
+                        <li>Trong cảnh báo trùng lịch bên dưới tên môn, click nút <strong>"🔄 Đổi lớp"</strong> bên cạnh môn bị trùng</li>
+                        <li>Xác nhận đổi lớp trong popup → lớp được thêm vào danh sách chờ đổi</li>
+                    </ol>
+                </div>
+                
+                <div class="bg-indigo-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-indigo-800 mb-2">📌 Cách 3: Đổi từ tooltip chi tiết</p>
+                    <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
+                        <li>Di chuột vào hàng lớp bị trùng lịch (nền đỏ) để xem tooltip chi tiết</li>
+                        <li>Trong tooltip, click nút <strong>"Đổi lớp"</strong></li>
+                        <li>Hệ thống kiểm tra trạng thái lớp (khóa, mở chính thức...) trước khi cho phép đổi</li>
                     </ol>
                 </div>
                 
@@ -269,12 +318,18 @@
                     </ol>
                 </div>
                 
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-gray-800 mb-2">📦 Dữ liệu từ CSDL Cộng đồng:</p>
+                    <p class="text-sm text-gray-700">Nếu dữ liệu lớp chưa được tải ở máy bạn, popup "Xem lớp khác" sẽ tự động lấy từ CSDL cộng đồng. Các lớp này sẽ hiển thị badge <strong>📦</strong> kèm thời gian cập nhật gần nhất (VD: "Cập nhật: 5 phút trước").</p>
+                </div>
+                
                 <div class="bg-red-50 p-3 rounded-lg border-l-4 border-red-500">
                     <p class="font-semibold text-sm text-red-800 mb-1">⚠️ Lưu ý quan trọng:</p>
                     <ul class="list-disc list-inside text-xs text-red-700 space-y-1 ml-2">
                         <li>Nếu chọn đổi cùng 1 lớp nhiều lần, chỉ giữ lại lựa chọn cuối cùng</li>
                         <li>Không thể đổi lớp đang ở trạng thái "Đã khóa lớp" hoặc "Đã mở chính thức"</li>
-                        <li>Nếu hủy lớp cũ thành công nhưng đăng ký lớp mới thất bại, cần đăng ký lại thủ công</li>
+                        <li>Nếu hủy lớp cũ thành công nhưng đăng ký lớp mới thất bại, bạn cần <strong>đăng ký lại thủ công</strong></li>
+                        <li>Nút "Hủy" và "Xem lớp khác" chỉ hiển thị cho lớp trạng thái "Đang chờ đăng ký" hoặc "Đang lên kế hoạch"</li>
                     </ul>
                 </div>
             </div>
@@ -287,7 +342,7 @@
                 🚀 Chế Độ Đăng Ký
             </h4>
             <div class="space-y-3">
-                <p class="text-sm text-gray-700">Có 2 chế độ đăng ký để phù hợp với nhu cầu khác nhau:</p>
+                <p class="text-sm text-gray-700">Có 2 chế độ đăng ký để phù hợp với nhu cầu khác nhau. <strong>Yêu cầu VIP</strong> để sử dụng.</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="bg-blue-50 p-4 rounded-lg border-2 border-blue-300">
@@ -297,9 +352,9 @@
                         </div>
                         <p class="text-sm text-gray-700 mb-2">Nút: <strong>"Bắt đầu chèn lớp"</strong></p>
                         <ul class="list-disc list-inside text-xs text-gray-600 space-y-1">
-                            <li>Kiểm tra từng lớp đã chọn có còn chỗ không</li>
-                            <li>Nếu có lớp còn chỗ → Đăng ký ngay</li>
-                            <li>Nếu lớp đầy → Chờ và kiểm tra lại</li>
+                            <li><strong>Kiểm tra trước:</strong> Xem lớp còn chỗ không</li>
+                            <li>Nếu có lớp còn chỗ (&lt;100%) → Đăng ký ngay</li>
+                            <li>Nếu lớp đầy → Chờ và kiểm tra lại liên tục</li>
                             <li>Đăng ký thành công 1 lớp trong môn → Dừng môn đó</li>
                             <li><strong>Phù hợp:</strong> Khi bạn chọn nhiều lớp cùng môn để tăng cơ hội</li>
                         </ul>
@@ -312,13 +367,23 @@
                         </div>
                         <p class="text-sm text-gray-700 mb-2">Nút: <strong>"Bắt đầu đăng ký"</strong></p>
                         <ul class="list-disc list-inside text-xs text-gray-600 space-y-1">
-                            <li>Gửi yêu cầu đăng ký liên tục cho mỗi lớp</li>
-                            <li>Không kiểm tra trước, đăng ký trực tiếp</li>
+                            <li><strong>Không kiểm tra:</strong> Gửi đăng ký trực tiếp</li>
                             <li>Thử lại liên tục cho đến khi thành công</li>
+                            <li>Tốc độ nhanh hơn chèn lớp (không phải chờ kiểm tra)</li>
                             <li>Đăng ký thành công → Dừng môn đó</li>
                             <li><strong>Phù hợp:</strong> Khi lớp sắp hết chỗ, cần đăng ký nhanh</li>
                         </ul>
                     </div>
+                </div>
+                
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-gray-800 mb-2">📋 Cách hoạt động chung:</p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 ml-2">
+                        <li>Hệ thống nhóm lớp theo <strong>mã học phần</strong> → mỗi môn chạy song song</li>
+                        <li>Khi 1 lớp trong môn đăng ký thành công → dừng toàn bộ cho môn đó</li>
+                        <li>Lớp <strong>chờ đổi</strong> (swap) sẽ tự động: hủy lớp cũ → đăng ký lớp mới</li>
+                        <li>Khi tất cả môn hoàn tất → tự động dừng quá trình</li>
+                    </ul>
                 </div>
                 
                 <div class="bg-gray-50 p-3 rounded-lg">
@@ -330,8 +395,8 @@
                     <p class="font-semibold text-sm text-yellow-800 mb-1">⚠️ Lưu ý:</p>
                     <ul class="list-disc list-inside text-xs text-yellow-700 space-y-1 ml-2">
                         <li>Không tắt trình duyệt hoặc chuyển tab khi đang chạy</li>
-                        <li>Chế độ đăng ký liên tục có thể gửi nhiều request hơn</li>
                         <li>Theo dõi tiến trình trong "Nhật ký hoạt động" ở cuối trang</li>
+                        <li>VIP hết hạn giữa chừng → hệ thống tự động dừng và thông báo</li>
                     </ul>
                 </div>
             </div>
@@ -385,10 +450,41 @@
             </div>
         </div>
 
-        <!-- 9. Trạng thái lớp -->
-        <div id="section-status" class="bg-white border rounded-lg p-4">
+        <!-- 9. Hủy lớp đã đăng ký -->
+        <div id="section-cancel" class="bg-white border rounded-lg p-4">
             <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">9</span>
+                🗑️ Hủy Lớp Đã Đăng Ký
+            </h4>
+            <div class="space-y-3">
+                <p class="text-sm text-gray-700">Bạn có thể hủy lớp đã đăng ký trực tiếp từ bảng "Lớp đã đăng ký".</p>
+                
+                <div class="bg-blue-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-blue-800 mb-2">Các bước thực hiện:</p>
+                    <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1 ml-2">
+                        <li>Nhấn nút <strong>"Làm mới"</strong> để cập nhật danh sách lớp đã đăng ký</li>
+                        <li>Tìm lớp muốn hủy trong bảng "Lớp đã đăng ký"</li>
+                        <li>Click nút <strong>"Hủy"</strong> (màu đỏ) ở cột Hành động</li>
+                        <li>Xác nhận hủy trong popup xác nhận</li>
+                        <li>Danh sách lớp đăng ký tự động cập nhật</li>
+                    </ol>
+                </div>
+                
+                <div class="bg-yellow-50 p-3 rounded-lg">
+                    <p class="font-semibold text-sm text-yellow-800 mb-1">⚠️ Điều kiện hủy:</p>
+                    <ul class="list-disc list-inside text-xs text-yellow-700 space-y-1 ml-2">
+                        <li>Chỉ hủy được lớp ở trạng thái <strong>"Đang chờ đăng ký"</strong> hoặc <strong>"Đang lên kế hoạch"</strong></li>
+                        <li>Lớp ở trạng thái "Đã mở chính thức" hoặc "Đã khóa lớp" <strong>không thể hủy</strong></li>
+                        <li>Nút "Hủy" chỉ hiển thị cho các lớp đủ điều kiện</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. Trạng thái lớp -->
+        <div id="section-status" class="bg-white border rounded-lg p-4">
+            <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">10</span>
                 📋 Giải Thích Trạng Thái Lớp
             </h4>
             <div class="space-y-3">
@@ -399,7 +495,7 @@
                     </div>
                     <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
                         <p class="font-semibold text-yellow-800 text-sm">Đang lên kế hoạch</p>
-                        <p class="text-xs text-gray-600 mt-1">❌ Không thể đăng ký/hủy trực tiếp | ⚠️ Có thể thử đổi lớp (tùy trường hợp)</p>
+                        <p class="text-xs text-gray-600 mt-1">✅ Có thể hủy | ✅ Có thể đổi lớp | ⚠️ Đăng ký tùy trường hợp</p>
                     </div>
                     <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
                         <p class="font-semibold text-green-800 text-sm">Đã mở chính thức</p>
@@ -418,10 +514,10 @@
             </div>
         </div>
 
-        <!-- 10. Tips -->
+        <!-- 11. Tips -->
         <div id="section-tips" class="bg-white border rounded-lg p-4">
             <h4 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">10</span>
+                <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">11</span>
                 💡 Mẹo Sử Dụng Hiệu Quả
             </h4>
             <div class="space-y-3">
@@ -430,7 +526,7 @@
                     <ul class="list-disc list-inside text-sm text-green-700 space-y-1 ml-2">
                         <li>Đăng nhập và nâng cấp VIP trước</li>
                         <li>Tải danh sách lịch học và nghiên cứu kỹ</li>
-                        <li>Chọn sẵn các lớp muốn đăng ký (sẽ được lưu vào cache)</li>
+                        <li>Chọn sẵn các lớp muốn đăng ký (sẽ được lưu vào cache 24 giờ)</li>
                         <li>Chuẩn bị phương án dự phòng (chọn nhiều lớp cùng môn)</li>
                     </ul>
                 </div>
@@ -441,7 +537,7 @@
                         <li>Ưu tiên đăng ký <strong>môn bắt buộc</strong> trước</li>
                         <li>Sử dụng chế độ <strong>chèn lớp</strong> nếu đã chọn nhiều lớp cùng môn</li>
                         <li>Sử dụng chế độ <strong>đăng ký liên tục</strong> nếu lớp sắp hết chỗ</li>
-                        <li>Theo dõi "Nhật ký hoạt động" để biết tiến trình</li>
+                        <li>Theo dõi <strong>"Nhật ký hoạt động"</strong> ở cuối trang để biết tiến trình</li>
                         <li>Không tắt trình duyệt hoặc chuyển tab khác</li>
                     </ul>
                 </div>
@@ -450,8 +546,8 @@
                     <p class="font-bold text-purple-800 text-sm mb-2">🔄 Sau khi đăng ký:</p>
                     <ul class="list-disc list-inside text-sm text-purple-700 space-y-1 ml-2">
                         <li>Click <strong>"Làm mới"</strong> để cập nhật danh sách lớp đã đăng ký</li>
-                        <li>Kiểm tra thời khóa biểu để xem lịch học tổng quan</li>
-                        <li>Sử dụng tính năng <strong>đổi lớp</strong> nếu muốn thay đổi</li>
+                        <li>Kiểm tra <strong>thời khóa biểu</strong> để xem lịch học tổng quan</li>
+                        <li>Sử dụng tính năng <strong>"Xem lớp khác"</strong> nếu muốn đổi lớp</li>
                         <li>Kiểm tra email UTH để xác nhận đăng ký thành công</li>
                     </ul>
                 </div>
