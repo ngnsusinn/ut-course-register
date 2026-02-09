@@ -28,6 +28,15 @@ let charts = {
     orderStatus: null
 };
 
+// Disable Chart.js animations globally for better performance
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.animation = false;
+    Chart.defaults.animations = { colors: false, x: false };
+    Chart.defaults.transitions = { active: { animation: { duration: 0 } } };
+    Chart.defaults.hover.animationDuration = 0;
+    Chart.defaults.plugins.tooltip.animation = false;
+}
+
 // Login functionality
 async function login() {
     const username = document.getElementById('username').value.trim();

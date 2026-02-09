@@ -46,9 +46,9 @@ const obfuscationOptions = {
 
 // Files to process with unique prefixes to avoid identifier conflicts
 const filesToProcess = [
-    { input: 'public/app.js', backup: 'public/app.original.js', prefix: '_a' },
-    { input: 'public/admin-panel.js', backup: 'public/admin-panel.original.js', prefix: '_b' },
-    { input: 'public/timetable.js', backup: 'public/timetable.original.js', prefix: '_c' }
+    { input: 'public/app.js', backup: 'public/app.original.js', prefix: '_a', obfuscate: true },
+    { input: 'public/admin-panel.js', backup: 'public/admin-panel.original.js', prefix: '_b', obfuscate: false },
+    { input: 'public/timetable.js', backup: 'public/timetable.original.js', prefix: '_c', obfuscate: true }
 ];
 
 async function build() {
@@ -88,24 +88,34 @@ async function build() {
                 charset: 'utf8'
             });
 
-            // Step 2: Obfuscate with unique prefix for each file
-            const fileObfuscationOptions = {
-                ...obfuscationOptions,
-                identifiersPrefix: file.prefix,
-                seed: file.prefix.charCodeAt(1) * 12345 // Different seed per file
-            };
-            const obfuscated = JavaScriptObfuscator.obfuscate(minified.code, fileObfuscationOptions);
-            const finalCode = obfuscated.getObfuscatedCode();
+            let finalCode;
+            const minifiedSize = Buffer.byteLength(minified.code, 'utf8');
+
+            if (file.obfuscate !== false) {
+                // Step 2: Obfuscate with unique prefix for each file
+                const fileObfuscationOptions = {
+                    ...obfuscationOptions,
+                    identifiersPrefix: file.prefix,
+                    seed: file.prefix.charCodeAt(1) * 12345 // Different seed per file
+                };
+                const obfuscated = JavaScriptObfuscator.obfuscate(minified.code, fileObfuscationOptions);
+                finalCode = obfuscated.getObfuscatedCode();
+            } else {
+                // Skip obfuscation - only minify
+                finalCode = minified.code;
+                console.log(`   ⏭️  Obfuscation skipped (admin-only file)`);
+            }
 
             // Write final code
             fs.writeFileSync(inputPath, finalCode, 'utf8');
 
             const finalSize = Buffer.byteLength(finalCode, 'utf8');
-            const minifiedSize = Buffer.byteLength(minified.code, 'utf8');
 
             console.log(`   📊 Original: ${(originalSize / 1024).toFixed(2)} KB`);
             console.log(`   📊 Minified: ${(minifiedSize / 1024).toFixed(2)} KB`);
-            console.log(`   📊 Obfuscated: ${(finalSize / 1024).toFixed(2)} KB`);
+            if (file.obfuscate !== false) {
+                console.log(`   📊 Obfuscated: ${(finalSize / 1024).toFixed(2)} KB`);
+            }
             console.log(`   🎉 Minify reduced: ${((1 - minifiedSize / originalSize) * 100).toFixed(1)}%\n`);
 
         } catch (error) {
