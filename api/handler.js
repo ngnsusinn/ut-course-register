@@ -1,5 +1,24 @@
 import fetch from 'node-fetch';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import mysql from 'mysql2/promise';
+
+// ============================================
+// Proxy configuration (for Cloudflare bypass)
+// Set PROXY_URL env var, e.g.: http://user:pass@host:port
+// Supports multiple proxies (comma-separated) for rotation
+// ============================================
+const PROXY_URLS = (process.env.PROXY_URL || '')
+    .split(',')
+    .map(u => u.trim())
+    .filter(Boolean);
+
+let proxyIndex = 0;
+function getProxyAgent() {
+    if (PROXY_URLS.length === 0) return undefined;
+    const url = PROXY_URLS[proxyIndex % PROXY_URLS.length];
+    proxyIndex++;
+    return new HttpsProxyAgent(url);
+}
 
 // ============================================
 // Database configuration
@@ -145,7 +164,8 @@ async function saveUserInfo(profile, req = null) {
 
 /**
  * Call internal university API with proper error handling
- * Includes browser-like headers to work with Cloudflare-protected endpoints
+ * Uses proxy agent (if configured) to bypass Cloudflare IP-based blocking
+ * Retries with different proxy on 403/503
  */
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
@@ -176,60 +196,88 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const options = { 
-        method, 
-        headers, 
-        body: body ? JSON.stringify(body) : null, 
-        timeout: 30000 
-    };
+    const MAX_RETRIES = PROXY_URLS.length > 1 ? Math.min(PROXY_URLS.length, 3) : 1;
+    let lastError = null;
 
-    try {
-        const response = await fetch(targetUrl, options);
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            // Cloudflare challenge or block detected
-            const text = await response.text();
-            const isCloudflare = text.includes('cloudflare') || text.includes('cf-') || text.includes('challenge-platform');
-            console.error('❌ Non-JSON response:', {
-                url: targetUrl,
-                status: response.status,
-                contentType,
-                isCloudflare,
-                bodyPreview: text.substring(0, 200)
-            });
-            throw new Error(
-                isCloudflare 
-                    ? `Cloudflare đang chặn request (status ${response.status}). Vui lòng thử lại sau.`
-                    : `Response is not JSON (status ${response.status})`
-            );
-        }
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-            return { 
-                success: false, 
-                message: data.message || `API Error: Status ${response.status}`, 
-                status: response.status,
-                error: data.error || null
-            };
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('❌ API call failed:', {
-            url: targetUrl,
-            method,
-            error: error.message
-        });
-        return { 
-            success: false, 
-            message: error.message,
-            status: error.status || 500
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const agent = getProxyAgent();
+        const options = { 
+            method, 
+            headers, 
+            body: body ? JSON.stringify(body) : null, 
+            timeout: 30000,
+            ...(agent && { agent })
         };
+
+        try {
+            const response = await fetch(targetUrl, options);
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // Cloudflare challenge or block detected
+                const text = await response.text();
+                const isCloudflare = text.includes('cloudflare') || text.includes('cf-') || text.includes('challenge-platform') || response.status === 403 || response.status === 503;
+                console.error(`❌ Non-JSON response (attempt ${attempt + 1}/${MAX_RETRIES}):`, {
+                    url: targetUrl,
+                    status: response.status,
+                    contentType,
+                    isCloudflare,
+                    usingProxy: !!agent,
+                    bodyPreview: text.substring(0, 300)
+                });
+                
+                // Retry with different proxy if Cloudflare blocked
+                if (isCloudflare && attempt < MAX_RETRIES - 1) {
+                    lastError = new Error(`Cloudflare block (status ${response.status})`);
+                    continue;
+                }
+                
+                throw new Error(
+                    isCloudflare 
+                        ? `Cloudflare đang chặn request (status ${response.status}). ${!agent ? 'Hãy cấu hình PROXY_URL trong env.' : 'Proxy không hiệu quả, thử proxy khác.'}`
+                        : `Response is not JSON (status ${response.status})`
+                );
+            }
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                return { 
+                    success: false, 
+                    message: data.message || `API Error: Status ${response.status}`, 
+                    status: response.status,
+                    error: data.error || null
+                };
+            }
+            
+            return data;
+        } catch (error) {
+            lastError = error;
+            console.error(`❌ API call failed (attempt ${attempt + 1}/${MAX_RETRIES}):`, {
+                url: targetUrl,
+                method,
+                usingProxy: !!agent,
+                error: error.message
+            });
+            
+            // Only retry on network/proxy errors or Cloudflare blocks
+            if (attempt < MAX_RETRIES - 1 && (
+                error.message.includes('Cloudflare') ||
+                error.code === 'ECONNRESET' ||
+                error.code === 'ECONNREFUSED' ||
+                error.code === 'ETIMEDOUT'
+            )) {
+                continue;
+            }
+        }
     }
+
+    return { 
+        success: false, 
+        message: lastError?.message || 'API call failed after retries',
+        status: lastError?.status || 500
+    };
 }
 
 /**
