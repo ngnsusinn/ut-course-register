@@ -145,6 +145,7 @@ async function saveUserInfo(profile, req = null) {
 
 /**
  * Call internal university API with proper error handling
+ * Includes browser-like headers to work with Cloudflare-protected endpoints
  */
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
@@ -159,7 +160,19 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     const targetUrl = baseApiUrl + endpoint;
     const headers = { 
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Origin': 'https://portal.ut.edu.vn',
+        'Referer': 'https://portal.ut.edu.vn/',
+        'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'Connection': 'keep-alive',
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -176,7 +189,21 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         // Check if response is JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Response is not JSON');
+            // Cloudflare challenge or block detected
+            const text = await response.text();
+            const isCloudflare = text.includes('cloudflare') || text.includes('cf-') || text.includes('challenge-platform');
+            console.error('❌ Non-JSON response:', {
+                url: targetUrl,
+                status: response.status,
+                contentType,
+                isCloudflare,
+                bodyPreview: text.substring(0, 200)
+            });
+            throw new Error(
+                isCloudflare 
+                    ? `Cloudflare đang chặn request (status ${response.status}). Vui lòng thử lại sau.`
+                    : `Response is not JSON (status ${response.status})`
+            );
         }
 
         const data = await response.json();
