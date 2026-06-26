@@ -591,9 +591,10 @@ async function getSharedDataStats(dotId) {
 // ============================================
 
 const VIP_PLANS_FALLBACK = {
-    '1day': { price: 24000, duration: 1, name: '1 Ngày VIP' },
-    '3days': { price: 72000, duration: 3, name: '3 Ngày VIP' },
-    '7days': { price: 126000, duration: 7, name: '7 Ngày VIP' },
+    'free':   { price: 0,      duration: 1,  name: '1 Ngày Dùng Thử (Miễn Phí)' },
+    '1day':   { price: 24000,  duration: 1,  name: '1 Ngày VIP' },
+    '3days':  { price: 72000,  duration: 3,  name: '3 Ngày VIP' },
+    '7days':  { price: 126000, duration: 7,  name: '7 Ngày VIP' },
     '30days': { price: 432000, duration: 30, name: '30 Ngày VIP' }
 };
 
@@ -617,6 +618,7 @@ async function getVIPPlansFromDB() {
         plans.forEach(plan => {
             plansObj[plan.plan_key] = {
                 id: plan.id, // NOW: Include plan_id for FK reference
+                planKey: plan.plan_key,
                 price: parseFloat(plan.price),
                 duration: plan.duration_days,
                 name: plan.plan_name,
@@ -691,6 +693,77 @@ async function checkVIPStatus(userId) {
 // ============================================
 
 /**
+ * Activate free VIP plan directly (no payment needed)
+ * Creates VIP subscription immediately without order/payment flow
+ */
+async function activateFreeVIP(userId, planConfig, connection) {
+    let daysToAdd = planConfig.duration;
+    let planId = planConfig.id;
+    let planName = planConfig.name;
+
+    // Check existing VIP subscription (use row lock)
+    const [existingVIP] = await connection.execute(
+        `SELECT id, expiry_date
+         FROM vip_subscriptions
+         WHERE user_id = ? AND expiry_date > NOW()
+         ORDER BY expiry_date DESC
+         LIMIT 1
+         FOR UPDATE`,
+        [userId]
+    );
+
+    let expiryString;
+
+    if (existingVIP.length > 0) {
+        // Extend from existing expiry date
+        const d = new Date(existingVIP[0].expiry_date);
+        const vnTime = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+        const baseYear = vnTime.getUTCFullYear();
+        const baseMonth = vnTime.getUTCMonth();
+        const baseDay = vnTime.getUTCDate();
+        const result = new Date(Date.UTC(baseYear, baseMonth, baseDay + daysToAdd));
+        expiryString = result.getUTCFullYear() + '-' +
+            String(result.getUTCMonth() + 1).padStart(2, '0') + '-' +
+            String(result.getUTCDate()).padStart(2, '0') + ' 23:59:59';
+    } else {
+        // New subscription: today + daysToAdd
+        const vnNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        const baseYear = vnNow.getUTCFullYear();
+        const baseMonth = vnNow.getUTCMonth();
+        const baseDay = vnNow.getUTCDate();
+        const result = new Date(Date.UTC(baseYear, baseMonth, baseDay + daysToAdd));
+        expiryString = result.getUTCFullYear() + '-' +
+            String(result.getUTCMonth() + 1).padStart(2, '0') + '-' +
+            String(result.getUTCDate()).padStart(2, '0') + ' 23:59:59';
+    }
+
+    // Insert VIP subscription (no order_id since it's free)
+    await connection.execute(
+        `INSERT INTO vip_subscriptions (
+            user_id, plan_id, plan_type, expiry_date, created_by_admin, created_at
+        ) VALUES (?, ?, ?, ?, 'system_free', NOW())`,
+        [userId, planId, planConfig.planKey || 'free', expiryString]
+    );
+
+    // Log activity
+    await connection.execute(
+        `INSERT INTO activity_logs (user_id, action, details, created_at)
+         VALUES (?, 'FREE_VIP_ACTIVATED', ?, NOW())`,
+        [userId, `Free VIP activated: ${planName} - Expiry: ${expiryString}`]
+    );
+
+    return {
+        success: true,
+        free: true,
+        activated: true,
+        planName: planName,
+        daysAdded: daysToAdd,
+        expiryDate: expiryString,
+        isExtension: existingVIP.length > 0
+    };
+}
+
+/**
  * Create a new VIP order
  * NOW: Includes plan_id FK reference and validates user exists
  */
@@ -716,8 +789,37 @@ async function createOrder(userId, plan) {
         if (!planConfig) {
             return { error: `Invalid plan: ${plan}` };
         }
-        
-        // Generate unique order code
+
+        // FREE PLAN: Activate directly without payment
+        if (planConfig.price === 0) {
+            await connection.beginTransaction();
+            try {
+                const freeResult = await activateFreeVIP(userId, { ...planConfig, planKey: plan }, connection);
+                await connection.commit();
+                return {
+                    id: null, // No order for free plans
+                    orderCode: null,
+                    userId,
+                    amount: 0,
+                    status: 'Activated',
+                    plan,
+                    planId: planConfig.id,
+                    planName: planConfig.name,
+                    createdAt: new Date().toISOString(),
+                    free: true,
+                    activated: true,
+                    expiryDate: freeResult.expiryDate,
+                    daysAdded: freeResult.daysAdded,
+                    isExtension: freeResult.isExtension
+                };
+            } catch (err) {
+                await connection.rollback();
+                console.error('❌ Error activating free VIP:', err.message);
+                return { error: 'Failed to activate free VIP: ' + err.message };
+            }
+        }
+
+        // PAID PLAN: Normal order creation flow
         let orderCode;
         let isUnique = false;
         let attempts = 0;

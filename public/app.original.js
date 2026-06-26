@@ -326,16 +326,29 @@
                 <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
                 <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">${modalTitle}</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    ${Object.entries(plans).map(([key, plan]) => `
-                        <div class="border border-gray-200 rounded-lg p-4 text-center hover:border-blue-500 transition duration-300 cursor-pointer plan-card" data-plan="${key}">
+                    ${Object.entries(plans).map(([key, plan]) => {
+                        const isFree = plan.price === 0;
+                        const cardStyle = isFree 
+                            ? 'border-green-300 bg-green-50 hover:border-green-500' 
+                            : 'border-gray-200 hover:border-blue-500';
+                        const priceText = isFree 
+                            ? '<span class="text-2xl font-bold text-green-600 mb-2">Miễn phí</span>' 
+                            : `<p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>`;
+                        const btnStyle = isFree
+                            ? 'bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-300'
+                            : 'bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300';
+                        const btnText = isFree ? '🎁 Kích hoạt ngay' : (isRenewal ? 'Gia hạn' : 'Chọn gói này');
+                        return `
+                        <div class="border rounded-lg p-4 text-center transition duration-300 cursor-pointer plan-card ${cardStyle}" data-plan="${key}">
                             <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
-                            <p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>
+                            ${priceText}
                             <p class="text-gray-600 mb-4">${isRenewal ? 'Gia hạn thêm' : ''} ${plan.duration} ngày</p>
-                            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 buy-plan-btn" data-plan="${key}">
-                                ${isRenewal ? 'Gia hạn' : 'Chọn gói này'}
+                            <button class="w-full ${btnStyle} buy-plan-btn" data-plan="${key}">
+                                ${btnText}
                             </button>
                         </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
                 <div id="payment-section" class="hidden">
                     <h3 class="text-xl font-bold mb-4 text-gray-800 border-t pt-4">Thông tin thanh toán</h3>
@@ -425,6 +438,38 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
         }
 
         currentOrder = orderRes.order;
+
+        // FREE PLAN: Activate directly, no payment needed
+        if (currentOrder.free && currentOrder.activated) {
+            log(`🎁 Kích hoạt gói miễn phí "${currentOrder.planName}" thành công!`);
+            
+            // Show success in the modal
+            const paymentSection = document.getElementById('payment-section');
+            if (paymentSection) {
+                paymentSection.classList.remove('hidden');
+                paymentSection.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="text-5xl mb-4">🎉</div>
+                        <h3 class="text-xl font-bold text-green-600 mb-2">Kích hoạt thành công!</h3>
+                        <p class="text-gray-700">Gói <strong>${currentOrder.planName}</strong> đã được kích hoạt</p>
+                        <p class="text-gray-600 text-sm mt-2">${currentOrder.isExtension ? 'Đã gia hạn thêm' : 'Thời hạn'}: ${currentOrder.daysAdded} ngày</p>
+                        <button id="close-free-modal" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-300">
+                            Đóng
+                        </button>
+                    </div>
+                `;
+                document.getElementById('close-free-modal').addEventListener('click', async () => {
+                    document.getElementById('vip-modal')?.remove();
+                    await checkAndUpdateVIPStatus();
+                });
+            }
+            
+            document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
+            document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
+            return;
+        }
+
+        // PAID PLAN: Normal payment flow
         log(`✅ Tạo đơn hàng #${currentOrder.orderCode} thành công`);
 
         // Show payment section

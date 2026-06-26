@@ -829,7 +829,7 @@ async function getAllVIPPlans() {
 async function createVIPPlan(payload, req = null) {
     const { planKey, planName, durationDays, price, sortOrder, description } = payload;
     
-    if (!planKey || !planName || !durationDays || !price) {
+    if (!planKey || !planName || !durationDays || price === undefined || price === null) {
         return { success: false, message: 'planKey, planName, durationDays, and price are required' };
     }
 
