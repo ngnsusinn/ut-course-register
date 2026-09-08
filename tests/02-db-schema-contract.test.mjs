@@ -20,9 +20,9 @@ const LOGIN_CRITICAL_COLUMNS = {
 
 let schema, conn;
 before({ skip: process.env.SKIP_DB === '1' }, async () => {
-  conn = await tryConnect(PROD);
+  conn = await tryConnect(PROD());
   if (conn.__error) {
-    throw new Error(`cannot reach ${PROD.user}@${PROD.host}: ${conn.__error.code} ${conn.__error.message}`);
+    throw new Error(`cannot reach ${PROD().user}@${PROD().host}: ${conn.__error.code} ${conn.__error.message}`);
   }
   schema = await prodSchema();
 });
@@ -55,7 +55,7 @@ test('users.user_id is UNIQUE — saveUserInfo does a SELECT-then-INSERT with no
   const cols = schema.indexes.filter((i) => i.tbl === 'users' && i.iname === name).sort((a, b) => a.seq - b.seq).map((i) => i.col);
   assert.deepEqual(cols, ['user_id'], `users.user_id index must be single-column, got (${cols.join(',')})`);
   // NON_UNIQUE is not in STATISTICS projection above; re-read it.
-  const [rows] = await conn.query('SELECT NON_UNIQUE FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?', [PROD.database, 'users', name]);
+  const [rows] = await conn.query('SELECT NON_UNIQUE FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?', [PROD().database, 'users', name]);
   assert.equal(rows[0].NON_UNIQUE, 0, 'users.user_id is NOT unique -> two concurrent logins by the same student INSERT twice and the FK/subsequent lookups break');
 });
 
@@ -92,7 +92,7 @@ test('server charset can store Vietnamese without mojibake', async () => {
   assert.equal(r[0].s, 'Đăng Ký Học Phần — Nguyễn Sun Sin', 'round-trip corrupted Vietnamese text');
   // character_set_server is latin1 on the shared host; mysql2 defaults its connection charset to
   // utf8, so verify explicitly that a table column survives it too.
-  const tbl = await ro(conn, `SELECT CCSA.character_set_name AS cs FROM information_schema.TABLES T JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA ON T.TABLE_COLLATION = CCSA.COLLATION_NAME WHERE T.TABLE_SCHEMA = ? AND T.TABLE_NAME = 'users'`, [PROD.database]);
+  const tbl = await ro(conn, `SELECT CCSA.character_set_name AS cs FROM information_schema.TABLES T JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA ON T.TABLE_COLLATION = CCSA.COLLATION_NAME WHERE T.TABLE_SCHEMA = ? AND T.TABLE_NAME = 'users'`, [PROD().database]);
   assert.equal(tbl[0].cs, 'utf8mb4', `users table is not utf8mb4 (${tbl[0].cs}) — Vietnamese full_name will truncate/corrupt`);
 });
 

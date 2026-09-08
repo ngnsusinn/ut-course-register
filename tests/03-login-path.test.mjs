@@ -38,7 +38,7 @@ async function fixedCheckStatus(pool, userId) {
 
 test('cold MySQL handshake from this machine to the production host', { skip: SKIP }, async () => {
   const a = t0();
-  const c = await tryConnect(PROD);
+  const c = await tryConnect(PROD());
   const handshake = t0() - a;
   if (c.__error) assert.fail(`prod DB unreachable: ${c.__error.code}`);
   await c.end();
@@ -47,7 +47,7 @@ test('cold MySQL handshake from this machine to the production host', { skip: SK
 });
 
 test('login critical path: DB round trips and wall time', { skip: SKIP }, async () => {
-  const pool = openPool(PROD, { connectionLimit: 10 });
+  const pool = openPool(PROD(), { connectionLimit: 10 });
   try {
     const steps = [];
     const step = async (name, fn) => { const a = t0(); const v = await fn(); steps.push({ name, ms: t0() - a }); return v; };
@@ -89,7 +89,7 @@ test('login critical path: DB round trips and wall time', { skip: SKIP }, async 
 
 test('leak regression, live DB: repeated query failures must not exhaust the pool', { skip: SKIP }, async () => {
   const limit = 2;
-  const pool = openPool(PROD, { connectionLimit: limit });
+  const pool = openPool(PROD(), { connectionLimit: limit });
   try {
     // Drive the pattern handler.js now uses (finally-based) against a table that does not exist,
     // so every query fails deterministically.
@@ -127,7 +127,7 @@ test('leak regression, live DB: repeated query failures must not exhaust the poo
 });
 
 test('the finally-released variant survives the same failure storm', { skip: SKIP }, async () => {
-  const pool = openPool(PROD, { connectionLimit: 2 });
+  const pool = openPool(PROD(), { connectionLimit: 2 });
   try {
     for (let i = 0; i < 10; i++) {
       await fixedCheckStatus(pool, '__probe__');
@@ -145,8 +145,8 @@ test('the finally-released variant survives the same failure storm', { skip: SKI
 test('pool sizing sanity against a SHARED MySQL server (max_connections=200)', { skip: SKIP }, async () => {
   // The three handlers now declare connectionLimit 5 + 3 + 3 = 11 sockets per warm lambda instance,
   // down from 100 + 10 + 10 = 120. Even 4 warm instances used to claim the entire shared server.
-  const before = (await (await tryConnect(PROD)).query('SHOW STATUS LIKE "Threads_connected"'))[0][0].Value;
-  const pool = openPool(PROD, { connectionLimit: 3 });
+  const before = (await (await tryConnect(PROD())).query('SHOW STATUS LIKE "Threads_connected"'))[0][0].Value;
+  const pool = openPool(PROD(), { connectionLimit: 3 });
   try {
     const hold = await Promise.all(Array.from({ length: 3 }, async () => {
       const c = await pool.getConnection();
@@ -154,7 +154,7 @@ test('pool sizing sanity against a SHARED MySQL server (max_connections=200)', {
       c.release();
       return true;
     }));
-    const after = (await (await tryConnect(PROD)).query('SHOW STATUS LIKE "Threads_connected"'))[0][0].Value;
+    const after = (await (await tryConnect(PROD())).query('SHOW STATUS LIKE "Threads_connected"'))[0][0].Value;
     assert.equal(hold.length, 3);
     console.log(`      Threads_connected on the SHARED server: ${before} -> ${after} during a 3-socket burst`);
     console.log(`      (all tenants share max_connections=200 on 103.97.126.29)`);

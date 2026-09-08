@@ -102,15 +102,20 @@ test('a failed query in checkVIPStatus must not leak its pooled connection', asy
     `checkVIPStatus/getVIPPlansFromDB must release in a finally block.`);
 });
 
-test('pool exhaustion must not hang a login forever (acquire() timeout guard)', async () => {
+test('pool exhaustion must not hang a request forever (acquire() timeout guard)', async () => {
   healthyPortal();
+  // getVIPPlans makes exactly ONE DB acquire; simulate a pool whose connections never resolve.
   mstub.configure({ hangAfter: 100000 });
   const handler = await loadStubbed('api/handler.js');
+  const a = Date.now();
   const settled = await Promise.race([
-    handler(mkreq({ action: 'getInitialData' }), mkres()).then(() => 'resolved'),
-    new Promise((r) => setTimeout(() => r('HUNG'), 2500)),
+    handler(mkreq({ action: 'getVIPPlans', payload: {} }), mkres()).then(() => 'resolved'),
+    new Promise((r) => setTimeout(() => r('HUNG'), 13000)),
   ]);
-  assert.equal(settled, 'resolved', 'the request hung: acquire() must race a timeout instead of queueing forever');
+  const took = Date.now() - a;
+  assert.equal(settled, 'resolved',
+    `the request hung: acquire() must race a timeout instead of queueing forever (took ${took}ms)`);
+  assert.ok(took < 11000, `acquire should have rejected near its 9s budget; actually took ${took}ms`);
 });
 
 test('validateToken: only a real 401 means expired; portal trouble is NOT logout', async () => {

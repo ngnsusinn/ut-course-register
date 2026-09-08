@@ -12,21 +12,20 @@ function need(name) {
   return v;
 }
 
-export const PROD = {
-  host: need('DB_HOST'),
-  port: Number(process.env.DB_PORT || 3306),
-  user: need('DB_USER'),
-  password: need('DB_PASSWORD'),
-  database: need('DB_NAME'),
-};
+// Configs resolve lazily so files that merely import helpers (e.g. offline suites needing only
+// REPO) never crash; the DB suites call requireProd()/tryConnect() only when they actually run.
+export const PROD = () => ({
+  host: need('DB_HOST'), port: Number(process.env.DB_PORT || 3306),
+  user: need('DB_USER'), password: need('DB_PASSWORD'), database: need('DB_NAME'),
+});
 
-export const ALT = {
-  host: process.env.ALT_DB_HOST || '192.168.1.248', // host ip itself is not a secret
+export const ALT = () => ({
+  host: process.env.ALT_DB_HOST || '192.168.1.248',
   port: Number(process.env.ALT_DB_PORT || 3306),
   user: process.env.ALT_DB_USER || '',
   password: process.env.ALT_DB_PASSWORD || '',
   database: process.env.ALT_DB_NAME || 'roacqgfa_reg',
-};
+});
 
 export const REPO = new URL('..', import.meta.url).pathname;
 
