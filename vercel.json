@@ -4,6 +4,12 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/guide", "destination": "/guide.html" }
   ],
+  "crons": [
+    {
+      "path": "/api/handler",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -27,6 +33,18 @@
         { "key": "Content-Type", "value": "text/plain" },
         { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
+    },
+    {
+      "source": "/app.js",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }]
+    },
+    {
+      "source": "/timetable.js",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }]
+    },
+    {
+      "source": "/app.css",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
     }
   ],
   "trailingSlash": false,

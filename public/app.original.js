@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -80,9 +80,13 @@
     const logUserAction = (action, details = '') => {
         try {
             if (!userId) return;
+            const headers = { 'Content-Type': 'application/json' };
+            // Backend now rejects activity logging without the session token (was a public
+            // log-forgery/spam vector), so attach it here exactly like backendRequest does.
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
             fetch('/api/handler', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ action: 'logUserAction', payload: { userId, action, details } })
             }).catch(() => {}); // Fire and forget - don't block UI
         } catch (e) { /* ignore logging errors */ }

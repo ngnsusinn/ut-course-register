@@ -2,6 +2,7 @@
 // IMPROVED SEPAY WEBHOOK WITH FK & CONSTRAINTS
 // ============================================
 import mysql from 'mysql2/promise';
+import crypto from 'crypto';
 
 // ============================================
 // Database configuration
@@ -12,9 +13,17 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'your_db_password',
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: Number(process.env.WEBHOOK_DB_POOL_SIZE || 3),
+    maxIdle: 1,
+    connectTimeout: 5000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
     queueLimit: 0,
-    timezone: '+07:00'
+    timezone: '+07:00',
+    // The webhook holds a transaction open across several statements, so it is the worst place
+    // to inherit mysql2's 10s connect default or an unbounded wait for a free socket.
+    sessionVariables: { max_execution_time: 8000, time_zone: '+07:00' },
+    charset: 'utf8mb4_unicode_ci',
 };
 
 // Validate environment variables
@@ -27,21 +36,43 @@ let pool;
 const getPool = () => {
     if (!pool) {
         pool = mysql.createPool(dbConfig);
+        pool.on('error', (err) => console.error('❌ Webhook pool connection error:', err.code || err.message));
         console.log('✅ Webhook database pool created');
     }
     return pool;
 };
+
+/** Acquire a connection with a hard ceiling so an exhausted pool cannot hang a payment callback. */
+async function acquire(timeoutMs = 6000) {
+    const wait = getPool().getConnection();
+    let timer;
+    const guard = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error('DB pool acquire timeout'), { code: 'ETIMEDPOOL' })), timeoutMs);
+    });
+    try {
+        return await Promise.race([wait, guard]);
+    } catch (e) {
+        wait.then((c) => c.release()).catch(() => {});
+        throw e;
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 // ============================================
 // Helper functions
 // ============================================
 
 /**
- * Format Date to MySQL format: YYYY-MM-DD HH:mm:ss
+ * Format a Date as a MySQL datetime in VIETNAM wall-clock (UTC+7), regardless of the process
+ * timezone. All stored timestamps must agree with the DB session clock (pinned to +07:00) and
+ * with the wall-clock expiry strings computed elsewhere; reading process-local getters would
+ * silently shift rows by the Vercel region's UTC offset.
  */
 function formatToMySQL(dt) {
     const pad = n => (n < 10 ? '0' + n : n);
-    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+    const vn = new Date(dt.getTime() + 7 * 3600 * 1000);
+    return `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())} ${pad(vn.getUTCHours())}:${pad(vn.getUTCMinutes())}:${pad(vn.getUTCSeconds())}`;
 }
 
 /**
@@ -93,7 +124,7 @@ function computeVIPExpiry(daysToAdd, fromExpiryDate = null) {
 async function processVIPPayment(orderId, transactionData) {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         // Query for Unpaid OR Cancelled orders (with row lock to prevent race conditions)
@@ -314,7 +345,7 @@ async function recordTransaction(transactionData) {
 
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         const [result] = await connection.execute(
             `INSERT INTO transactions (
@@ -370,7 +401,7 @@ async function recordTransaction(transactionData) {
 async function autoCancelExpiredOrders() {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         // Try to use stored procedure first
         try {
@@ -411,11 +442,51 @@ async function autoCancelExpiredOrders() {
 // ============================================
 // MAIN WEBHOOK HANDLER
 // ============================================
+
+/**
+ * SePay request authentication (https://developer.sepay.vn/en/sepay-webhooks/xac-thuc).
+ * This endpoint previously accepted ANY request that knew the URL, so an attacker who could
+ * guess/observe an order code (DKHP + 12 chars) could self-activate VIP for free.
+ *
+ * Implemented here: the API-Key method (`Authorization: Apikey <key>`), which does not depend
+ * on the raw request body. Vercel's runtime parses JSON bodies before our handler runs, so the
+ * HMAC-SHA256 method (which signs `{timestamp}.{raw_body}`) cannot be verified from parsed JSON —
+ * use the API-Key method in the SePay webhook wizard and store the key in SEPA_API_KEY.
+ *
+ * When SEPA_API_KEY is NOT configured we log a loud warning on every call and still accept the
+ * request so a misconfigured deploy cannot silently stop real payments. Configure the key to
+ * actually lock the endpoint down.
+ */
+let warnedAboutMissingSecret = false;
+function authorizeSePay(req) {
+    const expectedKey = process.env.SEPAY_API_KEY || process.env.SEPAY_WEBHOOK_SECRET;
+    if (!expectedKey) {
+        if (!warnedAboutMissingSecret) {
+            warnedAboutMissingSecret = true;
+            console.warn('⚠️⚠️ SEPAY_API_KEY is not set — webhook accepts UNSIGNED requests (VIP can be granted for free). Set SEPAY_API_KEY and switch the SePay webhook to API-Key auth.');
+        }
+        return { ok: true, mode: 'unprotected' };
+    }
+
+    const auth = req.headers['authorization'] || req.headers['Authorization'] || '';
+    const apiKey = String(auth).startsWith('Apikey ') ? String(auth).slice('Apikey '.length).trim() : null;
+
+    const a = Buffer.from(String(apiKey || ''));
+    const b = Buffer.from(String(expectedKey));
+    const validApiKey = a.length === b.length && crypto.timingSafeEqual(a, b);
+    if (validApiKey) return { ok: true, mode: 'apikey' };
+
+    // API-Key header is also acceptable in the classic `token` body field some SePay gateways send.
+    return { ok: false, mode: 'invalid' };
+}
+
 export default async (req, res) => {
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || '*');
+    const allowedOrigin = process.env.FRONTEND_URL || 'https://dkhputh.vercel.app';
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-SePay-Signature, X-SePay-Timestamp');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
@@ -425,8 +496,11 @@ export default async (req, res) => {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    // Run auto-cancel on every webhook request
-    autoCancelExpiredOrders().catch(err => console.error('❌ Auto-cancel error:', err.message));
+    // Authenticate the caller BEFORE touching the database.
+    const auth = authorizeSePay(req);
+    if (!auth.ok) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
 
     try {
         const webhookData = req.body;
@@ -450,18 +524,22 @@ export default async (req, res) => {
             description
         } = webhookData;
 
-        // Parse and convert transaction date
-        let dtObj;
-        if (!transactionDate) {
-            dtObj = new Date();
-        } else {
-            // Parse "YYYY-MM-DD HH:mm:ss" string
-            const t = transactionDate.trim().replace(' ', 'T');
-            dtObj = new Date(t + 'Z'); // Treat as UTC
-            dtObj = new Date(dtObj.getTime() + 7 * 60 * 60 * 1000); // Convert to UTC+7
+        // Parse and convert transaction date.
+        // SePay sends transactionDate as Vietnamese wall-clock "YYYY-MM-DD HH:mm:ss".
+        // The old code treated it as UTC and then ADDED 7h, storing the transaction 7 hours
+        // in the future (formatToMySQL then read it back with UTC getters, compounding the error).
+        // We parse the wall-clock components as-is and round-trip them unchanged: the DB session
+        // clock is pinned to +07:00 (see sessionVariables), so the stored value now means the
+        // same moment the bank reported.
+        let transactionDateStr = formatToMySQL(new Date());
+        if (transactionDate && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(String(transactionDate).trim())) {
+            const m = String(transactionDate).trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+            const Y = Number(m[1]), Mo = Number(m[2]), D = Number(m[3]);
+            const H = Number(m[4]), Mi = Number(m[5]), S = Number(m[6]);
+            // Interpret the wall-clock as VN time: build the instant = UTC(Y,Mo,D,H-7,...) so that
+            // formatToMySQL (which renders +7h) reproduces the exact string SePay reported.
+            transactionDateStr = formatToMySQL(new Date(Date.UTC(Y, Mo - 1, D, H - 7, Mi, S)));
         }
-
-        const transactionDateStr = formatToMySQL(dtObj);
 
         // Compute amount_in/out based on transfer type
         const amountIn = transferType === 'in' ? parseFloat(transferAmount || 0) : 0;
@@ -502,7 +580,7 @@ export default async (req, res) => {
         let connection;
         let orderId;
         try {
-            connection = await getPool().getConnection();
+            connection = await acquire();
             const [orderRows] = await connection.execute(
                 'SELECT id FROM orders WHERE order_code = ?',
                 [orderCode]
