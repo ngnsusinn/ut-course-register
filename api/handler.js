@@ -1,9 +1,18 @@
 import fetch from 'node-fetch';
 import mysql from 'mysql2/promise';
+import https from 'https';
+import crypto from 'crypto';
 
 // ============================================
 // Database configuration
 // ============================================
+// Tuned for a serverless (Vercel) runtime talking to ONE shared MySQL host:
+//  - connectionLimit is deliberately small. Every warm lambda instance opens its own pool,
+//    and the shared server caps ALL tenants at max_connections=200. A limit of 100 here
+//    previously let a handful of concurrent logins take the whole server down.
+//  - connectTimeout makes an unreachable DB fail in 5s instead of mysql2's 10s default.
+//  - enableKeepAlive stops the pool handing back sockets that a load balancer already reaped
+//    while the instance was frozen — the "first login after a pause is very slow" symptom.
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'your_db_user',
@@ -12,7 +21,16 @@ const dbConfig = {
     waitForConnections: true,
     queueLimit: 0,
     timezone: '+07:00',
-    connectionLimit: 100
+    connectionLimit: Number(process.env.DB_POOL_SIZE || 5),
+    maxIdle: 2,
+    connectTimeout: 5000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    // Belt and braces: MySQL aborts a runaway read after 4s rather than hanging the lambda, and the
+    // session clock is pinned to VN so `expiry_date > NOW()` means what the code thinks it means
+    // (the shared host runs SYSTEM = +07 but the LAN target is UTC — this makes both correct).
+    sessionVariables: { max_execution_time: 4000, time_zone: '+07:00' },
+    charset: 'utf8mb4_unicode_ci',
 };
 
 // Validate environment variables
@@ -28,6 +46,9 @@ const getPool = () => {
     try {
         if (!pool) {
             pool = mysql.createPool(dbConfig);
+            // A pooled connection that dies in the background must not become an unhandled
+            // rejection (which on Vercel kills the instance mid-request for the next user).
+            pool.on('error', (err) => console.error('❌ Pool connection error:', err.code || err.message));
             console.log('✅ Database pool created');
         }
         return pool;
@@ -36,6 +57,24 @@ const getPool = () => {
         throw new Error('Database connection failed');
     }
 };
+
+/** Acquire a connection with a hard ceiling so an exhausted pool can never hang the request. */
+async function acquire(timeoutMs = 4000) {
+    const wait = getPool().getConnection();
+    let timer;
+    const guard = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error(`DB pool acquire timeout after ${timeoutMs}ms`), { code: 'ETIMEDPOOL' })), timeoutMs);
+    });
+    try {
+        return await Promise.race([wait, guard]);
+    } catch (e) {
+        // If the connection arrived just after we gave up, do not leak it.
+        wait.then((c) => c.release()).catch(() => {});
+        throw e;
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 // ============================================
 // Helper functions
@@ -53,11 +92,13 @@ async function logActivity(userId, action, details, req = null) {
     try {
         const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null) : null;
         const ua = req ? (req.headers['user-agent'] || null) : null;
-        connection = await getPool().getConnection();
+        connection = await acquire();
         await connection.execute(
             `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
              VALUES (?, ?, ?, ?, ?, NOW())`,
-            [userId || 'anonymous', action, details, ip, ua]
+            [String(userId || 'anonymous').slice(0, 64), String(action).slice(0, 64),
+             details == null ? null : String(details).slice(0, 500),
+             ip ? String(ip).slice(0, 64) : null, ua ? String(ua).slice(0, 255) : null]
         );
     } catch (error) {
         console.error('⚠️ Failed to log activity:', error.message);
@@ -70,64 +111,55 @@ async function logActivity(userId, action, details, req = null) {
 
 /**
  * Generate random order code: DKHP + 12 random alphanumeric characters
+ * Uses a CSPRNG: the code is the only thing tying an inbound bank transfer to an order,
+ * and Math.random() output is predictable from a couple of observed codes.
  */
 function generateOrderCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const bytes = crypto.randomBytes(12);
     let code = 'DKHP';
     for (let i = 0; i < 12; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+        code += chars.charAt(bytes[i] % chars.length);
     }
     return code;
 }
 
 /**
- * Save or update user info in database
- * NOW: Links to users.user_id (unique key)
+ * Save or update user info in database, and record the login.
+ * One upsert + one log INSERT (2 round trips) instead of SELECT + INSERT/UPDATE + log (3),
+ * and the read-modify-write race that let two concurrent logins collide on uk_user_id is gone.
  */
 async function saveUserInfo(profile, req = null) {
     let connection;
     try {
-        connection = await getPool().getConnection();
-        
         const userId = profile.maSinhVien || profile.username;
         if (!userId) {
             throw new Error('Missing user_id in profile');
         }
-        
+
         const email = profile.email || null;
         const fullName = `${profile.hoDem || ''} ${profile.ten || ''}`.trim();
-        
-        // Check if user exists (using user_id as primary unique identifier)
-        const [existingUsers] = await connection.execute(
-            'SELECT id FROM users WHERE user_id = ?',
-            [userId]
-        );
-        
-        if (existingUsers.length === 0) {
-            // Insert new user
-            await connection.execute(
-                'INSERT INTO users (user_id, email, full_name, is_active, created_at) VALUES (?, ?, ?, 1, NOW())',
-                [userId, email, fullName]
-            );
-            console.log(`✅ Created new user: ${userId}`);
-        } else {
-            // Update existing user
-            await connection.execute(
-                'UPDATE users SET email = ?, full_name = ?, updated_at = NOW() WHERE user_id = ?',
-                [email, fullName, userId]
-            );
-            console.log(`✅ Updated user: ${userId}`);
-        }
-        
-        // Log login activity  
         const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null) : null;
         const ua = req ? (req.headers['user-agent'] || null) : null;
+
+        connection = await acquire();
+
+        // Atomic upsert on the uk_user_id unique key. affectedRows: 1 = inserted, 0 = unchanged, 2 = updated.
+        await connection.execute(
+            `INSERT INTO users (user_id, email, full_name, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, 1, NOW(), NOW())
+             ON DUPLICATE KEY UPDATE email = VALUES(email), full_name = VALUES(full_name), updated_at = NOW()`,
+            [userId, email, fullName]
+        );
+
+        // Log login activity — truncated so an oversized User-Agent cannot fail the whole insert.
         await connection.execute(
             `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
              VALUES (?, 'USER_LOGIN', ?, ?, ?, NOW())`,
-            [userId, `Đăng nhập hệ thống - ${fullName || userId}`, ip, ua]
+            [userId, `Đăng nhập hệ thống - ${(fullName || userId)}`.slice(0, 500),
+             ip ? String(ip).slice(0, 64) : null, ua ? String(ua).slice(0, 255) : null]
         );
-        
+
         return userId;
     } catch (error) {
         console.error('❌ Error saving user info:', error.message);
@@ -144,7 +176,25 @@ async function saveUserInfo(profile, req = null) {
 }
 
 /**
- * Call internal university API with proper error handling
+ * Shared keep-alive agent for the portal.
+ * node-fetch v2 defaults to a non keep-alive global agent, so every callApi paid a fresh
+ * TCP + TLS handshake to portal.ut.edu.vn. A single login makes 2-3 of them, and
+ * getFullSchedule makes hundreds.
+ */
+const portalAgent = new https.Agent({
+    keepAlive: true,
+    keepAliveMsecs: 10000,
+    maxSockets: 32,
+    maxFreeSockets: 8,
+    timeout: 30000,
+});
+
+const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS || 15000);
+
+/**
+ * Call internal university API with proper error handling.
+ * Failures are classified: `upstreamUnavailable` means "we do not know" (timeout, HTML error
+ * page, DNS) and must never be treated by callers as "the user's session is invalid".
  */
 async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     let baseApiUrl;
@@ -163,23 +213,42 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const options = { 
-        method, 
-        headers, 
-        body: body ? JSON.stringify(body) : null, 
-        timeout: 30000 
+    const options = {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null,
+        agent: portalAgent,
+        timeout: UPSTREAM_TIMEOUT_MS,
     };
+
+    // Explicit deadline as well, so a socket that accepts but never answers cannot
+    // outlive the function's own budget. (AbortController rather than AbortSignal.timeout
+    // for compatibility with the runtime's declared Node >= 14 engines range.)
+    const controller = new AbortController();
+    options.signal = controller.signal;
+    const deadline = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS + 500);
 
     try {
         const response = await fetch(targetUrl, options);
-        
+        const text = await response.text();
+        clearTimeout(deadline);
+
         // Check if response is JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Response is not JSON');
+            const err = new Error('Response is not JSON');
+            err.upstreamUnavailable = true;
+            throw err;
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseErr) {
+            const err = new Error('Invalid JSON from portal');
+            err.upstreamUnavailable = true;
+            throw err;
+        }
         
         if (!response.ok) {
             return { 
@@ -192,15 +261,17 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         
         return data;
     } catch (error) {
+        clearTimeout(deadline);
         console.error('❌ API call failed:', {
             url: targetUrl,
             method,
             error: error.message
         });
-        return { 
-            success: false, 
+        return {
+            success: false,
             message: error.message,
-            status: error.status || 500
+            status: error.status || 500,
+            upstreamUnavailable: true,
         };
     }
 }
@@ -249,7 +320,7 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
             };
         }
         
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         let insertedCount = 0;
         let updatedCount = 0;
@@ -457,7 +528,7 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
 async function getSharedClassDataFromDB(dotId, maHocPhan = null, source = null) {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         let query = `
             SELECT 
@@ -540,7 +611,7 @@ async function getSharedClassDataFromDB(dotId, maHocPhan = null, source = null) 
 async function getSharedDataStats(dotId) {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         // Get class counts
         const [classStats] = await connection.execute(`
@@ -603,15 +674,15 @@ const VIP_PLANS_FALLBACK = {
  * NOW: Uses vip_plans.plan_id for FK references
  */
 async function getVIPPlansFromDB() {
+    let connection;
     try {
-        const connection = await getPool().getConnection();
+        connection = await acquire();
         const [plans] = await connection.execute(
             `SELECT id, plan_key, plan_name, duration_days, price, description, sort_order 
              FROM vip_plans 
              WHERE is_active = 1 
              ORDER BY sort_order ASC`
         );
-        connection.release();
         
         // Convert to object format for backward compatibility
         const plansObj = {};
@@ -630,34 +701,49 @@ async function getVIPPlansFromDB() {
     } catch (error) {
         console.error('❌ Error loading VIP plans:', error.message);
         return VIP_PLANS_FALLBACK;
+    } finally {
+        // Was missing: a failed query here used to remove a socket from the pool permanently.
+        if (connection) { try { connection.release(); } catch (e) {} }
     }
 }
 
 // SePay Configuration
+// Deliberately no fallback account: a deploy that forgets SEPAY_ACCOUNT_NUMBER used to silently
+// show one hardcoded personal account number to every paying student, with no way to rotate it
+// without shipping code. Missing config now means "payment is unavailable", not "send money here".
 const SEPAY_CONFIG = {
-    bankName: process.env.SEPAY_BANK_NAME || 'MBBank',
-    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '01006022006',
-    accountName: process.env.SEPAY_ACCOUNT_NAME || 'NGUYỄN SUN SIN'
+    bankName: process.env.SEPAY_BANK_NAME || '',
+    accountNumber: process.env.SEPAY_ACCOUNT_NUMBER || '',
+    accountName: process.env.SEPAY_ACCOUNT_NAME || ''
 };
+const PAYMENT_CONFIGURED = Boolean(SEPAY_CONFIG.accountNumber && SEPAY_CONFIG.accountName);
 
 // ============================================
 // VIP Status & Subscriptions
 // ============================================
 
 /**
- * Check if user has active VIP subscription
+ * Check if user has active VIP subscription.
+ * Runs on the login critical path (getInitialData), so it must be unable to leak a socket
+ * or to block on a pool that has already been exhausted.
  */
 async function checkVIPStatus(userId) {
+    if (!userId) {
+        // Previously this reached mysql2 as `undefined` in the bind list, which threw
+        // "Bind parameters must not contain undefined" and leaked the connection.
+        console.warn('⚠️ checkVIPStatus called without a userId');
+        return { hasVIP: false };
+    }
+    let connection;
     try {
-        const connection = await getPool().getConnection();
-        
+        connection = await acquire();
         const [rows] = await connection.execute(
             `SELECT 
                 id,
                 plan_id,
                 plan_type,
                 expiry_date,
-                TIMESTAMPDIFF(DAY, NOW(), expiry_date) as days_left
+                GREATEST(TIMESTAMPDIFF(DAY, NOW(), expiry_date), 0) as days_left
              FROM vip_subscriptions 
              WHERE user_id = ? AND expiry_date > NOW() 
              ORDER BY expiry_date DESC 
@@ -665,14 +751,12 @@ async function checkVIPStatus(userId) {
             [userId]
         );
         
-        connection.release();
-        
         if (rows.length === 0) {
             return { hasVIP: false };
         }
         
         const vipData = rows[0];
-        const daysLeft = vipData.days_left + 1;
+        const daysLeft = Number(vipData.days_left) + 1;
         
         return { 
             hasVIP: true, 
@@ -684,8 +768,49 @@ async function checkVIPStatus(userId) {
         };
     } catch (error) {
         console.error('❌ Error checking VIP status:', error.message);
-        return { hasVIP: false };
+        // `unknown` lets the client keep showing its last known state instead of falsely
+        // telling a paying member they have no VIP because our DB blipped.
+        return { hasVIP: false, unknown: true };
+    } finally {
+        // Was missing: every failed query here permanently removed a socket from the pool.
+        if (connection) { try { connection.release(); } catch (e) {} }
     }
+}
+
+// ============================================
+// Caller identity
+// ============================================
+// The API has no session of its own: it forwards the student's portal JWT. That means an
+// order id alone tells us nothing about who is asking, so order read/cancel used to be
+// callable by anyone. We resolve the portal token to a student id here and cache it per warm
+// instance so a polling client does not pay an upstream round trip every time.
+const callerCache = new Map();
+const CALLER_CACHE_TTL_MS = 10 * 60 * 1000;
+const CALLER_CACHE_MAX = 500;
+
+async function resolveCallerUserId(token) {
+    if (!token) return null;
+    const key = crypto.createHash('sha256').update(String(token)).digest('base64url').slice(0, 32);
+    const hit = callerCache.get(key);
+    if (hit && Date.now() - hit.at < CALLER_CACHE_TTL_MS) return hit.userId;
+
+    const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
+    const userId = (profileRes && profileRes.success && profileRes.body)
+        ? (profileRes.body.maSinhVien || profileRes.body.username)
+        : null;
+
+    if (callerCache.size >= CALLER_CACHE_MAX) {
+        // Drop the oldest entry rather than letting this grow without bound.
+        const oldest = callerCache.keys().next().value;
+        callerCache.delete(oldest);
+    }
+    if (userId) callerCache.set(key, { userId, at: Date.now() });
+    return userId || null;
+}
+
+function orderBelongsToCaller(payload, order, callerUserId) {
+    if (!callerUserId || !order?.userId) return false;
+    return String(order.userId) === String(callerUserId);
 }
 
 // ============================================
@@ -770,7 +895,7 @@ async function activateFreeVIP(userId, planConfig, connection) {
 async function createOrder(userId, plan) {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         // VALIDATION: Check user exists (FK constraint)
         const [users] = await connection.execute(
@@ -817,6 +942,12 @@ async function createOrder(userId, plan) {
                 console.error('❌ Error activating free VIP:', err.message);
                 return { error: 'Failed to activate free VIP: ' + err.message };
             }
+        }
+
+        // PAID PLAN without payment config: refuse rather than issue an order whose transfer
+        // instructions would be an unconfigured (or, as before, a hardcoded) bank account.
+        if (!PAYMENT_CONFIGURED) {
+            return { error: 'Thanh toán chưa được cấu hình. Vui lòng thử lại sau.' };
         }
 
         // PAID PLAN: Normal order creation flow
@@ -907,7 +1038,7 @@ async function createOrder(userId, plan) {
 async function getOrderStatus(orderId) {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         const [rows] = await connection.execute(
             `SELECT 
@@ -966,7 +1097,7 @@ async function getOrderStatus(orderId) {
 async function cancelOrder(orderId) {
     let connection;
     try {
-        connection = await getPool().getConnection();
+        connection = await acquire();
         
         // Check if order exists and is Unpaid
         const [rows] = await connection.execute(
@@ -1018,12 +1149,18 @@ async function cancelOrder(orderId) {
  * Auto-cancel unpaid orders after 15 minutes
  * NOW: Uses stored procedure if available, falls back to direct update
  * FIX: Only log orders that were JUST cancelled, not all cancelled orders
+ * FIX: single-quote the string literals (double quotes become column references under
+ *      ANSI_QUOTES, which some managed providers enable)
+ * FIX: the expiry predicate is now sargable (`created_at < NOW() - INTERVAL 15 MINUTE`),
+ *      so it rides the payment_status index instead of applying TIMESTAMPDIFF to every row
+ * FIX: the SELECT and the UPDATE now share one transaction with row locks, so two warm
+ *      lambdas cannot both see the same order and log the cancellation twice
  */
 async function autoCancelExpiredOrders() {
     let connection;
     try {
-        connection = await getPool().getConnection();
-        
+        connection = await acquire();
+
         // Try to use stored procedure first
         try {
             await connection.execute('CALL sp_auto_cancel_unpaid_orders()');
@@ -1035,29 +1172,37 @@ async function autoCancelExpiredOrders() {
             }
             // Fall back to direct SQL
         }
-        
-        // FIX: Get list of orders to cancel BEFORE updating
+
+        await connection.beginTransaction();
+
+        // Get list of orders to cancel BEFORE updating, locking them so a concurrent
+        // instance (or a payment webhook racing us) cannot interleave.
         const [ordersToCancel] = await connection.execute(
-            `SELECT id, user_id FROM orders 
-             WHERE payment_status = "Unpaid" 
-             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15`
+            `SELECT id, user_id FROM orders
+             WHERE payment_status = 'Unpaid'
+             AND created_at < (NOW() - INTERVAL 15 MINUTE)
+             ORDER BY id LIMIT 500
+             FOR UPDATE`
         );
-        
+
         if (ordersToCancel.length === 0) {
+            await connection.commit();
             return; // No orders to cancel
         }
-        
+
+        const ids = ordersToCancel.map((o) => o.id);
         // Update orders to Cancelled
         const [result] = await connection.execute(
-            `UPDATE orders 
-             SET payment_status = "Cancelled", cancelled_at = NOW(), updated_at = NOW() 
-             WHERE payment_status = "Unpaid" 
-             AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15`
+            `UPDATE orders
+             SET payment_status = 'Cancelled', cancelled_at = NOW(), updated_at = NOW()
+             WHERE payment_status = 'Unpaid'
+             AND id IN (${ids.map(() => '?').join(',')})`,
+            ids
         );
-        
+
         if (result.affectedRows > 0) {
             console.log(`✅ Auto-cancelled ${result.affectedRows} orders`);
-            
+
             // Log cancellations - ONLY for orders that were just cancelled
             for (const order of ordersToCancel) {
                 await connection.execute(
@@ -1066,10 +1211,13 @@ async function autoCancelExpiredOrders() {
                     [order.user_id, `Auto-cancelled order #${order.id} (timeout)`]
                 );
             }
-            
+
             console.log(`✅ Logged ${ordersToCancel.length} auto-cancellations`);
         }
+
+        await connection.commit();
     } catch (error) {
+        if (connection) { try { await connection.rollback(); } catch (e) {} }
         console.error('❌ Error auto-cancelling orders:', error.message);
     } finally {
         if (connection) {
@@ -1085,37 +1233,96 @@ async function autoCancelExpiredOrders() {
 // ============================================
 // MAIN HANDLER
 // ============================================
+
+/**
+ * Order-timeout sweeping used to run, fire-and-forget, on EVERY POST (including login).
+ * That put a locking UPDATE on the login critical path and, worse, got truncated mid-statement
+ * when the platform froze the instance right after the response — leaving InnoDB row locks
+ * held on the shared server until the socket was reaped. Every later login then queued behind
+ * those locks. It is now (a) never on the login path and (b) throttled per warm instance.
+ */
+const ORDER_SWEEP_INTERVAL_MS = Number(process.env.ORDER_SWEEP_INTERVAL_MS || 5 * 60 * 1000);
+let lastOrderSweepAt = 0;
+let sweepInFlight = null;
+function sweepExpiredOrdersThrottled() {
+    if (sweepInFlight) return sweepInFlight;
+    if (Date.now() - lastOrderSweepAt < ORDER_SWEEP_INTERVAL_MS) return Promise.resolve(null);
+    lastOrderSweepAt = Date.now();
+    sweepInFlight = autoCancelExpiredOrders()
+        .catch((err) => console.error('❌ Auto-cancel error:', err.message))
+        .finally(() => { sweepInFlight = null; });
+    return sweepInFlight;
+}
+
+/** Actions where an expired order must be reaped before we read/write order state. */
+const ORDER_MAINTENANCE_ACTIONS = new Set(['createVIPOrder', 'checkOrderStatus', 'cancelOrder', 'getVIPPlans']);
+
 export default async (req, res) => {
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || '*');
+    // Never fall back to '*': with Authorization allowed, a wildcard lets any site
+    // drive the VIP/payment endpoints from a visitor's browser.
+    const allowedOrigin = process.env.FRONTEND_URL || 'https://dkhputh.vercel.app';
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
     if (req.method === 'OPTIONS') return res.status(200).end();
+
+    // Scheduled sweeper endpoint: `vercel.json` cron hits GET /api/handler with
+    // `Authorization: Bearer $CRON_SECRET`. This replaces the per-request sweep.
+    if (req.method === 'GET') {
+        const secret = process.env.CRON_SECRET;
+        const provided = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+        if (!secret || provided !== secret) {
+            return res.status(405).json({ success: false, message: 'Method Not Allowed' });
+        }
+        await autoCancelExpiredOrders();
+        lastOrderSweepAt = Date.now();
+        return res.status(200).json({ success: true, swept: true });
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ success: false, message: 'Method Not Allowed' });
     }
 
-    // Run auto-cancel on every request (serverless-friendly)
-    autoCancelExpiredOrders().catch(err => console.error('❌ Auto-cancel error:', err.message));
-
-    const { action, payload } = req.body;
+    const { action, payload } = req.body || {};
     const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+
+    if (!action || typeof action !== 'string') {
+        return res.status(400).json({ success: false, message: 'Missing "action" in request body' });
+    }
+    if (payload !== undefined && (payload === null || typeof payload !== 'object')) {
+        return res.status(400).json({ success: false, message: '"payload" must be an object' });
+    }
+
+    // Only reap expired orders for order-related actions, and at most once per instance
+    // per interval — and always awaited, so the platform cannot freeze it mid-UPDATE.
+    if (ORDER_MAINTENANCE_ACTIONS.has(action)) {
+        await sweepExpiredOrdersThrottled();
+    }
 
     try {
         let result;
         switch (action) {
             // --- AUTHENTICATION ---
             case 'login': {
-                const { username, password } = payload;
+                const { username, password } = payload || {};
+                if (!username || !password) {
+                    return res.status(400).json({ success: false, message: 'Thiếu tên đăng nhập hoặc mật khẩu' });
+                }
                 result = await callApi('/user/login', 'POST', null, { username, password });
                 break;
             }
 
             case 'getInitialData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const profileRes = await callApi('/user/getSummaryProfile', 'GET', token);
-                const dotsRes = await callApi(`/getDot`, 'GET', token);
+                // These two upstream calls are independent; awaiting them one after the other
+                // added a full portal round trip (~200ms+) to every single login.
+                const [profileRes, dotsRes] = await Promise.all([
+                    callApi('/user/getSummaryProfile', 'GET', token),
+                    callApi('/getDot', 'GET', token),
+                ]);
                 const latestDot = (dotsRes.success && dotsRes.body?.length) 
                     ? dotsRes.body.reduce((max, d) => d.id > max.id ? d : max)
                     : null;
@@ -1134,7 +1341,9 @@ export default async (req, res) => {
                     success: profileRes.success && !!latestDot,
                     profile: profileRes.body,
                     dot: latestDot,
-                    vip: vipStatus
+                    vip: vipStatus,
+                    // The portal was reachable and answered; a false here is a real rejection.
+                    upstreamUnavailable: profileRes.upstreamUnavailable === true || dotsRes.upstreamUnavailable === true,
                 };
                 break;
             }
@@ -1143,12 +1352,22 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 try {
                     const validateRes = await callApi('/user/getCredit', 'GET', token);
+                    // callApi only guarantees `status` on its own error envelope, and the portal
+                    // does not reliably echo one on success. Deriving validity from
+                    // `validateRes.status === 200` reported every live token as expired whenever the
+                    // portal omitted the field, so app.js wiped the saved session and bounced
+                    // users back to the login form.
+                    const valid = validateRes.success === true;
                     result = {
-                        success: validateRes.success && validateRes.status === 200,
-                        valid: validateRes.success && validateRes.status === 200
+                        success: true,
+                        valid,
+                        // Transient portal trouble must not be mistaken for an expired session:
+                        // the client keeps the session and retries instead of logging the user out.
+                        upstreamUnavailable: validateRes.upstreamUnavailable === true,
+                        expired: valid ? false : validateRes.status === 401,
                     };
                 } catch (error) {
-                    result = { success: false, valid: false, message: 'Token validation failed' };
+                    result = { success: true, valid: false, upstreamUnavailable: true, expired: false, message: 'Token validation failed' };
                 }
                 break;
             }
@@ -1156,23 +1375,27 @@ export default async (req, res) => {
             // --- VIP ACTIONS ---
             case 'checkVIPStatus': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { userId } = payload;
+                const { userId } = payload || {};
                 result = { success: true, vip: await checkVIPStatus(userId) };
                 break;
             }
 
             case 'createVIPOrder': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { userId, plan } = payload;
-                
-                // Log: user creating VIP order
-                await logActivity(userId, 'CREATE_VIP_ORDER', `Tạo đơn mua VIP gói ${plan}`, req);
-                
-                // Validate plan exists
+                const { userId, plan } = payload || {};
+                if (!userId || !plan) {
+                    return res.status(400).json({ success: false, message: 'Thiếu userId hoặc gói VIP' });
+                }
+
+                // Validate plan exists before we spend a DB write on logging it.
                 const vipPlans = await getVIPPlansFromDB();
                 if (!vipPlans[plan]) {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
+
+                // Log: user creating VIP order
+                void logActivity(userId, 'CREATE_VIP_ORDER', `Tạo đơn mua VIP gói ${plan}`, req);
+
                 
                 const order = await createOrder(userId, plan);
                 
@@ -1185,25 +1408,47 @@ export default async (req, res) => {
             }
 
             case 'checkOrderStatus': {
-                const { orderId } = payload;
+                // These two actions used to run with no token at all, so any visitor could walk
+                // `orderId` and read (or cancel) another student's payment.
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { orderId } = payload || {};
+                if (!Number.isInteger(Number(orderId))) {
+                    return res.status(400).json({ success: false, message: 'orderId is required' });
+                }
                 const order = await getOrderStatus(parseInt(orderId));
                 
                 if (!order) {
                     return res.status(404).json({ success: false, message: 'Order not found' });
                 }
-                
+                const caller = await resolveCallerUserId(token);
+                if (!orderBelongsToCaller(payload, order, caller)) {
+                    return res.status(403).json({ success: false, message: 'Forbidden' });
+                }
+
                 result = { success: true, order };
                 break;
             }
 
             case 'cancelOrder': {
-                const { orderId } = payload;
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+                const { orderId } = payload || {};
+                if (!Number.isInteger(Number(orderId))) {
+                    return res.status(400).json({ success: false, message: 'orderId is required' });
+                }
+                const order = await getOrderStatus(parseInt(orderId));
+                if (!order) {
+                    return res.status(404).json({ success: false, message: 'Order not found or already processed' });
+                }
+                const caller = await resolveCallerUserId(token);
+                if (!orderBelongsToCaller(payload, order, caller)) {
+                    return res.status(403).json({ success: false, message: 'Forbidden' });
+                }
                 const cancelResult = await cancelOrder(parseInt(orderId));
-                
+
                 if (!cancelResult) {
                     return res.status(404).json({ success: false, message: 'Order not found or already processed' });
                 }
-                
+
                 result = { success: true, message: 'Order cancelled successfully' };
                 break;
             }
@@ -1213,7 +1458,10 @@ export default async (req, res) => {
                 result = { 
                     success: true, 
                     plans: vipPlans,
-                    sepayConfig: SEPAY_CONFIG
+                    sepayConfig: SEPAY_CONFIG,
+                    // False when the SEPAY_* env vars are absent: the client must then offer only
+                    // the free plan instead of showing bank details that were never configured.
+                    paymentAvailable: PAYMENT_CONFIGURED
                 };
                 break;
             }
@@ -1222,10 +1470,10 @@ export default async (req, res) => {
             case 'getFullSchedule': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
-                const { dotId, fetchPrerequisites, userId } = payload;
+                const { dotId, fetchPrerequisites, userId } = payload || {};
                 
                 // Log: user fetching full schedule
-                await logActivity(userId, 'FETCH_SCHEDULE', `Tải danh sách lớp học phần - Đợt ${dotId}${fetchPrerequisites ? ' (có ĐKHP điều kiện)' : ''}`, req);
+                void logActivity(userId, 'FETCH_SCHEDULE', `Tải danh sách lớp học phần - Đợt ${dotId}${fetchPrerequisites ? ' (có ĐKHP điều kiện)' : ''}`, req);
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
@@ -1271,10 +1519,10 @@ export default async (req, res) => {
             
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, fetchPrerequisites, userId } = payload;
+                const { dotId, fetchPrerequisites, userId } = payload || {};
                 
                 // Log: user fetching registered classes
-                await logActivity(userId, 'FETCH_REGISTERED', `Tải lớp đã đăng ký - Đợt ${dotId}`, req);
+                void logActivity(userId, 'FETCH_REGISTERED', `Tải lớp đã đăng ký - Đợt ${dotId}`, req);
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
@@ -1295,7 +1543,7 @@ export default async (req, res) => {
             
             case 'checkClassStatus': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { dotId, maHocPhan, source } = payload;
+                const { dotId, maHocPhan, source } = payload || {};
                 const classEndpoint = source === 'dkhpdk'
                     ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                     : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
@@ -1323,7 +1571,7 @@ export default async (req, res) => {
 
             case 'getScheduleDetails': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source } = payload;
+                const { classId, source } = payload || {};
                 const scheduleDetails = await getScheduleDetails(classId, token, source);
                 result = { 
                     success: !scheduleDetails.error, 
@@ -1334,10 +1582,10 @@ export default async (req, res) => {
 
             case 'checkClassAvailability': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, dotId, maHocPhan, source, userId: availUserId } = payload;
+                const { classId, dotId, maHocPhan, source, userId: availUserId } = payload || {};
                 
                 // Log: checking class availability (auto-register cycle)
-                await logActivity(availUserId, 'CHECK_AVAILABILITY', `Kiểm tra chỗ trống lớp ${maHocPhan} (${source})`, req);
+                void logActivity(availUserId, 'CHECK_AVAILABILITY', `Kiểm tra chỗ trống lớp ${maHocPhan} (${source})`, req);
                 
                 // Use getLopHocPhan (same as checkClassStatus) to get accurate phanTramDangKy
                 const classEndpoint = source === 'dkhpdk'
@@ -1437,10 +1685,10 @@ export default async (req, res) => {
             // --- WRITE ACTIONS ---
             case 'register': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { classId, source, userId, className } = payload;
+                const { classId, source, userId, className } = payload || {};
                 
                 // Log: user registering a class
-                await logActivity(userId, 'REGISTER_CLASS', `Đăng ký lớp ${className || classId} (${source})`, req);
+                void logActivity(userId, 'REGISTER_CLASS', `Đăng ký lớp ${className || classId} (${source})`, req);
                 
                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
                 
@@ -1455,10 +1703,10 @@ export default async (req, res) => {
 
             case 'cancel': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-                const { registrationId, source, userId, className } = payload;
+                const { registrationId, source, userId, className } = payload || {};
                 
                 // Log: user cancelling a registration
-                await logActivity(userId, 'CANCEL_CLASS', `Hủy đăng ký lớp ${className || registrationId} (${source})`, req);
+                void logActivity(userId, 'CANCEL_CLASS', `Hủy đăng ký lớp ${className || registrationId} (${source})`, req);
                 
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
                 
@@ -1475,7 +1723,7 @@ export default async (req, res) => {
             case 'syncClassData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
-                const { dotId, userId, source, classData } = payload;
+                const { dotId, userId, source, classData } = payload || {};
                 
                 if (!dotId || !userId || !source || !Array.isArray(classData)) {
                     return res.status(400).json({ 
@@ -1495,7 +1743,7 @@ export default async (req, res) => {
                 }
                 
                 // Log: user syncing class data
-                await logActivity(userId, 'SYNC_DATA', `Đồng bộ ${classData.length} lớp vào CSDL cộng đồng - Đợt ${dotId} (${source})`, req);
+                void logActivity(userId, 'SYNC_DATA', `Đồng bộ ${classData.length} lớp vào CSDL cộng đồng - Đợt ${dotId} (${source})`, req);
                 
                 const syncResult = await syncClassDataToDB(dotId, userId, source, classData);
                 
@@ -1519,7 +1767,7 @@ export default async (req, res) => {
             case 'getSharedClassData': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
-                const { dotId, maHocPhan, source } = payload;
+                const { dotId, maHocPhan, source } = payload || {};
                 
                 if (!dotId) {
                     return res.status(400).json({ 
@@ -1542,7 +1790,7 @@ export default async (req, res) => {
             case 'getSharedDataStats': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 
-                const { dotId } = payload;
+                const { dotId } = payload || {};
                 
                 if (!dotId) {
                     return res.status(400).json({ 
@@ -1569,8 +1817,14 @@ export default async (req, res) => {
 
             // --- LOGGING ACTION ---
             case 'logUserAction': {
-                const { userId: logUserId, action: logAction, details: logDetails } = payload;
-                
+                const { userId: logUserId, action: logAction, details: logDetails } = payload || {};
+
+                // This endpoint used to accept anonymous writes under any student id, which is
+                // both a log-forgery vector and unbounded INSERT amplification on a shared DB
+                // (every UI click from every visitor). Requiring the portal token removes the
+                // anonymous population entirely.
+                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
                 // Whitelist of allowed frontend actions
                 const allowedActions = [
                     'LOGIN_SUCCESS', 'LOGOUT',
@@ -1592,8 +1846,10 @@ export default async (req, res) => {
                 
                 // Only allow whitelisted actions from frontend
                 const safeAction = allowedActions.includes(logAction) ? logAction : 'USER_ACTION';
-                await logActivity(logUserId, safeAction, logDetails || logAction, req);
-                
+                // Fire-and-forget: an activity log must never add a DB round trip to the response
+                // the student is waiting on.
+                void logActivity(logUserId, safeAction, logDetails || logAction, req);
+
                 result = { success: true };
                 break;
             }

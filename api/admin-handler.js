@@ -2,6 +2,7 @@
 // IMPROVED ADMIN HANDLER WITH FK SUPPORT
 // ============================================
 import mysql from 'mysql2/promise';
+import crypto from 'crypto';
 
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
@@ -9,17 +10,43 @@ const dbConfig = {
     password: process.env.DB_PASSWORD || 'your_db_password',
     database: process.env.DB_NAME || 'uth_registration',
     waitForConnections: true,
-    connectionLimit: 10,
     queueLimit: 0,
-    timezone: '+07:00'
+    timezone: '+07:00',
+    // Same reasoning as api/handler.js: this pool shares a max_connections=200 budget with the
+    // student-facing pool, every other Vercel instance, and every other tenant of the host.
+    connectionLimit: Number(process.env.ADMIN_DB_POOL_SIZE || 3),
+    maxIdle: 1,
+    connectTimeout: 5000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    sessionVariables: { max_execution_time: 8000, time_zone: '+07:00' },
+    charset: 'utf8mb4_unicode_ci',
 };
 
 let pool;
 try {
     pool = mysql.createPool(dbConfig);
+    pool.on('error', (err) => console.error('❌ Admin pool connection error:', err.code || err.message));
     console.log('✅ Admin database pool created');
 } catch (error) {
     console.error('❌ Failed to create admin database pool:', error);
+}
+
+/** Acquire a connection with a hard ceiling so an exhausted pool cannot hang an admin request. */
+async function acquire(timeoutMs = 6000) {
+    const wait = pool.getConnection();
+    let timer;
+    const guard = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Object.assign(new Error('DB pool acquire timeout'), { code: 'ETIMEDPOOL' })), timeoutMs);
+    });
+    try {
+        return await Promise.race([wait, guard]);
+    } catch (e) {
+        wait.then((c) => c.release()).catch(() => {});
+        throw e;
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 export default async function handler(req, res) {
@@ -28,14 +55,19 @@ export default async function handler(req, res) {
         ip: r?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || r?.headers?.['x-real-ip'] || r?.socket?.remoteAddress || null,
         ua: r?.headers?.['user-agent'] || null
     });
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // The admin API must not be wildcard-open to any origin, and its state-changing actions
+    // below are NOT yet individually authenticated (see dispatch) — restricting CORS is the
+    // cheap half of the defence and removes the "drive it from a victim's browser" attack.
+    const adminOrigin = process.env.ADMIN_FRONTEND_URL || process.env.FRONTEND_URL || 'https://dkhputh.vercel.app';
+    res.setHeader('Access-Control-Allow-Origin', adminOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed' });
 
-    const { action, payload } = req.body;
+    const { action, payload } = req.body || {};
     if (!action) return res.status(400).json({ success: false, message: 'Action required' });
 
     try {
@@ -71,31 +103,98 @@ export default async function handler(req, res) {
 // Authentication
 // ============================================
 
+/**
+ * Password verification that is transparent to the current database.
+ *
+ * The admins table has historically stored the password UNHASHED in the column named
+ * `password_hash` (confirmed live: the stored value is 15 chars, i.e. a plaintext password),
+ * and the login query compared it directly: `WHERE password_hash = ?`. Any read of that table
+ * is therefore a complete credential dump.
+ *
+ * We keep existing admins able to log in, but on a successful login we immediately rewrite the
+ * stored value to an scrypt hash (format: scrypt$N$r$p$saltB64$hashB64). New rows can only be
+ * created with a hash. Nothing is compared in SQL anymore — no timing side channel via queries.
+ */
+const SCRYPT_N = 16384, SCRYPT_R = 8, SCRYPT_P = 1, SCRYPT_KEYLEN = 64;
+
+function scryptHash(plaintext, salt) {
+    const derived = crypto.scryptSync(String(plaintext), salt, SCRYPT_KEYLEN, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: 64 * 1024 * 1024 });
+    return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString('base64')}$${derived.toString('base64')}`;
+}
+
+function scryptVerify(stored, plaintext) {
+    try {
+        const parts = String(stored).split('$');
+        if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
+        const [, N, r, p, saltB64, hashB64] = parts;
+        const derived = crypto.scryptSync(String(plaintext), Buffer.from(saltB64, 'base64'), SCRYPT_KEYLEN,
+            { N: Number(N), r: Number(r), p: Number(p), maxmem: 64 * 1024 * 1024 });
+        const a = Buffer.from(derived);
+        const b = Buffer.from(hashB64, 'base64');
+        return a.length === b.length && crypto.timingSafeEqual(a, b);
+    } catch {
+        return false;
+    }
+}
+
+/** @returns {{ ok: boolean, needsUpgrade?: boolean }} */
+function verifyAdminPassword(stored, plaintext) {
+    if (!stored || !plaintext) return { ok: false };
+    if (String(stored).startsWith('scrypt$')) {
+        return { ok: scryptVerify(stored, plaintext) };
+    }
+    // Legacy plaintext column (or any old format we no longer trust) — compare directly,
+    // and if it matches, the caller should rewrite the row to an scrypt hash.
+    const a = Buffer.from(String(stored));
+    const b = Buffer.from(String(plaintext));
+    const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+    return { ok, needsUpgrade: ok };
+}
+
 async function adminLogin(payload) {
     const { username, password } = payload;
     if (!username || !password) {
         return { success: false, message: 'Username and password required' };
     }
+    if (typeof username !== 'string' || typeof password !== 'string') {
+        return { success: false, message: 'Invalid credentials' };
+    }
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [admins] = await connection.execute(
-            'SELECT id, username, full_name, role FROM admins WHERE username = ? AND password_hash = ? AND is_active = 1',
-            [username, password]
+            'SELECT id, username, full_name, role, password_hash FROM admins WHERE username = ? AND is_active = 1',
+            [username]
         );
 
         if (admins.length === 0) {
             return { success: false, message: 'Invalid credentials' };
         }
 
-        // Update last login timestamp
-        await connection.execute(
-            'UPDATE admins SET last_login = NOW() WHERE id = ?',
-            [admins[0].id]
-        );
+        const admin = admins[0];
+        const verdict = verifyAdminPassword(admin.password_hash, password);
+        if (!verdict.ok) {
+            return { success: false, message: 'Invalid credentials' };
+        }
 
-        return { success: true, admin: admins[0] };
+        // Transparently upgrade a legacy plaintext row to an scrypt hash.
+        if (verdict.needsUpgrade || !String(admin.password_hash).startsWith('scrypt$')) {
+            await connection.execute(
+                'UPDATE admins SET password_hash = ?, last_login = NOW() WHERE id = ?',
+                [scryptHash(password, crypto.randomBytes(16)), admin.id]
+            );
+        } else {
+            await connection.execute(
+                'UPDATE admins SET last_login = NOW() WHERE id = ?',
+                [admin.id]
+            );
+        }
+
+        // An admin session is still just this object — the real hardening (session tokens +
+        // auth on the other 16 actions) is intentionally left as a separate decision because the
+        // admin frontend currently auto-logs-in by storing the plaintext password in localStorage.
+        return { success: true, admin: { id: admin.id, username: admin.username, full_name: admin.full_name, role: admin.role } };
     } finally {
         if (connection) connection.release();
     }
@@ -108,7 +207,7 @@ async function adminLogin(payload) {
 async function getAllUsers() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         
         // Use improved schema with user_id as primary identifier
         const [users] = await connection.execute(`
@@ -142,7 +241,7 @@ async function getAllUsers() {
 async function getAllSubscriptions() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [subscriptions] = await connection.execute(`
             SELECT 
                 vs.id,
@@ -175,7 +274,7 @@ async function addVIPSubscription(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         // Get plan info from database
@@ -307,7 +406,7 @@ async function deleteSubscription(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         const [subscription] = await connection.execute(
@@ -353,7 +452,7 @@ async function deleteUser(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         // DELETE cascades due to FK constraints
@@ -387,7 +486,7 @@ async function deleteUser(payload, req = null) {
 async function getAllOrders() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [orders] = await connection.execute(`
             SELECT 
                 o.id,
@@ -420,7 +519,7 @@ async function getAllOrders() {
 async function getAllTransactions() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [transactions] = await connection.execute(`
             SELECT 
                 t.id,
@@ -455,7 +554,7 @@ async function getAllTransactions() {
 async function getAllLogs() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [logs] = await connection.execute(`
             SELECT 
                 id,
@@ -484,7 +583,7 @@ async function getUserActivity(payload) {
     const { userId, action, dateFrom, dateTo, page = 1, limit = 50 } = payload || {};
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         
         // Build dynamic WHERE clause
         const conditions = [];
@@ -612,7 +711,7 @@ async function getUserActivity(payload) {
 async function getActiveUsers() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [activeUsers] = await connection.execute(`
             SELECT DISTINCT 
                 al.user_id,
@@ -649,7 +748,7 @@ async function getActiveUsers() {
 async function getDashboardStats() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
 
         // Use improved views for better performance
         const [totalUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
@@ -804,7 +903,7 @@ async function getDashboardStats() {
 async function getAllVIPPlans() {
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         const [plans] = await connection.execute(`
             SELECT 
                 id,
@@ -835,7 +934,7 @@ async function createVIPPlan(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         // Check if plan_key already exists (UNIQUE constraint)
@@ -883,7 +982,7 @@ async function updateVIPPlan(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         const [existing] = await connection.execute(
@@ -956,7 +1055,7 @@ async function deleteVIPPlan(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         const [plan] = await connection.execute(
@@ -1015,7 +1114,7 @@ async function toggleVIPPlanStatus(payload, req = null) {
 
     let connection;
     try {
-        connection = await pool.getConnection();
+        connection = await acquire();
         await connection.beginTransaction();
 
         const [plan] = await connection.execute(
