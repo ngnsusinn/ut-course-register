@@ -16,7 +16,7 @@ const dbConfig = {
     // student-facing pool, every other Vercel instance, and every other tenant of the host.
     connectionLimit: Number(process.env.ADMIN_DB_POOL_SIZE || 3),
     maxIdle: 1,
-    connectTimeout: 5000,
+    connectTimeout: 10000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
     sessionVariables: { max_execution_time: 8000, time_zone: '+07:00' },
@@ -32,22 +32,34 @@ try {
     console.error('❌ Failed to create admin database pool:', error);
 }
 
-/** Acquire a connection with a hard ceiling so an exhausted pool cannot hang an admin request. */
-async function acquire(timeoutMs = 6000) {
+
+/**
+ * Acquire a connection with a hard ceiling. The shared MySQL host frequently drops or delays
+ * brand-new TCP connections from cloud IPs (connect ETIMEDOUT), so each acquire retries a few
+ * times with a small backoff; per-attempt budget = timeoutMs / attempts keeps the total bounded.
+ */
+/**
+ * Acquire a connection with a hard ceiling (never queue forever), while allowing enough time
+ * for the shared MySQL host's notoriously slow new-connection handshake (~4-6s from cloud IPs).
+ * A genuinely dead DB surfaces here as ETIMEDPOOL instead of hanging the request.
+ */
+async function acquire(timeoutMs = 9000) {
     const wait = pool.getConnection();
     let timer;
     const guard = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(Object.assign(new Error('DB pool acquire timeout'), { code: 'ETIMEDPOOL' })), timeoutMs);
+        timer = setTimeout(() => reject(Object.assign(new Error(`DB pool acquire timeout after ${timeoutMs}ms`), { code: 'ETIMEDPOOL' })), timeoutMs);
     });
     try {
         return await Promise.race([wait, guard]);
     } catch (e) {
+        // If the connection arrived just after we gave up, do not leak it.
         wait.then((c) => c.release()).catch(() => {});
         throw e;
     } finally {
         clearTimeout(timer);
     }
 }
+
 
 export default async function handler(req, res) {
     // Helper to extract IP and User-Agent

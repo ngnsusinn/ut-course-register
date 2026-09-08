@@ -23,7 +23,7 @@ const dbConfig = {
     timezone: '+07:00',
     connectionLimit: Number(process.env.DB_POOL_SIZE || 5),
     maxIdle: 2,
-    connectTimeout: 5000,
+    connectTimeout: 10000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
     // Belt and braces: MySQL aborts a runaway read after 4s rather than hanging the lambda, and the
@@ -58,8 +58,18 @@ const getPool = () => {
     }
 };
 
-/** Acquire a connection with a hard ceiling so an exhausted pool can never hang the request. */
-async function acquire(timeoutMs = 4000) {
+/**
+ * Acquire a connection with a hard ceiling so an exhausted pool can never hang the request.
+ * On the shared MySQL host, brand-new TCP connections from cloud IPs are frequently dropped or
+ * delayed several seconds (connect ETIMEDOUT). We retry a few times with a small backoff; each
+ * attempt has an equal share of the overall budget so the request can never exceed timeoutMs.
+ */
+/**
+ * Acquire a connection with a hard ceiling (never queue forever), while allowing enough time
+ * for the shared MySQL host's notoriously slow new-connection handshake (~4-6s from cloud IPs).
+ * A genuinely dead DB surfaces here as ETIMEDPOOL instead of hanging the request.
+ */
+async function acquire(timeoutMs = 9000) {
     const wait = getPool().getConnection();
     let timer;
     const guard = new Promise((_, reject) => {
