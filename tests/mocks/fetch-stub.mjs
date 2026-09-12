@@ -11,7 +11,7 @@ export function reset() { calls.length = 0; handler = () => ({ status: 200, body
 export default async function fetchStub(url, options = {}) {
   calls.push({ url, method: options.method, hasAuth: Boolean(options.headers?.Authorization), body: options.body ? JSON.parse(options.body) : null, timeoutOption: options.timeout, hasAgent: Boolean(options.agent) });
   if (latencyMs) await new Promise((r) => setTimeout(r, latencyMs));
-  const spec = handler(url, options) || {};
+  const spec = (await handler(url, options)) || {};
   const status = spec.status ?? 200;
   const json = JSON.stringify(spec.body ?? {});
   return {

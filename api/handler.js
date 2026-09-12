@@ -201,12 +201,78 @@ const portalAgent = new https.Agent({
 
 const UPSTREAM_TIMEOUT_MS = Number(process.env.UPSTREAM_TIMEOUT_MS || 15000);
 
+// The portal rate-limits hard (HTTP 429 after a couple of back-to-back calls; it clears in ~1s) and
+// its edge drops sockets mid-response under a burst. node-fetch surfaces the latter as
+// "Invalid response body while trying to fetch ...: Premature close" (ERR_STREAM_PREMATURE_CLOSE).
+// Both are transient: the same request succeeds a moment later. Retry with exponential backoff +
+// jitter, capped so one call cannot blow the function's time budget.
+const UPSTREAM_MAX_ATTEMPTS = Math.max(1, Number(process.env.UPSTREAM_MAX_ATTEMPTS) || 5);
+const UPSTREAM_RETRY_BASE_MS = Math.max(50, Number(process.env.UPSTREAM_RETRY_BASE_MS) || 600);
+const UPSTREAM_RETRY_MAX_MS = Math.max(UPSTREAM_RETRY_BASE_MS, Number(process.env.UPSTREAM_RETRY_MAX_MS) || 6000);
+
+// A retry gets a brand-new socket: the pooled keep-alive socket is exactly the one the portal may
+// have half-closed, and node-fetch cannot tell before it writes the request to it.
+const portalRetryAgent = new https.Agent({
+    keepAlive: false,
+    maxSockets: 32,
+    timeout: 30000,
+});
+
+// Error codes/messages that mean "the connection died", not "the request was answered".
+const RETRIABLE_UPSTREAM_CODES = new Set([
+    'ERR_STREAM_PREMATURE_CLOSE', 'ERR_STREAM_DESTROYED', 'ECONNRESET', 'ECONNREFUSED',
+    'EPIPE', 'ETIMEDOUT', 'EAI_AGAIN', 'ERR_SOCKET_TIMEOUT', 'UND_ERR_SOCKET', 'ABORT_ERR',
+]);
+
+/** A failure worth retrying: the connection died, so we do not know the portal's answer. */
+function isTransientUpstreamResult(result) {
+    if (!result || result.success) return false;
+    if (result.code && RETRIABLE_UPSTREAM_CODES.has(result.code)) return true;
+    return /premature close|socket hang up|network|timed? ?out|aborted|ECONNRESET|ECONNREFUSED|EPIPE|EAI_AGAIN/i
+        .test(result.message || '');
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Exponential backoff with jitter, so a burst of retries does not re-hammer the portal in lockstep. */
+function upstreamRetryDelayMs(attempt) {
+    const exp = Math.min(UPSTREAM_RETRY_MAX_MS, UPSTREAM_RETRY_BASE_MS * (2 ** attempt));
+    return Math.round(exp * (0.6 + (Math.random() * 0.8)));
+}
+
+// The portal rate-limits per account and drops sockets when slammed, so a full schedule fetch walks
+// subjects -> classes -> details through a small worker pool instead of Promise.all-ing hundreds of
+// requests at once (the old behaviour was the direct cause of the mass "Premature close" errors).
+// Kept comfortably below the agent's maxSockets: once requests queue for a socket, the next one
+// reuses a keep-alive socket the portal already closed, which is exactly what node-fetch reports
+// as "Premature close".
+const CLASS_FETCH_CONCURRENCY = Math.max(1, Number(process.env.CLASS_FETCH_CONCURRENCY) || 8);
+const DETAIL_FETCH_CONCURRENCY = Math.max(1, Number(process.env.DETAIL_FETCH_CONCURRENCY) || 16);
+
+/** Run `worker` over `items` with a hard concurrency ceiling, preserving result order. */
+async function mapWithConcurrency(items, limit, worker) {
+    const list = Array.isArray(items) ? items : [];
+    const results = new Array(list.length);
+    // Never let a bad env value collapse the pool to zero runners (which would drop every item).
+    const safeLimit = Math.max(1, Math.floor(limit) || 1);
+    let cursor = 0;
+    const runners = Array.from({ length: Math.min(safeLimit, list.length) }, async () => {
+        for (;;) {
+            const index = cursor++;
+            if (index >= list.length) return;
+            results[index] = await worker(list[index], index);
+        }
+    });
+    await Promise.all(runners);
+    return results;
+}
+
 /**
  * Call internal university API with proper error handling.
  * Failures are classified: `upstreamUnavailable` means "we do not know" (timeout, HTML error
  * page, DNS) and must never be treated by callers as "the user's session is invalid".
  */
-async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
+async function callApiOnce(endpoint, method, token, body = null, source = 'dkhp', attempt = 0) {
     let baseApiUrl;
     if (endpoint.startsWith('/user/')) {
         baseApiUrl = 'https://portal.ut.edu.vn/api/v1';
@@ -227,7 +293,7 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
         method,
         headers,
         body: body ? JSON.stringify(body) : null,
-        agent: portalAgent,
+        agent: attempt > 0 ? portalRetryAgent : portalAgent,
         timeout: UPSTREAM_TIMEOUT_MS,
     };
 
@@ -281,9 +347,47 @@ async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
             success: false,
             message: error.message,
             status: error.status || 500,
+            code: error.code || error.errno || null,
             upstreamUnavailable: true,
         };
     }
+}
+
+/**
+ * Retrying wrapper around callApiOnce.
+ *
+ * Retrying is only safe for idempotent requests: a dropped socket on the registration POST
+ * (`dangKyLopHocPhan`) is ambiguous — the write may already have landed — so replaying it risks a
+ * double registration. GET/HEAD/DELETE and /user/login may be replayed freely. An explicit HTTP
+ * 429 (a hard rate-limit rejection that definitely did not apply the request) is replayed for any
+ * verb, including the registration POST.
+ */
+async function callApi(endpoint, method, token, body = null, source = 'dkhp') {
+    const verb = String(method || 'GET').toUpperCase();
+    const replayable = verb === 'GET' || verb === 'HEAD' || verb === 'DELETE' || endpoint.startsWith('/user/login');
+
+    let result = null;
+    for (let attempt = 0; attempt < UPSTREAM_MAX_ATTEMPTS; attempt++) {
+        result = await callApiOnce(endpoint, method, token, body, source, attempt);
+
+        const status = Number(result && result.status) || 0;
+        // status >= 500 with upstreamUnavailable set is really a thrown connection error defaulting
+        // to 500, not a server answer — keep those in the "dropped connection" bucket instead.
+        const serverAnswered = !(result && result.upstreamUnavailable);
+        const explicitRejection = status === 429 || (status >= 500 && serverAnswered);
+        const droppedConnection = Boolean(result && result.upstreamUnavailable) && isTransientUpstreamResult(result);
+
+        const retriable = explicitRejection
+            ? (status === 429 || replayable)
+            : (replayable && droppedConnection);
+
+        if (!retriable || attempt >= UPSTREAM_MAX_ATTEMPTS - 1) return result;
+
+        const delay = upstreamRetryDelayMs(attempt);
+        console.warn(`↻ Upstream retry ${attempt + 1}/${UPSTREAM_MAX_ATTEMPTS - 1} ${verb} ${endpoint} in ${delay}ms — ${result && result.message}`);
+        await sleep(delay);
+    }
+    return result;
 }
 
 /**
@@ -1497,7 +1601,7 @@ export default async (req, res) => {
                         subjectsRes.body.forEach(s => subjectTypeMap[s.maHocPhan] = s.isBatBuoc);
                     }
 
-                    const classPromises = subjectsRes.body.map(async (subject) => {
+                    const subjectClassesArray = await mapWithConcurrency(subjectsRes.body, CLASS_FETCH_CONCURRENCY, async (subject) => {
                         const classEndpoint = source === 'dkhpdk'
                             ? `/getLopHocPhan?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`
                             : `/getLopHocPhanChoDangKy?idDot=${dotId}&maHocPhan=${subject.maHocPhan}&isLocTrung=False&isLocTrungWithoutElearning=false`;
@@ -1509,13 +1613,12 @@ export default async (req, res) => {
                         return [];
                     });
 
-                    const subjectClassesArray = await Promise.all(classPromises);
                     const sourceClasses = subjectClassesArray.flat();
-                    
-                    const detailedClasses = await Promise.all(sourceClasses.map(async (cls) => {
+
+                    const detailedClasses = await mapWithConcurrency(sourceClasses, DETAIL_FETCH_CONCURRENCY, async (cls) => {
                         const scheduleDetails = await getScheduleDetails(cls.id, token, source);
                         return { ...cls, scheduleDetails };
-                    }));
+                    });
 
                     allClassData.push(...detailedClasses);
                 }

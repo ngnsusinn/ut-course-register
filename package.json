@@ -9,7 +9,7 @@
     "build": "node esbuild.config.js",
     "lint": "eslint api public scripts tests",
     "test": "node --test --test-force-exit tests/*.test.mjs",
-    "test:offline": "SKIP_DB=1 node --test --test-force-exit tests/01-static-contracts.test.mjs tests/04-login-e2e.test.mjs tests/05-security.test.mjs",
+    "test:offline": "SKIP_DB=1 node --test --test-force-exit tests/01-static-contracts.test.mjs tests/04-login-e2e.test.mjs tests/05-security.test.mjs tests/07-upstream-resilience.test.mjs",
     "test:db": "node --test --test-force-exit tests/02-db-schema-contract.test.mjs tests/03-login-path.test.mjs tests/06-migration-readiness.test.mjs",
     "db:diag": "node scripts/db-diag.mjs CURRENT-PROD 103.97.126.29 3306 \"$DB_USER\" \"$DB_PASSWORD\" \"$DB_NAME\""
   },
