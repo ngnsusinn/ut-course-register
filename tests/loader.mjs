@@ -8,6 +8,12 @@ import { REPO } from './helpers.mjs';
 const OUT = REPO + '.tmp-tests';
 mkdirSync(OUT, { recursive: true });
 
+// node --test runs test FILES in parallel processes. Several of them load api/handler.js, so a fixed
+// output filename lets one process read the file while another is mid-write (the import then yields
+// a module with no default export). A unique name per call keeps concurrent loaders from clobbering
+// each other; the cache-busting query below still forces a fresh evaluation.
+let loadSeq = 0;
+
 /**
  * @param {string} rel  path under the repo, e.g. 'api/handler.js'
  * @returns {Promise<Function>} the default-exported handler
@@ -17,7 +23,7 @@ export async function loadStubbed(rel) {
   src = src.replace(/from\s+['"]node-fetch['"]/g, `from '${pathToFileURL(REPO + 'tests/mocks/fetch-stub.mjs').href}'`);
   src = src.replace(/from\s+['"]mysql2\/promise['"]/g, `from '${pathToFileURL(REPO + 'tests/mocks/mysql-stub.mjs').href}'`);
   const name = rel.replace(/[/.]/g, '_');
-  const file = `${OUT}/${name}.mjs`;
+  const file = `${OUT}/${name}.${process.pid}.${(loadSeq++).toString(36)}.mjs`;
   writeFileSync(file, src);
   const mod = await import(pathToFileURL(file).href + `?v=${process.hrtime.bigint()}`);
   return mod.default;
