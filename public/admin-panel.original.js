@@ -1,4 +1,4 @@
-﻿const API_URL = '/api/admin-handler';
+const API_URL = '/api/admin-handler';
 let currentUser = null;
 let allData = {
     users: [],
@@ -517,8 +517,8 @@ function renderSubscriptions() {
     const statusFilter = document.getElementById('subscriptionsFilter').value;
 
     const filteredSubs = allData.subscriptions.filter(sub => {
-        const matchesSearch = sub.user_id.toLowerCase().includes(searchTerm) ||
-            sub.plan_type.toLowerCase().includes(searchTerm);
+        const matchesSearch = (sub.user_id || '').toLowerCase().includes(searchTerm) ||
+            (sub.plan_type || '').toLowerCase().includes(searchTerm);
         const isActive = new Date(sub.expiry_date) > new Date();
         const matchesStatus = !statusFilter ||
             (statusFilter === 'active' && isActive) ||
@@ -589,8 +589,10 @@ function renderOrders() {
     const statusFilter = document.getElementById('ordersFilter').value;
 
     const filteredOrders = allData.orders.filter(order => {
-        const matchesSearch = order.user_id.toLowerCase().includes(searchTerm) ||
-            order.plan_name.toLowerCase().includes(searchTerm) ||
+        // user_id is NULL for orders whose owner was deleted (the delete-user flow keeps
+        // the payment/order record and only nulls the link) — must not crash the filter.
+        const matchesSearch = (order.user_id || '').toLowerCase().includes(searchTerm) ||
+            (order.plan_name || '').toLowerCase().includes(searchTerm) ||
             (order.order_code && order.order_code.toLowerCase().includes(searchTerm));
         const matchesStatus = !statusFilter || order.payment_status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -611,7 +613,7 @@ function renderOrders() {
                 <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-mono font-bold">${order.order_code || 'N/A'}</span>
             </td>
             <td class="px-6 py-4" data-label="User">
-                <div class="font-semibold text-gray-900">${order.user_id}</div>
+                <div class="font-semibold text-gray-900">${order.user_id || '<span class="text-gray-400 font-normal italic">(user đã xóa)</span>'}</div>
             </td>
             <td class="px-6 py-4" data-label="Plan">
                 <div>
