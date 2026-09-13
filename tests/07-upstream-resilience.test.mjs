@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadStubbed, mkreq, mkres, drain } from './loader.mjs';
 import * as fstub from './mocks/fetch-stub.mjs';
-import * as mstub from './mocks/mysql-stub.mjs';
+import * as mstub from './mocks/mongo-stub.mjs';
 
 // Keep backoff negligible so the suite stays fast; the constants are read when the handler loads.
 process.env.UPSTREAM_RETRY_BASE_MS = '50';

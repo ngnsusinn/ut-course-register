@@ -21,7 +21,7 @@ let loadSeq = 0;
 export async function loadStubbed(rel) {
   let src = readFileSync(REPO + rel, 'utf8');
   src = src.replace(/from\s+['"]node-fetch['"]/g, `from '${pathToFileURL(REPO + 'tests/mocks/fetch-stub.mjs').href}'`);
-  src = src.replace(/from\s+['"]mysql2\/promise['"]/g, `from '${pathToFileURL(REPO + 'tests/mocks/mysql-stub.mjs').href}'`);
+  src = src.replace(/from\s+['"]\.\/db\.js['"]/g, `from '${pathToFileURL(REPO + 'tests/mocks/mongo-stub.mjs').href}'`);
   const name = rel.replace(/[/.]/g, '_');
   const file = `${OUT}/${name}.${process.pid}.${(loadSeq++).toString(36)}.mjs`;
   writeFileSync(file, src);

@@ -1,72 +1,9 @@
 // ============================================
-// IMPROVED ADMIN HANDLER WITH FK SUPPORT
+// ADMIN HANDLER (MongoDB)
 // ============================================
-import mysql from 'mysql2/promise';
 import crypto from 'crypto';
-
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'your_db_user',
-    password: process.env.DB_PASSWORD || 'your_db_password',
-    database: process.env.DB_NAME || 'uth_registration',
-    waitForConnections: true,
-    queueLimit: 0,
-    timezone: '+07:00',
-    // Same reasoning as api/handler.js: this pool shares a max_connections=200 budget with the
-    // student-facing pool, every other Vercel instance, and every other tenant of the host.
-    connectionLimit: Number(process.env.ADMIN_DB_POOL_SIZE || 3),
-    maxIdle: 1,
-    connectTimeout: 10000,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 10000,
-    sessionVariables: { max_execution_time: 8000, time_zone: '+07:00' },
-    charset: 'utf8mb4_unicode_ci',
-};
-
-let pool;
-try {
-    pool = mysql.createPool(dbConfig);
-    pool.on('error', (err) => console.error('❌ Admin pool connection error:', err.code || err.message));
-    console.log('✅ Admin database pool created');
-} catch (error) {
-    console.error('❌ Failed to create admin database pool:', error);
-}
-
-
-/**
- * Acquire a connection with a hard ceiling. The shared MySQL host frequently drops or delays
- * brand-new TCP connections from cloud IPs (connect ETIMEDOUT), so each acquire retries a few
- * times with a small backoff; per-attempt budget = timeoutMs / attempts keeps the total bounded.
- */
-/**
- * Acquire a connection with a hard ceiling (never queue forever), while allowing enough time
- * for the shared MySQL host's notoriously slow new-connection handshake (~4-6s from cloud IPs).
- * A genuinely dead DB surfaces here as ETIMEDPOOL instead of hanging the request.
- */
-async function acquire(timeoutMs = 9000) {
-    const wait = pool.getConnection();
-    let timer;
-    const guard = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(Object.assign(new Error(`DB pool acquire timeout after ${timeoutMs}ms`), { code: 'ETIMEDPOOL' })), timeoutMs);
-    });
-    try {
-        return await Promise.race([wait, guard]);
-    } catch (e) {
-        // If the connection arrived just after we gave up, do not leak it.
-        wait.then((c) => c.release()).catch(() => {});
-        throw e;
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
-
+import { getDb, nextId, vnWallClockToUTCDate } from './db.js';
 export default async function handler(req, res) {
-    // Helper to extract IP and User-Agent
-    const getClientInfo = (r) => ({
-        ip: r?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || r?.headers?.['x-real-ip'] || r?.socket?.remoteAddress || null,
-        ua: r?.headers?.['user-agent'] || null
-    });
     // The admin API must not be wildcard-open to any origin, and its state-changing actions
     // below are NOT yet individually authenticated (see dispatch) — restricting CORS is the
     // cheap half of the defence and removes the "drive it from a victim's browser" attack.
@@ -90,18 +27,15 @@ export default async function handler(req, res) {
             case 'getAllSubscriptions': result = await getAllSubscriptions(); break;
             case 'getAllOrders': result = await getAllOrders(); break;
             case 'getAllTransactions': result = await getAllTransactions(); break;
-            case 'getAllLogs': result = await getAllLogs(); break;
-            case 'getUserActivity': result = await getUserActivity(payload); break;
-            case 'getActiveUsers': result = await getActiveUsers(); break;
-            case 'addVIPSubscription': result = await addVIPSubscription(payload, req); break;
-            case 'deleteSubscription': result = await deleteSubscription(payload, req); break;
-            case 'deleteUser': result = await deleteUser(payload, req); break;
+            case 'addVIPSubscription': result = await addVIPSubscription(payload); break;
+            case 'deleteSubscription': result = await deleteSubscription(payload); break;
+            case 'deleteUser': result = await deleteUser(payload); break;
             case 'getDashboardStats': result = await getDashboardStats(); break;
             case 'getAllVIPPlans': result = await getAllVIPPlans(); break;
-            case 'createVIPPlan': result = await createVIPPlan(payload, req); break;
-            case 'updateVIPPlan': result = await updateVIPPlan(payload, req); break;
-            case 'deleteVIPPlan': result = await deleteVIPPlan(payload, req); break;
-            case 'toggleVIPPlanStatus': result = await toggleVIPPlanStatus(payload, req); break;
+            case 'createVIPPlan': result = await createVIPPlan(payload); break;
+            case 'updateVIPPlan': result = await updateVIPPlan(payload); break;
+            case 'deleteVIPPlan': result = await deleteVIPPlan(payload); break;
+            case 'toggleVIPPlanStatus': result = await toggleVIPPlanStatus(payload); break;
             default: return res.status(400).json({ success: false, message: 'Unknown action' });
         }
         return res.status(200).json(result);
@@ -168,47 +102,42 @@ async function adminLogin(payload) {
     if (!username || !password) {
         return { success: false, message: 'Username and password required' };
     }
-    if (typeof username !== 'string' || typeof password !== 'string') {
-        return { success: false, message: 'Invalid credentials' };
-    }
 
-    let connection;
     try {
-        connection = await acquire();
-        const [admins] = await connection.execute(
-            'SELECT id, username, full_name, role, password_hash FROM admins WHERE username = ? AND is_active = 1',
-            [username]
+        const db = await getDb();
+        const admins = db.collection('admins');
+
+        const admin = await admins.findOne(
+            { username: String(username), is_active: 1 },
+            { projection: { _id: 0, id: 1, username: 1, full_name: 1, role: 1, password_hash: 1 } }
         );
 
-        if (admins.length === 0) {
+        if (!admin) {
             return { success: false, message: 'Invalid credentials' };
         }
 
-        const admin = admins[0];
         const verdict = verifyAdminPassword(admin.password_hash, password);
         if (!verdict.ok) {
             return { success: false, message: 'Invalid credentials' };
         }
 
         // Transparently upgrade a legacy plaintext row to an scrypt hash.
+        const now = new Date();
         if (verdict.needsUpgrade || !String(admin.password_hash).startsWith('scrypt$')) {
-            await connection.execute(
-                'UPDATE admins SET password_hash = ?, last_login = NOW() WHERE id = ?',
-                [scryptHash(password, crypto.randomBytes(16)), admin.id]
+            await admins.updateOne(
+                { id: admin.id },
+                { $set: { password_hash: scryptHash(password, crypto.randomBytes(16)), last_login: now, updated_at: now } }
             );
         } else {
-            await connection.execute(
-                'UPDATE admins SET last_login = NOW() WHERE id = ?',
-                [admin.id]
-            );
+            await admins.updateOne({ id: admin.id }, { $set: { last_login: now } });
         }
 
         // An admin session is still just this object — the real hardening (session tokens +
-        // auth on the other 16 actions) is intentionally left as a separate decision because the
-        // admin frontend currently auto-logs-in by storing the plaintext password in localStorage.
+        // auth on the other actions) is intentionally left as a separate decision.
         return { success: true, admin: { id: admin.id, username: admin.username, full_name: admin.full_name, role: admin.role } };
-    } finally {
-        if (connection) connection.release();
+    } catch (error) {
+        console.error('❌ Error in adminLogin:', error.message);
+        throw error; // let the dispatcher answer 500 — a DB outage is NOT "invalid credentials"
     }
 }
 
@@ -217,33 +146,33 @@ async function adminLogin(payload) {
 // ============================================
 
 async function getAllUsers() {
-    let connection;
-    try {
-        connection = await acquire();
-        
-        // Use improved schema with user_id as primary identifier
-        const [users] = await connection.execute(`
-            SELECT 
-                u.id,
-                u.user_id,
-                u.username,
-                u.full_name,
-                u.email,
-                u.is_active,
-                u.last_login,
-                u.created_at,
-                u.updated_at,
-                MAX(vs.expiry_date) as expiry_date,
-                CASE WHEN MAX(vs.expiry_date) > NOW() THEN 1 ELSE 0 END as is_vip
-            FROM users u
-            LEFT JOIN vip_subscriptions vs ON u.user_id = vs.user_id
-            GROUP BY u.id, u.user_id, u.username, u.full_name, u.email, u.is_active, u.last_login, u.created_at, u.updated_at
-            ORDER BY u.user_id ASC
-        `);
-        return { success: true, users };
-    } finally {
-        if (connection) connection.release();
+    const db = await getDb();
+
+    // Same shape as the old LEFT JOIN + GROUP BY on vip_subscriptions: attach each user's
+    // farthest expiry and a 0/1 VIP flag.
+    const [users, subs] = await Promise.all([
+        db.collection('users').find({}, {
+            projection: {
+                _id: 0, id: 1, user_id: 1, username: 1, full_name: 1, email: 1,
+                is_active: 1, last_login: 1, created_at: 1, updated_at: 1,
+            },
+        }).sort({ user_id: 1 }).toArray(),
+        db.collection('vip_subscriptions').find({}, { projection: { _id: 0, user_id: 1, expiry_date: 1 } }).toArray(),
+    ]);
+
+    const maxExpiry = new Map();
+    for (const s of subs) {
+        const cur = maxExpiry.get(s.user_id);
+        if (!cur || new Date(s.expiry_date) > new Date(cur)) maxExpiry.set(s.user_id, s.expiry_date);
     }
+
+    const now = new Date();
+    const result = users.map((u) => {
+        const expiry = maxExpiry.get(u.user_id) || null;
+        return { ...u, expiry_date: expiry, is_vip: expiry && new Date(expiry) > now ? 1 : 0 };
+    });
+
+    return { success: true, users: result };
 }
 
 // ============================================
@@ -251,107 +180,106 @@ async function getAllUsers() {
 // ============================================
 
 async function getAllSubscriptions() {
-    let connection;
-    try {
-        connection = await acquire();
-        const [subscriptions] = await connection.execute(`
-            SELECT 
-                vs.id,
-                vs.user_id,
-                vs.plan_id,
-                vs.order_id,
-                o.order_code,
-                vs.plan_type,
-                vp.plan_name,
-                vs.expiry_date,
-                vs.created_by_admin,
-                vs.created_at,
-                vs.updated_at
-            FROM vip_subscriptions vs
-            LEFT JOIN vip_plans vp ON vs.plan_id = vp.id
-            LEFT JOIN orders o ON vs.order_id = o.id
-            ORDER BY vs.created_at DESC
-        `);
-        return { success: true, subscriptions };
-    } finally {
-        if (connection) connection.release();
-    }
+    const db = await getDb();
+
+    const [subs, plans, orders] = await Promise.all([
+        db.collection('vip_subscriptions').find({}, {
+            projection: {
+                _id: 0, id: 1, user_id: 1, plan_id: 1, order_id: 1, plan_type: 1,
+                expiry_date: 1, created_by_admin: 1, created_at: 1, updated_at: 1,
+            },
+        }).sort({ created_at: -1 }).toArray(),
+        db.collection('vip_plans').find({}, { projection: { _id: 0, id: 1, plan_name: 1 } }).toArray(),
+        db.collection('orders').find({}, { projection: { _id: 0, id: 1, order_code: 1 } }).toArray(),
+    ]);
+
+    const planNames = new Map(plans.map((p) => [p.id, p.plan_name]));
+    const orderCodes = new Map(orders.map((o) => [o.id, o.order_code]));
+
+    return {
+        success: true,
+        subscriptions: subs.map((s) => ({
+            id: s.id,
+            user_id: s.user_id,
+            plan_id: s.plan_id,
+            order_id: s.order_id,
+            order_code: s.order_id != null ? (orderCodes.get(s.order_id) || null) : null,
+            plan_type: s.plan_type,
+            plan_name: s.plan_id != null ? (planNames.get(s.plan_id) || null) : null,
+            expiry_date: s.expiry_date,
+            created_by_admin: s.created_by_admin,
+            created_at: s.created_at,
+            updated_at: s.updated_at,
+        })),
+    };
 }
 
-async function addVIPSubscription(payload, req = null) {
+async function addVIPSubscription(payload) {
     const { userId, planType } = payload;
     if (!userId || !planType) {
         return { success: false, message: 'userId and planType required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
 
         // Get plan info from database
-        const [planData] = await connection.execute(
-            'SELECT id, duration_days, plan_name FROM vip_plans WHERE plan_key = ?',
-            [planType]
+        const plan = await db.collection('vip_plans').findOne(
+            { plan_key: String(planType) },
+            { projection: { _id: 0, id: 1, duration_days: 1, plan_name: 1 } }
         );
-        
-        if (planData.length === 0) {
-            await connection.rollback();
+        if (!plan) {
             return { success: false, message: 'Invalid plan type' };
         }
-        
-        const planId = planData[0].id;
-        const days = planData[0].duration_days;
-        const planName = planData[0].plan_name;
 
-        // VALIDATION: Check user exists (FK constraint)
-        const [existingUser] = await connection.execute(
-            'SELECT id FROM users WHERE user_id = ?',
-            [userId]
-        );
-        
-        if (existingUser.length === 0) {
-            // Create user if doesn't exist
-            await connection.execute(
-                'INSERT INTO users (user_id, is_active, created_at) VALUES (?, 1, NOW())',
-                [userId]
-            );
+        const planId = plan.id;
+        const days = plan.duration_days;
+
+        // VALIDATION: make sure the user row exists (the old code inserted it on the fly)
+        const users = db.collection('users');
+        const existingUser = await users.findOne({ user_id: String(userId) }, { projection: { _id: 0, id: 1 } });
+        if (!existingUser) {
+            const now = new Date();
+            await users.insertOne({
+                id: await nextId('users'),
+                user_id: String(userId),
+                username: null,
+                email: null,
+                full_name: null,
+                is_active: 1,
+                last_login: null,
+                created_at: now,
+                updated_at: now,
+            });
             console.log(`ℹ️  Created new user: ${userId}`);
         }
 
         // Check for active VIP subscription
-        const [activeVIP] = await connection.execute(
-            `SELECT expiry_date FROM vip_subscriptions 
-             WHERE user_id = ? AND expiry_date > NOW() 
-             ORDER BY expiry_date DESC LIMIT 1`,
-            [userId]
+        const activeVIP = await db.collection('vip_subscriptions').findOne(
+            { user_id: String(userId), expiry_date: { $gt: new Date() } },
+            { projection: { _id: 0, expiry_date: 1 }, sort: { expiry_date: -1 } }
         );
 
         let expiryDate;
         let addType = 'new';
 
-        if (activeVIP.length > 0) {
+        if (activeVIP) {
             // Extend from existing expiry date (round to end of day, then add days)
-            expiryDate = new Date(activeVIP[0].expiry_date);
+            expiryDate = new Date(activeVIP.expiry_date);
             // Round to end of current expiry day
             expiryDate.setHours(23, 59, 59, 999);
             // Add the number of days
             expiryDate.setDate(expiryDate.getDate() + days);
-            
-            // Format to MySQL datetime string (YYYY-MM-DD HH:mm:ss) to preserve timezone
-            const expiryString = expiryDate.getFullYear() + '-' + 
-                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(expiryDate.getDate()).padStart(2, '0') + ' ' + 
-                String(expiryDate.getHours()).padStart(2, '0') + ':' + 
-                String(expiryDate.getMinutes()).padStart(2, '0') + ':' + 
+
+            // Format to a wall-clock datetime string (YYYY-MM-DD HH:mm:ss) to preserve timezone
+            const expiryString = expiryDate.getFullYear() + '-' +
+                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(expiryDate.getDate()).padStart(2, '0') + ' ' +
+                String(expiryDate.getHours()).padStart(2, '0') + ':' +
+                String(expiryDate.getMinutes()).padStart(2, '0') + ':' +
                 String(expiryDate.getSeconds()).padStart(2, '0');
-            
-            await connection.execute(
-                `INSERT INTO vip_subscriptions (
-                    user_id, plan_id, plan_type, expiry_date, created_by_admin, created_at
-                ) VALUES (?, ?, ?, ?, 'admin', NOW())`,
-                [userId, planId, planType, expiryString]
-            );
+
+            await insertSubscription(db, userId, planId, planType, expiryString, 'admin');
             addType = 'cumulative';
         } else {
             // Start from tomorrow midnight, then add days (end of day)
@@ -361,133 +289,92 @@ async function addVIPSubscription(payload, req = null) {
             expiryDate.setDate(expiryDate.getDate() + days);
             // Set to end of the final day
             expiryDate.setHours(23, 59, 59, 999);
-            
-            // Format to MySQL datetime string (YYYY-MM-DD HH:mm:ss) to preserve timezone
-            const expiryString = expiryDate.getFullYear() + '-' + 
-                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(expiryDate.getDate()).padStart(2, '0') + ' ' + 
-                String(expiryDate.getHours()).padStart(2, '0') + ':' + 
-                String(expiryDate.getMinutes()).padStart(2, '0') + ':' + 
+
+            // Format to wall-clock datetime string (YYYY-MM-DD HH:mm:ss) to preserve timezone
+            const expiryString = expiryDate.getFullYear() + '-' +
+                String(expiryDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(expiryDate.getDate()).padStart(2, '0') + ' ' +
+                String(expiryDate.getHours()).padStart(2, '0') + ':' +
+                String(expiryDate.getMinutes()).padStart(2, '0') + ':' +
                 String(expiryDate.getSeconds()).padStart(2, '0');
-            
-            await connection.execute(
-                `INSERT INTO vip_subscriptions (
-                    user_id, plan_id, plan_type, expiry_date, created_by_admin, created_at
-                ) VALUES (?, ?, ?, ?, 'admin', NOW())`,
-                [userId, planId, planType, expiryString]
-            );
+
+            await insertSubscription(db, userId, planId, planType, expiryString, 'admin');
             addType = 'new';
         }
 
-        // Log activity
-        const logDetails = addType === 'cumulative' 
-            ? `Admin added ${planName} (${planType}) VIP (cộng dồn) - New expiry: ${expiryDate.toLocaleString('vi-VN')}`
-            : `Admin added ${planName} (${planType}) VIP (mới) - Expiry: ${expiryDate.toLocaleString('vi-VN')}`;
-
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES (?, 'ADMIN_ADD_VIP', ?, ?, ?, NOW())`,
-            [userId, logDetails, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
-
-        return { 
-            success: true, 
-            message: addType === 'cumulative' 
-                ? `Đã cộng thêm ${days} ngày VIP` 
+        return {
+            success: true,
+            message: addType === 'cumulative'
+                ? `Đã cộng thêm ${days} ngày VIP`
                 : `Đã thêm VIP ${days} ngày mới`,
             expiryDate: expiryDate.toISOString(),
             addType
         };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error adding VIP:', error.message);
         return { success: false, message: 'Failed to add VIP', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }
 
-async function deleteSubscription(payload, req = null) {
+/** Shared writer for the two addVIPSubscription branches. */
+async function insertSubscription(db, userId, planId, planType, expiryString, createdBy) {
+    const now = new Date();
+    await db.collection('vip_subscriptions').insertOne({
+        id: await nextId('vip_subscriptions'),
+        user_id: String(userId),
+        plan_id: planId,
+        plan_type: planType,
+        expiry_date: vnWallClockToUTCDate(expiryString),
+        order_id: null,
+        created_by_admin: createdBy,
+        created_at: now,
+        updated_at: now,
+    });
+}
+
+async function deleteSubscription(payload) {
     const { subscriptionId } = payload;
     if (!subscriptionId) {
         return { success: false, message: 'subscriptionId required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
+        const result = await db.collection('vip_subscriptions').deleteOne({ id: Number(subscriptionId) });
 
-        const [subscription] = await connection.execute(
-            'SELECT user_id FROM vip_subscriptions WHERE id = ?',
-            [subscriptionId]
-        );
-        
-        if (subscription.length === 0) {
-            await connection.rollback();
+        if (result.deletedCount === 0) {
             return { success: false, message: 'Subscription not found' };
         }
 
-        const userId = subscription[0].user_id;
-        
-        await connection.execute(
-            'DELETE FROM vip_subscriptions WHERE id = ?',
-            [subscriptionId]
-        );
-
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES (?, 'ADMIN_DELETE_VIP', ?, ?, ?, NOW())`,
-            [userId, `Admin deleted VIP subscription #${subscriptionId}`, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
         return { success: true, message: 'Subscription deleted' };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error deleting subscription:', error.message);
         return { success: false, message: 'Failed to delete', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }
 
-async function deleteUser(payload, req = null) {
+async function deleteUser(payload) {
     const { userId } = payload;
     if (!userId) {
         return { success: false, message: 'userId required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
+        const uid = String(userId);
 
-        // DELETE cascades due to FK constraints
-        await connection.execute(
-            'DELETE FROM users WHERE user_id = ?',
-            [userId]
-        );
+        // Replicates what the MySQL FK graph used to do on DELETE:
+        //   vip_subscriptions.user_id  ON DELETE CASCADE   -> subscriptions disappear
+        //   orders.user_id             ON DELETE SET NULL  -> orders stay, anonymised
+        //   (transactions hang off orders and are untouched)
+        await db.collection('vip_subscriptions').deleteMany({ user_id: uid });
+        await db.collection('orders').updateMany({ user_id: uid }, { $set: { user_id: null, updated_at: new Date() } });
+        await db.collection('users').deleteOne({ user_id: uid });
 
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES (?, 'ADMIN_DELETE_USER', ?, ?, ?, NOW())`,
-            [userId, `Admin deleted user ${userId} and all related data`, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
         return { success: true, message: 'User deleted successfully' };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error deleting user:', error.message);
         return { success: false, message: 'Failed to delete user', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }
 
@@ -496,32 +383,15 @@ async function deleteUser(payload, req = null) {
 // ============================================
 
 async function getAllOrders() {
-    let connection;
-    try {
-        connection = await acquire();
-        const [orders] = await connection.execute(`
-            SELECT 
-                o.id,
-                o.order_code,
-                o.user_id,
-                o.plan_id,
-                o.plan_type,
-                o.plan_name,
-                o.amount,
-                o.payment_status,
-                o.transaction_ref,
-                o.gateway,
-                o.created_at,
-                o.updated_at,
-                o.paid_at,
-                o.cancelled_at
-            FROM orders o
-            ORDER BY o.created_at DESC
-        `);
-        return { success: true, orders };
-    } finally {
-        if (connection) connection.release();
-    }
+    const db = await getDb();
+    const orders = await db.collection('orders').find({}, {
+        projection: {
+            _id: 0, id: 1, order_code: 1, user_id: 1, plan_id: 1, plan_type: 1, plan_name: 1,
+            amount: 1, payment_status: 1, transaction_ref: 1, gateway: 1,
+            created_at: 1, updated_at: 1, paid_at: 1, cancelled_at: 1,
+        },
+    }).sort({ created_at: -1 }).toArray();
+    return { success: true, orders };
 }
 
 // ============================================
@@ -529,363 +399,150 @@ async function getAllOrders() {
 // ============================================
 
 async function getAllTransactions() {
-    let connection;
-    try {
-        connection = await acquire();
-        const [transactions] = await connection.execute(`
-            SELECT 
-                t.id,
-                t.order_id,
-                o.order_code,
-                t.gateway,
-                t.transaction_date,
-                t.account_number,
-                t.sub_account,
-                t.amount_in,
-                t.amount_out,
-                t.accumulated,
-                t.code,
-                t.transaction_content,
-                t.reference_number,
-                t.body,
-                t.received_at
-            FROM transactions t
-            LEFT JOIN orders o ON t.order_id = o.id
-            ORDER BY t.received_at DESC
-        `);
-        return { success: true, transactions };
-    } finally {
-        if (connection) connection.release();
-    }
-}
+    const db = await getDb();
+    const [transactions, orders] = await Promise.all([
+        db.collection('transactions').find({}, {
+            projection: {
+                _id: 0, id: 1, order_id: 1, gateway: 1, transaction_date: 1, account_number: 1,
+                sub_account: 1, amount_in: 1, amount_out: 1, accumulated: 1, code: 1,
+                transaction_content: 1, reference_number: 1, body: 1, received_at: 1,
+            },
+        }).sort({ received_at: -1 }).toArray(),
+        db.collection('orders').find({}, { projection: { _id: 0, id: 1, order_code: 1 } }).toArray(),
+    ]);
 
-// ============================================
-// Activity Logs
-// ============================================
-
-async function getAllLogs() {
-    let connection;
-    try {
-        connection = await acquire();
-        const [logs] = await connection.execute(`
-            SELECT 
-                id,
-                user_id,
-                admin_id,
-                action,
-                details,
-                ip_address,
-                user_agent,
-                created_at,
-                created_date
-            FROM activity_logs
-            ORDER BY created_at DESC
-            LIMIT 1000
-        `);
-        return { success: true, logs };
-    } finally {
-        if (connection) connection.release();
-    }
-}
-
-/**
- * Get detailed user activity with filtering, search, and user-centric view
- */
-async function getUserActivity(payload) {
-    const { userId, action, dateFrom, dateTo, page = 1, limit = 50 } = payload || {};
-    let connection;
-    try {
-        connection = await acquire();
-        
-        // Build dynamic WHERE clause
-        const conditions = [];
-        const params = [];
-        
-        if (userId) {
-            conditions.push('al.user_id LIKE ?');
-            params.push(`%${userId}%`);
-        }
-        if (action) {
-            conditions.push('al.action = ?');
-            params.push(action);
-        }
-        if (dateFrom) {
-            conditions.push('al.created_at >= ?');
-            params.push(dateFrom);
-        }
-        if (dateTo) {
-            conditions.push('al.created_at <= ?');
-            params.push(dateTo + ' 23:59:59');
-        }
-        
-        const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
-        
-        // Get total count for pagination
-        const [countResult] = await connection.execute(
-            `SELECT COUNT(*) as total FROM activity_logs al ${whereClause}`,
-            params
-        );
-        const total = countResult[0].total;
-        
-        // Get paginated logs
-        const offset = (page - 1) * limit;
-        const [logs] = await connection.execute(
-            `SELECT 
-                al.id,
-                al.user_id,
-                al.admin_id,
-                al.action,
-                al.details,
-                al.ip_address,
-                al.user_agent,
-                al.created_at,
-                al.created_date,
-                u.full_name,
-                u.email
-            FROM activity_logs al
-            LEFT JOIN users u ON al.user_id = u.user_id
-            ${whereClause}
-            ORDER BY al.created_at DESC
-            LIMIT ? OFFSET ?`,
-            [...params, limit, offset]
-        );
-        
-        // Get user activity summary (top active users)
-        const [userSummary] = await connection.execute(`
-            SELECT 
-                al.user_id,
-                u.full_name,
-                COUNT(*) as total_actions,
-                MAX(al.created_at) as last_activity,
-                SUM(CASE WHEN al.action = 'USER_LOGIN' THEN 1 ELSE 0 END) as login_count,
-                SUM(CASE WHEN al.action IN ('REGISTER_CLASS', 'REGISTER_SUCCESS') THEN 1 ELSE 0 END) as register_count,
-                SUM(CASE WHEN al.action IN ('START_AUTO_REGISTER', 'START_AUTO_INSERT') THEN 1 ELSE 0 END) as auto_register_count,
-                SUM(CASE WHEN al.action = 'FETCH_SCHEDULE' THEN 1 ELSE 0 END) as fetch_count
-            FROM activity_logs al
-            LEFT JOIN users u ON al.user_id = u.user_id
-            WHERE al.user_id != 'admin' AND al.user_id != 'anonymous' AND al.user_id != 'system'
-            GROUP BY al.user_id, u.full_name
-            ORDER BY last_activity DESC
-            LIMIT 50
-        `);
-        
-        // Get action type distribution
-        const [actionStats] = await connection.execute(`
-            SELECT action, COUNT(*) as count
-            FROM activity_logs
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-            GROUP BY action
-            ORDER BY count DESC
-        `);
-        
-        // Get currently active users (activity in last 15 minutes)
-        const [activeNow] = await connection.execute(`
-            SELECT DISTINCT 
-                al.user_id,
-                u.full_name,
-                MAX(al.created_at) as last_activity,
-                (SELECT al2.action FROM activity_logs al2 
-                 WHERE al2.user_id = al.user_id 
-                 ORDER BY al2.created_at DESC LIMIT 1) as last_action,
-                (SELECT al3.details FROM activity_logs al3 
-                 WHERE al3.user_id = al.user_id 
-                 ORDER BY al3.created_at DESC LIMIT 1) as last_details
-            FROM activity_logs al
-            LEFT JOIN users u ON al.user_id = u.user_id
-            WHERE al.created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
-            AND al.user_id != 'admin' AND al.user_id != 'anonymous' AND al.user_id != 'system'
-            GROUP BY al.user_id, u.full_name
-            ORDER BY last_activity DESC
-        `);
-        
-        return { 
-            success: true, 
-            logs,
-            total,
-            page,
-            limit,
-            totalPages: Math.ceil(total / limit),
-            userSummary,
-            actionStats,
-            activeNow
-        };
-    } catch (error) {
-        console.error('❌ Error getting user activity:', error.message);
-        return { success: false, message: 'Failed to get user activity', error: error.message };
-    } finally {
-        if (connection) connection.release();
-    }
-}
-
-/**
- * Get real-time active users (activity in last 15 minutes)
- */
-async function getActiveUsers() {
-    let connection;
-    try {
-        connection = await acquire();
-        const [activeUsers] = await connection.execute(`
-            SELECT DISTINCT 
-                al.user_id,
-                u.full_name,
-                u.email,
-                MAX(al.created_at) as last_activity,
-                COUNT(*) as action_count_15min,
-                (SELECT al2.action FROM activity_logs al2 
-                 WHERE al2.user_id = al.user_id 
-                 ORDER BY al2.created_at DESC LIMIT 1) as last_action,
-                (SELECT al3.details FROM activity_logs al3 
-                 WHERE al3.user_id = al.user_id 
-                 ORDER BY al3.created_at DESC LIMIT 1) as last_details
-            FROM activity_logs al
-            LEFT JOIN users u ON al.user_id = u.user_id
-            WHERE al.created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
-            AND al.user_id != 'admin' AND al.user_id != 'anonymous' AND al.user_id != 'system'
-            GROUP BY al.user_id, u.full_name, u.email
-            ORDER BY last_activity DESC
-        `);
-        return { success: true, activeUsers };
-    } catch (error) {
-        console.error('❌ Error getting active users:', error.message);
-        return { success: false, message: 'Failed to get active users', error: error.message };
-    } finally {
-        if (connection) connection.release();
-    }
+    const orderCodes = new Map(orders.map((o) => [o.id, o.order_code]));
+    return {
+        success: true,
+        transactions: transactions.map((t) => ({
+            ...t,
+            order_code: t.order_id != null ? (orderCodes.get(t.order_id) || null) : null,
+        })),
+    };
 }
 
 // ============================================
 // Dashboard Statistics (using improved views)
 // ============================================
 
-async function getDashboardStats() {
-    let connection;
-    try {
-        connection = await acquire();
+// 7*3600*1000: shift a UTC instant to Vietnam wall clock before bucketing by calendar day —
+// exactly what DATE(x) did inside the old +07:00 session.
+const VN_DAY_MS = 7 * 60 * 60 * 1000;
 
-        // Use improved views for better performance
-        const [totalUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
-        
+async function getDashboardStats() {
+    try {
+        const db = await getDb();
+        const now = new Date();
+
+        const totalUsers = await db.collection('users').countDocuments({});
+
         // Count DISTINCT users with active VIP (not total subscriptions)
-        const [vipUsers] = await connection.execute(
-            'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
-        );
-        
-        let revenue = [{ total: 0 }];
-        try {
-            [revenue] = await connection.execute(
-                'SELECT COALESCE(SUM(daily_revenue), 0) as total FROM v_revenue_by_day'
-            );
-        } catch (e) {
-            // View may not exist, fallback to orders table
-            [revenue] = await connection.execute(
-                "SELECT COALESCE(SUM(amount), 0) as total FROM orders WHERE payment_status = 'Paid'"
-            );
-        }
-        
+        const vipUsers = (await db.collection('vip_subscriptions').distinct('user_id', { expiry_date: { $gt: now } })).length;
+
+        const orders = db.collection('orders');
+        const paidFilter = { payment_status: 'Paid' };
+        const totalRevenue = (await orders.aggregate([
+            { $match: paidFilter },
+            { $group: { _id: null, total: { $sum: '$amount' } } },
+        ]).toArray())[0];
+
         // Order summary
-        const [orderStats] = await connection.execute(`
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN payment_status = 'Paid' THEN 1 ELSE 0 END) as paid,
-                SUM(CASE WHEN payment_status = 'Unpaid' THEN 1 ELSE 0 END) as unpaid,
-                SUM(CASE WHEN payment_status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled
-            FROM orders
-        `);
-        
+        const [orderStats] = await orders.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    paid: { $sum: { $cond: [{ $eq: ['$payment_status', 'Paid'] }, 1, 0] } },
+                    unpaid: { $sum: { $cond: [{ $eq: ['$payment_status', 'Unpaid'] }, 1, 0] } },
+                    cancelled: { $sum: { $cond: [{ $eq: ['$payment_status', 'Cancelled'] }, 1, 0] } },
+                },
+            },
+        ]).toArray();
+
         // Revenue by date (last 7 days)
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
         let revenueByDate = [];
         try {
-            [revenueByDate] = await connection.execute(`
-                SELECT 
-                    DATE(payment_date) as date, 
-                    CAST(daily_revenue as DECIMAL(10,2)) as revenue 
-                FROM v_revenue_by_day
-                ORDER BY payment_date DESC
-                LIMIT 7
-            `);
+            revenueByDate = await orders.aggregate([
+                { $match: { payment_status: 'Paid', paid_at: { $ne: null, $gte: sevenDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: '%Y-%m-%d', date: { $add: ['$paid_at', VN_DAY_MS] } } },
+                        revenue: { $sum: '$amount' },
+                    },
+                },
+                { $sort: { _id: -1 } },
+                { $limit: 7 },
+            ]).toArray();
         } catch (e) {
-            // Fallback
-            [revenueByDate] = await connection.execute(`
-                SELECT 
-                    DATE(paid_at) as date, 
-                    SUM(amount) as revenue 
-                FROM orders 
-                WHERE payment_status = 'Paid' AND paid_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                GROUP BY DATE(paid_at)
-                ORDER BY date DESC
-                LIMIT 7
-            `);
+            revenueByDate = [];
         }
-        
-        // Normalize data format to ensure consistency
+
+        // Normalize data format to ensure consistency (date-only bucket -> +07 midnight instant,
+        // the same Date object the mysql2 driver produced for DATE(paid_at))
         const normalizedRevenueData = revenueByDate.map(row => ({
-            date: row.date,
+            date: vnWallClockToUTCDate(`${row._id} 00:00:00`),
             revenue: parseFloat(row.revenue || 0)
         }));
-        
+
         // User growth (last 7 days)
-        const [userGrowth] = await connection.execute(`
-            SELECT DATE(created_at) as date, COUNT(*) as count
-            FROM users
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            GROUP BY DATE(created_at)
-            ORDER BY date ASC
-        `);
-        
+        const userGrowthRaw = await db.collection('users').aggregate([
+            { $match: { created_at: { $gte: sevenDaysAgo } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: { $add: ['$created_at', VN_DAY_MS] } } },
+                    count: { $sum: 1 },
+                },
+            },
+            { $sort: { _id: 1 } },
+        ]).toArray();
+        const userGrowth = userGrowthRaw.map(row => ({
+            date: vnWallClockToUTCDate(`${row._id} 00:00:00`),
+            count: row.count,
+        }));
+
         // VIP plan distribution
-        const [vipDistribution] = await connection.execute(`
-            SELECT plan_type, COUNT(*) as count
-            FROM vip_subscriptions
-            WHERE expiry_date > NOW()
-            GROUP BY plan_type
-        `);
-        
-        // Recent activities
-        const [recentActivities] = await connection.execute(`
-            SELECT id, user_id, action, details, created_at
-            FROM activity_logs
-            ORDER BY created_at DESC
-            LIMIT 10
-        `);
-        
+        const vipDistributionRaw = await db.collection('vip_subscriptions').aggregate([
+            { $match: { expiry_date: { $gt: now } } },
+            { $group: { _id: '$plan_type', count: { $sum: 1 } } },
+        ]).toArray();
+        const vipDistribution = vipDistributionRaw.map(row => ({ plan_type: row._id, count: row.count }));
+
         return {
             success: true,
             stats: {
-                totalUsers: totalUsers[0].count,
-                vipUsers: vipUsers[0].count,
-                totalRevenue: parseFloat(revenue[0].total || 0),
+                totalUsers,
+                vipUsers,
+                totalRevenue: parseFloat((totalRevenue && totalRevenue.total) || 0),
                 orders: {
-                    total: orderStats[0].total,
-                    paid: orderStats[0].paid || 0,
-                    unpaid: orderStats[0].unpaid || 0,
-                    cancelled: orderStats[0].cancelled || 0
+                    total: (orderStats && orderStats.total) || 0,
+                    paid: (orderStats && orderStats.paid) || 0,
+                    unpaid: (orderStats && orderStats.unpaid) || 0,
+                    cancelled: (orderStats && orderStats.cancelled) || 0,
                 },
                 revenueByDate: normalizedRevenueData,
                 userGrowth,
                 vipDistribution,
-                recentActivities
             }
         };
     } catch (error) {
         console.warn('⚠️  Dashboard stats error:', error.message);
-        // Fallback to basic stats if views don't exist
+        // Fallback to basic stats if anything failed
         try {
-            const [totalUsers] = await connection.execute('SELECT COUNT(*) as count FROM users');
-            const [vipUsers] = await connection.execute(
-                'SELECT COUNT(DISTINCT user_id) as count FROM vip_subscriptions WHERE expiry_date > NOW()'
-            );
-            
+            const db = await getDb();
+            const totalUsers = await db.collection('users').countDocuments({});
+            const vipUsers = (await db.collection('vip_subscriptions').distinct('user_id', { expiry_date: { $gt: new Date() } })).length;
+
             return {
                 success: true,
                 stats: {
-                    totalUsers: totalUsers[0].count,
-                    vipUsers: vipUsers[0].count,
+                    totalUsers,
+                    vipUsers,
                     totalRevenue: 0,
                     orders: { total: 0, paid: 0, unpaid: 0, cancelled: 0 },
                     revenueByDate: [],
                     userGrowth: [],
                     vipDistribution: [],
-                    recentActivities: []
                 }
             };
         } catch (fallbackError) {
@@ -899,12 +556,9 @@ async function getDashboardStats() {
                     revenueByDate: [],
                     userGrowth: [],
                     vipDistribution: [],
-                    recentActivities: []
                 }
             };
         }
-    } finally {
-        if (connection) connection.release();
     }
 }
 
@@ -913,252 +567,145 @@ async function getDashboardStats() {
 // ============================================
 
 async function getAllVIPPlans() {
-    let connection;
-    try {
-        connection = await acquire();
-        const [plans] = await connection.execute(`
-            SELECT 
-                id,
-                plan_key,
-                plan_name,
-                duration_days,
-                price,
-                is_active,
-                sort_order,
-                description,
-                created_at,
-                updated_at
-            FROM vip_plans
-            ORDER BY sort_order ASC, id ASC
-        `);
-        return { success: true, plans };
-    } finally {
-        if (connection) connection.release();
-    }
+    const db = await getDb();
+    const plans = await db.collection('vip_plans').find({}, {
+        projection: {
+            _id: 0, id: 1, plan_key: 1, plan_name: 1, duration_days: 1, price: 1,
+            is_active: 1, sort_order: 1, description: 1, created_at: 1, updated_at: 1,
+        },
+    }).sort({ sort_order: 1, id: 1 }).toArray();
+    return { success: true, plans };
 }
 
-async function createVIPPlan(payload, req = null) {
+async function createVIPPlan(payload) {
     const { planKey, planName, durationDays, price, sortOrder, description } = payload;
-    
+
     if (!planKey || !planName || !durationDays || price === undefined || price === null) {
         return { success: false, message: 'planKey, planName, durationDays, and price are required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
 
-        // Check if plan_key already exists (UNIQUE constraint)
-        const [existing] = await connection.execute(
-            'SELECT id FROM vip_plans WHERE plan_key = ?',
-            [planKey]
-        );
-        
-        if (existing.length > 0) {
-            await connection.rollback();
+        // Check if plan_key already exists (unique index)
+        const existing = await db.collection('vip_plans').findOne({ plan_key: planKey }, { projection: { _id: 0, id: 1 } });
+        if (existing) {
             return { success: false, message: 'Plan key already exists' };
         }
 
-        await connection.execute(
-            `INSERT INTO vip_plans (
-                plan_key, plan_name, duration_days, price, is_active, sort_order, description, created_at
-            ) VALUES (?, ?, ?, ?, 1, ?, ?, NOW())`,
-            [planKey, planName, durationDays, price, sortOrder || 0, description || null]
-        );
-
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES ('admin', 'ADMIN_CREATE_PLAN', ?, ?, ?, NOW())`,
-            [`Admin created VIP plan: ${planName} (${planKey})`, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
+        await db.collection('vip_plans').insertOne({
+            id: await nextId('vip_plans'),
+            plan_key: planKey,
+            plan_name: planName,
+            duration_days: durationDays,
+            price,
+            is_active: 1,
+            sort_order: sortOrder || 0,
+            description: description || null,
+            created_at: new Date(),
+            updated_at: null,
+        });
         return { success: true, message: 'VIP plan created successfully' };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error creating VIP plan:', error.message);
         return { success: false, message: 'Failed to create VIP plan', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }
 
-async function updateVIPPlan(payload, req = null) {
+async function updateVIPPlan(payload) {
     const { id, planKey, planName, durationDays, price, sortOrder, description, isActive } = payload;
-    
+
     if (!id) {
         return { success: false, message: 'Plan ID is required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
+        const plans = db.collection('vip_plans');
 
-        const [existing] = await connection.execute(
-            'SELECT plan_key FROM vip_plans WHERE id = ?',
-            [id]
-        );
-        
-        if (existing.length === 0) {
-            await connection.rollback();
+        const existing = await plans.findOne({ id: Number(id) }, { projection: { _id: 0, plan_key: 1 } });
+        if (!existing) {
             return { success: false, message: 'Plan not found' };
         }
 
         // If plan_key is being changed, check for duplicates
-        if (planKey && planKey !== existing[0].plan_key) {
-            const [duplicate] = await connection.execute(
-                'SELECT id FROM vip_plans WHERE plan_key = ? AND id != ?',
-                [planKey, id]
-            );
-            if (duplicate.length > 0) {
-                await connection.rollback();
+        if (planKey && planKey !== existing.plan_key) {
+            const duplicate = await plans.findOne({ plan_key: planKey, id: { $ne: Number(id) } }, { projection: { _id: 0, id: 1 } });
+            if (duplicate) {
                 return { success: false, message: 'Plan key already exists' };
             }
         }
 
-        const updates = [];
-        const values = [];
+        const set = { updated_at: new Date() };
+        if (planKey !== undefined) set.plan_key = planKey;
+        if (planName !== undefined) set.plan_name = planName;
+        if (durationDays !== undefined) set.duration_days = durationDays;
+        if (price !== undefined) set.price = price;
+        if (sortOrder !== undefined) set.sort_order = sortOrder;
+        if (description !== undefined) set.description = description;
+        if (isActive !== undefined) set.is_active = isActive ? 1 : 0;
 
-        if (planKey !== undefined) { updates.push('plan_key = ?'); values.push(planKey); }
-        if (planName !== undefined) { updates.push('plan_name = ?'); values.push(planName); }
-        if (durationDays !== undefined) { updates.push('duration_days = ?'); values.push(durationDays); }
-        if (price !== undefined) { updates.push('price = ?'); values.push(price); }
-        if (sortOrder !== undefined) { updates.push('sort_order = ?'); values.push(sortOrder); }
-        if (description !== undefined) { updates.push('description = ?'); values.push(description); }
-        if (isActive !== undefined) { updates.push('is_active = ?'); values.push(isActive ? 1 : 0); }
-        
-        updates.push('updated_at = NOW()');
-        values.push(id);
-
-        if (updates.length > 1) {
-            await connection.execute(
-                `UPDATE vip_plans SET ${updates.join(', ')} WHERE id = ?`,
-                values
-            );
-        }
-
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES ('admin', 'ADMIN_UPDATE_PLAN', ?, ?, ?, NOW())`,
-            [`Admin updated VIP plan ID: ${id}`, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
+        await plans.updateOne({ id: Number(id) }, { $set: set });
         return { success: true, message: 'VIP plan updated successfully' };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error updating VIP plan:', error.message);
         return { success: false, message: 'Failed to update VIP plan', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }
 
-async function deleteVIPPlan(payload, req = null) {
+async function deleteVIPPlan(payload) {
     const { id } = payload;
-    
+
     if (!id) {
         return { success: false, message: 'Plan ID is required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
 
-        const [plan] = await connection.execute(
-            'SELECT plan_key, plan_name FROM vip_plans WHERE id = ?',
-            [id]
-        );
-        
-        if (plan.length === 0) {
-            await connection.rollback();
+        const plan = await db.collection('vip_plans').findOne({ id: Number(id) }, { projection: { _id: 0, plan_key: 1, plan_name: 1 } });
+        if (!plan) {
             return { success: false, message: 'Plan not found' };
         }
 
         // Check if plan is being used
-        const [activeOrders] = await connection.execute(
-            'SELECT COUNT(*) as count FROM orders WHERE plan_id = ? AND payment_status = "Unpaid"',
-            [id]
-        );
-
-        if (activeOrders[0].count > 0) {
-            await connection.rollback();
-            return { 
-                success: false, 
-                message: `Cannot delete plan. ${activeOrders[0].count} unpaid orders are using this plan.` 
+        const activeOrdersCount = await db.collection('orders').countDocuments({ plan_id: Number(id), payment_status: 'Unpaid' });
+        if (activeOrdersCount > 0) {
+            return {
+                success: false,
+                message: `Cannot delete plan. ${activeOrdersCount} unpaid orders are using this plan.`
             };
         }
 
-        await connection.execute(
-            'DELETE FROM vip_plans WHERE id = ?',
-            [id]
-        );
-
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES ('admin', 'ADMIN_DELETE_PLAN', ?, ?, ?, NOW())`,
-            [`Admin deleted VIP plan: ${plan[0].plan_name} (${plan[0].plan_key})`, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
+        await db.collection('vip_plans').deleteOne({ id: Number(id) });
         return { success: true, message: 'VIP plan deleted successfully' };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error deleting VIP plan:', error.message);
         return { success: false, message: 'Failed to delete VIP plan', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }
 
-async function toggleVIPPlanStatus(payload, req = null) {
+async function toggleVIPPlanStatus(payload) {
     const { id } = payload;
-    
+
     if (!id) {
         return { success: false, message: 'Plan ID is required' };
     }
 
-    let connection;
     try {
-        connection = await acquire();
-        await connection.beginTransaction();
+        const db = await getDb();
+        const plans = db.collection('vip_plans');
 
-        const [plan] = await connection.execute(
-            'SELECT plan_name, is_active FROM vip_plans WHERE id = ?',
-            [id]
-        );
-        
-        if (plan.length === 0) {
-            await connection.rollback();
+        const plan = await plans.findOne({ id: Number(id) }, { projection: { _id: 0, plan_name: 1, is_active: 1 } });
+        if (!plan) {
             return { success: false, message: 'Plan not found' };
         }
 
-        const newStatus = plan[0].is_active ? 0 : 1;
-        await connection.execute(
-            'UPDATE vip_plans SET is_active = ?, updated_at = NOW() WHERE id = ?',
-            [newStatus, id]
-        );
-
-        const _ci = req ? { ip: req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || req.headers?.['x-real-ip'] || req.socket?.remoteAddress || null, ua: req.headers?.['user-agent'] || null } : { ip: null, ua: null };
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES ('admin', 'ADMIN_TOGGLE_PLAN', ?, ?, ?, NOW())`,
-            [`Admin ${newStatus ? 'enabled' : 'disabled'} VIP plan: ${plan[0].plan_name}`, _ci.ip, _ci.ua]
-        );
-
-        await connection.commit();
+        const newStatus = plan.is_active ? 0 : 1;
+        await plans.updateOne({ id: Number(id) }, { $set: { is_active: newStatus, updated_at: new Date() } });
         return { success: true, message: `Plan ${newStatus ? 'enabled' : 'disabled'} successfully`, isActive: newStatus };
     } catch (error) {
-        if (connection) await connection.rollback();
         console.error('❌ Error toggling VIP plan status:', error.message);
         return { success: false, message: 'Failed to toggle plan status', error: error.message };
-    } finally {
-        if (connection) connection.release();
     }
 }

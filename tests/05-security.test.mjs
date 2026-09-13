@@ -1,23 +1,22 @@
 // Security contract for the admin surface and the payment webhook.
-// Drives the REAL handlers with stubbed mysql2 so nothing touches production data.
+// Drives the REAL handlers with the in-memory Mongo stub so nothing touches production data.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { REPO } from './helpers.mjs';
 import { loadStubbed, mkreq, mkres, drain } from './loader.mjs';
-import * as mstub from './mocks/mysql-stub.mjs';
+import * as mstub from './mocks/mongo-stub.mjs';
 
 test.beforeEach(() => { mstub.reset(); delete process.env.SEPAY_API_KEY; delete process.env.SEPAY_WEBHOOK_SECRET; });
 
-/** Scripted mysql2 result sets: match a SQL fragment -> rows. */
-function script(scripts) {
-  mstub.configure({ rows: scripts });
+/** Seed the collections the handlers read (replaces the old scripted-SQL-rows helper). */
+function seed(collections) {
+  mstub.configure({ seed: collections });
 }
 
-const ADMIN_ROWS = [{ id: 1, username: 'admin', full_name: 'Admin', role: 'superadmin' }];
+const ADMIN_DOC = { id: 1, username: 'admin', full_name: 'Admin', role: 'superadmin', is_active: 1 };
 
 test('admin: state-changing actions must require an authenticated session', { skip: process.env.ALLOW_UNAUTH_ADMIN === '1' }, async (t) => {
-  script([[/FROM admins/, ADMIN_ROWS], [/UPDATE admins/, []], [/.*/, []]]);
   const adminHandler = await loadStubbed('api/admin-handler.js');
 
   const destructive = [
@@ -28,13 +27,13 @@ test('admin: state-changing actions must require an authenticated session', { sk
     ['updateVIPPlan', { planId: 1, price: 0 }],
     ['getAllUsers', {}],
     ['getAllTransactions', {}],
-    ['getAllLogs', {}],
     ['getAllOrders', {}],
     ['getAllSubscriptions', {}],
   ];
   const open = [];
   for (const [action, payload] of destructive) {
-    mstub.reset(); script([[/FROM admins/, ADMIN_ROWS], [/UPDATE admins/, []], [/.*/, []]]);
+    mstub.reset();
+    seed({ admins: [ADMIN_DOC] });
     const res = mkres();
     await adminHandler(mkreq({ action, payload }, { headers: { origin: 'https://evil.example' } }), res);
     if (res.statusCode === 200 && res.body?.success !== false) open.push(action);
@@ -49,7 +48,6 @@ test('admin: state-changing actions must require an authenticated session', { sk
 });
 
 test('admin: CORS is pinned, not a wildcard on state-changing endpoints', async () => {
-  script([[/FROM admins/, ADMIN_ROWS], [/.*/, []]]);
   const adminHandler = await loadStubbed('api/admin-handler.js');
   const res = mkres();
   await adminHandler(mkreq({ action: 'getAllUsers', payload: {} }), res);
@@ -57,34 +55,46 @@ test('admin: CORS is pinned, not a wildcard on state-changing endpoints', async 
     'api/admin-handler.js used to hardcode Access-Control-Allow-Origin: *');
 });
 
-test('admin: password must be verified against a hash in memory, never compared in SQL', async () => {
-  const lines = readFileSync(REPO + 'api/admin-handler.js', 'utf8').split('\n');
-  const sqlCompare = lines.findIndex((l) => /WHERE username = \? AND password_hash = \?/.test(l)) + 1;
-  assert.equal(sqlCompare, 0,
-    'the login query must SELECT by username only and verify the password in code (scrypt), ' +
-    'not bind the raw password into `password_hash = ?`');
+test('admin: password must be verified against a hash in memory, never compared in the query', () => {
+  const lines = readFileSync(REPO + 'api/admin-handler.js', 'utf8').split('\n')
+    .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l));
+  const offenders = lines.filter((l) => /password_hash\s*[:=]\s*(?:\?|\$\{|password\b)/.test(l) && !/scryptHash/.test(l));
+  assert.deepEqual(offenders, [], 'password_hash must never be bound into a lookup condition');
   const s = readFileSync(REPO + 'api/admin-handler.js', 'utf8');
   assert.ok(/scryptSync|scryptHash/.test(s), 'scrypt verification expected');
   assert.ok(/timingSafeEqual/.test(s), 'constant-time comparison expected');
 });
 
 test('admin login: legacy plaintext row logs in and is upgraded to an scrypt hash', async () => {
-  script([
-    [/SELECT id, username, full_name, role, password_hash FROM admins/, [{ id: 1, username: 'admin', full_name: 'A', role: 'superadmin', password_hash: 'p@ssw0rd-123456' }]],
-    [/UPDATE admins/, [{ affectedRows: 1 }]],
-    [/.*/, []],
-  ]);
+  seed({ admins: [{ ...ADMIN_DOC, password_hash: 'p@ssw0rd-123456' }] });
   const adminHandler = await loadStubbed('api/admin-handler.js');
   const res = mkres();
   await adminHandler(mkreq({ action: 'login', payload: { username: 'admin', password: 'p@ssw0rd-123456' } }), res);
   assert.equal(res.body?.success, true, 'legacy plaintext login must keep working');
-  const upgrade = mstub.stats.queries.find((q) => /UPDATE admins SET password_hash/.test(q.sql));
-  assert.ok(upgrade, 'a successful legacy login must rewrite the row to an scrypt hash');
-  assert.match(upgrade.params[0], /^scrypt\$/, `stored value must become scrypt, got ${String(upgrade.params[0]).slice(0, 12)}`);
+
+  const stored = mstub.dump('admins')[0];
+  assert.match(stored.password_hash, /^scrypt\$/, `stored value must become scrypt, got ${String(stored.password_hash).slice(0, 12)}`);
+  assert.notEqual(stored.password_hash, 'p@ssw0rd-123456');
+  assert.ok(stored.last_login instanceof Date, 'last_login refreshed');
+  // the login response must never carry the hash
+  assert.ok(!JSON.stringify(res.body).includes('scrypt$'), 'password_hash leaked in the login response');
+});
+
+test('admin login: a correct scrypt hash logs in without rewriting anything', async () => {
+  const crypto = await import('node:crypto');
+  const salt = crypto.randomBytes(16);
+  const derived = crypto.scryptSync('hunter-2', salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+  const hash = `scrypt$16384$8$1$${salt.toString('base64')}$${derived.toString('base64')}`;
+  seed({ admins: [{ ...ADMIN_DOC, password_hash: hash }] });
+  const adminHandler = await loadStubbed('api/admin-handler.js');
+  const res = mkres();
+  await adminHandler(mkreq({ action: 'login', payload: { username: 'admin', password: 'hunter-2' } }), res);
+  assert.equal(res.body?.success, true);
+  assert.equal(mstub.dump('admins')[0].password_hash, hash, 'a hashed row must not be rewritten');
 });
 
 test('admin login: wrong password is rejected', async () => {
-  script([[/FROM admins/, [{ id: 1, username: 'admin', full_name: 'A', role: 'superadmin', password_hash: 'scrypt$16384$8$1$c2FsdA==$hash' }]], [/.*/, []]]);
+  seed({ admins: [{ ...ADMIN_DOC, password_hash: 'scrypt$16384$8$1$c2FsdA==$hash' }] });
   const adminHandler = await loadStubbed('api/admin-handler.js');
   const res = mkres();
   await adminHandler(mkreq({ action: 'login', payload: { username: 'admin', password: 'wrong' } }), res);
@@ -102,38 +112,122 @@ test('sepay webhook: static — signature/API-key verification path must exist',
     'before processVIPPayment, so the customer paid and got no VIP)');
 });
 
-test('sepay webhook: with SEPA_API_KEY set, unsigned forged activation is rejected 401', async () => {
+test('sepay webhook: with SEPAY_API_KEY set, unsigned forged activation is rejected 401', async () => {
   process.env.SEPAY_API_KEY = 'test-secret-key-abc';
-  const paid = [{ id: 42, user_id: '2001090999', plan_type: '30days', plan_id: 3, plan_name: 'x', amount: 432000, payment_status: 'Unpaid' }];
-  script([
-    [/FROM orders/, [{ id: 42 }]],
-    [/FROM vip_plans/, [{ id: 3, duration_days: 30 }]],
-    [/.*/, [{ affectedRows: 1 }]],
-  ]);
+  seed({ orders: [{ id: 42, user_id: '2001090999', plan_type: '30days', plan_id: 3, plan_name: 'x', amount: 432000, payment_status: 'Unpaid', created_at: new Date() }] });
   const hook = await loadStubbed('api/sepay-webhook.js');
   const forged = {
     id: 'x', gateway: 'TMPAY2024', transactionDate: '2026-09-08 09:00:00',
     accountNumber: '01006022006', transferType: 'in', transferAmount: 432000,
-    code: 'SUCCESS', content: 'DKHPABCDEFGHIJKLMNOP', referenceCode: 'x', description: 'x',
+    code: 'SUCCESS', content: 'DKHPABCDEFGHIJKL', referenceCode: 'x', description: 'x',
   };
   const res = mkres();
   await hook(mkreq(forged, { token: null }), res);
   await drain();
   assert.equal(res.statusCode, 401, `unsigned webhook must be rejected; got ${res.statusCode} ${JSON.stringify(res.body).slice(0, 160)}`);
-  assert.equal(mstub.stats.acquired, 0, 'no DB connection must be taken before authentication');
+  assert.equal(mstub.stats.ops.length, 0, 'no DB operation may run before authentication');
 });
 
-test('sepay webhook: with SEPA_API_KEY set, correct Apikey header is accepted', async () => {
+test('sepay webhook: with SEPAY_API_KEY set, correct Apikey header is accepted', async () => {
   process.env.SEPAY_API_KEY = 'test-secret-key-abc';
-  script([
-    [/FROM orders WHERE order_code/, [{ id: 42 }]],
-    [/.*/, [{ affectedRows: 1, insertId: 1 }]],
-  ]);
+  seed({
+    orders: [{ id: 42, order_code: 'DKHPABCDEFGHIJKL', user_id: '2001090999', plan_type: '30days', plan_id: 3, plan_name: '30 Ngày VIP', amount: 432000, payment_status: 'Unpaid', created_at: new Date() }],
+    vip_plans: [{ id: 3, plan_key: '30days', plan_name: '30 Ngày VIP', duration_days: 30, price: 432000, is_active: 1 }],
+  });
   const hook = await loadStubbed('api/sepay-webhook.js');
-  const payload = { id: 'x', gateway: 'TMPAY2024', transactionDate: '2026-09-08 09:00:00', content: 'DKHPABCDEFGHIJKLMNOP', transferType: 'in', transferAmount: 432000 };
+  const payload = { id: 'x', gateway: 'TMPAY2024', transactionDate: '2026-09-08 09:00:00', content: 'DKHPABCDEFGHIJKL', transferType: 'in', transferAmount: 432000, referenceCode: 'FT-1' };
   const res = mkres();
   await hook(mkreq(payload, { token: null, headers: { authorization: 'Apikey test-secret-key-abc' } }), res);
   assert.notEqual(res.statusCode, 401, 'a correctly signed request must not be rejected');
+});
+
+test('sepay webhook: happy path pays an order, grants exactly one VIP, replay is idempotent', async () => {
+  process.env.SEPAY_API_KEY = 'k';
+  seed({
+    orders: [{ id: 42, order_code: 'DKHPABCDEFGHIJKL', user_id: '2001090999', plan_type: '30days', plan_id: 3, plan_name: '30 Ngày VIP', amount: 432000, payment_status: 'Unpaid', created_at: new Date() }],
+    vip_plans: [{ id: 3, plan_key: '30days', plan_name: '30 Ngày VIP', duration_days: 30, price: 432000, is_active: 1 }],
+  });
+  const hook = await loadStubbed('api/sepay-webhook.js');
+  const body = { id: 'x', gateway: 'SePay', transactionDate: '2026-09-08 09:00:00', accountNumber: '01006022006', transferType: 'in', transferAmount: 432000, accumulated: 10000000, code: 'SUCCESS', content: 'Chuyen tien DKHPABCDEFGHIJKL', referenceCode: 'FT-42', description: 'x' };
+  const req = () => mkreq(body, { token: null, headers: { authorization: 'Apikey k' } });
+
+  const r1 = mkres(); await hook(req(), r1);
+  assert.equal(r1.statusCode, 200);
+  assert.equal(r1.body.success, true, JSON.stringify(r1.body));
+  assert.equal(r1.body.orderCancelled, false);
+
+  const order = mstub.dump('orders')[0];
+  assert.equal(order.payment_status, 'Paid');
+  assert.ok(order.paid_at instanceof Date);
+  assert.equal(order.transaction_ref, 'FT-42');
+
+  const subs = mstub.dump('vip_subscriptions');
+  assert.equal(subs.length, 1);
+  assert.equal(subs[0].user_id, '2001090999');
+  assert.equal(subs[0].order_id, 42);
+  assert.ok(subs[0].expiry_date instanceof Date);
+  assert.match(mstub.utcToVnWallClock(subs[0].expiry_date), / 23:59:59$/, 'VIP ends at VN end-of-day');
+  // New subscription: TODAY (VN) + 30 days → 23:59:59. (computeVIPExpiry anchors on the moment
+  // of processing — exactly like the old webhook — transactionDate must NOT move it.)
+  const daysToExpiry = Math.round((subs[0].expiry_date.getTime() - Date.now()) / 86400000);
+  assert.ok(daysToExpiry >= 29 && daysToExpiry <= 31, `expected ~30 days of VIP, got ${daysToExpiry}`);
+  assert.equal(subs[0].expiry_date.toISOString().slice(11, 19), '16:59:59', '= 23:59:59 in +07');
+
+  const txns = mstub.dump('transactions');
+  assert.equal(txns.length, 1);
+  assert.equal(txns[0].order_id, 42);
+  assert.equal(txns[0].reference_number, 'FT-42');
+  // transaction_date round-trips the VN wall clock unchanged (09:00 +07 = 02:00Z)
+  assert.equal(txns[0].transaction_date.toISOString(), '2026-09-08T02:00:00.000Z');
+
+  // replay the identical notification: must NOT mint a second subscription. The order no
+  // longer matches the Unpaid/Cancelled guard, so the webhook answers "already paid" (same
+  // contract as the old MySQL UPDATE ... WHERE payment_status IN (...) version) and stops.
+  const paidAt = mstub.dump('orders')[0].paid_at;
+  const r2 = mkres(); await hook(req(), r2);
+  assert.equal(r2.statusCode, 200, 'a replay must ACK (200) so SePay stops retrying');
+  assert.match(r2.body.message, /already paid/, JSON.stringify(r2.body));
+  assert.equal(mstub.dump('vip_subscriptions').length, 1, 'webhook replay must be idempotent');
+  assert.equal(mstub.dump('orders')[0].paid_at.getTime(), paidAt.getTime(), 'replay must not touch the paid order');
+});
+
+test('sepay webhook: amount mismatch never activates VIP', async () => {
+  process.env.SEPAY_API_KEY = 'k';
+  seed({
+    orders: [{ id: 42, order_code: 'DKHPABCDEFGHIJKL', user_id: 'u', plan_type: '30days', plan_id: 3, plan_name: 'x', amount: 432000, payment_status: 'Unpaid', created_at: new Date() }],
+    vip_plans: [{ id: 3, plan_key: '30days', duration_days: 30, is_active: 1 }],
+  });
+  const hook = await loadStubbed('api/sepay-webhook.js');
+  const res = mkres();
+  await hook(mkreq({
+    id: 'x', gateway: 'SePay', transactionDate: '2026-09-08 09:00:00', transferType: 'in',
+    transferAmount: 10000, content: 'DKHPABCDEFGHIJKL', referenceCode: 'FT-9',
+  }, { token: null, headers: { authorization: 'Apikey k' } }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.success, false, 'an underpayment must be refused');
+  assert.match(res.body.message, /Amount mismatch/);
+  assert.equal(mstub.dump('orders')[0].payment_status, 'Unpaid', 'the order stays unpaid');
+  assert.equal(mstub.dump('vip_subscriptions').length, 0);
+});
+
+test('sepay webhook: payment for a Cancelled order records the ref but grants no VIP', async () => {
+  process.env.SEPAY_API_KEY = 'k';
+  seed({
+    orders: [{ id: 42, order_code: 'DKHPABCDEFGHIJKL', user_id: 'u', plan_type: '30days', plan_id: 3, plan_name: 'x', amount: 432000, payment_status: 'Cancelled', created_at: new Date(Date.now() - 20 * 60000), cancelled_at: new Date() }],
+    vip_plans: [{ id: 3, plan_key: '30days', duration_days: 30, is_active: 1 }],
+  });
+  const hook = await loadStubbed('api/sepay-webhook.js');
+  const res = mkres();
+  await hook(mkreq({
+    id: 'x', gateway: 'SePay', transactionDate: '2026-09-08 09:00:00', transferType: 'in',
+    transferAmount: 432000, content: 'DKHPABCDEFGHIJKL', referenceCode: 'FT-LATE',
+  }, { token: null, headers: { authorization: 'Apikey k' } }), res);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.orderCancelled, true);
+  const o = mstub.dump('orders')[0];
+  assert.equal(o.payment_status, 'Cancelled', 'a late payment must not resurrect a cancelled order');
+  assert.equal(o.transaction_ref, 'FT-LATE', 'but the money must be traceable to the order');
+  assert.equal(mstub.dump('vip_subscriptions').length, 0);
 });
 
 test('sepay webhook: without a configured key it warns and stays compatible (documented gap)', async () => {
@@ -142,9 +236,8 @@ test('sepay webhook: without a configured key it warns and stays compatible (doc
   const origWarn = console.warn;
   console.warn = (...a) => warnings.push(a.join(' '));
   try {
-    script([[/.*/, [{ affectedRows: 1, insertId: 1 }]]]);
     const res = mkres();
-    await hook(mkreq({ id: 'x', gateway: 'TMPAY2024', content: 'DKHPABCDEFGHIJKLMNOP', transferType: 'in', transferAmount: 432000 }, { token: null }), res);
+    await hook(mkreq({ id: 'x', gateway: 'TMPAY2024', content: 'DKHPABCDEFGHIJKL', transferType: 'in', transferAmount: 432000 }, { token: null }), res);
     assert.ok(warnings.some((w) => /SEPAY_API_KEY/.test(w)), 'must log a loud warning that the webhook is unprotected');
     assert.equal(res.statusCode, 200);
   } finally {
@@ -177,11 +270,18 @@ test('no hardcoded personal payment details as fallback in source', () => {
 test('credentials must never be committed', () => {
   // Search needles are built from env (or sentinels when unset) so that the repo itself never
   // carries the live values — this test then catches anyone who hard-codes them in source.
-  const user = process.env.DB_USER || 'REDACTED';
-  const pass = process.env.DB_PASSWORD || 'REDACTED';
-  const host = process.env.DB_HOST || 'REDACTED';
-  const needles = new RegExp(`(${pass.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${user}|${host})`);
-  const s = ['api/handler.js', 'api/admin-handler.js', 'api/sepay-webhook.js', 'public/app.original.js', 'public/admin-panel.original.js', 'public/app.js']
+  const uri = process.env.MONGODB_URI || '';
+  const creds = (() => {
+    if (!uri) return ['REDACTED-USER', 'REDACTED-PASS', 'REDACTED-HOST'];
+    const at = uri.lastIndexOf('@');
+    try {
+      const u = new URL(`x://${uri.slice(at + 1)}`);
+      const parts = [decodeURIComponent(u.username), decodeURIComponent(u.password), u.hostname].filter(Boolean);
+      return parts.length ? parts : ['REDACTED-USER', 'REDACTED-PASS', 'REDACTED-HOST'];
+    } catch { return ['REDACTED-USER', 'REDACTED-PASS', 'REDACTED-HOST']; }
+  })();
+  const needles = new RegExp(`(${creds.map((c) => (c || 'x').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`);
+  const s = ['api/handler.js', 'api/admin-handler.js', 'api/sepay-webhook.js', 'api/db.js', 'public/app.original.js', 'public/admin-panel.original.js', 'public/app.js']
     .flatMap((f) => readFileSync(REPO + f, 'utf8').split('\n').map((l, i) => `${f}:${i + 1}  ${l.trim()}`))
     .filter((l) => needles.test(l));
   assert.deepEqual(s, [], 'real credentials appear in source:\n  ' + s.join('\n  '));
