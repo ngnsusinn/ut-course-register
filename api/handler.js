@@ -1,123 +1,17 @@
 import fetch from 'node-fetch';
-import mysql from 'mysql2/promise';
 import https from 'https';
 import crypto from 'crypto';
+import { getDb, nextId, nextIdRange, vnWallClockToUTCDate } from './db.js';
 
 // ============================================
-// Database configuration
+// Database
 // ============================================
-// Tuned for a serverless (Vercel) runtime talking to ONE shared MySQL host:
-//  - connectionLimit is deliberately small. Every warm lambda instance opens its own pool,
-//    and the shared server caps ALL tenants at max_connections=200. A limit of 100 here
-//    previously let a handful of concurrent logins take the whole server down.
-//  - connectTimeout makes an unreachable DB fail in 5s instead of mysql2's 10s default.
-//  - enableKeepAlive stops the pool handing back sockets that a load balancer already reaped
-//    while the instance was frozen — the "first login after a pause is very slow" symptom.
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'your_db_user',
-    password: process.env.DB_PASSWORD || 'your_db_password',
-    database: process.env.DB_NAME || 'uth_registration',
-    waitForConnections: true,
-    queueLimit: 0,
-    timezone: '+07:00',
-    connectionLimit: Number(process.env.DB_POOL_SIZE || 5),
-    maxIdle: 2,
-    connectTimeout: 10000,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 10000,
-    // Belt and braces: MySQL aborts a runaway read after 4s rather than hanging the lambda, and the
-    // session clock is pinned to VN so `expiry_date > NOW()` means what the code thinks it means
-    // (the shared host runs SYSTEM = +07 but the LAN target is UTC — this makes both correct).
-    sessionVariables: { max_execution_time: 4000, time_zone: '+07:00' },
-    charset: 'utf8mb4_unicode_ci',
-};
-
-// Validate environment variables
-if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
-    console.warn('Missing database environment variables - using defaults');
-}
-
-// ============================================
-// Connection pool management
-// ============================================
-let pool;
-const getPool = () => {
-    try {
-        if (!pool) {
-            pool = mysql.createPool(dbConfig);
-            // A pooled connection that dies in the background must not become an unhandled
-            // rejection (which on Vercel kills the instance mid-request for the next user).
-            pool.on('error', (err) => console.error('❌ Pool connection error:', err.code || err.message));
-            console.log('✅ Database pool created');
-        }
-        return pool;
-    } catch (error) {
-        console.error('❌ Error creating pool:', error);
-        throw new Error('Database connection failed');
-    }
-};
-
-/**
- * Acquire a connection with a hard ceiling so an exhausted pool can never hang the request.
- * On the shared MySQL host, brand-new TCP connections from cloud IPs are frequently dropped or
- * delayed several seconds (connect ETIMEDOUT). We retry a few times with a small backoff; each
- * attempt has an equal share of the overall budget so the request can never exceed timeoutMs.
- */
-/**
- * Acquire a connection with a hard ceiling (never queue forever), while allowing enough time
- * for the shared MySQL host's notoriously slow new-connection handshake (~4-6s from cloud IPs).
- * A genuinely dead DB surfaces here as ETIMEDPOOL instead of hanging the request.
- */
-async function acquire(timeoutMs = 9000) {
-    const wait = getPool().getConnection();
-    let timer;
-    const guard = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(Object.assign(new Error(`DB pool acquire timeout after ${timeoutMs}ms`), { code: 'ETIMEDPOOL' })), timeoutMs);
-    });
-    try {
-        return await Promise.race([wait, guard]);
-    } catch (e) {
-        // If the connection arrived just after we gave up, do not leak it.
-        wait.then((c) => c.release()).catch(() => {});
-        throw e;
-    } finally {
-        clearTimeout(timer);
-    }
-}
-
+// MongoDB Atlas via MONGODB_URI — the shared client and the AUTO_INCREMENT-compatible id
+// counters live in ./db.js. There is no per-request acquire()/release() any more: the driver
+// multiplexes operations over its own pool, so a failed query can never leak a connection.
 // ============================================
 // Helper functions
 // ============================================
-
-/**
- * Log user activity to database
- * @param {string} userId - User identifier
- * @param {string} action - Action type (e.g. 'FETCH_SCHEDULE', 'REGISTER_CLASS')
- * @param {string} details - Human-readable details
- * @param {object} [req] - Express request object (to extract IP + User-Agent)
- */
-async function logActivity(userId, action, details, req = null) {
-    let connection;
-    try {
-        const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null) : null;
-        const ua = req ? (req.headers['user-agent'] || null) : null;
-        connection = await acquire();
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES (?, ?, ?, ?, ?, NOW())`,
-            [String(userId || 'anonymous').slice(0, 64), String(action).slice(0, 64),
-             details == null ? null : String(details).slice(0, 500),
-             ip ? String(ip).slice(0, 64) : null, ua ? String(ua).slice(0, 255) : null]
-        );
-    } catch (error) {
-        console.error('⚠️ Failed to log activity:', error.message);
-    } finally {
-        if (connection) {
-            try { connection.release(); } catch (e) {}
-        }
-    }
-}
 
 /**
  * Generate random order code: DKHP + 12 random alphanumeric characters
@@ -135,12 +29,10 @@ function generateOrderCode() {
 }
 
 /**
- * Save or update user info in database, and record the login.
- * One upsert + one log INSERT (2 round trips) instead of SELECT + INSERT/UPDATE + log (3),
- * and the read-modify-write race that let two concurrent logins collide on uk_user_id is gone.
+ * Upsert the student row keyed on `user_id`; returns the MSSV, or null when the write failed.
+ * Login must never fail because of a DB hiccup, so callers keep tolerating null here.
  */
-async function saveUserInfo(profile, req = null) {
-    let connection;
+async function saveUserInfo(profile) {
     try {
         const userId = profile.maSinhVien || profile.username;
         if (!userId) {
@@ -149,39 +41,31 @@ async function saveUserInfo(profile, req = null) {
 
         const email = profile.email || null;
         const fullName = `${profile.hoDem || ''} ${profile.ten || ''}`.trim();
-        const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null) : null;
-        const ua = req ? (req.headers['user-agent'] || null) : null;
+        const now = new Date();
 
-        connection = await acquire();
-
-        // Atomic upsert on the uk_user_id unique key. affectedRows: 1 = inserted, 0 = unchanged, 2 = updated.
-        await connection.execute(
-            `INSERT INTO users (user_id, email, full_name, is_active, created_at, updated_at)
-             VALUES (?, ?, ?, 1, NOW(), NOW())
-             ON DUPLICATE KEY UPDATE email = VALUES(email), full_name = VALUES(full_name), updated_at = NOW()`,
-            [userId, email, fullName]
+        const db = await getDb();
+        // One atomic upsert for the common (returning student) path. The surrogate numeric id is
+        // only allocated when a row is actually inserted, so a login against an existing user
+        // never burns a counter write (and never leaves AUTO_INCREMENT-style gaps).
+        const r = await db.collection('users').updateOne(
+            { user_id: String(userId) },
+            {
+                $set: { email, full_name: fullName, is_active: 1, updated_at: now },
+                $setOnInsert: { user_id: String(userId), username: null, last_login: null, created_at: now },
+            },
+            { upsert: true }
         );
-
-        // Log login activity — truncated so an oversized User-Agent cannot fail the whole insert.
-        await connection.execute(
-            `INSERT INTO activity_logs (user_id, action, details, ip_address, user_agent, created_at) 
-             VALUES (?, 'USER_LOGIN', ?, ?, ?, NOW())`,
-            [userId, `Đăng nhập hệ thống - ${(fullName || userId)}`.slice(0, 500),
-             ip ? String(ip).slice(0, 64) : null, ua ? String(ua).slice(0, 255) : null]
-        );
+        if (r.upsertedCount && r.upsertedId != null) {
+            await db.collection('users').updateOne(
+                { _id: r.upsertedId },
+                { $set: { id: await nextId('users') } }
+            );
+        }
 
         return userId;
     } catch (error) {
         console.error('❌ Error saving user info:', error.message);
         return null;
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
@@ -403,15 +287,12 @@ async function getScheduleDetails(classId, token, source) {
 // ============================================
 
 /**
- * Sync class data to shared database
- * @param {number} dotId - ID đợt đăng ký
- * @param {string} userId - User ID contributor
- * @param {string} source - Source (dkhp/dkhpdk)
- * @param {Array} classData - Array of class data to sync
- * @returns {Object} - Sync result with counts
+ * Upsert a student's scraped class list into `shared_class_data` (keyed dot_id +
+ * ma_lop_hoc_phan) and bump the contributor ledger. Mirrors the old
+ * INSERT ... ON DUPLICATE KEY UPDATE chunking: $inc contributor_count on every touch,
+ * COALESCE(is_bat_buoc) = "null payload keeps the stored flag".
  */
 async function syncClassDataToDB(dotId, userId, source, classData) {
-    let connection;
     try {
         // Validate inputs
         if (!dotId || !userId || !source) {
@@ -423,7 +304,7 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 total: 0
             };
         }
-        
+
         if (!Array.isArray(classData) || classData.length === 0) {
             return {
                 success: true,
@@ -433,13 +314,15 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 message: 'No data to sync'
             };
         }
-        
-        connection = await acquire();
-        
+
+        const db = await getDb();
+        const classes = db.collection('shared_class_data');
+        const dotNum = Number(dotId);
+
         let insertedCount = 0;
         let updatedCount = 0;
         let skippedCount = 0;
-        
+
         // Prepare batch data
         const validClasses = [];
         for (const cls of classData) {
@@ -449,19 +332,20 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 skippedCount++;
                 continue;
             }
-            
-            // Safely stringify schedule details
-            let scheduleJson = null;
+
+            // Store schedule details as a real array (the MySQL JSON column is gone;
+            // anything non-array is treated as "no schedule" and keeps the stored value).
+            let scheduleDetails = null;
             try {
                 if (cls.scheduleDetails && Array.isArray(cls.scheduleDetails)) {
-                    scheduleJson = JSON.stringify(cls.scheduleDetails);
+                    scheduleDetails = cls.scheduleDetails;
                 }
             } catch (jsonError) {
-                console.warn('Failed to stringify scheduleDetails for:', cls.maLopHocPhan);
+                console.warn('Failed to read scheduleDetails for:', cls.maLopHocPhan);
             }
-            
+
             validClasses.push({
-                dotId,
+                dotId: dotNum,
                 maLopHocPhan: cls.maLopHocPhan,
                 maHocPhan: cls.maHocPhan,
                 tenMonHoc: cls.tenMonHoc,
@@ -470,13 +354,13 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 tenTrangThai: cls.tenTrangThai || null,
                 phanTramDangKy: cls.phanTramDangKy || 0,
                 choDangKy: cls.choDangKy !== false ? 1 : 0,
-                scheduleJson,
+                scheduleDetails,
                 source,
                 isBatBuoc: cls.isBatBuoc !== undefined ? (cls.isBatBuoc ? 1 : 0) : null,
-                userId
+                userId: String(userId)
             });
         }
-        
+
         if (validClasses.length === 0) {
             return {
                 success: true,
@@ -487,96 +371,72 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 message: 'No valid data to sync'
             };
         }
-        
-        // Batch insert in chunks of 50 for better performance
+
+        // Batch upsert in chunks of 50 for better performance
         const BATCH_SIZE = 50;
-        
+
         for (let i = 0; i < validClasses.length; i += BATCH_SIZE) {
             const batch = validClasses.slice(i, i + BATCH_SIZE);
-            
+            const now = new Date();
+            // Pre-allocate a contiguous id block for the chunk; only the ops that end up
+            // inserting consume theirs — AUTO_INCREMENT-style gaps are fine.
+            const { start } = await nextIdRange('shared_class_data', batch.length);
+
+            const buildUpdate = (cls) => {
+                const set = {
+                    ma_hoc_phan: cls.maHocPhan,
+                    ten_mon_hoc: cls.tenMonHoc,
+                    so_tin_chi: cls.soTinChi,
+                    class_id: cls.classId,
+                    ten_trang_thai: cls.tenTrangThai,
+                    phan_tram_dang_ky: cls.phanTramDangKy,
+                    cho_dang_ky: cls.choDangKy,
+                    source: cls.source,
+                    last_updated_by: cls.userId,
+                    updated_at: now,
+                };
+                // schedule_details: same COALESCE rule as is_bat_buoc — a payload without a
+                // schedule must not erase one a previous contributor already uploaded.
+                if (cls.scheduleDetails !== null) set.schedule_details = cls.scheduleDetails;
+                if (cls.isBatBuoc !== null) set.is_bat_buoc = cls.isBatBuoc;
+                const setOnInsert = {
+                    dot_id: cls.dotId,
+                    ma_lop_hoc_phan: cls.maLopHocPhan,
+                    contributed_by: cls.userId,
+                    created_at: now,
+                };
+                if (cls.scheduleDetails === null) setOnInsert.schedule_details = null;
+                if (cls.isBatBuoc === null) setOnInsert.is_bat_buoc = null;
+                return {
+                    filter: { dot_id: cls.dotId, ma_lop_hoc_phan: cls.maLopHocPhan },
+                    update: { $set: set, $setOnInsert: setOnInsert, $inc: { contributor_count: 1 } },
+                    upsert: true,
+                };
+            };
+
+            const ops = batch.map((cls, j) => {
+                const u = buildUpdate(cls);
+                // $inc creates contributor_count=1 on insert, +1 on update — exactly the old
+                // VALUES(1) / contributor_count+1 pair. The reserved id only lands on insert.
+                u.update.$setOnInsert.id = start + j;
+                return { updateOne: u };
+            });
+
             try {
-                // Build batch INSERT query
-                const placeholders = batch.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)').join(', ');
-                const values = batch.flatMap(cls => [
-                    cls.dotId,
-                    cls.maLopHocPhan,
-                    cls.maHocPhan,
-                    cls.tenMonHoc,
-                    cls.soTinChi,
-                    cls.classId,
-                    cls.tenTrangThai,
-                    cls.phanTramDangKy,
-                    cls.choDangKy,
-                    cls.scheduleJson,
-                    cls.source,
-                    cls.isBatBuoc,
-                    cls.userId,
-                    cls.userId
-                ]);
-                
-                const query = `
-                    INSERT INTO shared_class_data (
-                        dot_id, ma_lop_hoc_phan, ma_hoc_phan, ten_mon_hoc, so_tin_chi,
-                        class_id, ten_trang_thai, phan_tram_dang_ky, cho_dang_ky,
-                        schedule_details, source, is_bat_buoc,
-                        contributed_by, last_updated_by, contributor_count
-                    ) VALUES ${placeholders}
-                    ON DUPLICATE KEY UPDATE
-                        ten_mon_hoc = VALUES(ten_mon_hoc),
-                        so_tin_chi = VALUES(so_tin_chi),
-                        class_id = VALUES(class_id),
-                        ten_trang_thai = VALUES(ten_trang_thai),
-                        phan_tram_dang_ky = VALUES(phan_tram_dang_ky),
-                        cho_dang_ky = VALUES(cho_dang_ky),
-                        schedule_details = VALUES(schedule_details),
-                        is_bat_buoc = COALESCE(VALUES(is_bat_buoc), is_bat_buoc),
-                        last_updated_by = VALUES(last_updated_by),
-                        contributor_count = contributor_count + 1
-                `;
-                
-                const [result] = await connection.execute(query, values);
-                
-                // With ON DUPLICATE KEY UPDATE:
-                // - Insert new row = 1 affectedRow
-                // - Update existing = 2 affectedRows
-                // So we count batch.length as synced (either inserted or updated)
-                const batchAffected = result.affectedRows || 0;
-                const batchUpdates = batchAffected - batch.length; // Extra rows = updates (each counts as 2)
-                const batchInserts = batch.length - batchUpdates;
-                
-                insertedCount += Math.max(0, batchInserts);
-                updatedCount += Math.max(0, batchUpdates);
+                const result = await classes.bulkWrite(ops);
+                const batchInserts = result.upsertedCount || (result.upserted && result.upserted.length) || 0;
+                insertedCount += batchInserts;
+                updatedCount += batch.length - batchInserts;
             } catch (batchError) {
-                console.warn(`⚠️ Batch insert failed, falling back to individual inserts:`, batchError.message);
-                // Fallback: try individual inserts for this batch
+                console.warn(`⚠️ Batch upsert failed, falling back to individual writes:`, batchError.message);
+                // Fallback: try individual upserts for this batch
                 for (const cls of batch) {
                     try {
-                        const [result] = await connection.execute(`
-                            INSERT INTO shared_class_data (
-                                dot_id, ma_lop_hoc_phan, ma_hoc_phan, ten_mon_hoc, so_tin_chi,
-                                class_id, ten_trang_thai, phan_tram_dang_ky, cho_dang_ky,
-                                schedule_details, source, is_bat_buoc,
-                                contributed_by, last_updated_by, contributor_count
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-                            ON DUPLICATE KEY UPDATE
-                                ten_mon_hoc = VALUES(ten_mon_hoc),
-                                so_tin_chi = VALUES(so_tin_chi),
-                                class_id = VALUES(class_id),
-                                ten_trang_thai = VALUES(ten_trang_thai),
-                                phan_tram_dang_ky = VALUES(phan_tram_dang_ky),
-                                cho_dang_ky = VALUES(cho_dang_ky),
-                                schedule_details = VALUES(schedule_details),
-                                is_bat_buoc = COALESCE(VALUES(is_bat_buoc), is_bat_buoc),
-                                last_updated_by = VALUES(last_updated_by),
-                                contributor_count = contributor_count + 1
-                        `, [
-                            cls.dotId, cls.maLopHocPhan, cls.maHocPhan, cls.tenMonHoc, cls.soTinChi,
-                            cls.classId, cls.tenTrangThai, cls.phanTramDangKy, cls.choDangKy,
-                            cls.scheduleJson, cls.source, cls.isBatBuoc, cls.userId, cls.userId
-                        ]);
-                        
-                        if (result.affectedRows === 1) insertedCount++;
-                        else if (result.affectedRows === 2) updatedCount++;
+                        const u = buildUpdate(cls);
+                        u.update.$setOnInsert.id = await nextId('shared_class_data');
+                        const r = await classes.updateOne(u.filter, u.update, { upsert: true });
+                        if ((r.upsertedCount || (r.upsertedId != null && r.upsertedId !== undefined)) > 0) insertedCount++;
+                        else updatedCount++;
                     } catch (singleError) {
                         console.warn(`⚠️ Failed to sync class ${cls.maLopHocPhan}:`, singleError.message);
                         skippedCount++;
@@ -584,28 +444,31 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
                 }
             }
         }
-        
+
         // Update contribution stats
         const totalAffected = insertedCount + updatedCount;
         if (totalAffected > 0) {
             try {
-                await connection.execute(`
-                    INSERT INTO class_data_contributions (
-                        user_id, dot_id, classes_contributed, sync_count,
-                        first_contribution_at, last_contribution_at
-                    ) VALUES (?, ?, ?, 1, NOW(), NOW())
-                    ON DUPLICATE KEY UPDATE
-                        classes_contributed = classes_contributed + ?,
-                        sync_count = sync_count + 1,
-                        last_contribution_at = NOW()
-                `, [userId, dotId, totalAffected, totalAffected]);
+                const now = new Date();
+                await db.collection('class_data_contributions').updateOne(
+                    { user_id: String(userId), dot_id: dotNum },
+                    {
+                        $set: { last_contribution_at: now },
+                        $inc: { classes_contributed: totalAffected, sync_count: 1 },
+                        $setOnInsert: {
+                            id: await nextId('class_data_contributions'),
+                            first_contribution_at: now,
+                        },
+                    },
+                    { upsert: true }
+                );
             } catch (statsError) {
                 console.warn('Failed to update contribution stats:', statsError.message);
             }
         }
-        
+
         console.log(`✅ Synced ${insertedCount} new, ${updatedCount} updated, ${skippedCount} skipped for dot ${dotId}`);
-        
+
         return {
             success: true,
             inserted: insertedCount,
@@ -621,153 +484,122 @@ async function syncClassDataToDB(dotId, userId, source, classData) {
             updated: 0,
             total: 0
         };
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
 /**
- * Get shared class data from database
- * @param {number} dotId - ID đợt đăng ký
+ * Get shared class data from the database.
+ * @param {number|string} dotId - ID đợt đăng ký
  * @param {string} maHocPhan - Mã học phần (optional)
  * @param {string} source - Source filter (optional)
- * @returns {Array} - Array of class data
+ * @returns {Array} - Array of class data (same camelCase shape the old SQL returned)
  */
 async function getSharedClassDataFromDB(dotId, maHocPhan = null, source = null) {
-    let connection;
     try {
-        connection = await acquire();
-        
-        let query = `
-            SELECT 
-                class_id as id,
-                ma_lop_hoc_phan as maLopHocPhan,
-                ma_hoc_phan as maHocPhan,
-                ten_mon_hoc as tenMonHoc,
-                so_tin_chi as soTinChi,
-                ten_trang_thai as tenTrangThai,
-                phan_tram_dang_ky as phanTramDangKy,
-                cho_dang_ky as choDangKy,
-                schedule_details as scheduleDetails,
-                source,
-                is_bat_buoc as isBatBuoc,
-                updated_at as lastUpdatedAt,
-                contributor_count as contributorCount
-            FROM shared_class_data
-            WHERE dot_id = ?
-        `;
-        
-        const params = [dotId];
-        
-        if (maHocPhan) {
-            query += ' AND ma_hoc_phan = ?';
-            params.push(maHocPhan);
-        }
-        
-        if (source) {
-            query += ' AND source = ?';
-            params.push(source);
-        }
-        
-        query += ' ORDER BY ma_hoc_phan, ma_lop_hoc_phan';
-        
-        const [rows] = await connection.execute(query, params);
-        
-        // Parse schedule_details JSON and convert boolean fields
-        const classes = rows.map(row => {
+        const db = await getDb();
+
+        const filter = { dot_id: Number(dotId) };
+        if (maHocPhan) filter.ma_hoc_phan = maHocPhan;
+        if (source) filter.source = source;
+
+        const rows = await db.collection('shared_class_data')
+            .find(filter, {
+                projection: {
+                    _id: 0,
+                    class_id: 1, ma_lop_hoc_phan: 1, ma_hoc_phan: 1, ten_mon_hoc: 1,
+                    so_tin_chi: 1, ten_trang_thai: 1, phan_tram_dang_ky: 1, cho_dang_ky: 1,
+                    schedule_details: 1, source: 1, is_bat_buoc: 1, updated_at: 1, contributor_count: 1,
+                },
+            })
+            .sort({ ma_hoc_phan: 1, ma_lop_hoc_phan: 1 })
+            .toArray();
+
+        // Convert booleans + normalise the schedule array (legacy rows may still carry a JSON string)
+        return rows.map(row => {
             let scheduleDetails = [];
             try {
-                if (row.scheduleDetails) {
-                    scheduleDetails = typeof row.scheduleDetails === 'string' 
-                        ? JSON.parse(row.scheduleDetails) 
-                        : row.scheduleDetails;
+                if (row.schedule_details) {
+                    scheduleDetails = typeof row.schedule_details === 'string'
+                        ? JSON.parse(row.schedule_details)
+                        : row.schedule_details;
                 }
             } catch (parseError) {
-                console.warn('Failed to parse scheduleDetails for class:', row.maLopHocPhan);
+                console.warn('Failed to parse scheduleDetails for class:', row.ma_lop_hoc_phan);
                 scheduleDetails = [];
             }
-            
+
             return {
-                ...row,
-                choDangKy: row.choDangKy === 1,
-                isBatBuoc: row.isBatBuoc === null ? null : row.isBatBuoc === 1,
+                id: row.class_id,
+                maLopHocPhan: row.ma_lop_hoc_phan,
+                maHocPhan: row.ma_hoc_phan,
+                tenMonHoc: row.ten_mon_hoc,
+                soTinChi: row.so_tin_chi,
+                tenTrangThai: row.ten_trang_thai,
+                phanTramDangKy: row.phan_tram_dang_ky,
+                choDangKy: row.cho_dang_ky === 1,
                 scheduleDetails: scheduleDetails,
+                source: row.source,
+                isBatBuoc: (row.is_bat_buoc === null || row.is_bat_buoc === undefined) ? null : row.is_bat_buoc === 1,
+                lastUpdatedAt: row.updated_at,
+                contributorCount: row.contributor_count,
                 fromSharedDB: true
             };
         });
-        
-        return classes;
     } catch (error) {
         console.error('❌ Error getting shared class data:', error.message);
         return [];
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
 /**
  * Get shared data statistics for a dot
- * @param {number} dotId - ID đợt đăng ký
+ * @param {number|string} dotId - ID đợt đăng ký
  * @returns {Object} - Statistics
  */
 async function getSharedDataStats(dotId) {
-    let connection;
     try {
-        connection = await acquire();
-        
-        // Get class counts
-        const [classStats] = await connection.execute(`
-            SELECT 
-                COUNT(*) as totalClasses,
-                COUNT(DISTINCT ma_hoc_phan) as totalSubjects,
-                SUM(CASE WHEN source = 'dkhp' THEN 1 ELSE 0 END) as dkhpClasses,
-                SUM(CASE WHEN source = 'dkhpdk' THEN 1 ELSE 0 END) as dkhpdkClasses,
-                MAX(updated_at) as lastUpdatedAt
-            FROM shared_class_data
-            WHERE dot_id = ?
-        `, [dotId]);
-        
+        const db = await getDb();
+        const dotNum = Number(dotId);
+
+        // Get class counts (was a single GROUP BY-less aggregate over shared_class_data)
+        const [classStats] = await db.collection('shared_class_data').aggregate([
+            { $match: { dot_id: dotNum } },
+            {
+                $group: {
+                    _id: null,
+                    totalClasses: { $sum: 1 },
+                    subjects: { $addToSet: '$ma_hoc_phan' },
+                    dkhpClasses: { $sum: { $cond: [{ $eq: ['$source', 'dkhp'] }, 1, 0] } },
+                    dkhpdkClasses: { $sum: { $cond: [{ $eq: ['$source', 'dkhpdk'] }, 1, 0] } },
+                    lastUpdatedAt: { $max: '$updated_at' },
+                },
+            },
+        ]).toArray();
+
         // Get contributor count
-        const [contribStats] = await connection.execute(`
-            SELECT 
-                COUNT(DISTINCT user_id) as totalContributors,
-                SUM(sync_count) as totalSyncs
-            FROM class_data_contributions
-            WHERE dot_id = ?
-        `, [dotId]);
-        
+        const [contribStats] = await db.collection('class_data_contributions').aggregate([
+            { $match: { dot_id: dotNum } },
+            {
+                $group: {
+                    _id: null,
+                    contributors: { $addToSet: '$user_id' },
+                    totalSyncs: { $sum: '$sync_count' },
+                },
+            },
+        ]).toArray();
+
         return {
-            totalClasses: classStats[0]?.totalClasses || 0,
-            totalSubjects: classStats[0]?.totalSubjects || 0,
-            dkhpClasses: classStats[0]?.dkhpClasses || 0,
-            dkhpdkClasses: classStats[0]?.dkhpdkClasses || 0,
-            lastUpdatedAt: classStats[0]?.lastUpdatedAt || null,
-            totalContributors: contribStats[0]?.totalContributors || 0,
-            totalSyncs: contribStats[0]?.totalSyncs || 0
+            totalClasses: classStats?.totalClasses || 0,
+            totalSubjects: classStats?.subjects?.length || 0,
+            dkhpClasses: classStats?.dkhpClasses || 0,
+            dkhpdkClasses: classStats?.dkhpdkClasses || 0,
+            lastUpdatedAt: classStats?.lastUpdatedAt || null,
+            totalContributors: contribStats?.contributors?.length || 0,
+            totalSyncs: contribStats?.totalSyncs || 0
         };
     } catch (error) {
         console.error('❌ Error getting shared data stats:', error.message);
         return null;
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
@@ -783,41 +615,34 @@ const VIP_PLANS_FALLBACK = {
     '30days': { price: 432000, duration: 30, name: '30 Ngày VIP' }
 };
 
-/**
- * Get active VIP plans from database
- * NOW: Uses vip_plans.plan_id for FK references
- */
 async function getVIPPlansFromDB() {
-    let connection;
     try {
-        connection = await acquire();
-        const [plans] = await connection.execute(
-            `SELECT id, plan_key, plan_name, duration_days, price, description, sort_order 
-             FROM vip_plans 
-             WHERE is_active = 1 
-             ORDER BY sort_order ASC`
-        );
-        
+        const db = await getDb();
+        const plans = await db.collection('vip_plans')
+            .find(
+                { is_active: 1 },
+                { projection: { _id: 0, id: 1, plan_key: 1, plan_name: 1, duration_days: 1, price: 1, description: 1, sort_order: 1 } }
+            )
+            .sort({ sort_order: 1 })
+            .toArray();
+
         // Convert to object format for backward compatibility
         const plansObj = {};
         plans.forEach(plan => {
             plansObj[plan.plan_key] = {
-                id: plan.id, // NOW: Include plan_id for FK reference
+                id: plan.id, // Include plan_id for reference
                 planKey: plan.plan_key,
-                price: parseFloat(plan.price),
+                price: Number(plan.price),
                 duration: plan.duration_days,
                 name: plan.plan_name,
                 description: plan.description || ''
             };
         });
-        
+
         return Object.keys(plansObj).length > 0 ? plansObj : VIP_PLANS_FALLBACK;
     } catch (error) {
         console.error('❌ Error loading VIP plans:', error.message);
         return VIP_PLANS_FALLBACK;
-    } finally {
-        // Was missing: a failed query here used to remove a socket from the pool permanently.
-        if (connection) { try { connection.release(); } catch (e) {} }
     }
 }
 
@@ -838,42 +663,35 @@ const PAYMENT_CONFIGURED = Boolean(SEPAY_CONFIG.accountNumber && SEPAY_CONFIG.ac
 
 /**
  * Check if user has active VIP subscription.
- * Runs on the login critical path (getInitialData), so it must be unable to leak a socket
- * or to block on a pool that has already been exhausted.
+ * Runs on the login critical path (getInitialData); the driver pool cannot be exhausted in a
+ * way that hangs this request, and a failure returns `unknown` instead of throwing.
  */
 async function checkVIPStatus(userId) {
     if (!userId) {
-        // Previously this reached mysql2 as `undefined` in the bind list, which threw
-        // "Bind parameters must not contain undefined" and leaked the connection.
         console.warn('⚠️ checkVIPStatus called without a userId');
         return { hasVIP: false };
     }
-    let connection;
     try {
-        connection = await acquire();
-        const [rows] = await connection.execute(
-            `SELECT 
-                id,
-                plan_id,
-                plan_type,
-                expiry_date,
-                GREATEST(TIMESTAMPDIFF(DAY, NOW(), expiry_date), 0) as days_left
-             FROM vip_subscriptions 
-             WHERE user_id = ? AND expiry_date > NOW() 
-             ORDER BY expiry_date DESC 
-             LIMIT 1`,
-            [userId]
+        const db = await getDb();
+        const vipData = await db.collection('vip_subscriptions').findOne(
+            { user_id: String(userId), expiry_date: { $gt: new Date() } },
+            {
+                projection: { _id: 0, id: 1, plan_id: 1, plan_type: 1, expiry_date: 1 },
+                sort: { expiry_date: -1 },
+            }
         );
-        
-        if (rows.length === 0) {
+
+        if (!vipData) {
             return { hasVIP: false };
         }
-        
-        const vipData = rows[0];
-        const daysLeft = Number(vipData.days_left) + 1;
-        
-        return { 
-            hasVIP: true, 
+
+        // GREATEST(TIMESTAMPDIFF(DAY, NOW(), expiry_date), 0) + 1 — whole days left,
+        // counting the expiry day itself (it ends at 23:59:59 VN time).
+        const diffDays = Math.floor((new Date(vipData.expiry_date).getTime() - Date.now()) / 86400000);
+        const daysLeft = Math.max(0, diffDays) + 1;
+
+        return {
+            hasVIP: true,
             subscriptionId: vipData.id,
             planId: vipData.plan_id,
             expiryDate: vipData.expiry_date,
@@ -885,9 +703,6 @@ async function checkVIPStatus(userId) {
         // `unknown` lets the client keep showing its last known state instead of falsely
         // telling a paying member they have no VIP because our DB blipped.
         return { hasVIP: false, unknown: true };
-    } finally {
-        // Was missing: every failed query here permanently removed a socket from the pool.
-        if (connection) { try { connection.release(); } catch (e) {} }
     }
 }
 
@@ -932,30 +747,27 @@ function orderBelongsToCaller(payload, order, callerUserId) {
 // ============================================
 
 /**
- * Activate free VIP plan directly (no payment needed)
- * Creates VIP subscription immediately without order/payment flow
+ * Activate the one free trial VIP. Extends from the latest unexpired subscription when the
+ * user still has time left, otherwise starts from today (VN wall clock).
  */
-async function activateFreeVIP(userId, planConfig, connection) {
-    let daysToAdd = planConfig.duration;
-    let planId = planConfig.id;
-    let planName = planConfig.name;
+async function activateFreeVIP(userId, planConfig) {
+    const db = await getDb();
+    const daysToAdd = planConfig.duration;
+    const planId = planConfig.id;
+    const planName = planConfig.name;
 
-    // Check existing VIP subscription (use row lock)
-    const [existingVIP] = await connection.execute(
-        `SELECT id, expiry_date
-         FROM vip_subscriptions
-         WHERE user_id = ? AND expiry_date > NOW()
-         ORDER BY expiry_date DESC
-         LIMIT 1
-         FOR UPDATE`,
-        [userId]
+    // Check existing VIP subscription (last write wins; the free plan is one-shot per user
+    // anyway because the client only offers it while checkVIPStatus says hasVIP === false)
+    const existingVIP = await db.collection('vip_subscriptions').findOne(
+        { user_id: String(userId), expiry_date: { $gt: new Date() } },
+        { projection: { _id: 0, expiry_date: 1 }, sort: { expiry_date: -1 } }
     );
 
     let expiryString;
 
-    if (existingVIP.length > 0) {
+    if (existingVIP) {
         // Extend from existing expiry date
-        const d = new Date(existingVIP[0].expiry_date);
+        const d = new Date(existingVIP.expiry_date);
         const vnTime = new Date(d.getTime() + 7 * 60 * 60 * 1000);
         const baseYear = vnTime.getUTCFullYear();
         const baseMonth = vnTime.getUTCMonth();
@@ -977,19 +789,18 @@ async function activateFreeVIP(userId, planConfig, connection) {
     }
 
     // Insert VIP subscription (no order_id since it's free)
-    await connection.execute(
-        `INSERT INTO vip_subscriptions (
-            user_id, plan_id, plan_type, expiry_date, created_by_admin, created_at
-        ) VALUES (?, ?, ?, ?, 'system_free', NOW())`,
-        [userId, planId, planConfig.planKey || 'free', expiryString]
-    );
-
-    // Log activity
-    await connection.execute(
-        `INSERT INTO activity_logs (user_id, action, details, created_at)
-         VALUES (?, 'FREE_VIP_ACTIVATED', ?, NOW())`,
-        [userId, `Free VIP activated: ${planName} - Expiry: ${expiryString}`]
-    );
+    const now = new Date();
+    await db.collection('vip_subscriptions').insertOne({
+        id: await nextId('vip_subscriptions'),
+        user_id: String(userId),
+        plan_id: planId,
+        plan_type: planConfig.planKey || 'free',
+        expiry_date: vnWallClockToUTCDate(expiryString),
+        order_id: null,
+        created_by_admin: 'system_free',
+        created_at: now,
+        updated_at: now,
+    });
 
     return {
         success: true,
@@ -998,43 +809,36 @@ async function activateFreeVIP(userId, planConfig, connection) {
         planName: planName,
         daysAdded: daysToAdd,
         expiryDate: expiryString,
-        isExtension: existingVIP.length > 0
+        isExtension: !!existingVIP
     };
 }
 
 /**
- * Create a new VIP order
- * NOW: Includes plan_id FK reference and validates user exists
+ * Create a new VIP order. Free plans activate immediately and produce no order document.
  */
 async function createOrder(userId, plan) {
-    let connection;
     try {
-        connection = await acquire();
-        
-        // VALIDATION: Check user exists (FK constraint)
-        const [users] = await connection.execute(
-            'SELECT id FROM users WHERE user_id = ?',
-            [userId]
+        const db = await getDb();
+        // VALIDATION: Check user exists
+        const user = await db.collection('users').findOne(
+            { user_id: String(userId) },
+            { projection: { _id: 0, id: 1 } }
         );
-        
-        if (users.length === 0) {
+        if (!user) {
             return { error: `User ${userId} does not exist. Create user account first.` };
         }
-        
+
         // Get VIP plan details
         const vipPlans = await getVIPPlansFromDB();
         const planConfig = vipPlans[plan];
-        
         if (!planConfig) {
             return { error: `Invalid plan: ${plan}` };
         }
 
         // FREE PLAN: Activate directly without payment
         if (planConfig.price === 0) {
-            await connection.beginTransaction();
             try {
-                const freeResult = await activateFreeVIP(userId, { ...planConfig, planKey: plan }, connection);
-                await connection.commit();
+                const freeResult = await activateFreeVIP(userId, { ...planConfig, planKey: plan });
                 return {
                     id: null, // No order for free plans
                     orderCode: null,
@@ -1052,7 +856,6 @@ async function createOrder(userId, plan) {
                     isExtension: freeResult.isExtension
                 };
             } catch (err) {
-                await connection.rollback();
                 console.error('❌ Error activating free VIP:', err.message);
                 return { error: 'Failed to activate free VIP: ' + err.message };
             }
@@ -1068,59 +871,43 @@ async function createOrder(userId, plan) {
         let orderCode;
         let isUnique = false;
         let attempts = 0;
-        
+
         while (!isUnique && attempts < 10) {
             orderCode = generateOrderCode();
-            const [existing] = await connection.execute(
-                'SELECT id FROM orders WHERE order_code = ?',
-                [orderCode]
+            const existing = await db.collection('orders').findOne(
+                { order_code: orderCode },
+                { projection: { _id: 0, id: 1 } }
             );
-            if (existing.length === 0) {
+            if (!existing) {
                 isUnique = true;
             }
             attempts++;
         }
-        
+
         if (!isUnique) {
             return { error: 'Failed to generate unique order code' };
         }
-        
-        // Insert order with plan_id FK
-        const [result] = await connection.execute(
-            `INSERT INTO orders (
-                order_code, 
-                user_id, 
-                plan_id,
-                plan_type, 
-                plan_name, 
-                amount, 
-                payment_status, 
-                gateway, 
-                created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'Unpaid', 'SePay', NOW())`,
-            [
-                orderCode,
-                userId,
-                planConfig.id, // NOW: Include plan_id
-                plan,
-                planConfig.name,
-                planConfig.price
-            ]
-        );
-        
-        const orderId = result.insertId;
-        
-        // Log activity
-        await connection.execute(
-            `INSERT INTO activity_logs (
-                user_id, 
-                action, 
-                details, 
-                created_at
-            ) VALUES (?, 'ORDER_CREATED', ?, NOW())`,
-            [userId, `Order #${orderId} created for plan: ${planConfig.name}`]
-        );
-        
+
+        // Insert order with plan_id reference
+        const orderId = await nextId('orders');
+        const now = new Date();
+        await db.collection('orders').insertOne({
+            id: orderId,
+            order_code: orderCode,
+            user_id: String(userId),
+            plan_id: planConfig.id,
+            plan_type: plan,
+            plan_name: planConfig.name,
+            amount: planConfig.price,
+            payment_status: 'Unpaid',
+            transaction_ref: null,
+            gateway: 'SePay',
+            created_at: now,
+            updated_at: null,
+            paid_at: null,
+            cancelled_at: null,
+        });
+
         return {
             id: orderId,
             orderCode: orderCode,
@@ -1128,21 +915,13 @@ async function createOrder(userId, plan) {
             amount: planConfig.price,
             status: 'Unpaid',
             plan,
-            planId: planConfig.id, // Return plan_id
+            planId: planConfig.id,
             planName: planConfig.name,
-            createdAt: new Date().toISOString()
+            createdAt: now.toISOString()
         };
     } catch (error) {
         console.error('❌ Error creating order:', error.message);
         return { error: error.message };
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
@@ -1150,39 +929,29 @@ async function createOrder(userId, plan) {
  * Get order status
  */
 async function getOrderStatus(orderId) {
-    let connection;
     try {
-        connection = await acquire();
-        
-        const [rows] = await connection.execute(
-            `SELECT 
-                id,
-                order_code,
-                user_id,
-                plan_id,
-                amount,
-                payment_status,
-                plan_type,
-                plan_name,
-                created_at,
-                paid_at,
-                transaction_ref
-             FROM orders 
-             WHERE id = ?`,
-            [orderId]
+        const db = await getDb();
+        const order = await db.collection('orders').findOne(
+            { id: Number(orderId) },
+            {
+                projection: {
+                    _id: 0, id: 1, order_code: 1, user_id: 1, plan_id: 1, amount: 1,
+                    payment_status: 1, plan_type: 1, plan_name: 1, created_at: 1, paid_at: 1, transaction_ref: 1,
+                },
+            }
         );
-        
-        if (rows.length === 0) {
+
+        if (!order) {
             return null;
         }
-        
-        const order = rows[0];
+
+        // Map to camelCase for frontend compatibility
         return {
             id: order.id,
             orderCode: order.order_code,
             userId: order.user_id,
             planId: order.plan_id,
-            amount: parseFloat(order.amount),
+            amount: Number(order.amount),
             status: order.payment_status,
             plan: order.plan_type,
             planName: order.plan_name,
@@ -1193,154 +962,62 @@ async function getOrderStatus(orderId) {
     } catch (error) {
         console.error('❌ Error getting order status:', error.message);
         return null;
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
 /**
- * Cancel an unpaid order
- * NOW: Sets cancelled_at timestamp
+ * Cancel an unpaid order.
+ * Single-document compare-and-swap: only an order that is STILL Unpaid flips, so a payment
+ * racing in at the same second can never be cancelled after the fact.
  */
 async function cancelOrder(orderId) {
-    let connection;
     try {
-        connection = await acquire();
-        
-        // Check if order exists and is Unpaid
-        const [rows] = await connection.execute(
-            'SELECT user_id FROM orders WHERE id = ? AND payment_status = "Unpaid"',
-            [orderId]
+        const db = await getDb();
+        const now = new Date();
+        const updated = await db.collection('orders').findOneAndUpdate(
+            { id: Number(orderId), payment_status: 'Unpaid' },
+            { $set: { payment_status: 'Cancelled', cancelled_at: now, updated_at: now } },
+            { projection: { _id: 0, user_id: 1 } }
         );
-        
-        if (rows.length === 0) {
-            return null;
-        }
-        
-        const userId = rows[0].user_id;
-        
-        // Update order status with cancelled_at
-        await connection.execute(
-            `UPDATE orders 
-             SET payment_status = "Cancelled", cancelled_at = NOW(), updated_at = NOW() 
-             WHERE id = ?`,
-            [orderId]
-        );
-        
-        // Log activity
-        await connection.execute(
-            `INSERT INTO activity_logs (
-                user_id, 
-                action, 
-                details, 
-                created_at
-            ) VALUES (?, 'ORDER_CANCELLED', ?, NOW())`,
-            [userId, `User cancelled order #${orderId}`]
-        );
-        
-        return true;
+
+        return updated ? true : null;
     } catch (error) {
         console.error('❌ Error cancelling order:', error.message);
         return null;
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
 /**
- * Auto-cancel unpaid orders after 15 minutes
- * NOW: Uses stored procedure if available, falls back to direct update
- * FIX: Only log orders that were JUST cancelled, not all cancelled orders
- * FIX: single-quote the string literals (double quotes become column references under
- *      ANSI_QUOTES, which some managed providers enable)
- * FIX: the expiry predicate is now sargable (`created_at < NOW() - INTERVAL 15 MINUTE`),
- *      so it rides the payment_status index instead of applying TIMESTAMPDIFF to every row
- * FIX: the SELECT and the UPDATE now share one transaction with row locks, so two warm
- *      lambdas cannot both see the same order and log the cancellation twice
+ * Auto-cancel unpaid orders after 15 minutes (batched at 500, id-ordered like the old sweep).
  */
 async function autoCancelExpiredOrders() {
-    let connection;
     try {
-        connection = await acquire();
+        const db = await getDb();
+        const cutoff = new Date(Date.now() - 15 * 60 * 1000);
 
-        // Try to use stored procedure first
-        try {
-            await connection.execute('CALL sp_auto_cancel_unpaid_orders()');
-            console.log('✅ Auto-cancel executed via stored procedure');
-            return;
-        } catch (err) {
-            if (err.code !== 'ER_SP_DOES_NOT_EXIST') {
-                throw err; // Re-throw if it's not "procedure not found"
-            }
-            // Fall back to direct SQL
-        }
-
-        await connection.beginTransaction();
-
-        // Get list of orders to cancel BEFORE updating, locking them so a concurrent
-        // instance (or a payment webhook racing us) cannot interleave.
-        const [ordersToCancel] = await connection.execute(
-            `SELECT id, user_id FROM orders
-             WHERE payment_status = 'Unpaid'
-             AND created_at < (NOW() - INTERVAL 15 MINUTE)
-             ORDER BY id LIMIT 500
-             FOR UPDATE`
-        );
+        const ordersToCancel = await db.collection('orders')
+            .find({ payment_status: 'Unpaid', created_at: { $lt: cutoff } }, { projection: { _id: 0, id: 1 } })
+            .sort({ id: 1 })
+            .limit(500)
+            .toArray();
 
         if (ordersToCancel.length === 0) {
-            await connection.commit();
             return; // No orders to cancel
         }
 
         const ids = ordersToCancel.map((o) => o.id);
-        // Update orders to Cancelled
-        const [result] = await connection.execute(
-            `UPDATE orders
-             SET payment_status = 'Cancelled', cancelled_at = NOW(), updated_at = NOW()
-             WHERE payment_status = 'Unpaid'
-             AND id IN (${ids.map(() => '?').join(',')})`,
-            ids
+        // The payment_status re-check makes this a compare-and-swap against a concurrent
+        // webhook: an order that just got paid between our two queries stays Paid.
+        const result = await db.collection('orders').updateMany(
+            { id: { $in: ids }, payment_status: 'Unpaid' },
+            { $set: { payment_status: 'Cancelled', cancelled_at: new Date(), updated_at: new Date() } }
         );
 
-        if (result.affectedRows > 0) {
-            console.log(`✅ Auto-cancelled ${result.affectedRows} orders`);
-
-            // Log cancellations - ONLY for orders that were just cancelled
-            for (const order of ordersToCancel) {
-                await connection.execute(
-                    `INSERT INTO activity_logs (user_id, action, details, created_at)
-                     VALUES (?, 'ORDER_AUTO_CANCELLED', ?, NOW())`,
-                    [order.user_id, `Auto-cancelled order #${order.id} (timeout)`]
-                );
-            }
-
-            console.log(`✅ Logged ${ordersToCancel.length} auto-cancellations`);
+        if (result.modifiedCount > 0) {
+            console.log(`✅ Auto-cancelled ${result.modifiedCount} orders`);
         }
-
-        await connection.commit();
     } catch (error) {
-        if (connection) { try { await connection.rollback(); } catch (e) {} }
         console.error('❌ Error auto-cancelling orders:', error.message);
-    } finally {
-        if (connection) {
-            try {
-                connection.release();
-            } catch (err) {
-                console.error('Error releasing connection:', err);
-            }
-        }
     }
 }
 
@@ -1444,7 +1121,7 @@ export default async (req, res) => {
                 // Save user info to database (now returns userId)
                 let savedUserId = null;
                 if (profileRes.success && profileRes.body) {
-                    savedUserId = await saveUserInfo(profileRes.body, req);
+                    savedUserId = await saveUserInfo(profileRes.body);
                 }
                 
                 // Check VIP status
@@ -1507,10 +1184,6 @@ export default async (req, res) => {
                     return res.status(400).json({ success: false, message: 'Invalid plan' });
                 }
 
-                // Log: user creating VIP order
-                void logActivity(userId, 'CREATE_VIP_ORDER', `Tạo đơn mua VIP gói ${plan}`, req);
-
-                
                 const order = await createOrder(userId, plan);
                 
                 if (order.error) {
@@ -1586,9 +1259,6 @@ export default async (req, res) => {
                 
                 const { dotId, fetchPrerequisites, userId } = payload || {};
                 
-                // Log: user fetching full schedule
-                void logActivity(userId, 'FETCH_SCHEDULE', `Tải danh sách lớp học phần - Đợt ${dotId}${fetchPrerequisites ? ' (có ĐKHP điều kiện)' : ''}`, req);
-                
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let allClassData = [];
                 let subjectTypeMap = {};
@@ -1623,9 +1293,6 @@ export default async (req, res) => {
                     allClassData.push(...detailedClasses);
                 }
                 
-                // Log result count
-                await logActivity(userId, 'FETCH_SCHEDULE_DONE', `Đã tải ${allClassData.length} lớp học phần - Đợt ${dotId}`, req);
-                
                 result = { success: true, schedule: allClassData, subjectTypes: subjectTypeMap };
                 break;
             }
@@ -1633,9 +1300,6 @@ export default async (req, res) => {
             case 'getRegisteredClasses': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { dotId, fetchPrerequisites, userId } = payload || {};
-                
-                // Log: user fetching registered classes
-                void logActivity(userId, 'FETCH_REGISTERED', `Tải lớp đã đăng ký - Đợt ${dotId}`, req);
                 
                 const sources = fetchPrerequisites ? ['dkhp', 'dkhpdk'] : ['dkhp'];
                 let registeredData = [];
@@ -1696,9 +1360,6 @@ export default async (req, res) => {
             case 'checkClassAvailability': {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, dotId, maHocPhan, source, userId: availUserId } = payload || {};
-                
-                // Log: checking class availability (auto-register cycle)
-                void logActivity(availUserId, 'CHECK_AVAILABILITY', `Kiểm tra chỗ trống lớp ${maHocPhan} (${source})`, req);
                 
                 // Use getLopHocPhan (same as checkClassStatus) to get accurate phanTramDangKy
                 const classEndpoint = source === 'dkhpdk'
@@ -1800,17 +1461,7 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { classId, source, userId, className } = payload || {};
                 
-                // Log: user registering a class
-                void logActivity(userId, 'REGISTER_CLASS', `Đăng ký lớp ${className || classId} (${source})`, req);
-                
                 result = await callApi(`/dangKyLopHocPhan?idLopHocPhan=${classId}`, 'POST', token, null, source);
-                
-                // Log result
-                if (result.success) {
-                    await logActivity(userId, 'REGISTER_SUCCESS', `Đăng ký thành công lớp ${className || classId}`, req);
-                } else {
-                    await logActivity(userId, 'REGISTER_FAILED', `Đăng ký thất bại lớp ${className || classId}: ${result.message || 'Unknown error'}`, req);
-                }
                 break;
             }
 
@@ -1818,17 +1469,7 @@ export default async (req, res) => {
                 if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
                 const { registrationId, source, userId, className } = payload || {};
                 
-                // Log: user cancelling a registration
-                void logActivity(userId, 'CANCEL_CLASS', `Hủy đăng ký lớp ${className || registrationId} (${source})`, req);
-                
                 result = await callApi(`/huyDangKy?idDangKy=${registrationId}`, 'DELETE', token, null, source);
-                
-                // Log result
-                if (result.success) {
-                    await logActivity(userId, 'CANCEL_SUCCESS', `Hủy thành công lớp ${className || registrationId}`, req);
-                } else {
-                    await logActivity(userId, 'CANCEL_FAILED', `Hủy thất bại lớp ${className || registrationId}: ${result.message || 'Unknown error'}`, req);
-                }
                 break;
             }
 
@@ -1855,15 +1496,7 @@ export default async (req, res) => {
                     });
                 }
                 
-                // Log: user syncing class data
-                void logActivity(userId, 'SYNC_DATA', `Đồng bộ ${classData.length} lớp vào CSDL cộng đồng - Đợt ${dotId} (${source})`, req);
-                
                 const syncResult = await syncClassDataToDB(dotId, userId, source, classData);
-                
-                // Log sync result
-                if (syncResult.success) {
-                    await logActivity(userId, 'SYNC_DATA_DONE', `Đồng bộ hoàn tất: ${syncResult.inserted} mới, ${syncResult.updated} cập nhật`, req);
-                }
                 
                 result = {
                     success: syncResult.success,
@@ -1925,45 +1558,6 @@ export default async (req, res) => {
                         message: 'Không thể lấy thống kê'
                     };
                 }
-                break;
-            }
-
-            // --- LOGGING ACTION ---
-            case 'logUserAction': {
-                const { userId: logUserId, action: logAction, details: logDetails } = payload || {};
-
-                // This endpoint used to accept anonymous writes under any student id, which is
-                // both a log-forgery vector and unbounded INSERT amplification on a shared DB
-                // (every UI click from every visitor). Requiring the portal token removes the
-                // anonymous population entirely.
-                if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
-
-                // Whitelist of allowed frontend actions
-                const allowedActions = [
-                    'LOGIN_SUCCESS', 'LOGOUT',
-                    'START_AUTO_REGISTER', 'STOP_AUTO_REGISTER',
-                    'START_AUTO_INSERT', 'STOP_AUTO_INSERT',
-                    'SELECT_CLASS', 'DESELECT_CLASS',
-                    'REMOVE_SELECTED', 'REMOVE_SWAP',
-                    'FETCH_SCHEDULE_BTN', 'REFRESH_REGISTERED',
-                    'VIEW_TIMETABLE', 'EXPORT_TIMETABLE',
-                    'CHECK_VIP_STATUS', 'OPEN_VIP_MODAL', 'OPEN_GUIDE',
-                    'SWAP_CLASS', 'SWAP_CLASS_SETUP', 'SWAP_FROM_REGISTERED',
-                    'SELECT_FROM_SWAP_MODAL', 'OPEN_SWAP_MODAL',
-                    'BUY_VIP_PLAN', 'CANCEL_PAYMENT', 'CANCEL_CLASS_CONFIRM'
-                ];
-                
-                if (!logUserId || !logAction) {
-                    return res.status(400).json({ success: false, message: 'userId and action required' });
-                }
-                
-                // Only allow whitelisted actions from frontend
-                const safeAction = allowedActions.includes(logAction) ? logAction : 'USER_ACTION';
-                // Fire-and-forget: an activity log must never add a DB round trip to the response
-                // the student is waiting on.
-                void logActivity(logUserId, safeAction, logDetails || logAction, req);
-
-                result = { success: true };
                 break;
             }
 

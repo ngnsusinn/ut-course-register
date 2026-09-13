@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let dotId = null;
     let userId = null;
     let vipStatus = { hasVIP: false };
+    let userProfile = null; // portal profile snapshot — also cached for offline session restore
     let allScheduleData = [];
     let registeredClassesData = []; // Store registered classes for conflict detection
     let selectedClasses = new Map();
@@ -32,9 +33,28 @@ document.addEventListener('DOMContentLoaded', () => {
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
+
+    // --- Auto-loop performance guards ---
+    // Hanging an auto-registration session used to lag the whole browser until F5:
+    //   * the log output grew unbounded (one <p> per attempt, thousands per hour) and every
+    //     append forced a synchronous layout (scrollTop = scrollHeight);
+    //   * the subject loops hammered the API with setTimeout(0) and no concurrency cap, so
+    //     every browser connection slot was occupied and manual clicks queued forever.
+    const MAX_LOG_LINES = 400;           // DOM nodes kept in the on-screen log
+    const AUTO_ROUND_DELAY_MS = 150;     // breather between auto-loop rounds
+    const AUTO_MAX_CONCURRENT = 3;       // auto requests in flight — leaves slots for UI actions
+    let autoSlotsUsed = 0;
+    const autoSlotQueue = [];
+    const autoSlotAcquire = () => new Promise(resolve => {
+        if (autoSlotsUsed < AUTO_MAX_CONCURRENT) { autoSlotsUsed++; resolve(); }
+        else autoSlotQueue.push(resolve);
+    });
+    const autoSlotRelease = () => {
+        const next = autoSlotQueue.shift();
+        if (next) next(); else autoSlotsUsed--;
+    };
     let currentOrder = null;
     let paymentCheckInterval = null;
-    let vipExpiryCheckInterval = null;
     
     // Expose data for timetable module
     window.getRegisteredClassesData = () => registeredClassesData;
@@ -76,30 +96,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // === LOG USER ACTION (fire-and-forget) ===
-    const logUserAction = (action, details = '') => {
+    // Same as backendRequest but gated through the auto-slot semaphore (see MAX constants).
+    // Manual UI requests never queue behind the auto loops: at most AUTO_MAX_CONCURRENT
+    // auto calls are in flight, the rest of the browser's connection pool stays free
+    // for clicks, payment polling and page loads even while auto-register is hammering.
+    const backendRequestAuto = async (action, payload = {}) => {
+        await autoSlotAcquire();
         try {
-            if (!userId) return;
-            const headers = { 'Content-Type': 'application/json' };
-            // Backend now rejects activity logging without the session token (was a public
-            // log-forgery/spam vector), so attach it here exactly like backendRequest does.
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-            fetch('/api/handler', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ action: 'logUserAction', payload: { userId, action, details } })
-            }).catch(() => {}); // Fire and forget - don't block UI
-        } catch (e) { /* ignore logging errors */ }
+            return await backendRequest(action, payload);
+        } finally {
+            autoSlotRelease();
+        }
+    };
+
+    // Verification seam: lets the browser-level regression harness (tests/01 style VM run on
+    // the BUILT bundle) exercise the perf guards without screen-driving the whole UI.
+    window.__UT_APP_HOOKS = {
+        log: (msg, isErr) => log(msg, isErr),
+        requestAuto: (action, payload) => backendRequestAuto(action, payload),
+        limits: () => ({ maxLogLines: MAX_LOG_LINES, autoMaxConcurrent: AUTO_MAX_CONCURRENT, autoRoundDelayMs: AUTO_ROUND_DELAY_MS }),
+        logNodeCount: () => logOutput.childElementCount
     };
 
     // --- UTILITY FUNCTIONS ---
+    // Log is called on EVERY auto-loop iteration (thousands per hour when a slot never opens).
+    // It must stay O(1): capped DOM size, textContent (no HTML parsing), and one batched
+    // scroll per frame instead of forcing layout on every append — otherwise an idle session
+    // grows tens of thousands of <p> nodes and the tab freezes until F5.
+    let logScrollQueued = false;
     const log = (message, isError = false) => {
         const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
         const logEntry = document.createElement('p');
-        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.textContent = `[${timestamp}] ${message}`;
         logEntry.className = isError ? 'text-red-400' : 'text-green-300';
         logOutput.appendChild(logEntry);
-        logOutput.scrollTop = logOutput.scrollHeight;
+        while (logOutput.childElementCount > MAX_LOG_LINES) {
+            logOutput.removeChild(logOutput.firstElementChild);
+        }
+        if (!logScrollQueued) {
+            logScrollQueued = true;
+            requestAnimationFrame(() => {
+                logScrollQueued = false;
+                logOutput.scrollTop = logOutput.scrollHeight;
+            });
+        }
     };
 
     const toggleLoading = (button, isLoading) => {
@@ -395,7 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const plan = e.target.dataset.plan;
-                logUserAction('BUY_VIP_PLAN', `Mua gói VIP: ${plan} - ${plans[plan].price.toLocaleString('vi-VN')}đ`);
                 await createVIPOrder(plan, plans[plan], sepayConfig);
             });
         });
@@ -405,7 +444,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
 modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
     if (!currentOrder) return;
-    logUserAction('CANCEL_PAYMENT', `Hủy thanh toán đơn #${currentOrder.orderCode}`);
     
     showConfirmModal(
         'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
@@ -555,42 +593,18 @@ modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () =
             vipStatus = vipRes.vip;
             updateVIPDisplay();
             
-            // If VIP status changed from active to expired
+            // If VIP status changed from active to expired: notify only. Registration no
+            // longer requires VIP, so a running auto-process is deliberately left untouched.
             if (previousVIPStatus && !vipStatus.hasVIP) {
-                log('⚠️ VIP của bạn đã hết hạn. Chức năng tự động đăng ký đã bị tắt.', true);
-                
-                // Stop any running auto-register processes
-                await stopProcess();
-                
-                // Show VIP modal to suggest renewal
-                setTimeout(() => {
-                    showVIPModal();
-                }, 1000);
+                log('ℹ️ VIP của bạn đã hết hạn.', true);
             }
         }
     };
     
-    // Start auto-check VIP expiry every 7 seconds
-    const startVIPExpiryCheck = () => {
-        if (vipExpiryCheckInterval) clearInterval(vipExpiryCheckInterval);
-        
-        vipExpiryCheckInterval = setInterval(async () => {
-            if (!authToken || !userId) {
-                clearInterval(vipExpiryCheckInterval);
-                return;
-            }
-            
-            await checkAndUpdateVIPStatus();
-        }, 7000); // Check every 7 seconds
-    };
-    
-    // Stop VIP expiry check
-    const stopVIPExpiryCheck = () => {
-        if (vipExpiryCheckInterval) {
-            clearInterval(vipExpiryCheckInterval);
-            vipExpiryCheckInterval = null;
-        }
-    };
+    // VIP status is checked ON DEMAND only: on login and on every page load (F5) it arrives
+    // inside getInitialData; payment/activation flows refresh it once via
+    // checkAndUpdateVIPStatus(). The old 7-second expiry poll was removed — it hammered the
+    // API for a status that only ever changes server-side at webhook/expiry time.
 	
     const updateVIPDisplay = () => {
     if (!vipStatusElement) return;
@@ -747,7 +761,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             fetchBtn.addEventListener('click', fetchFullSchedule);
             logoutBtn.addEventListener('click', handleLogout);
             upgradeVipBtn.addEventListener('click', () => {
-                logUserAction('OPEN_VIP_MODAL', 'Mở modal VIP');
                 showVIPModal();
             });
             // Removed auto-fetch on prerequisite toggle change - user should manually refresh if needed
@@ -797,6 +810,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         try {
             const cacheData = {
                 userId: userId, // Store current userId to verify cache ownership
+                dotId,                       // session restore needs the current term
+                profile: userProfile,        // greeting + UI restore while offline
+                vip: vipStatus,              // expiry re-validated against the local clock on restore
                 allScheduleData,
                 registeredClassesData,
                 selectedClasses: Array.from(selectedClasses.entries()),
@@ -847,6 +863,59 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         }
     };
 
+    // Render whatever loadCachedData() restored (tables + "Tải lại" button state).
+    const renderCachedState = () => {
+        if (allScheduleData.length > 0) {
+            renderScheduleTable();
+            // Update button text to "Tải lại"
+            if (fetchBtn) {
+                const btnSpan = fetchBtn.querySelector('span');
+                if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
+                fetchBtn.originalHTML = fetchBtn.innerHTML;
+            }
+        }
+
+        if (registeredClassesData.length > 0) {
+            renderRegisteredTable(registeredClassesData);
+        }
+
+        if (selectedClasses.size > 0) {
+            updateSelectedList();
+        }
+    };
+
+    // Offline/degraded session restore: the backend/portal could not be reached, but the
+    // token was NOT rejected — rebuild the whole UI from the localStorage snapshot so the
+    // student can keep reading their schedule and selection. Server-side checks still gate
+    // any live action; VIP expiry is re-derived from the cached expiry date, never trusted
+    // blindly from the snapshot.
+    const restoreSessionFromCache = () => {
+        try {
+            const cached = JSON.parse(localStorage.getItem('userDataCache') || 'null');
+            if (!cached || !cached.userId || !cached.profile || !cached.dotId) return false;
+
+            const CACHE_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - cached.timestamp > CACHE_DURATION) return false;
+
+            userId = cached.userId;
+            dotId = cached.dotId;
+            userProfile = cached.profile;
+            const exp = cached.vip && cached.vip.expiryDate ? new Date(cached.vip.expiryDate).getTime() : 0;
+            vipStatus = exp > Date.now()
+                ? { hasVIP: true, daysLeft: Math.ceil((exp - Date.now()) / 86400000), expiryDate: cached.vip.expiryDate, planType: cached.vip.planType, unknown: true }
+                : { hasVIP: false, unknown: true };
+
+            loadCachedData(userId);
+            updateUIAfterLogin(userProfile);
+            renderCachedState();
+            log('📦 Chế độ offline: phiên được khôi phục từ dữ liệu đã lưu — vui lòng KHÔNG thực hiện đăng ký cho tới khi kết nối lại');
+            return true;
+        } catch (error) {
+            console.error('Offline session restore failed:', error);
+            return false;
+        }
+    };
+
     const handleLogin = async () => {
         toggleLoading(loginBtn, true);
         const username = usernameInput.value.trim();
@@ -875,41 +944,20 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 dotId = initialData.dot.id;
                 userId = initialData.profile.maSinhVien || initialData.profile.username;
                 vipStatus = initialData.vip || { hasVIP: false };
-                logUserAction('LOGIN_SUCCESS', `Đăng nhập thành công: ${username}`);
+                userProfile = initialData.profile;
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
                 // Try to load cached data first (check if belongs to current user)
-                const hasCachedData = loadCachedData(userId);
-                
-                if (hasCachedData) {
+                if (loadCachedData(userId)) {
                     log('📦 Đã khôi phục dữ liệu từ cache');
-                    
-                    // Update UI with cached data
-                    if (allScheduleData.length > 0) {
-                        renderScheduleTable();
-                        // Update button text to "Tải lại"
-                        if (fetchBtn) {
-                            const btnSpan = fetchBtn.querySelector('span');
-                            if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
-                            fetchBtn.originalHTML = fetchBtn.innerHTML;
-                        }
-                    }
-                    
-                    if (registeredClassesData.length > 0) {
-                        renderRegisteredTable(registeredClassesData);
-                    }
-                    
-                    if (selectedClasses.size > 0) {
-                        updateSelectedList();
-                    }
+                    renderCachedState();
                 } else {
                     // No cache, fetch fresh data
                     await fetchRegisteredClasses();
                 }
                 
-                // Start VIP expiry check
-                startVIPExpiryCheck();
+                // VIP status came with getInitialData (initialData.vip) — no polling needed
             } else {
                 log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
                 authToken = null;
@@ -921,7 +969,14 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         toggleLoading(loginBtn, false);
     };
 
-    // Validate JWT token with portal API (via backend proxy to avoid CORS)
+    // Validate JWT token with portal API (via backend proxy to avoid CORS).
+    // Tri-state on purpose:
+    //   'valid'   – server confirmed the token works
+    //   'invalid' – server/portal DEFINITIVELY rejected it (expired session)
+    //   'unknown' – no answer at all: network down, backend 5xx, or the backend explicitly
+    //               marked the portal as temporarily unavailable. A failed verification is
+    //               NOT proof of an expired session, so the caller keeps the session and
+    //               restores from cache instead of logging the student out.
     const validateTokenWithPortal = async (token) => {
         try {
             const response = await fetch('/api/handler', {
@@ -935,16 +990,15 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 })
             });
             
+            if (!response.ok) return 'unknown';
             const data = await response.json();
             
-            if (data.success && data.valid) {
-                return true;
-            }
-            
-            return false;
+            if (data && data.success === true && data.valid === true) return 'valid';
+            if (data && data.success === true && data.valid === false && data.upstreamUnavailable !== true) return 'invalid';
+            return 'unknown';
         } catch (error) {
             console.error('Token validation failed:', error);
-            return false;
+            return 'unknown';
         }
     };
 
@@ -953,95 +1007,90 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         const session = localStorage.getItem('userSession');
         if (!session) return false;
         
+        // A corrupt session blob is junk, not a live session: drop it and show the form.
+        let token, loginTime;
         try {
-            const { token, loginTime } = JSON.parse(session);
-            
-            // Session expires after 24 hours
-            const SESSION_DURATION = 24 * 60 * 60 * 1000;
-            if (new Date().getTime() - loginTime > SESSION_DURATION) {
-                localStorage.removeItem('userSession');
-                return false;
-            }
+            ({ token, loginTime } = JSON.parse(session));
+        } catch {
+            localStorage.removeItem('userSession');
+            return false;
+        }
+        if (!token || !loginTime) {
+            localStorage.removeItem('userSession');
+            return false;
+        }
+        
+        // Session expires after 24 hours
+        const SESSION_DURATION = 24 * 60 * 60 * 1000;
+        if (new Date().getTime() - loginTime > SESSION_DURATION) {
+            localStorage.removeItem('userSession');
+            return false;
+        }
+        
+        try {
             
             // Validate token with portal API
-            const isValid = await validateTokenWithPortal(token);
+            const verdict = await validateTokenWithPortal(token);
             
-            if (!isValid) {
+            if (verdict === 'invalid') {
                 log('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại', true);
                 localStorage.removeItem('userSession');
                 return false;
             }
+            if (verdict === 'unknown') {
+                log('⚠️ Không xác minh được token với server (mất kết nối?). Sẽ khôi phục phiên từ dữ liệu đã lưu.', true);
+            }
             
-            // Token is valid, restore session
+            // Token is valid (or unverifiable), restore session
             authToken = token;
-            
-            log('✅ Đã khôi phục phiên đăng nhập');
             
             const initialData = await backendRequest('getInitialData');
             if (initialData && initialData.success) {
+                if (verdict === 'valid') log('✅ Đã khôi phục phiên đăng nhập');
                 dotId = initialData.dot.id;
                 userId = initialData.profile.maSinhVien || initialData.profile.username;
                 vipStatus = initialData.vip || { hasVIP: false };
+                userProfile = initialData.profile;
                 log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
                 updateUIAfterLogin(initialData.profile);
                 
                 // Try to load cached data first (check if belongs to current user)
-                const hasCachedData = loadCachedData(userId);
-                
-                if (hasCachedData) {
+                if (loadCachedData(userId)) {
                     log('📦 Đã khôi phục dữ liệu từ cache');
-                    
-                    // Update UI with cached data
-                    if (allScheduleData.length > 0) {
-                        renderScheduleTable();
-                        // Update button text to "Tải lại"
-                        if (fetchBtn) {
-                            const btnSpan = fetchBtn.querySelector('span');
-                            if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
-                            fetchBtn.originalHTML = fetchBtn.innerHTML;
-                        }
-                    }
-                    
-                    if (registeredClassesData.length > 0) {
-                        renderRegisteredTable(registeredClassesData);
-                    }
-                    
-                    if (selectedClasses.size > 0) {
-                        updateSelectedList();
-                    }
+                    renderCachedState();
                 } else {
                     // No cache, fetch fresh data
                     await fetchRegisteredClasses();
                 }
                 
-                // Start VIP expiry check
-                startVIPExpiryCheck();
+                // VIP status came with getInitialData (initialData.vip) — no polling needed
                 
                 return true;
-            } else {
-                log('❌ Không thể tải dữ liệu, vui lòng đăng nhập lại', true);
-                localStorage.removeItem('userSession');
-                authToken = null;
-                return false;
             }
+            
+            // getInitialData failed. The session was NOT rejected, so instead of bouncing
+            // the user to the login form, rebuild everything from the local snapshot.
+            if (restoreSessionFromCache()) {
+                return true;
+            }
+            // Nothing cached to live on (first login never completed, or cache expired):
+            // keep the stored session — it may work on the next reload — but show the form.
+            log('❌ Không thể tải dữ liệu và không có cache để khôi phục. Kiểm tra kết nối rồi thử lại.', true);
+            return false;
         } catch (error) {
             console.error('Auto-login failed:', error);
-            localStorage.removeItem('userSession');
             return false;
         }
     };
 
     const handleLogout = async () => {
-        logUserAction('LOGOUT', `Đăng xuất: ${userId}`);
         await stopProcess();
-        
-        // Stop VIP expiry check
-        stopVIPExpiryCheck();
         
         authToken = null;
         dotId = null;
         userId = null;
         vipStatus = { hasVIP: false };
+        userProfile = null;
         
         // Clear session and cache
         localStorage.removeItem('userSession');
@@ -1062,7 +1111,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
 
     const fetchFullSchedule = async () => {
         if (!authToken) return log("Chưa đăng nhập.", true);
-        logUserAction('FETCH_SCHEDULE_BTN', 'Bấm nút tải lịch học');
         toggleLoading(fetchBtn, true);
         isProcessStopped = false;
         log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
@@ -1212,7 +1260,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const cancelRegistration = async (registrationId, tenMonHoc, source) => {
-        logUserAction('CANCEL_CLASS_CONFIRM', `Bấm hủy đăng ký: ${tenMonHoc}`);
         // Use custom confirmation modal instead of default confirm()
         showConfirmModal(
             `Bạn có chắc chắn muốn hủy môn học <strong>"${tenMonHoc}"</strong> không?<br><br>Hành động này không thể hoàn tác.`,
@@ -1249,7 +1296,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         // Extract maHocPhan from targetCode if not available (remove last 2 characters)
         const maHocPhan = targetMaHocPhan || targetCode.slice(0, -2);
         
-        const checkResult = await backendRequest('checkClassAvailability', { 
+        const checkResult = await backendRequestAuto('checkClassAvailability', { 
             classId: targetId, 
             dotId, 
             maHocPhan, 
@@ -1276,7 +1323,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Step 2: Cancel old registered class FIRST (before registering new one)
         log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
-        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource, userId, className: `${regName} (${regCode})` });
+        const cancelResult = await backendRequestAuto('cancel', { registrationId: regId, source: regSource, userId, className: `${regName} (${regCode})` });
         
         if (!cancelResult || !cancelResult.success) {
             log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
@@ -1287,7 +1334,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Step 3: Register target class (after canceling old one)
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
-        const registerResult = await backendRequest('register', { classId: targetId, source: targetSource, userId, className: `${targetName} (${targetCode})` });
+        const registerResult = await backendRequestAuto('register', { classId: targetId, source: targetSource, userId, className: `${targetName} (${targetCode})` });
         
         if (!registerResult || !registerResult.success) {
             log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
@@ -1306,11 +1353,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const startInsertion = () => {
-        if (!vipStatus.hasVIP) {
-            log("⚠️ Bạn cần nâng cấp VIP để thực hiện chèn lớp.", true);
-            return;
-        }
-        
         const totalClasses = selectedClasses.size + swapPendingClasses.size;
         if (totalClasses === 0) {
             return log("Vui lòng chọn lớp để chèn.", true);
@@ -1320,7 +1362,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu quá trình chèn lớp...");
-        logUserAction('START_AUTO_INSERT', `Bắt đầu tự động chèn ${totalClasses} lớp`);
 
         const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
@@ -1346,7 +1387,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const tenMonHoc = classItems[0].class.tenMonHoc || maHocPhan;
             const source = classItems[0].class.source;
 
-            // Use recursive call to prevent request piling - no delay between requests
+            // Recursive round scheduling (see AUTO_ROUND_DELAY_MS + backendRequestAuto semaphore)
             const runInsertionLoop = async () => {
                 // Check if this subject already completed
                 if (completedSubjects.has(maHocPhan)) {
@@ -1359,7 +1400,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 }
                 
                 try {
-                    const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
+                    const statusRes = await backendRequestAuto('checkClassStatus', { dotId, maHocPhan, source });
 
                     if (statusRes && statusRes.success) {
                         for (const availableClass of statusRes.body) {
@@ -1399,7 +1440,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 } else {
                                     // Handle regular registration
                                     log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                                    const regResult = await backendRequest('register', { classId: availableClass.id, source, userId, className: `${tenMonHoc} (${availableClass.maLopHocPhan})` });
+                                    const regResult = await backendRequestAuto('register', { classId: availableClass.id, source, userId, className: `${tenMonHoc} (${availableClass.maLopHocPhan})` });
 
                                     if (regResult && regResult.success) {
                                         log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
@@ -1420,10 +1461,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
                 }
                 
-                // Call next iteration immediately after current one completes (no delay)
+                // Schedule the next round after a short breather (see AUTO_ROUND_DELAY_MS):
+                // network RTT dominates slot-grab speed anyway; the breather is what keeps
+                // the tab responsive during a long wait for a slot to open.
                 if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
-                    // Use setTimeout(0) to avoid blocking UI and allow stop to work
-                    const timeoutId = setTimeout(runInsertionLoop, 0);
+                    const timeoutId = setTimeout(runInsertionLoop, AUTO_ROUND_DELAY_MS);
                     registrationIntervals.set(maHocPhan, timeoutId);
                 }
             };
@@ -1435,11 +1477,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const startRegistration = () => {
-        if (!vipStatus.hasVIP) {
-            log("⚠️ Bạn cần nâng cấp VIP để thực hiện đăng ký.", true);
-            return;
-        }
-        
         const totalClasses = selectedClasses.size + swapPendingClasses.size;
         if (totalClasses === 0) {
             return log("Vui lòng chọn lớp để đăng ký.", true);
@@ -1449,7 +1486,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         isProcessStopped = false;
         toggleActionButtons(true);
         log("🚀 Bắt đầu đăng ký liên tục...");
-        logUserAction('START_AUTO_REGISTER', `Bắt đầu tự động đăng ký ${totalClasses} lớp`);
 
         const classesBySubject = new Map();
         const completedSubjects = new Set(); // Track completed subjects
@@ -1474,7 +1510,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         classesBySubject.forEach((classItems, maHocPhan) => {
             const tenMonHoc = classItems[0].class.tenMonHoc;
 
-            // Use recursive call to prevent request piling - no delay between requests
+            // Recursive round scheduling (see AUTO_ROUND_DELAY_MS + backendRequestAuto semaphore)
             const runRegistrationLoop = async () => {
                 // Check if this subject already completed
                 if (completedSubjects.has(maHocPhan)) {
@@ -1526,7 +1562,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         } else {
                             // Handle regular registration
                             log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
-                            const result = await backendRequest('register', { classId: item.class.id, source: item.class.source, userId, className: `${tenMonHoc} (${item.class.maLopHocPhan})` });
+                            const result = await backendRequestAuto('register', { classId: item.class.id, source: item.class.source, userId, className: `${tenMonHoc} (${item.class.maLopHocPhan})` });
 
                             if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
                                 log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
@@ -1545,10 +1581,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
                 }
                 
-                // Call next iteration immediately after current one completes (no delay)
+                // Schedule the next round after a short breather (see AUTO_ROUND_DELAY_MS).
                 if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
-                    // Use setTimeout(0) to avoid blocking UI and allow stop to work
-                    const timeoutId = setTimeout(runRegistrationLoop, 0);
+                    const timeoutId = setTimeout(runRegistrationLoop, AUTO_ROUND_DELAY_MS);
                     registrationIntervals.set(maHocPhan, timeoutId);
                 }
             };
@@ -1562,7 +1597,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const stopProcess = async () => {
         isProcessStopped = true;
         log("🛑 Đang dừng tất cả các quá trình...");
-        logUserAction('STOP_AUTO_REGISTER', 'Dừng tất cả quá trình tự động');
         registrationIntervals.forEach(clearTimeout);
         registrationIntervals.clear();
         toggleActionButtons(false);
@@ -1570,7 +1604,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     };
 
     const toggleActionButtons = (isProcessing) => {
-        // Always show registration button when not processing (VIP check is in startRegistration)
+        // Registration/insertion no longer require VIP — visibility only tracks processing state
         startRegistrationBtn.classList.toggle('hidden', isProcessing);
         stopBtn.classList.toggle('hidden', !isProcessing);
     };
@@ -1812,7 +1846,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     target: targetClass
                 });
                 
-                logUserAction('SWAP_CLASS_SETUP', `Đổi lớp (conflict): ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                 log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
                 updateSelectedList();
                 
@@ -2143,7 +2176,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         // On confirm - Add to selected classes (same as selecting from schedule table)
                         selectedClasses.set(targetId, targetClass);
                         
-                        logUserAction('SELECT_FROM_SWAP_MODAL', `Chọn từ modal đổi lớp: ${targetName} (${targetCode})`);
                         log(`✅ Đã thêm lớp ${targetName} (${targetCode}) vào danh sách đăng ký`);
                         
                         if (targetClass.phanTramDangKy >= 100) {
@@ -2273,7 +2305,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     const guideBtn = document.getElementById('guide-btn');
     if (guideBtn) {
         guideBtn.addEventListener('click', () => {
-            logUserAction('OPEN_GUIDE', 'Mở hướng dẫn sử dụng');
             showGuideModal();
         });
     }
@@ -2288,7 +2319,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
     
     loginBtn.addEventListener('click', handleLogin);
     refreshRegisteredBtn.addEventListener('click', () => {
-        logUserAction('REFRESH_REGISTERED', 'Bấm làm mới danh sách đã đăng ký');
         fetchRegisteredClasses();
     });
     startInsertionBtn.addEventListener('click', startInsertion);
@@ -2326,10 +2356,8 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             if (!cls) return;
             if (selectedClasses.has(classId)) {
                 selectedClasses.delete(classId);
-                logUserAction('DESELECT_CLASS', `Bỏ chọn: ${cls.tenMonHoc} (${cls.maLopHocPhan})`);
             } else {
                 selectedClasses.set(classId, cls);
-                logUserAction('SELECT_CLASS', `Chọn: ${cls.tenMonHoc} (${cls.maLopHocPhan})`);
             }
             scheduleRow.classList.toggle('bg-blue-200');
             updateSelectedList();
@@ -2338,7 +2366,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (removeBtn) {
             const classId = removeBtn.dataset.classId;
             const removedClass = selectedClasses.get(classId);
-            logUserAction('REMOVE_SELECTED', `Xóa khỏi danh sách: ${removedClass?.tenMonHoc || classId} (${removedClass?.maLopHocPhan || ''})`);
             selectedClasses.delete(classId);
             const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
             if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
@@ -2349,7 +2376,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         if (removeSwapBtn) {
             const targetClassId = removeSwapBtn.dataset.targetClassId;
             const removedSwap = swapPendingClasses.get(targetClassId);
-            logUserAction('REMOVE_SWAP', `Hủy đổi lớp: ${removedSwap?.registered?.tenMonHoc || ''} → ${removedSwap?.target?.tenMonHoc || targetClassId}`);
             swapPendingClasses.delete(targetClassId);
             updateSelectedList();
             log("🗑️ Đã hủy yêu cầu đổi lớp");
@@ -2363,7 +2389,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         const swapFromRegisteredBtn = e.target.closest('.swap-from-registered-btn');
         if (swapFromRegisteredBtn) {
-            logUserAction('OPEN_SWAP_MODAL', `Mở đổi lớp: ${swapFromRegisteredBtn.dataset.regName} (${swapFromRegisteredBtn.dataset.regCode})`);
             const registeredData = {
                 id: swapFromRegisteredBtn.dataset.regId,
                 code: swapFromRegisteredBtn.dataset.regCode,
@@ -2455,7 +2480,6 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 target: targetClass
             });
             
-            logUserAction('SWAP_FROM_REGISTERED', `Đổi lớp: ${registeredData.name} (${registeredData.code}) → ${targetData.name} (${targetData.code})`);
             log(`✅ Đã thêm yêu cầu đổi lớp: ${registeredData.name} → ${targetData.name}`);
             log(`📋 Trạng thái: ${registeredStatus} → ${targetStatus}`);
             updateSelectedList();

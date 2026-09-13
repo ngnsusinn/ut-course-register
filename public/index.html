@@ -344,8 +344,8 @@
     <!-- Footer with SEO-friendly content -->
     <footer class="text-center text-sm text-gray-500 mt-8 py-6 border-t bg-white rounded-xl shadow-md" role="contentinfo">
       <p class="font-semibold">Tool DKHP UTH - Đăng ký Học phần UTH <span
-          class="font-mono text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-1">v2026.37.2</span></p>
-      <p class="mt-2">Cập nhật lần cuối: 08/09/2026</p>
+          class="font-mono text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-1">v2026.37.0</span></p>
+      <p class="mt-2">Cập nhật lần cuối: 13/09/2026</p>
       <p class="mt-2 text-xs text-gray-400">UTH Tool hỗ trợ đăng ký học phần, đăng kí học phần tự động cho sinh viên <a href="https://ut.edu.vn" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline" title="Đại học Giao thông Vận tải TP.HCM">Đại học Giao thông Vận tải TP.HCM (UTH)</a></p>
       <nav class="mt-3 text-xs" aria-label="Footer navigation">
         <a href="/" class="text-blue-500 hover:underline mx-2" title="Tool DKHP UTH - Trang chủ">Trang chủ</a>
@@ -386,7 +386,42 @@
   </div>
 
   <script src="app.js" defer></script>
-  <script src="timetable.js" defer></script>
+  <!-- Code splitting: timetable.js is a lazy chunk. It is fetched on the first
+       "Xem thời khóa biểu" click, and pre-loaded once the browser is idle so the
+       click is instant for the vast majority of users. It never competes with the
+       critical first-load resources again. -->
+  <script>
+    (function () {
+      window.__loadTimetable = function () {
+        return window.__ttChunk || (window.__ttChunk = new Promise(function (resolve, reject) {
+          if (window.showTimetableModal) { resolve(); return; }
+          var s = document.createElement('script');
+          s.src = 'timetable.js';
+          s.onload = function () { resolve(); };
+          s.onerror = function () {
+            window.__ttChunk = null; // allow a retry on the next click
+            reject(new Error('chunk-load-failed'));
+          };
+          document.head.appendChild(s);
+        }));
+      };
+
+      var btn = document.getElementById('view-timetable-btn');
+      if (btn) btn.addEventListener('click', function () {
+        if (!window.showTimetableModal) {
+          window.__loadTimetable().then(function () {
+            if (window.showTimetableModal) window.showTimetableModal();
+          }).catch(function () {
+            var logBox = document.getElementById('log-output');
+            if (logBox) logBox.innerHTML += '<p class="text-red-400">Không tải được module thời khóa biểu. Kiểm tra kết nối rồi bấm lại.</p>';
+          });
+        }
+      });
+
+      var idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 4000); };
+      idle(function () { window.__loadTimetable().catch(function () {}); });
+    })();
+  </script>
 
 
 

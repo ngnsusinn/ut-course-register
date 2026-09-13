@@ -1,55 +1,60 @@
-const esbuild = require('esbuild');
-const JavaScriptObfuscator = require('javascript-obfuscator');
-const fs = require('fs');
-const path = require('path');
+// Build: public/*.original.js  ->  public/*.js  (minify + obfuscate, no source maps)
+// Pipeline per file:
+//   1. esbuild minify   — whitespace/identifiers, target es2020
+//   2. obfuscator       — BALANCED settings (string-array + light control-flow flattening).
+//      The old config (deadCodeInjection + 100% flattening + rc4) multiplied every file ~7x;
+//      this one stays within ~2-3x while still hiding names, strings and structure.
+//   3. source-map kill  — explicit `sourcemap: false` everywhere + defensive strip, and
+//      .vercelignore blocks *.map from ever reaching the deployed output.
+// Code splitting: timetable.js is NOT loaded eagerly by index.html any more — it is fetched
+// on demand (first click / idle preload). admin-panel.js lives only on /admin. See index.html.
+import esbuild from 'esbuild';
+import JavaScriptObfuscator from 'javascript-obfuscator';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 console.log('📦 Starting build process (minify + obfuscate)...\n');
 
-// Obfuscation settings
-const obfuscationOptions = {
+// Obfuscation settings — deliberately moderate; heavy options were a size/perf trap.
+const obfuscationOptions = (prefix, seed) => ({
     compact: true,
     controlFlowFlattening: true,
-    controlFlowFlatteningThreshold: 1, // Tăng từ 0.75 lên 1 (100%)
-    deadCodeInjection: true,
-    deadCodeInjectionThreshold: 0.5, // Tăng từ 0.4 lên 0.5
-    debugProtection: true, // Bật để chống debug (lưu ý: có thể gây khó chịu khi dev)
-    debugProtectionInterval: 500, // Kiểm tra debug mỗi 2 giây
-    disableConsoleOutput: true, // Tắt console.log trong production
-    domainLock: [], // Thêm domain nếu muốn lock code chỉ chạy trên domain cụ thể
-    identifierNamesGenerator: 'mangled-shuffled', // Mạnh hơn 'hexadecimal'
-    identifiersPrefix: '',
-    numbersToExpressions: true,
-    renameGlobals: false, // Tắt vì gây conflict khi có nhiều file JS sử dụng chung globals (window functions)
-    renameProperties: false, // Cẩn thận với option này, có thể break code
-    rotateStringArray: true,
-    selfDefending: true,
+    controlFlowFlatteningThreshold: 0.35,
+    deadCodeInjection: false,          // was 0.5 — pure bloat, no real protection
+    debugProtection: false,            // hostile UX (devtools loops)
+    disableConsoleOutput: false,       // keep logs available for production debugging
+    domainLock: [],
+    identifierNamesGenerator: 'mangled',
+    identifiersPrefix: prefix,         // unique per file to avoid cross-chunk name clashes
+    numbersToExpressions: false,
+    renameGlobals: false,              // shared browser globals must stay intact
+    renameProperties: false,           // would break API/DOM property names
+    seed,                              // deterministic output for the same source
+    selfDefending: false,              // breaks against re-minification and is trivially defeated
     shuffleStringArray: true,
     simplify: true,
-    splitStrings: true,
-    splitStringsChunkLength: 5, // Giảm từ 10 xuống 5 để chia nhỏ hơn
-    stringArray: true,
-    stringArrayCallsTransform: true, // Thêm - làm rối cách gọi string array
-    stringArrayCallsTransformThreshold: 0.75,
-    stringArrayEncoding: ['rc4'], // Đổi từ 'base64' sang 'rc4' (mạnh hơn)
-    stringArrayIndexesType: ['hexadecimal-number', 'hexadecimal-numeric-string'],
-    stringArrayIndexShift: true,
-    stringArrayRotate: true,
-    stringArrayShuffle: true,
-    stringArrayWrappersCount: 2, // Thêm wrappers
-    stringArrayWrappersChainedCalls: true,
-    stringArrayWrappersParametersMaxCount: 4,
-    stringArrayWrappersType: 'function',
-    stringArrayThreshold: 1, // Tăng lên 1 (100%)
-    transformObjectKeys: true,
-    unicodeEscapeSequence: true // Bật để chuyển đổi sang unicode
-};
+    splitStrings: false,               // was 5-char chunks — big size penalty
+    stringArray: true,                 // hide URLs/messages behind an encoded array + decoder
+    stringArrayCallsTransform: true,
+    stringArrayCallsTransformThreshold: 0.5,
+    stringArrayEncoding: ['base64'],   // rc4 costs CPU on every page view
+    stringArrayThreshold: 0.65,
+    transformObjectKeys: false,        // payload fields (action, token...) must not be renamed
+    unicodeEscapeSequence: false       // utf-8 Vietnamese stays readable in transit, no bloat
+});
 
-// Files to process with unique prefixes to avoid identifier conflicts
+// Files to process: the .original.js backup holds the readable source; it is the input.
 const filesToProcess = [
-    { input: 'public/app.js', backup: 'public/app.original.js', prefix: '_a', obfuscate: true },
-    { input: 'public/admin-panel.js', backup: 'public/admin-panel.original.js', prefix: '_b', obfuscate: false },
-    { input: 'public/timetable.js', backup: 'public/timetable.original.js', prefix: '_c', obfuscate: true }
+    { input: 'public/app.js', backup: 'public/app.original.js', prefix: '_a', seed: 20260913 },
+    { input: 'public/admin-panel.js', backup: 'public/admin-panel.original.js', prefix: '_b', seed: 20260914 },
+    { input: 'public/timetable.js', backup: 'public/timetable.original.js', prefix: '_c', seed: 20260915 }
 ];
+
+const stripSourceMapReferences = (code) =>
+    code.replace(/\/\/[#@]\s*sourceMappingURL\s*=\s*\S+/g, '');
 
 async function build() {
     // Update version and footer date in HTML files
@@ -81,49 +86,43 @@ async function build() {
         const originalSize = Buffer.byteLength(sourceCode, 'utf8');
 
         try {
-            // Step 1: Minify with esbuild
+            // Step 1: Minify with esbuild (never emit source maps)
             const minified = await esbuild.transform(sourceCode, {
                 minify: true,
                 target: 'es2020',
-                charset: 'utf8'
+                charset: 'utf8',
+                sourcemap: false
             });
+            const minSize = Buffer.byteLength(minified.code, 'utf8');
 
-            let finalCode;
-            const minifiedSize = Buffer.byteLength(minified.code, 'utf8');
+            // Step 2: Obfuscate the minified code
+            const obfuscated = JavaScriptObfuscator.obfuscate(
+                stripSourceMapReferences(minified.code),
+                obfuscationOptions(file.prefix, file.seed)
+            ).getObfuscatedCode();
 
-            if (file.obfuscate !== false) {
-                // Step 2: Obfuscate with unique prefix for each file
-                const fileObfuscationOptions = {
-                    ...obfuscationOptions,
-                    identifiersPrefix: file.prefix,
-                    seed: file.prefix.charCodeAt(1) * 12345 // Different seed per file
-                };
-                const obfuscated = JavaScriptObfuscator.obfuscate(minified.code, fileObfuscationOptions);
-                finalCode = obfuscated.getObfuscatedCode();
-            } else {
-                // Skip obfuscation - only minify
-                finalCode = minified.code;
-                console.log(`   ⏭️  Obfuscation skipped (admin-only file)`);
+            // Step 3: Belt-and-braces — production must never reference a .map
+            const finalCode = stripSourceMapReferences(obfuscated);
+            if (/sourceMappingURL/i.test(finalCode)) {
+                throw new Error('source map reference survived the strip — refusing to ship');
             }
 
-            // Write final code
             fs.writeFileSync(inputPath, finalCode, 'utf8');
 
             const finalSize = Buffer.byteLength(finalCode, 'utf8');
 
             console.log(`   📊 Original: ${(originalSize / 1024).toFixed(2)} KB`);
-            console.log(`   📊 Minified: ${(minifiedSize / 1024).toFixed(2)} KB`);
-            if (file.obfuscate !== false) {
-                console.log(`   📊 Obfuscated: ${(finalSize / 1024).toFixed(2)} KB`);
-            }
-            console.log(`   🎉 Minify reduced: ${((1 - minifiedSize / originalSize) * 100).toFixed(1)}%\n`);
+            console.log(`   📊 Minified: ${(minSize / 1024).toFixed(2)} KB`);
+            console.log(`   📊 Obfuscated: ${(finalSize / 1024).toFixed(2)} KB`);
+            console.log(`   🎉 Final vs original: ${((1 - finalSize / originalSize) * 100).toFixed(1)}%\n`);
 
         } catch (error) {
             console.error(`❌ Error processing ${file.input}:`, error.message);
+            process.exitCode = 1;
         }
     }
 
-    console.log('✅ Build completed! Files are minified and obfuscated.');
+    console.log('✅ Build completed! Files are minified + obfuscated, source-map free.');
 }
 
 // Get ISO week number
@@ -187,5 +186,3 @@ function updateFooterDate() {
 }
 
 build().catch(console.error);
-
-

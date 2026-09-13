@@ -1,0 +1,10 @@
+# Files Vercel must never deploy.
+
+# Source maps: the build pipeline deliberately emits none (esbuild sourcemap:false +
+# defensive strip) — this is the second lock so an accidentally dropped .map can never
+# become public and hand back the readable source we just obfuscated.
+*.map
+**/*.map
+
+# local scratch
+.tmp-*

@@ -1,8 +1,9 @@
-﻿// ============================================
+// ============================================
 // TIMETABLE MODAL FUNCTIONALITY
 // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
+    const boot = function() {
     const timetableModal = document.getElementById('timetable-modal');
     const viewTimetableBtn = document.getElementById('view-timetable-btn');
     const closeTimetableModal = document.getElementById('close-timetable-modal');
@@ -389,4 +390,13 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTimetable();
         });
     });
-});
+    };
+
+    // Code-splitting entry guard: index.html loads this chunk lazily (first "Xem thời khóa
+    // biểu" click or idle preload), by which time DOMContentLoaded has often already fired.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+})();

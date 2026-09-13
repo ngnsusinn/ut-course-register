@@ -43,3 +43,6 @@ next-env.d.ts
 
 # node:test scratch output
 .tmp-tests/
+
+# source maps must never ship (see scripts in esbuild.config.js + .vercelignore)
+*.map

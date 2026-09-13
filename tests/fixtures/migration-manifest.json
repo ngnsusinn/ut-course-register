@@ -1,0 +1,488 @@
+{
+ "source": ".tmp-reg.sql",
+ "database": "uth_registration",
+ "generatedAt": "2026-09-13T02:28:22.402Z",
+ "tables": {
+  "admins": {
+   "count": 1,
+   "maxId": 1,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 4619886,
+     "i2": 6822689,
+     "i3": 15995657
+    },
+    "id": 1,
+    "username": "admin",
+    "password_hash": "scrypt$16384$8$1$6PhQjHwnsMWSFoOP/qxkzQ==$nOF9DQVYHo5JX/Ohp+IV1KtC48/i2mruH34k4F79OQIJTPgWPHN0zHdIBs91uIoSeW6niJ3KSHmLB8u0Ui2hBA==",
+    "full_name": "Administrator",
+    "email": "admin@example.com",
+    "role": "super_admin",
+    "is_active": 1,
+    "last_login": {
+     "__date": "2026-09-13T00:00:13.000Z"
+    },
+    "created_at": {
+     "__date": "2025-10-25T07:30:00.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-09-13T00:00:13.000Z"
+    }
+   },
+   "sample": {
+    "id": 1,
+    "username": "admin",
+    "password_hash": "scrypt$16384$8$1$6PhQjHwnsMWSFoOP/qxkzQ==$nOF9DQVYHo5JX/Ohp+IV1KtC48/i2mruH34k4F79OQIJTPgWPHN0zHdIBs91uIoSeW6niJ3KSHmLB8u0Ui2hBA==",
+    "full_name": "Administrator",
+    "email": "admin@example.com",
+    "role": "super_admin",
+    "is_active": 1,
+    "last_login": {
+     "__date": "2026-09-13T00:00:13.000Z"
+    },
+    "created_at": {
+     "__date": "2025-10-25T07:30:00.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-09-13T00:00:13.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 4619886,
+     "i2": 6822689,
+     "i3": 15995657
+    }
+   }
+  },
+  "class_data_contributions": {
+   "count": 43,
+   "maxId": 909,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 4685422,
+     "i2": 6822689,
+     "i3": 15995658
+    },
+    "id": 5,
+    "user_id": "083306012052",
+    "dot_id": 75,
+    "classes_contributed": 189,
+    "sync_count": 2,
+    "first_contribution_at": {
+     "__date": "2026-02-03T16:20:46.000Z"
+    },
+    "last_contribution_at": {
+     "__date": "2026-02-03T16:20:49.000Z"
+    }
+   },
+   "sample": {
+    "id": 909,
+    "user_id": "060306010829",
+    "dot_id": 77,
+    "classes_contributed": 297,
+    "sync_count": 4,
+    "first_contribution_at": {
+     "__date": "2026-09-12T18:07:20.000Z"
+    },
+    "last_contribution_at": {
+     "__date": "2026-09-12T18:16:28.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 4685422,
+     "i2": 6822689,
+     "i3": 15995700
+    }
+   }
+  },
+  "orders": {
+   "count": 55,
+   "maxId": 113,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 4685422,
+     "i2": 6822689,
+     "i3": 15995701
+    },
+    "id": 36,
+    "order_code": "DKHPLEGACY000036",
+    "user_id": null,
+    "plan_id": 6,
+    "plan_type": "30days",
+    "plan_name": "30 Ngày VIP",
+    "amount": 432000,
+    "payment_status": "Paid",
+    "transaction_ref": "FT25300760090098",
+    "created_at": {
+     "__date": "2025-10-27T05:46:48.000Z"
+    },
+    "updated_at": null,
+    "paid_at": {
+     "__date": "2025-10-27T06:11:37.000Z"
+    },
+    "cancelled_at": null,
+    "gateway": "SePay"
+   },
+   "sample": {
+    "id": 113,
+    "order_code": "DKHPJU9YW4KQBLDG",
+    "user_id": "054206005638",
+    "plan_id": 1,
+    "plan_type": "1day",
+    "plan_name": "1 Ngày VIP",
+    "amount": 30000,
+    "payment_status": "Cancelled",
+    "transaction_ref": null,
+    "created_at": {
+     "__date": "2026-08-31T06:54:26.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-08-31T06:54:35.000Z"
+    },
+    "paid_at": null,
+    "cancelled_at": {
+     "__date": "2026-08-31T06:54:35.000Z"
+    },
+    "gateway": "SePay",
+    "_id": {
+     "i0": 6989322,
+     "i1": 4685422,
+     "i2": 6822689,
+     "i3": 15995755
+    }
+   }
+  },
+  "shared_class_data": {
+   "count": 2422,
+   "maxId": 64982,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 4816494,
+     "i2": 6822689,
+     "i3": 15995756
+    },
+    "id": 1,
+    "dot_id": 75,
+    "ma_lop_hoc_phan": "012000411610",
+    "ma_hoc_phan": "0120004116",
+    "ten_mon_hoc": "Bơi 1",
+    "so_tin_chi": 2,
+    "class_id": 175406,
+    "ten_trang_thai": "Đã khóa lớp",
+    "phan_tram_dang_ky": 100,
+    "cho_dang_ky": 0,
+    "schedule_details": [
+     {
+      "thu": 2,
+      "phong": "Hồ bơi - CS1 (P.Thạnh Mỹ Tây, TP.HCM)",
+      "dayNha": "CS1 - Hồ bơi",
+      "ghiChu": "Lịch học bù cho ngày 29/04/2026",
+      "tietHoc": "10-12",
+      "loaiLich": "TH",
+      "ngayBatDau": "2026-05-18T00:00:00Z",
+      "ngayKetThuc": "2026-05-18T00:00:00Z"
+     },
+     {
+      "thu": 4,
+      "phong": "Hồ bơi - CS1 (P.Thạnh Mỹ Tây, TP.HCM)",
+      "dayNha": "CS1 - Hồ bơi",
+      "ghiChu": "",
+      "tietHoc": "10-12",
+      "loaiLich": "TH",
+      "ngayBatDau": "2026-03-11T00:00:00Z",
+      "ngayKetThuc": "2026-05-06T00:00:00Z"
+     },
+     {
+      "thu": 4,
+      "phong": "Online (Hệ thống: Courses.ut.edu.vn)",
+      "dayNha": "Online",
+      "ghiChu": "Online phổ biến quy chế, nội dung lý thuyết học phần",
+      "tietHoc": "10-12",
+      "loaiLich": "TH",
+      "ngayBatDau": "2026-03-04T00:00:00Z",
+      "ngayKetThuc": "2026-03-04T00:00:00Z"
+     }
+    ],
+    "source": "dkhp",
+    "is_bat_buoc": 0,
+    "contributed_by": "deleted_user",
+    "last_updated_by": "deleted_user",
+    "contributor_count": 185,
+    "created_at": {
+     "__date": "2026-02-03T16:17:18.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-07-05T02:31:27.000Z"
+    }
+   },
+   "sample": {
+    "id": 64982,
+    "dot_id": 77,
+    "ma_lop_hoc_phan": "012001607611",
+    "ma_hoc_phan": "0120016076",
+    "ten_mon_hoc": "Hạ tầng kỹ thuật logistics",
+    "so_tin_chi": 3,
+    "class_id": 222278,
+    "ten_trang_thai": "Đang chờ đăng ký",
+    "phan_tram_dang_ky": 100,
+    "cho_dang_ky": 0,
+    "schedule_details": [
+     {
+      "thu": 6,
+      "phong": null,
+      "dayNha": null,
+      "ghiChu": "",
+      "tietHoc": "4-6",
+      "loaiLich": "LT",
+      "ngayBatDau": "2026-12-11T00:00:00Z",
+      "ngayKetThuc": "2027-02-26T00:00:00Z"
+     }
+    ],
+    "source": "dkhp",
+    "is_bat_buoc": 0,
+    "contributed_by": "042206001380",
+    "last_updated_by": "042206001380",
+    "contributor_count": 1,
+    "created_at": {
+     "__date": "2026-09-12T19:58:16.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-09-12T19:58:16.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 5340782,
+     "i2": 6822689,
+     "i3": 15998177
+    }
+   }
+  },
+  "shared_data_stats": {
+   "count": 0,
+   "maxId": 0,
+   "firstDoc": null,
+   "sample": null
+  },
+  "transactions": {
+   "count": 18,
+   "maxId": 25,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 5537390,
+     "i2": 6822689,
+     "i3": 15998178
+    },
+    "id": 6,
+    "order_id": 36,
+    "gateway": "MBBank",
+    "transaction_date": {
+     "__date": "2025-10-27T19:47:00.000Z"
+    },
+    "account_number": "01006022006",
+    "sub_account": "",
+    "amount_in": 432000,
+    "amount_out": 0,
+    "accumulated": 0,
+    "code": "DH36",
+    "transaction_content": "DH36",
+    "reference_number": "FT25300760090098",
+    "body": "BankAPINotify DH36",
+    "received_at": {
+     "__date": "2025-10-27T06:11:36.000Z"
+    }
+   },
+   "sample": {
+    "id": 25,
+    "order_id": 102,
+    "gateway": "MBBank",
+    "transaction_date": {
+     "__date": "2026-07-03T22:44:00.000Z"
+    },
+    "account_number": "01006022006",
+    "sub_account": "",
+    "amount_in": 30000,
+    "amount_out": 0,
+    "accumulated": 0,
+    "code": "DKHP7P6LGWL24JYQ",
+    "transaction_content": "136046736264-DKHP7P6LGWL24JYQ-CHUYEN TIEN-OQCH000Erocy-MOMO136046736264MOMO",
+    "reference_number": "FT26185048656105",
+    "body": "BankAPINotify 136046736264-DKHP7P6LGWL24JYQ-CHUYEN TIEN-OQCH000Erocy-MOMO136046736264MOMO",
+    "received_at": {
+     "__date": "2026-07-03T15:44:27.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 5537390,
+     "i2": 6822689,
+     "i3": 15998195
+    }
+   }
+  },
+  "users": {
+   "count": 35,
+   "maxId": 286,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 5602926,
+     "i2": 6822689,
+     "i3": 15998196
+    },
+    "id": 61,
+    "user_id": "054206005638",
+    "username": null,
+    "email": "ngnsusinn@gmail.com",
+    "full_name": "Nguyễn Sun Sin",
+    "is_active": 1,
+    "last_login": null,
+    "created_at": {
+     "__date": "2026-07-05T02:42:36.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-09-12T17:57:58.000Z"
+    }
+   },
+   "sample": {
+    "id": 286,
+    "user_id": "060306010829",
+    "username": null,
+    "email": "nguyenduyen2006.2023@gmail.com",
+    "full_name": "Nguyễn Trần Mỹ Duyên",
+    "is_active": 1,
+    "last_login": null,
+    "created_at": {
+     "__date": "2026-09-12T18:03:40.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-09-12T18:05:15.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 5602926,
+     "i2": 6822689,
+     "i3": 15998230
+    }
+   }
+  },
+  "vip_plans": {
+   "count": 8,
+   "maxId": 10,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 5602926,
+     "i2": 6822689,
+     "i3": 15998231
+    },
+    "id": 1,
+    "plan_key": "1day",
+    "plan_name": "1 Ngày VIP",
+    "duration_days": 1,
+    "price": 30000,
+    "is_active": 1,
+    "sort_order": 1,
+    "description": "Gói VIP 1 ngày - Phù hợp cho người dùng thử nghiệm",
+    "created_at": {
+     "__date": "2025-10-27T15:30:26.000Z"
+    },
+    "updated_at": {
+     "__date": "2025-10-30T23:52:56.000Z"
+    }
+   },
+   "sample": {
+    "id": 10,
+    "plan_key": "4years",
+    "plan_name": "4 năm VIP",
+    "duration_days": 1461,
+    "price": 4,
+    "is_active": 0,
+    "sort_order": 9998,
+    "description": null,
+    "created_at": {
+     "__date": "2025-12-16T03:02:38.000Z"
+    },
+    "updated_at": {
+     "__date": "2025-12-16T03:02:43.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 5602926,
+     "i2": 6822689,
+     "i3": 15998238
+    }
+   }
+  },
+  "vip_subscriptions": {
+   "count": 35,
+   "maxId": 185,
+   "firstDoc": {
+    "_id": {
+     "i0": 6989322,
+     "i1": 5668462,
+     "i2": 6822689,
+     "i3": 15998239
+    },
+    "id": 147,
+    "user_id": "054206005638",
+    "plan_id": 7,
+    "plan_type": "infinity",
+    "expiry_date": {
+     "__date": "2126-06-12T16:59:59.000Z"
+    },
+    "order_id": null,
+    "created_by_admin": "admin",
+    "created_at": {
+     "__date": "2026-07-05T02:43:10.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-07-05T02:43:10.000Z"
+    }
+   },
+   "sample": {
+    "id": 185,
+    "user_id": "060306010829",
+    "plan_id": 6,
+    "plan_type": "30days",
+    "expiry_date": {
+     "__date": "2026-10-13T16:59:59.000Z"
+    },
+    "order_id": null,
+    "created_by_admin": "admin",
+    "created_at": {
+     "__date": "2026-09-12T18:05:22.000Z"
+    },
+    "updated_at": {
+     "__date": "2026-09-12T18:05:22.000Z"
+    },
+    "_id": {
+     "i0": 6989322,
+     "i1": 5668462,
+     "i2": 6822689,
+     "i3": 15998273
+    }
+   }
+  }
+ },
+ "skipped": {
+  "activity_logs": 0
+ },
+ "totals": {
+  "ordersPaidSum": 730000,
+  "activeVipUsers": 35
+ },
+ "counters": {
+  "admins": 1,
+  "class_data_contributions": 930,
+  "orders": 113,
+  "shared_class_data": 65054,
+  "transactions": 25,
+  "users": 300,
+  "vip_plans": 10,
+  "vip_subscriptions": 185
+ }
+}

@@ -1,7 +1,7 @@
 // Đặt lại mật khẩu admin (username từ ADMIN_USER env, mặc định 'admin').
 // Hash scrypt với đúng tham số api/admin-handler.js, tự kiểm tra ngược trước khi ghi.
-// Usage: DB_PASSWORD=... NEW_PASSWORD=... node scripts/set-admin-password.mjs
-import mysql from 'mysql2/promise';
+// Usage: MONGODB_URI=... NEW_PASSWORD=... node scripts/set-admin-password.mjs
+import { MongoClient } from 'mongodb';
 import crypto from 'crypto';
 
 const N = 16384, r = 8, p = 1, KEYLEN = 64;
@@ -28,23 +28,39 @@ if (!NEW_PW || NEW_PW.length < 8) {
   console.error('NEW_PASSWORD thiếu hoặc quá ngắn (<8 ký tự)');
   process.exit(2);
 }
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  console.error('MONGODB_URI là bắt buộc');
+  process.exit(2);
+}
+let dbName = process.env.MONGODB_DB;
+if (!dbName) {
+  const at = uri.lastIndexOf('@');
+  const slash = at !== -1 ? uri.indexOf('/', at + 1) : -1;
+  if (slash !== -1) {
+    const q = uri.indexOf('?', slash);
+    dbName = decodeURIComponent(uri.slice(slash + 1, q === -1 ? undefined : q));
+  }
+  dbName = dbName || 'uth_registration';
+}
 
-const c = await mysql.createConnection({
-  host: process.env.DB_HOST || '103.97.126.29', port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'roacqgfa_reg', password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'roacqgfa_reg', connectTimeout: 10000,
-});
+const client = await MongoClient.connect(uri, { serverSelectionTimeoutMS: 10000 });
+try {
+  const admins = client.db(dbName).collection('admins');
 
-const hash = scryptHash(NEW_PW, crypto.randomBytes(16));
-if (!scryptVerify(hash, NEW_PW)) { console.error('BUG: self-test failed — không ghi DB'); process.exit(3); }
+  const hash = scryptHash(NEW_PW, crypto.randomBytes(16));
+  if (!scryptVerify(hash, NEW_PW)) { console.error('BUG: self-test failed — không ghi DB'); process.exit(3); }
 
-const [rows] = await c.query('SELECT id FROM admins WHERE username = ? AND is_active = 1', [ADMIN_USER]);
-if (rows.length === 0) { console.error('Không tìm thấy admin:', ADMIN_USER); process.exit(4); }
+  const admin = await admins.findOne({ username: ADMIN_USER, is_active: 1 }, { projection: { id: 1 } });
+  if (!admin) { console.error('Không tìm thấy admin:', ADMIN_USER); process.exit(4); }
 
-const [res] = await c.query('UPDATE admins SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, rows[0].id]);
-const [check] = await c.query('SELECT password_hash FROM admins WHERE id = ?', [rows[0].id]);
-const stored = check[0].password_hash;
-console.log(`✅ Đã cập nhật ${res.affectedRows} dòng cho '${ADMIN_USER}' (id=${rows[0].id})`);
-console.log(`   Stored: prefix=${String(stored).slice(0, 7)} len=${stored.length}`);
-console.log(`   Verify ngược bằng mật khẩu bạn nhập: ${scryptVerify(stored, NEW_PW) ? 'OK ✅' : 'FAIL ❌'}`);
-await c.end();
+  const res = await admins.updateOne({ id: admin.id }, { $set: { password_hash: hash, updated_at: new Date() } });
+
+  const check = await admins.findOne({ id: admin.id }, { projection: { password_hash: 1 } });
+  const stored = check.password_hash;
+  console.log(`✅ Đã cập nhật ${res.modifiedCount} tài liệu cho '${ADMIN_USER}' (id=${admin.id})`);
+  console.log(`   Stored: prefix=${String(stored).slice(0, 7)} len=${stored.length}`);
+  console.log(`   Verify ngược bằng mật khẩu bạn nhập: ${scryptVerify(stored, NEW_PW) ? 'OK ✅' : 'FAIL ❌'}`);
+} finally {
+  await client.close();
+}

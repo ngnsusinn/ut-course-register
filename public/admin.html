@@ -225,8 +225,6 @@
                 <div class="hidden md:flex overflow-x-auto">
                     <button class="tab-btn tab-active" data-tab="dashboard" onclick="switchTab('dashboard')">📊
                         Dashboard</button>
-                    <button class="tab-btn text-gray-600" data-tab="userActivity" onclick="switchTab('userActivity')">🔍
-                        User Activity</button>
                     <button class="tab-btn text-gray-600" data-tab="users" onclick="switchTab('users')">👥
                         Users</button>
                     <button class="tab-btn text-gray-600" data-tab="vipPlans" onclick="switchTab('vipPlans')">💎 VIP
@@ -237,7 +235,6 @@
                         Orders</button>
                     <button class="tab-btn text-gray-600" data-tab="transactions" onclick="switchTab('transactions')">💰
                         Transactions</button>
-                    <button class="tab-btn text-gray-600" data-tab="logs" onclick="switchTab('logs')">📝 Logs</button>
                 </div>
 
                 <!-- Mobile Tab Selector -->
@@ -245,13 +242,11 @@
                     <select id="mobileTabSelect" onchange="switchTab(this.value)"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         <option value="dashboard">📊 Dashboard</option>
-                        <option value="userActivity">🔍 User Activity</option>
                         <option value="users">👥 Users</option>
                         <option value="vipPlans">💎 VIP Plans</option>
                         <option value="subscriptions">🎫 Subscriptions</option>
                         <option value="orders">🛒 Orders</option>
                         <option value="transactions">💰 Transactions</option>
-                        <option value="logs">📝 Logs</option>
                     </select>
                 </div>
             </div>
@@ -327,151 +322,6 @@
                             <canvas id="orderStatusChart"></canvas>
                         </div>
                     </div>
-                </div>
-
-                <!-- Recent Activities -->
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🕐 Hoạt động gần đây</h3>
-                    <div id="recentActivitiesList" class="space-y-3 max-h-96 overflow-y-auto">
-                        <p class="text-gray-500 text-center py-4">Đang tải...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User Activity Tab -->
-            <div id="userActivityTab" class="tab-content hidden">
-                <!-- Active Users Now -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                        <h3 class="text-xl font-semibold text-gray-800">🟢 Đang hoạt động (15 phút gần đây)</h3>
-                        <button onclick="refreshUserActivity()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
-                            🔄 Refresh
-                        </button>
-                    </div>
-                    <div id="activeUsersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <p class="text-gray-500 text-center py-4 col-span-full">Đang tải...</p>
-                    </div>
-                </div>
-
-                <!-- Activity Stats -->
-                <div id="activityStatsCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                </div>
-
-                <!-- Search & Filter -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">🔍 Tra cứu hoạt động người dùng</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                            <input type="text" id="activitySearchUser" placeholder="🔍 Nhập MSSV / User ID..."
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Loại hành động</label>
-                            <select id="activitySearchAction" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                <option value="">Tất cả</option>
-                                <option value="USER_LOGIN">🔐 Đăng nhập</option>
-                                <option value="LOGIN_SUCCESS">🔐 Đăng nhập thành công</option>
-                                <option value="AUTO_LOGIN">🔄 Tự động đăng nhập</option>
-                                <option value="LOGOUT">🚪 Đăng xuất</option>
-                                <option value="FETCH_SCHEDULE">📋 Tải lịch học</option>
-                                <option value="FETCH_SCHEDULE_BTN">📋 Bấm tải lịch học</option>
-                                <option value="FETCH_REGISTERED">📑 Tải lớp đã ĐK</option>
-                                <option value="REFRESH_REGISTERED">🔄 Làm mới lớp đã ĐK</option>
-                                <option value="REGISTER_CLASS">📝 Đăng ký lớp</option>
-                                <option value="REGISTER_SUCCESS">✅ ĐK thành công</option>
-                                <option value="REGISTER_FAILED">❌ ĐK thất bại</option>
-                                <option value="CANCEL_CLASS">🗑️ Hủy lớp</option>
-                                <option value="CANCEL_CLASS_CONFIRM">🗑️ Bấm hủy đăng ký</option>
-                                <option value="SELECT_CLASS">✓ Chọn lớp</option>
-                                <option value="DESELECT_CLASS">✗ Bỏ chọn lớp</option>
-                                <option value="REMOVE_SELECTED">❌ Xóa lớp đã chọn</option>
-                                <option value="START_AUTO_REGISTER">🤖 Bắt đầu tự động ĐK</option>
-                                <option value="STOP_AUTO_REGISTER">⏹️ Dừng tự động ĐK</option>
-                                <option value="START_AUTO_INSERT">🤖 Bắt đầu tự động chèn</option>
-                                <option value="STOP_AUTO_INSERT">⏹️ Dừng tự động chèn</option>
-                                <option value="SWAP_CLASS">🔀 Hoán đổi lớp</option>
-                                <option value="SWAP_CLASS_SETUP">🔀 Thiết lập đổi lớp</option>
-                                <option value="SWAP_FROM_REGISTERED">🔀 Đổi lớp từ đã ĐK</option>
-                                <option value="OPEN_SWAP_MODAL">🔀 Mở modal đổi lớp</option>
-                                <option value="SELECT_FROM_SWAP_MODAL">✅ Chọn từ modal đổi</option>
-                                <option value="REMOVE_SWAP">❌ Hủy đổi lớp</option>
-                                <option value="CHECK_AVAILABILITY">🔍 Kiểm tra chỗ trống</option>
-                                <option value="SYNC_DATA">🔄 Đồng bộ dữ liệu</option>
-                                <option value="ORDER_CREATED">🛒 Tạo đơn hàng</option>
-                                <option value="ORDER_CANCELLED">❌ Hủy đơn hàng</option>
-                                <option value="VIP_PURCHASE">💳 Mua VIP</option>
-                                <option value="BUY_VIP_PLAN">💳 Bấm mua VIP</option>
-                                <option value="CANCEL_PAYMENT">❌ Hủy thanh toán</option>
-                                <option value="OPEN_VIP_MODAL">💎 Mở mua VIP</option>
-                                <option value="OPEN_GUIDE">📖 Mở hướng dẫn</option>
-                                <option value="SEARCH_SCHEDULE">🔍 Tìm kiếm lịch học</option>
-                                <option value="FILTER_SUBJECT">📊 Lọc môn học</option>
-                                <option value="PAGE_LOAD">🌐 Mở trang</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Từ ngày</label>
-                            <input type="date" id="activityDateFrom"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Đến ngày</label>
-                            <input type="date" id="activityDateTo"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    <button onclick="searchUserActivity(1)"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">
-                        🔍 Tìm kiếm
-                    </button>
-                </div>
-
-                <!-- User Summary Table -->
-                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">👥 Tổng hợp hoạt động theo người dùng</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng hành động</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đăng nhập</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đăng ký lớp</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tự động ĐK</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tải lịch</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hoạt động cuối</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="userSummaryTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="8" class="text-center py-8 text-gray-500">Đang tải...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Activity Logs Timeline -->
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📜 Chi tiết hoạt động</h3>
-                    <div id="activityResultInfo" class="text-sm text-gray-600 mb-4"></div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thời gian</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hành động</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Chi tiết</th>
-                                </tr>
-                            </thead>
-                            <tbody id="activityLogsTableBody" class="divide-y divide-gray-200">
-                                <tr><td colspan="4" class="text-center py-8 text-gray-500">Sử dụng bộ lọc ở trên để tìm kiếm...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="activityPagination" class="mt-4"></div>
                 </div>
             </div>
 
@@ -726,93 +576,6 @@
                 </div>
             </div>
 
-            <!-- Logs Tab -->
-            <div id="logsTab" class="tab-content hidden">
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                        <h3 class="text-xl font-semibold text-gray-800">📝 Activity Logs</h3>
-                        <div class="flex gap-3">
-                            <input type="text" id="logsSearch" placeholder="🔍 Tìm kiếm..."
-                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                oninput="renderLogs()">
-                            <select id="logsFilter" class="px-4 py-2 border border-gray-300 rounded-lg"
-                                onchange="renderLogs()">
-                                <option value="">Tất cả actions</option>
-                                <option value="USER_LOGIN">🔐 Đăng nhập</option>
-                                <option value="LOGIN_SUCCESS">🔐 Đăng nhập thành công</option>
-                                <option value="AUTO_LOGIN">🔄 Tự động đăng nhập</option>
-                                <option value="LOGOUT">🚪 Đăng xuất</option>
-                                <option value="FETCH_SCHEDULE">📋 Tải lịch học</option>
-                                <option value="FETCH_SCHEDULE_BTN">📋 Bấm tải lịch học</option>
-                                <option value="FETCH_REGISTERED">📑 Tải lớp đã ĐK</option>
-                                <option value="REFRESH_REGISTERED">🔄 Làm mới lớp đã ĐK</option>
-                                <option value="REGISTER_CLASS">📝 Đăng ký lớp</option>
-                                <option value="REGISTER_SUCCESS">✅ ĐK thành công</option>
-                                <option value="REGISTER_FAILED">❌ ĐK thất bại</option>
-                                <option value="CANCEL_CLASS">🗑️ Hủy lớp</option>
-                                <option value="CANCEL_CLASS_CONFIRM">🗑️ Bấm hủy đăng ký</option>
-                                <option value="CANCEL_SUCCESS">✅ Hủy thành công</option>
-                                <option value="SELECT_CLASS">✓ Chọn lớp</option>
-                                <option value="DESELECT_CLASS">✗ Bỏ chọn lớp</option>
-                                <option value="REMOVE_SELECTED">❌ Xóa lớp đã chọn</option>
-                                <option value="START_AUTO_REGISTER">🤖 Bắt đầu tự động ĐK</option>
-                                <option value="STOP_AUTO_REGISTER">⏹️ Dừng tự động ĐK</option>
-                                <option value="START_AUTO_INSERT">🤖 Bắt đầu tự động chèn</option>
-                                <option value="STOP_AUTO_INSERT">⏹️ Dừng tự động chèn</option>
-                                <option value="SWAP_CLASS">🔀 Hoán đổi lớp</option>
-                                <option value="SWAP_CLASS_SETUP">🔀 Thiết lập đổi lớp</option>
-                                <option value="SWAP_FROM_REGISTERED">🔀 Đổi lớp từ đã ĐK</option>
-                                <option value="OPEN_SWAP_MODAL">🔀 Mở modal đổi lớp</option>
-                                <option value="SELECT_FROM_SWAP_MODAL">✅ Chọn từ modal đổi</option>
-                                <option value="REMOVE_SWAP">❌ Hủy đổi lớp</option>
-                                <option value="CHECK_AVAILABILITY">🔍 Kiểm tra chỗ trống</option>
-                                <option value="SYNC_DATA">🔄 Đồng bộ dữ liệu</option>
-                                <option value="ORDER_CREATED">🛒 Tạo đơn hàng</option>
-                                <option value="ORDER_CANCELLED">❌ Hủy đơn hàng</option>
-                                <option value="ORDER_AUTO_CANCELLED">⏰ Tự động hủy đơn</option>
-                                <option value="VIP_PURCHASE">💳 Mua VIP</option>
-                                <option value="BUY_VIP_PLAN">💳 Bấm mua VIP</option>
-                                <option value="CANCEL_PAYMENT">❌ Hủy thanh toán</option>
-                                <option value="OPEN_VIP_MODAL">💎 Mở mua VIP</option>
-                                <option value="OPEN_GUIDE">📖 Mở hướng dẫn</option>
-                                <option value="SEARCH_SCHEDULE">🔍 Tìm kiếm lịch học</option>
-                                <option value="FILTER_SUBJECT">📊 Lọc môn học</option>
-                                <option value="ADMIN_ADD_VIP">⭐ Admin thêm VIP</option>
-                                <option value="ADMIN_DELETE_VIP">🗑️ Admin xóa VIP</option>
-                                <option value="PAGE_LOAD">🌐 Mở trang</option>
-                            </select>
-                            <button onclick="refreshData('logs')"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition">
-                                🔄 Refresh
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Logs Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Agent</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logsTableBody" class="divide-y divide-gray-200">
-                                <tr>
-                                    <td colspan="8" class="text-center py-8 text-gray-500">Đang tải dữ liệu...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="logsPagination"></div>
-                </div>
-            </div>
         </main>
 
         <!-- Footer -->

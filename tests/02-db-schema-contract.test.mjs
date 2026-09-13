@@ -1,132 +1,101 @@
-// Live contract between the SQL the handlers emit and the actual production schema.
-// READ-ONLY: every query goes through ro() which rejects non-SELECT/SHOW/EXPLAIN.
+// Live contract between the shapes the handlers read/write and the actual production MongoDB
+// (Atlas) cluster. READ-ONLY except one self-cleaning probe doc used to verify Vietnamese
+// round-tripping through the driver.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { prodSchema, tryConnect, ro, hasTable, columnsOf, hasIndexOver, REPO, PROD } from './helpers.mjs';
+import { tryConnectMongo, MONGO, COLLECTIONS, REQUIRED_UNIQUE_INDEXES } from './helpers.mjs';
 
-// The exact tables the handlers reference (verified by grep over api/*.js).
-const REQUIRED_TABLES = ['users', 'admins', 'vip_plans', 'vip_subscriptions', 'orders', 'transactions', 'activity_logs', 'shared_class_data', 'shared_data_stats', 'class_data_contributions'];
-const REQUIRED_VIEWS = ['v_revenue_by_day'];
+const SKIP = process.env.SKIP_DB === '1';
 
-// Columns the login path reads/writes. If one of these disappears, saveUserInfo silently
-// returns null (its catch swallows the error) and the user gets a broken session.
-const LOGIN_CRITICAL_COLUMNS = {
-  users: ['id', 'user_id', 'email', 'full_name', 'created_at', 'updated_at'],
-  vip_subscriptions: ['id', 'user_id', 'plan_id', 'plan_type', 'expiry_date'],
-  activity_logs: ['user_id', 'action', 'details', 'ip_address', 'user_agent', 'created_at'],
-  vip_plans: ['id', 'plan_key', 'plan_name', 'duration_days', 'price', 'is_active', 'sort_order'],
-};
+let client, db;
+test.before(async () => {
+  if (SKIP) return;
+  const c = await tryConnectMongo();
+  if (c.__error) throw new Error(`cannot reach the Atlas cluster: ${c.__error.code || ''} ${c.__error.message}`);
+  client = c.client; db = c.db;
+});
+test.after(async () => { await client?.close().catch(() => {}); });
 
-let schema, conn;
-before({ skip: process.env.SKIP_DB === '1' }, async () => {
-  conn = await tryConnect(PROD());
-  if (conn.__error) {
-    throw new Error(`cannot reach ${PROD().user}@${PROD().host}: ${conn.__error.code} ${conn.__error.message}`);
+test('all collections the code references exist', { skip: SKIP }, async () => {
+  const names = (await db.listCollections().toArray()).map((c) => c.name);
+  const missing = COLLECTIONS.filter((c) => !names.includes(c));
+  assert.deepEqual(missing, [], `handlers read collections that do not exist: ${missing.join(', ')}`);
+});
+
+test('every unique key the code relies on for correctness actually exists', { skip: SKIP }, async () => {
+  for (const { coll, fields } of REQUIRED_UNIQUE_INDEXES) {
+    const idx = await db.collection(coll).indexes();
+    const hit = idx.find((i) => i.unique && JSON.stringify(Object.keys(i.key)) === JSON.stringify(fields));
+    assert.ok(hit, `${coll} is missing UNIQUE(${fields.join(',')}) — upserts/idempotency silently allow duplicates without it`);
   }
-  schema = await prodSchema();
-});
-after(async () => { await conn?.end().catch(() => {}); });
-
-test('all tables and views the code references exist', async () => {
-  if (!schema) return;
-  const missing = REQUIRED_TABLES.filter((t) => !hasTable(schema, t));
-  assert.deepEqual(missing, [], `code queries tables that do not exist: ${missing.join(', ')}`);
-  const missingViews = REQUIRED_VIEWS.filter((v) => !hasTable(schema, v));
-  assert.deepEqual(missingViews, [], `admin dashboard reads missing views: ${missingViews.join(', ')}`);
 });
 
-test('login-critical columns all exist', async () => {
-  if (!schema) return;
+test('non-unique query indexes keep the hot paths index-backed', { skip: SKIP }, async () => {
+  // order sweep + student order list: payment_status/created_at
+  const ordersIdx = await db.collection('orders').indexes();
+  assert.ok(ordersIdx.some((i) => i.key.payment_status !== undefined), 'orders needs an index on payment_status for the sweep');
+  assert.ok(ordersIdx.some((i) => i.key.created_at !== undefined), 'orders needs created_at (sweep range + newest-first listing)');
+  // login VIP lookup: user_id (+ expiry) on vip_subscriptions
+  const subsIdx = await db.collection('vip_subscriptions').indexes();
+  assert.ok(subsIdx.some((i) => i.key.user_id !== undefined), 'vip_subscriptions needs user_id: checkVIPStatus runs on every login');
+  // shared-class reads: dot_id first
+  const sharedIdx = await db.collection('shared_class_data').indexes();
+  assert.ok(sharedIdx.some((i) => i.key.dot_id !== undefined), 'shared_class_data needs dot_id first for every shared read');
+});
+
+test('counter sequences are ahead of every id already handed out', { skip: SKIP }, async () => {
+  const counters = await db.collection('counters').find({}).toArray();
+  const seq = new Map(counters.map((c) => [c._id, c.seq]));
   const problems = [];
-  for (const [tbl, cols] of Object.entries(LOGIN_CRITICAL_COLUMNS)) {
-    if (!hasTable(schema, tbl)) { problems.push(`${tbl}: table absent`); continue; }
-    const have = columnsOf(schema, tbl);
-    for (const c of cols) if (!have.has(c)) problems.push(`${tbl}.${c}`);
+  for (const coll of COLLECTIONS) {
+    if (coll === 'counters' || coll === 'shared_data_stats') continue;
+    const top = await db.collection(coll).find({ id: { $exists: true } }).sort({ id: -1 }).limit(1).toArray();
+    if (!top.length) continue;
+    const have = seq.get(coll);
+    if (have === undefined) { problems.push(`${coll}: no counters doc at all`); continue; }
+    if (have < top[0].id) problems.push(`${coll}: counters.seq=${have} <= max used id=${top[0].id} (next insert would collide)`);
   }
-  assert.deepEqual(problems, [], `login path will throw (and silently swallow it): ${problems.join(', ')}`);
+  assert.deepEqual(problems, [], 'id counters out of sync:\n  ' + problems.join('\n  '));
 });
 
-test('users.user_id is UNIQUE — saveUserInfo does a SELECT-then-INSERT with no lock', async () => {
-  if (!schema) return;
-  const uniq = schema.indexes.filter((i) => i.tbl === 'users' && i.col === 'user_id');
-  assert.ok(uniq.length, 'users.user_id has no index at all: every login does a full table scan');
-  const name = uniq[0].iname;
-  const cols = schema.indexes.filter((i) => i.tbl === 'users' && i.iname === name).sort((a, b) => a.seq - b.seq).map((i) => i.col);
-  assert.deepEqual(cols, ['user_id'], `users.user_id index must be single-column, got (${cols.join(',')})`);
-  // NON_UNIQUE is not in STATISTICS projection above; re-read it.
-  const [rows] = await conn.query('SELECT NON_UNIQUE FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?', [PROD().database, 'users', name]);
-  assert.equal(rows[0].NON_UNIQUE, 0, 'users.user_id is NOT unique -> two concurrent logins by the same student INSERT twice and the FK/subsequent lookups break');
+test('stored datetimes are true instants and amounts are numbers, not strings', { skip: SKIP }, async () => {
+  const user = await db.collection('users').find({}).sort({ created_at: -1 }).limit(1).toArray();
+  assert.ok(user.length, 'users collection is empty — the migration did not run?');
+  assert.ok(user[0].created_at instanceof Date, 'users.created_at must be a BSON Date');
+
+  const sub = await db.collection('vip_subscriptions').find({}).sort({ created_at: -1 }).limit(1).toArray();
+  assert.ok(sub.length, 'no vip_subscriptions migrated');
+  assert.ok(sub[0].expiry_date instanceof Date, 'expiry_date must be a BSON Date');
+  const y = sub[0].expiry_date.getUTCFullYear();
+  assert.ok(y >= 2024 && y <= 2200, `expiry_date instant looks shifted: ${sub[0].expiry_date.toISOString()}`);
+  // legacy convention: expiry always lands on 23:59:59 VN wall-clock == 16:59:59 UTC
+  const hm = sub[0].expiry_date.toISOString().slice(11, 19);
+  assert.equal(hm, '16:59:59', 'VIP expiries must sit at VN end-of-day (16:59:59Z)');
+
+  const order = await db.collection('orders').find({}).sort({ created_at: -1 }).limit(1).toArray();
+  assert.ok(order.length, 'no orders migrated');
+  assert.equal(typeof order[0].amount, 'number', 'amount must be numeric (was DECIMAL-as-string in mysql2)');
+  assert.ok(order[0].created_at instanceof Date);
+
+  const shared = await db.collection('shared_class_data').find({ schedule_details: { $type: 'array' } }).limit(1).toArray();
+  assert.ok(shared.length, 'shared_class_data.schedule_details must have been migrated to real arrays');
+  const strings = await db.collection('shared_class_data').countDocuments({ schedule_details: { $type: 'string' } });
+  assert.equal(strings, 0, 'leftover JSON-string schedule_details rows: the handlers would not parse them');
 });
 
-test('activity_logs is indexed for the per-login INSERT and the admin listing query', async () => {
-  if (!schema) return;
-  assert.ok(hasIndexOver(schema, 'activity_logs', ['user_id', 'created_at']) || hasIndexOver(schema, 'activity_logs', ['user_id']),
-    'activity_logs needs a (user_id, ...) index for getUserActivity()');
-  assert.ok(hasIndexOver(schema, 'activity_logs', ['created_at']), 'activity_logs needs a created_at index for getAllLogs() ORDER BY created_at DESC');
-});
-
-test('orders lookup used by the order sweep is index-backed, not a full scan', async () => {
-  if (!schema) return;
-  assert.ok(hasIndexOver(schema, 'orders', ['payment_status']), 'orders needs a payment_status index for the order sweep');
-  // Prove it with the real planner, not just the catalog.
-  const plan = await ro(conn, 'EXPLAIN SELECT id, user_id FROM orders WHERE payment_status = "Unpaid" AND TIMESTAMPDIFF(MINUTE, created_at, NOW()) >= 15');
-  for (const p of plan) {
-    assert.notEqual(p.type, 'ALL', `auto-cancel SELECT does a full table scan (type=ALL, rows=${p.rows})`);
-    assert.ok(p.key, `auto-cancel SELECT uses no index: ${JSON.stringify(p)}`);
+test('admin rows store only scrypt hashes (never plaintext)', { skip: SKIP }, async () => {
+  const admins = await db.collection('admins').find({}).toArray();
+  assert.ok(admins.length, 'no admins — nobody can log into the admin panel');
+  for (const a of admins) {
+    assert.match(String(a.password_hash), /^scrypt\$/, `admin ${a.username}: password_hash is not an scrypt hash`);
   }
 });
 
-test('the stored procedure autoCancelExpiredOrders calls first actually exists', async () => {
-  if (!schema) return;
-  const names = schema.routines.map((r) => r.name);
-  assert.ok(names.includes('sp_auto_cancel_unpaid_orders'),
-    `missing sp_auto_cancel_unpaid_orders (found: ${names.join(', ') || 'none'}). Without it every request pays an extra failed-CALL round trip before falling back to SQL.`);
-});
-
-test('server charset can store Vietnamese without mojibake', async () => {
-  if (!schema) return;
-  const r = await ro(conn, `SELECT 'Đăng Ký Học Phần — Nguyễn Sun Sin' AS s, LENGTH('Đăng') AS byte_len, CHAR_LENGTH('Đăng') AS char_len`);
-  assert.equal(r[0].char_len, 4, 'CHAR_LENGTH wrong');
-  assert.ok(r[0].byte_len > 4, `utf8mb4 multibyte expected, got byte_len=${r[0].byte_len} -> connection is not utf8mb4`);
-  assert.equal(r[0].s, 'Đăng Ký Học Phần — Nguyễn Sun Sin', 'round-trip corrupted Vietnamese text');
-  // character_set_server is latin1 on the shared host; mysql2 defaults its connection charset to
-  // utf8, so verify explicitly that a table column survives it too.
-  const tbl = await ro(conn, `SELECT CCSA.character_set_name AS cs FROM information_schema.TABLES T JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA ON T.TABLE_COLLATION = CCSA.COLLATION_NAME WHERE T.TABLE_SCHEMA = ? AND T.TABLE_NAME = 'users'`, [PROD().database]);
-  assert.equal(tbl[0].cs, 'utf8mb4', `users table is not utf8mb4 (${tbl[0].cs}) — Vietnamese full_name will truncate/corrupt`);
-});
-
-test('sql_mode permits the double-quoted string literals the handlers emit', async () => {
-  if (!schema) return;
-  assert.doesNotMatch(schema.vars.sql_mode, /ANSI_QUOTES/,
-    'sql_mode has ANSI_QUOTES -> `payment_status = "Unpaid"` is parsed as a COLUMN reference and throws ER_BAD_FIELD_ERROR');
-  // Empirically: run the exact predicate the code uses.
-  const r = await ro(conn, 'SELECT COUNT(*) AS n FROM orders WHERE payment_status = "Unpaid"');
-  assert.ok(Number.isFinite(Number(r[0].n)), 'double-quoted literal predicate failed');
-});
-
-test('SQL in the handlers is parameterised — no request-controlled string interpolation', async () => {
-  if (!schema) return;
-  const offenders = [];
-  for (const f of ['api/handler.js', 'api/admin-handler.js', 'api/sepay-webhook.js']) {
-    const s = readFileSync(REPO + f, 'utf8').split('\n');
-    let inSql = false;
-    s.forEach((l, i) => {
-      if (/\b(?:SELECT|INSERT INTO|UPDATE|DELETE FROM)\b/i.test(l)) inSql = true;
-      if (inSql && /\$\{/.test(l) && !/map\([^)]*=>\s*'\?'/.test(l)) offenders.push(`${f}:${i + 1}  ${l.trim().slice(0, 90)}`);
-      if (/['"`]\s*[;,)]?\s*$/.test(l) === false && inSql && /;/.test(l)) inSql = false;
-      if (inSql && /^\s*(?:\)|`|\}|\])/.test(l)) inSql = false;
-    });
-  }
-  assert.deepEqual(offenders, [], `interpolation inside SQL text (potential injection): \n  ${offenders.join('\n  ')}`);
-});
-
-test('max_connections leaves headroom for the pools the app opens', async () => {
-  if (!schema) return;
-  const perLambda = 5 + 3 + 3; // handler.js + admin-handler.js + sepay-webhook.js connectionLimit (env-tunable)
-  const used = schema.status.Threads_connected;
-  assert.ok(schema.vars.max_connections >= perLambda * 4,
-    `max_connections=${schema.vars.max_connections} but the three handlers declare up to ${perLambda} sockets EACH per warm instance. ` +
-    `A burst of concurrent logins can exhaust the SHARED server (currently ${used} connections in use by all tenants). ` +
-    `Lower connectionLimit and/or add a connection pooler (ProxySQL / RDS Proxy).`);
+test('Vietnamese text round-trips through the driver (self-cleaning probe write)', { skip: SKIP }, async () => {
+  const probe = db.collection('__utf8_probe__');
+  const s = 'Đăng Ký Học Phần — Nguyễn Sun Sin ️';
+  await probe.insertOne({ marker: 'dsh-schema-test', s });
+  const back = await probe.findOne({ marker: 'dsh-schema-test' });
+  await probe.deleteMany({ marker: 'dsh-schema-test' });
+  assert.equal(back.s, s, 'utf-8 round-trip corrupted Vietnamese text');
 });
