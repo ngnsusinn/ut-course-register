@@ -23,25 +23,26 @@ test('login critical path: DB round trips and wall time (warm connection)', { sk
   const c = await tryConnectMongo();
   if (c.__error) assert.fail(`cluster unreachable: ${c.__error.message}`);
   const db = c.db;
+  // A self-cleaning probe student, so this perf probe never mutates a real account.
+  const PROBE_UID = '__perf_probe__';
+  await db.collection('users').deleteMany({ user_id: PROBE_UID });
   try {
+    await db.collection('users').insertOne({ user_id: PROBE_UID, email: null, is_active: 1, created_at: new Date(), updated_at: new Date(Date.now() - 60000) });
     const steps = [];
     const step = async (name, fn) => { const a = t0(); const v = await fn(); steps.push({ name, ms: t0() - a }); return v; };
 
     // Exactly what api/handler.js getInitialData does against the DB per login:
     // one upsert against an existing student (no counter write), one VIP read, and the
     // VIP-plans read behind the payment endpoints.
-    const sample = await db.collection('users').find({}).sort({ updated_at: -1 }).limit(1).toArray();
-    const uid = sample[0].user_id;
-
     await step('saveUserInfo  users upsert (returning student)', () =>
       db.collection('users').updateOne(
-        { user_id: uid },
-        { $set: { updated_at: new Date() }, $setOnInsert: { user_id: uid } },
+        { user_id: PROBE_UID },
+        { $set: { updated_at: new Date() }, $setOnInsert: { user_id: PROBE_UID } },
         { upsert: true }
       ));
     await step('checkVIPStatus  vip_subscriptions read', () =>
       db.collection('vip_subscriptions').findOne(
-        { user_id: uid, expiry_date: { $gt: new Date() } },
+        { user_id: PROBE_UID, expiry_date: { $gt: new Date() } },
         { projection: { _id: 0, id: 1, plan_id: 1, plan_type: 1, expiry_date: 1 }, sort: { expiry_date: -1 } }
       ));
     await step('getVIPPlansFromDB  vip_plans read', () =>
@@ -52,6 +53,7 @@ test('login critical path: DB round trips and wall time (warm connection)', { sk
     console.log(`      ${'='.repeat(48)}\n      ${total}ms across ${steps.length} sequential operations`);
     assert.ok(total < 1500, `login path takes ${total}ms from an in-region client; from a distant Vercel region it multiplies by RTT ratio`);
   } finally {
+    await db.collection('users').deleteMany({ user_id: PROBE_UID }).catch(() => {});
     await c.client.close().catch(() => {});
   }
 });

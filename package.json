@@ -3,9 +3,10 @@
   "version": "2.2.0",
   "description": "Secure UTH Course Registration Tool with VIP features and SePay Payment (MoMo Removed)",
   "main": "api/handler.js",
+  "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod",
+    "dev": "npx --yes vercel dev",
+    "deploy": "npx --yes vercel --prod",
     "build": "node esbuild.config.js",
     "lint": "eslint api public scripts tests",
     "test": "node --test --test-force-exit tests/*.test.mjs",
@@ -24,11 +25,10 @@
   "devDependencies": {
     "dotenv": "^16.3.1",
     "esbuild": "^0.24.0",
-    "javascript-obfuscator": "^4.1.0",
-    "vercel": "^33.0.0"
+    "javascript-obfuscator": "^4.1.0"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": "22.x || 24.x"
   },
   "keywords": [
     "uth",
@@ -44,5 +44,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/yourusername/ut-course-register"
+  },
+  "allowScripts": {
+    "esbuild@0.24.2": true
   }
 }

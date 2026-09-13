@@ -386,7 +386,42 @@
   </div>
 
   <script src="app.js" defer></script>
-  <script src="timetable.js" defer></script>
+  <!-- Code splitting: timetable.js is a lazy chunk. It is fetched on the first
+       "Xem thời khóa biểu" click, and pre-loaded once the browser is idle so the
+       click is instant for the vast majority of users. It never competes with the
+       critical first-load resources again. -->
+  <script>
+    (function () {
+      window.__loadTimetable = function () {
+        return window.__ttChunk || (window.__ttChunk = new Promise(function (resolve, reject) {
+          if (window.showTimetableModal) { resolve(); return; }
+          var s = document.createElement('script');
+          s.src = 'timetable.js';
+          s.onload = function () { resolve(); };
+          s.onerror = function () {
+            window.__ttChunk = null; // allow a retry on the next click
+            reject(new Error('chunk-load-failed'));
+          };
+          document.head.appendChild(s);
+        }));
+      };
+
+      var btn = document.getElementById('view-timetable-btn');
+      if (btn) btn.addEventListener('click', function () {
+        if (!window.showTimetableModal) {
+          window.__loadTimetable().then(function () {
+            if (window.showTimetableModal) window.showTimetableModal();
+          }).catch(function () {
+            var logBox = document.getElementById('log-output');
+            if (logBox) logBox.innerHTML += '<p class="text-red-400">Không tải được module thời khóa biểu. Kiểm tra kết nối rồi bấm lại.</p>';
+          });
+        }
+      });
+
+      var idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 4000); };
+      idle(function () { window.__loadTimetable().catch(function () {}); });
+    })();
+  </script>
 
 
 

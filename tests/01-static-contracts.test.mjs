@@ -2,7 +2,7 @@
 // Pure file analysis — no network, no DB.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { REPO } from './helpers.mjs';
 
 const HANDLERS = ['api/handler.js', 'api/admin-handler.js', 'api/sepay-webhook.js'];
@@ -122,4 +122,52 @@ test('the package has fully swapped mysql2 for mongodb', () => {
   const pkg = JSON.parse(src('package.json'));
   assert.ok(pkg.dependencies.mongodb, 'mongodb must be a dependency');
   assert.equal(pkg.dependencies.mysql2, undefined, 'mysql2 must be removed from dependencies');
+});
+
+// ---------- front-end build-protection contracts (minify+obfuscate, splitting, no maps) ----------
+
+const BUILT_BUNDLES = [
+  ['public/app.js', '_a'],
+  ['public/admin-panel.js', '_b'],
+  ['public/timetable.js', '_c'],
+];
+
+test('production ships NO source maps anywhere', () => {
+  for (const [f] of BUILT_BUNDLES) {
+    assert.ok(!/sourceMappingURL/.test(src(f)),
+      `${f} references a source map — one .map file hands back the readable source of everything just obfuscated`);
+  }
+  const maps = readdirSync(REPO + 'public').filter((f) => f.endsWith('.map'));
+  assert.deepEqual(maps, [], `source map files present in public/: ${maps.join(', ')}`);
+  assert.ok(/\.map/.test(src('.vercelignore')), '.vercelignore must block *.map from ever deploying');
+  assert.ok(/sourcemap: false/.test(src('esbuild.config.js')), 'the build must keep sourcemap:false');
+});
+
+test('the built bundles really are minified AND obfuscated (balanced profile)', () => {
+  for (const [f, prefix] of BUILT_BUNDLES) {
+    const s = src(f);
+    // mangled generator names things <prefix><letters> (_ab, _aa, ...) and its decoder
+    // embeds the base64 alphabet inline.
+    assert.ok(new RegExp(`${prefix}[A-Za-z]`).test(s),
+      `${f} carries no ${prefix}* mangled identifiers — obfuscation step missing/stale build (run npm run build)`);
+    assert.ok(/0123456789\+\/='|atob\(/.test(s),
+      `${f} has no string-array decoder (URLs/messages would be visible in plaintext)`);
+    assert.ok(!/\bdebugger\b/.test(s), `${f} contains debugger traps (debugProtection must stay off)`);
+  }
+  // heavy, size-burning options stay off
+  const cfg = src('esbuild.config.js');
+  assert.ok(!/deadCodeInjection:\s*true/.test(cfg), 'deadCodeInjection is bloat, not protection');
+  assert.ok(!/controlFlowFlatteningThreshold:\s*1[,.\s]/.test(cfg), '100% flattening multiplies size ~7x');
+  assert.ok(!/debugProtection:\s*true/.test(cfg), 'debugProtection is hostile UX');
+});
+
+test('timetable.js is a lazy code-split chunk, not an eager script', () => {
+  const html = src('public/index.html');
+  assert.ok(!/<script[^>]*src=["']timetable\.js["']/.test(html),
+    'index.html must not load timetable.js statically — it is fetched on demand now');
+  assert.ok(/__loadTimetable/.test(html) && /requestIdleCallback/.test(html),
+    'the lazy loader (click + idle preload) is missing from index.html');
+  const tt = src('public/timetable.original.js');
+  assert.ok(/document\.readyState/.test(tt),
+    'timetable chunk needs its readyState guard or it never boots when injected post-load');
 });

@@ -39,12 +39,21 @@ test('the retired activity_logs collection was NOT migrated', { skip: SKIP }, as
 });
 
 test('sample documents survive the migration field-for-field', { skip: SKIP }, async () => {
+  // Login legitimately moves users.updated_at / users.last_login forward; anything else — and
+  // any BACKWARD move of those two — still fails the comparison.
+  const VOLATILE = { users: ['updated_at', 'last_login'] };
   const problems = [];
   for (const [name, m] of Object.entries(manifest.tables)) {
     for (const sample of [m.firstDoc, m.sample].filter(Boolean)) {
       const live = await db.collection(name).findOne({ id: sample.id }, { projection: { _id: 0 } });
       if (!live) { problems.push(`${name}: doc id=${sample.id} missing`); continue; }
-      const a = JSON.stringify(canonicalize(live));
+      const norm = { ...canonicalize(live) };
+      for (const f of (VOLATILE[name] || [])) {
+        if (norm[f]?.__date && sample[f]?.__date && new Date(norm[f].__date) >= new Date(sample[f].__date)) {
+          norm[f] = sample[f]; // forward-only drift of login bookkeeping fields is expected
+        }
+      }
+      const a = JSON.stringify(norm);
       const b = JSON.stringify(canonicalize(sample));
       if (a !== b) {
         // surface the first differing field for the message
