@@ -171,3 +171,28 @@ test('timetable.js is a lazy code-split chunk, not an eager script', () => {
   assert.ok(/document\.readyState/.test(tt),
     'timetable chunk needs its readyState guard or it never boots when injected post-load');
 });
+
+test('auto-registration loops cannot freeze the tab during long sessions', () => {
+  const app = src('public/app.original.js');
+  // 1) on-screen log must be capped — it used to append one <p> per attempt forever,
+  //    forcing a synchronous layout on each append (scrollTop=scrollHeight). The fix
+  //    trims to MAX_LOG_LINES and batches the scroll into a single rAF.
+  assert.match(app, /const MAX_LOG_LINES\s*=\s*(\d+)/, 'log line cap must exist');
+  const cap = Number(app.match(/const MAX_LOG_LINES\s*=\s*(\d+)/)[1]);
+  assert.ok(cap >= 50 && cap <= 2000, `log cap ${cap} must be small enough to keep layout cheap, big enough to be useful`);
+  assert.match(app, /while \(logOutput\.childElementCount > MAX_LOG_LINES\)/, 'log overflow trimming missing');
+  assert.match(app, /logScrollQueued[\s\S]{0,120}requestAnimationFrame/, 'log autoscroll must be rAF-batched, not per-append');
+  assert.match(app, /logEntry\.textContent\s*=/, 'log should append textContent (innerHTML parsing on every attempt is wasted work)');
+  // 2) the busy loops (setTimeout(fn, 0)) must schedule a breather and go through the
+  //    concurrency semaphore so manual clicks/payment polling never queue behind them.
+  assert.doesNotMatch(app, /setTimeout\((runRegistrationLoop|runInsertionLoop), 0\)/,
+    'auto loops must not use setTimeout(0) busy-waits');
+  assert.equal((app.match(/setTimeout\(run(Registration|Insertion)Loop, AUTO_ROUND_DELAY_MS\)/g) || []).length, 2,
+    'both auto loops must schedule with AUTO_ROUND_DELAY_MS');
+  assert.match(app, /const AUTO_MAX_CONCURRENT\s*=\s*(\d+)/, 'auto request semaphore must exist');
+  const conc = Number(app.match(/const AUTO_MAX_CONCURRENT\s*=\s*(\d+)/)[1]);
+  assert.ok(conc >= 1 && conc <= 4, `auto concurrency ${conc} must stay below the browser's 6-connection pool`);
+  for (const call of ["backendRequestAuto('checkClassStatus'", "backendRequestAuto('checkClassAvailability'", "backendRequestAuto('register'", "backendRequestAuto('cancel'"]) {
+    assert.ok(app.includes(call), `auto loop path still calls unthrottled backendRequest for: ${call}`);
+  }
+});

@@ -33,6 +33,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let subjectTypeMap = new Map();
     let registrationIntervals = new Map();
     let isProcessStopped = false;
+
+    // --- Auto-loop performance guards ---
+    // Hanging an auto-registration session used to lag the whole browser until F5:
+    //   * the log output grew unbounded (one <p> per attempt, thousands per hour) and every
+    //     append forced a synchronous layout (scrollTop = scrollHeight);
+    //   * the subject loops hammered the API with setTimeout(0) and no concurrency cap, so
+    //     every browser connection slot was occupied and manual clicks queued forever.
+    const MAX_LOG_LINES = 400;           // DOM nodes kept in the on-screen log
+    const AUTO_ROUND_DELAY_MS = 150;     // breather between auto-loop rounds
+    const AUTO_MAX_CONCURRENT = 3;       // auto requests in flight — leaves slots for UI actions
+    let autoSlotsUsed = 0;
+    const autoSlotQueue = [];
+    const autoSlotAcquire = () => new Promise(resolve => {
+        if (autoSlotsUsed < AUTO_MAX_CONCURRENT) { autoSlotsUsed++; resolve(); }
+        else autoSlotQueue.push(resolve);
+    });
+    const autoSlotRelease = () => {
+        const next = autoSlotQueue.shift();
+        if (next) next(); else autoSlotsUsed--;
+    };
     let currentOrder = null;
     let paymentCheckInterval = null;
     
@@ -76,14 +96,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Same as backendRequest but gated through the auto-slot semaphore (see MAX constants).
+    // Manual UI requests never queue behind the auto loops: at most AUTO_MAX_CONCURRENT
+    // auto calls are in flight, the rest of the browser's connection pool stays free
+    // for clicks, payment polling and page loads even while auto-register is hammering.
+    const backendRequestAuto = async (action, payload = {}) => {
+        await autoSlotAcquire();
+        try {
+            return await backendRequest(action, payload);
+        } finally {
+            autoSlotRelease();
+        }
+    };
+
+    // Verification seam: lets the browser-level regression harness (tests/01 style VM run on
+    // the BUILT bundle) exercise the perf guards without screen-driving the whole UI.
+    window.__UT_APP_HOOKS = {
+        log: (msg, isErr) => log(msg, isErr),
+        requestAuto: (action, payload) => backendRequestAuto(action, payload),
+        limits: () => ({ maxLogLines: MAX_LOG_LINES, autoMaxConcurrent: AUTO_MAX_CONCURRENT, autoRoundDelayMs: AUTO_ROUND_DELAY_MS }),
+        logNodeCount: () => logOutput.childElementCount
+    };
+
     // --- UTILITY FUNCTIONS ---
+    // Log is called on EVERY auto-loop iteration (thousands per hour when a slot never opens).
+    // It must stay O(1): capped DOM size, textContent (no HTML parsing), and one batched
+    // scroll per frame instead of forcing layout on every append — otherwise an idle session
+    // grows tens of thousands of <p> nodes and the tab freezes until F5.
+    let logScrollQueued = false;
     const log = (message, isError = false) => {
         const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
         const logEntry = document.createElement('p');
-        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.textContent = `[${timestamp}] ${message}`;
         logEntry.className = isError ? 'text-red-400' : 'text-green-300';
         logOutput.appendChild(logEntry);
-        logOutput.scrollTop = logOutput.scrollHeight;
+        while (logOutput.childElementCount > MAX_LOG_LINES) {
+            logOutput.removeChild(logOutput.firstElementChild);
+        }
+        if (!logScrollQueued) {
+            logScrollQueued = true;
+            requestAnimationFrame(() => {
+                logScrollQueued = false;
+                logOutput.scrollTop = logOutput.scrollHeight;
+            });
+        }
     };
 
     const toggleLoading = (button, isLoading) => {
@@ -1240,7 +1296,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         // Extract maHocPhan from targetCode if not available (remove last 2 characters)
         const maHocPhan = targetMaHocPhan || targetCode.slice(0, -2);
         
-        const checkResult = await backendRequest('checkClassAvailability', { 
+        const checkResult = await backendRequestAuto('checkClassAvailability', { 
             classId: targetId, 
             dotId, 
             maHocPhan, 
@@ -1267,7 +1323,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Step 2: Cancel old registered class FIRST (before registering new one)
         log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
-        const cancelResult = await backendRequest('cancel', { registrationId: regId, source: regSource, userId, className: `${regName} (${regCode})` });
+        const cancelResult = await backendRequestAuto('cancel', { registrationId: regId, source: regSource, userId, className: `${regName} (${regCode})` });
         
         if (!cancelResult || !cancelResult.success) {
             log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
@@ -1278,7 +1334,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         
         // Step 3: Register target class (after canceling old one)
         log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
-        const registerResult = await backendRequest('register', { classId: targetId, source: targetSource, userId, className: `${targetName} (${targetCode})` });
+        const registerResult = await backendRequestAuto('register', { classId: targetId, source: targetSource, userId, className: `${targetName} (${targetCode})` });
         
         if (!registerResult || !registerResult.success) {
             log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
@@ -1331,7 +1387,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
             const tenMonHoc = classItems[0].class.tenMonHoc || maHocPhan;
             const source = classItems[0].class.source;
 
-            // Use recursive call to prevent request piling - no delay between requests
+            // Recursive round scheduling (see AUTO_ROUND_DELAY_MS + backendRequestAuto semaphore)
             const runInsertionLoop = async () => {
                 // Check if this subject already completed
                 if (completedSubjects.has(maHocPhan)) {
@@ -1344,7 +1400,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                 }
                 
                 try {
-                    const statusRes = await backendRequest('checkClassStatus', { dotId, maHocPhan, source });
+                    const statusRes = await backendRequestAuto('checkClassStatus', { dotId, maHocPhan, source });
 
                     if (statusRes && statusRes.success) {
                         for (const availableClass of statusRes.body) {
@@ -1384,7 +1440,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                                 } else {
                                     // Handle regular registration
                                     log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
-                                    const regResult = await backendRequest('register', { classId: availableClass.id, source, userId, className: `${tenMonHoc} (${availableClass.maLopHocPhan})` });
+                                    const regResult = await backendRequestAuto('register', { classId: availableClass.id, source, userId, className: `${tenMonHoc} (${availableClass.maLopHocPhan})` });
 
                                     if (regResult && regResult.success) {
                                         log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
@@ -1405,10 +1461,11 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
                 }
                 
-                // Call next iteration immediately after current one completes (no delay)
+                // Schedule the next round after a short breather (see AUTO_ROUND_DELAY_MS):
+                // network RTT dominates slot-grab speed anyway; the breather is what keeps
+                // the tab responsive during a long wait for a slot to open.
                 if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
-                    // Use setTimeout(0) to avoid blocking UI and allow stop to work
-                    const timeoutId = setTimeout(runInsertionLoop, 0);
+                    const timeoutId = setTimeout(runInsertionLoop, AUTO_ROUND_DELAY_MS);
                     registrationIntervals.set(maHocPhan, timeoutId);
                 }
             };
@@ -1453,7 +1510,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
         classesBySubject.forEach((classItems, maHocPhan) => {
             const tenMonHoc = classItems[0].class.tenMonHoc;
 
-            // Use recursive call to prevent request piling - no delay between requests
+            // Recursive round scheduling (see AUTO_ROUND_DELAY_MS + backendRequestAuto semaphore)
             const runRegistrationLoop = async () => {
                 // Check if this subject already completed
                 if (completedSubjects.has(maHocPhan)) {
@@ -1505,7 +1562,7 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                         } else {
                             // Handle regular registration
                             log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
-                            const result = await backendRequest('register', { classId: item.class.id, source: item.class.source, userId, className: `${tenMonHoc} (${item.class.maLopHocPhan})` });
+                            const result = await backendRequestAuto('register', { classId: item.class.id, source: item.class.source, userId, className: `${tenMonHoc} (${item.class.maLopHocPhan})` });
 
                             if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
                                 log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
@@ -1524,10 +1581,9 @@ const showConfirmModal = (message, onConfirm, onCancel) => {
                     log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
                 }
                 
-                // Call next iteration immediately after current one completes (no delay)
+                // Schedule the next round after a short breather (see AUTO_ROUND_DELAY_MS).
                 if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
-                    // Use setTimeout(0) to avoid blocking UI and allow stop to work
-                    const timeoutId = setTimeout(runRegistrationLoop, 0);
+                    const timeoutId = setTimeout(runRegistrationLoop, AUTO_ROUND_DELAY_MS);
                     registrationIntervals.set(maHocPhan, timeoutId);
                 }
             };
