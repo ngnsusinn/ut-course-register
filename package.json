@@ -1,7 +1,7 @@
 {
-  "name": "uth-secure-tool",
+  "name": "uth-course-register",
   "version": "2.2.0",
-  "description": "Secure UTH Course Registration Tool with VIP features and SePay Payment (MoMo Removed)",
+  "description": "Open-source automated course registration & resilient schedule planning system for UTH students, built on Vercel Serverless and MongoDB Atlas.",
   "main": "api/handler.js",
   "type": "module",
   "scripts": {
