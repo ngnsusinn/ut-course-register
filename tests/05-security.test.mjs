@@ -281,7 +281,7 @@ test('credentials must never be committed', () => {
     } catch { return ['REDACTED-USER', 'REDACTED-PASS', 'REDACTED-HOST']; }
   })();
   const needles = new RegExp(`(${creds.map((c) => (c || 'x').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`);
-  const s = ['api/handler.js', 'api/admin-handler.js', 'api/sepay-webhook.js', 'api/db.js', 'public/app.original.js', 'public/admin-panel.original.js', 'public/app.js']
+  const s = ['api/handler.js', 'api/admin-handler.js', 'api/sepay-webhook.js', 'api/db.js', 'public/app.js', 'public/admin-panel.js', 'public/timetable.js']
     .flatMap((f) => readFileSync(REPO + f, 'utf8').split('\n').map((l, i) => `${f}:${i + 1}  ${l.trim()}`))
     .filter((l) => needles.test(l));
   assert.deepEqual(s, [], 'real credentials appear in source:\n  ' + s.join('\n  '));

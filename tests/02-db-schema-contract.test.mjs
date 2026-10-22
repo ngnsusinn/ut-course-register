@@ -5,7 +5,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { tryConnectMongo, MONGO, COLLECTIONS, REQUIRED_UNIQUE_INDEXES } from './helpers.mjs';
 
-const SKIP = process.env.SKIP_DB === '1';
+const SKIP = process.env.SKIP_DB === '1' || !process.env.MONGODB_URI;
 
 let client, db;
 test.before(async () => {

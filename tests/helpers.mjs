@@ -4,8 +4,9 @@
 // Required env vars (see env.test.example): MONGODB_URI (optionally MONGODB_DB to override the
 // database inside the URI). Tests fail with a clear message when a needed var is missing.
 import { MongoClient } from 'mongodb';
+import { fileURLToPath } from 'node:url';
 
-export const REPO = new URL('..', import.meta.url).pathname;
+export const REPO = fileURLToPath(new URL('..', import.meta.url)).replaceAll('\\', '/');
 
 export function need(name) {
   const v = process.env[name];

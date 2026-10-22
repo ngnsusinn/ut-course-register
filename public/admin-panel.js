@@ -1,1 +1,1423 @@
-const _bB=_bb;(function(a,b){const _baz={a:0x1e1,b:0x23d,c:0x2a6,d:0x2d1,e:0x2e4},A=_bb,c=a();while(!![]){try{const d=-parseInt(A(_baz.a))/0x1+parseInt(A(_baz.b))/0x2+-parseInt(A(0x2a2))/0x3*(-parseInt(A(0x38d))/0x4)+-parseInt(A(0x371))/0x5*(-parseInt(A(0x215))/0x6)+-parseInt(A(0x28e))/0x7+-parseInt(A(_baz.c))/0x8*(parseInt(A(_baz.d))/0x9)+parseInt(A(_baz.e))/0xa*(parseInt(A(0x30f))/0xb);if(d===b)break;else c['push'](c['shift']());}catch(e){c['push'](c['shift']());}}}(_ba,0x46f6e));const API_URL=_bB(0x32b);let currentUser=null,allData={'users':[],'subscriptions':[],'orders':[],'transactions':[],'vipPlans':[]},pagination={'users':{'currentPage':0x1,'rowsPerPage':0x14},'vipPlans':{'currentPage':0x1,'rowsPerPage':0x14},'subscriptions':{'currentPage':0x1,'rowsPerPage':0x14},'orders':{'currentPage':0x1,'rowsPerPage':0x14},'transactions':{'currentPage':0x1,'rowsPerPage':0x14}},charts={'revenue':null,'userGrowth':null,'vipDistribution':null,'orderStatus':null};typeof Chart<'u'&&(Chart[_bB(0x1cc)][_bB(0x314)]=!0x1,Chart['defaults'][_bB(0x35a)]={'colors':!0x1,'x':!0x1},Chart['defaults'][_bB(0x254)]={'active':{'animation':{'duration':0x0}}},Chart['defaults'][_bB(0x303)]['animationDuration']=0x0,Chart['defaults'][_bB(0x353)][_bB(0x2ea)]['animation']=!0x1);async function login(){const _baE={a:0x2d8,b:0x25d,c:0x31f,d:0x1d8,e:0x292,f:0x2d3,g:0x362,h:0x2bb,i:0x1ca,j:0x309,k:0x346,l:0x272,m:0x384,n:0x1e0,o:0x2c6,p:0x343,q:0x30a,r:0x281,s:0x2b9,t:0x205,u:0x338,v:0x300,w:0x2b9,x:0x282,y:0x318,z:0x336,B:0x2af},C=_bB,b={'NkDyD':C(_baE.a),'gfvTm':function(j,k){return j||k;},'wfEyN':C(_baE.b),'kkYRG':'error','mWKim':'hidden','nLzLT':C(_baE.c),'qABkj':'adminSession','uFFaX':'success','zDwRD':function(j,k){return j(k);},'GqQXl':function(j,k,l){return j(k,l);},'zWPux':function(j,k){return j+k;}},c=document['getElementById']('username')[C(0x292)][C(_baE.d)](),f=document['getElementById']('password')[C(_baE.e)][C(0x1d8)](),g=document['querySelector'](b[C(0x372)]),h=document[C(_baE.f)]('loginError');if(b[C(_baE.g)](!c,!f)){showToast(b[C(_baE.h)],b[C(_baE.i)]),h['classList'][C(0x2eb)](b[C(_baE.j)]),h['textContent']=C(0x25d);return;}const i=g['innerHTML'];g[C(0x336)]=!0x0,g[C(0x2af)]=b['nLzLT'];try{const j=await(await fetch(API_URL,{'method':'POST','headers':{'Content-Type':'application/json'},'body':JSON[C(_baE.k)]({'action':C(0x1d5),'payload':{'username':c,'password':f}})}))['json']();j['success']?(currentUser=j['admin'],localStorage[C(_baE.l)](b[C(_baE.m)],JSON['stringify']({'username':currentUser[C(_baE.n)],'password':f,'loginTime':new Date()[C(0x249)]()})),document['getElementById'](C(_baE.o))[C(0x282)]=currentUser[C(0x1e0)],showToast(C(0x206),b[C(0x1d7)]),document[C(_baE.f)](C(_baE.p))['classList'][C(0x2bf)](b[C(0x309)]),document[C(0x2d3)](C(0x22a))[C(0x318)]['remove']('hidden'),await b[C(0x32c)](refreshData,C(_baE.q))):(b[C(_baE.r)](showToast,j[C(_baE.s)]||C(_baE.t),C(_baE.u)),h['textContent']=j['message']||C(0x205),h[C(0x318)][C(0x2eb)](b['mWKim']));}catch(k){showToast(b[C(_baE.v)]('Lỗi\x20kết\x20nối:\x20',k[C(_baE.w)]),C(_baE.u)),h[C(_baE.x)]=b[C(0x300)]('Lỗi\x20kết\x20nối:\x20',k[C(0x2b9)]),h[C(_baE.y)][C(0x2eb)](b['mWKim']);}finally{g[C(_baE.z)]=!0x1,g[C(_baE.B)]=i;}}async function autoLogin(){const _baI={a:0x30c,b:0x315,c:0x2bd,d:0x360,e:0x2d3,f:0x1e0,g:0x272,h:0x249,i:0x1f6,j:0x22a,k:0x318,l:0x2a8,m:0x263,n:0x23e},D=_bB,b={'hMExS':function(f,g){return f*g;},'ZxaTT':function(f,g,h){return f(g,h);},'wJTuH':D(0x1ec),'OrizX':'application/json','KnqYk':'login','lnGnN':D(0x1f6),'CPxXl':function(f,g){return f(g);},'RENBx':D(0x30a),'igMwC':'adminSession'},c=localStorage['getItem'](D(0x30c));if(!c)return!0x1;try{const {username:f,password:g,loginTime:h}=JSON[D(0x29b)](c),i=b[D(0x33f)](0x18,0x3c)*0x3c*0x3e8;if(new Date()[D(0x249)]()-h>i)return localStorage[D(0x2a8)](D(_baI.a)),!0x1;const j=await(await b['ZxaTT'](fetch,API_URL,{'method':b[D(0x224)],'headers':{'Content-Type':b[D(_baI.b)]},'body':JSON['stringify']({'action':b[D(0x2cf)],'payload':{'username':f,'password':g}})}))[D(0x339)]();return j[D(_baI.c)]?(currentUser=j[D(_baI.d)],document[D(_baI.e)]('adminUsername')['textContent']=currentUser[D(_baI.f)],localStorage[D(_baI.g)](D(0x30c),JSON['stringify']({'username':f,'password':g,'loginTime':new Date()[D(_baI.h)]()})),document['getElementById']('loginScreen')['classList'][D(0x2bf)](D(_baI.i)),document['getElementById'](D(_baI.j))[D(_baI.k)]['remove'](b['lnGnN']),await b[D(0x2cd)](refreshData,b['RENBx']),!0x0):(localStorage[D(_baI.l)](b[D(0x23e)]),!0x1);}catch(k){return console[D(0x338)](D(_baI.m),k),localStorage['removeItem'](b[D(_baI.n)]),!0x1;}}function showToast(b,c='info'){const _baJ={a:0x20f,b:0x338,c:0x1f8,d:0x38b,e:0x21b,f:0x1c4},E=_bB,d={'FKnuw':E(_baJ.a),'dMcnW':E(0x1f8),'axLCL':'success','JWhFs':E(0x2ce),'ertuH':E(_baJ.b)},f=document['getElementById'](E(_baJ.c));f&&f['remove']();const g=document['createElement'](d['FKnuw']);g['id']=d[E(_baJ.d)],g['className']='fixed\x20bottom-4\x20right-4\x20z-50\x20px-6\x20py-3\x20rounded-lg\x20shadow-lg\x20flex\x20items-center\x20gap-3\x20'+(c===d[E(0x33c)]?E(0x385):c===E(0x338)?E(_baJ.e):d[E(0x1c8)]);const h=c===E(0x2bd)?'✅':c===d['ertuH']?'❌':'ℹ️';g['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-lg\x22>'+h+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22font-medium\x22>'+b+'</span>\x0a\x20\x20\x20\x20',document[E(0x36b)][E(_baJ.f)](g),setTimeout(()=>g[E(0x2eb)](),0xbb8);}function paginateArray(b,c,d){const _baM={a:0x36e},F=_bB,f={'zuNuX':function(i,j){return i*j;},'Sjuwm':function(i,j){return i+j;}},g=f[F(0x2d0)](c-0x1,d),h=f['Sjuwm'](g,d);return b[F(_baM.a)](g,h);}function getTotalPages(a,b){const G=_bB;return Math[G(0x1ef)](a/b);}function changePage(a,b){const _baO={a:0x1fa},H=_bB;pagination[a][H(_baO.a)]=b,renderTable(a);}function renderPaginationControls(b,c){const _baV={a:0x301,b:0x383,c:0x325,d:0x27c,e:0x336,f:0x2e7,g:0x201,h:0x32a,i:0x336,j:0x2b4,k:0x37c,l:0x1dc,m:0x278},I=_bB,f={'clSnE':function(m,p){return m<=p;},'wnIvN':function(m,p){return m+p;},'JbDun':function(m,p){return m*p;},'ufqZk':function(m,p){return m===p;},'rtoEi':function(m,p){return m-p;},'JJNlH':function(m,p){return m===p;},'DIOfn':'disabled'},g=document[I(0x2d3)](b+'Pagination');if(!g)return;const {currentPage:h,rowsPerPage:i}=pagination[b],j=getTotalPages(c,i);if(f[I(_baV.a)](j,0x1)){g[I(0x2af)]='';return;}const k=f[I(0x1db)]((h-0x1)*i,0x1),l=Math[I(0x2de)](f[I(0x258)](h,i),c);g['innerHTML']=I(_baV.b)+b+I(_baV.c)+(h-0x1)+I(_baV.d)+(h===0x1?I(_baV.e):'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22relative\x20inline-flex\x20items-center\x20px-4\x20py-2\x20border\x20border-gray-300\x20text-sm\x20font-medium\x20rounded-md\x20text-gray-700\x20bg-white\x20hover:bg-gray-50\x20disabled:opacity-50\x20disabled:cursor-not-allowed\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Trước\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onclick=\x22changePage(\x27'+b+'\x27,\x20'+(h+0x1)+')\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(f['ufqZk'](h,j)?'disabled':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22ml-3\x20relative\x20inline-flex\x20items-center\x20px-4\x20py-2\x20border\x20border-gray-300\x20text-sm\x20font-medium\x20rounded-md\x20text-gray-700\x20bg-white\x20hover:bg-gray-50\x20disabled:opacity-50\x20disabled:cursor-not-allowed\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Sau\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22hidden\x20sm:flex-1\x20sm:flex\x20sm:items-center\x20sm:justify-between\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-sm\x20text-gray-700\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hiển\x20thị\x20<span\x20class=\x22font-medium\x22>'+k+I(_baV.f)+l+'</span>\x20trong\x20tổng\x20số\x20<span\x20class=\x22font-medium\x22>'+c+I(_baV.g)+b+I(0x325)+f['rtoEi'](h,0x1)+I(0x37c)+(f[I(_baV.h)](h,0x1)?I(_baV.i):'')+I(_baV.j)+generatePageNumbers(b,h,j)+I(0x261)+b+I(0x325)+(h+0x1)+I(_baV.k)+(h===j?f[I(_baV.l)]:'')+I(_baV.m);}function generatePageNumbers(b,c,d){const _baY={a:0x276,b:0x233},J=_bB,f={'NtUVh':function(h,i){return h<=i;},'IUGLJ':'...','qZTZR':function(h,i){return h-i;}};let g=[];if(d<=0x5){for(let h=0x1;f['NtUVh'](h,d);h++)g[J(0x248)](h);}else c<=0x3?g=[0x1,0x2,0x3,0x4,J(0x276),d]:c>=d-0x2?g=[0x1,f[J(0x33d)],d-0x3,f['qZTZR'](d,0x2),f[J(0x285)](d,0x1),d]:g=[0x1,J(_baY.a),c-0x1,c,c+0x1,J(_baY.a),d];return g[J(_baY.b)](i=>i===J(0x276)?'<span\x20class=\x22relative\x20inline-flex\x20items-center\x20px-4\x20py-2\x20border\x20border-gray-300\x20bg-white\x20text-sm\x20font-medium\x20text-gray-700\x22>...</span>':'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onclick=\x22changePage(\x27'+b+J(0x325)+i+')\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22relative\x20inline-flex\x20items-center\x20px-4\x20py-2\x20border\x20border-gray-300\x20text-sm\x20font-medium\x20'+(i===c?'z-10\x20bg-blue-50\x20border-blue-500\x20text-blue-600':J(0x38e))+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+i+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20')['join']('');}function _ba(){const cD=['C2v0sxrLBq','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00ihrLEhqTC20GDgv4Dc1NCMf5ltyWmciGzgf0ys1SywjLBd0IqwnJDw11Bgf0zwqIpGOGicaGicaGicaGicaGicaG','B3jKzxjtDgf0Dxm','yw1VDw50rMLSDgvY','lI4U','uuLLzxG','cIaGicaGicaGicaGicaGicaGicaGicaGicaGicbJBgfZCZ0ICMvSyxrPDMuGAw5SAw5LlwzSzxGGAxrLBxmTy2vUDgvYihb4ltiGChKTmIbYB3vUzgvKlxiTBwqGyM9YzgvYigjVCMrLCI1NCMf5ltmWmcbIzY13AgL0zsb0zxH0lxnTigzVBNqTBwvKAxvTihrLEhqTz3jHEs01mdaGAg92zxi6yMCTz3jHEs01mcbKAxnHyMXLzdPVCgfJAxr5ltuWigrPC2fIBgvKoMn1CNnVCI1UB3qTywXSB3DLzci+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3bHBIbJBgfZCZ0IC3iTB25SEsi+u2f1pc9ZCgfUpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaG4OAscIaGicaGicaGicaGicaGicaGicaGicaGidWVyNv0Dg9UpGOGicaGicaGicaGicaGicaGicaGidWVBMf2pGOGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGidWVzgL2pGOGicaGicaGidWVzgL2pGOGicaG','cIaGicaGicaGicaGicaGica8l3nWyw4+cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjwsvaGu3rHDhvZiJ4kicaGicaGicaGicaGicaGidXZCgfUignSyxnZpsjWEc0Yihb5lteGCM91BMrLzc1MDwXSihrLEhqTEhmGzM9UDc1Zzw1PyM9Szca','8j+rPsbvC2vYigDYB3D0AdO','DhjHBNnHy3rPB25Zu2vHCMnO','ksiGcIaGicaGicaGicaGicaGicaGicaG','y3jLyxrLvKLqugXHBG','tI9b','zw1HAwW','y29UzMLYBufJDgLVBKj0BG','r3frwgW','Dgv4DenVBNrLBNq','pc9KAxy+cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGpc90CJ4kicaGia','vNvPigZdSM5Nig5O4BQTCcbvC2vYieLeiq','CvPuwLi','Ew1XCvm','tog7L2KGA+g6V3qGBUg7KwK6ia','D2fYBMLUzW','Dg90ywXszxzLBNvL','yxbWBgLJyxrPB24VANnVBG','yMCTz3jHEs0XmdaGDgv4Dc1NCMf5ltGWma','DxnLCKDYB3D0AenOyxj0','y29UzMLYBu1VzgfS','mZu1mJmXofv6q2HgCq','Dg9mB3DLCKnHC2u','jYKPiIbJBgfZCZ0IDgv4Dc1YzwqTnJaWigHVDMvYoNrLEhqTCMvKltGWmcbMB250lxnLBwLIB2XKihrLEhqTC20GDhjHBNnPDgLVBIi+cIaGicaGicaGicaGicaGicaGicaG8j+xKE+4JYbyW7nHcIaGicaGicaGicaGicaGica8l2j1DhrVBJ4kicaGicaGicaGicaGpc90zd4kicaGicaGica8l3rYpGOGicaGicaGia','ywn0AxzL','DMfSDwu','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjqBgfUieLeiJ4kicaGicaGicaGicaGicaGidXZCgfUignSyxnZpsj0zxH0lxHZihrLEhqTz3jHEs01mdaGzM9UDc1TB25ViJ4','u0Hfvvq','swTyqKi','vNvPigZdSM5NimsrAEg7Gw4GXjhHUQD5imsr4BUNigpdOwmGDhlgSog7Nw5NiglHUQ90igj14BUzyYe','z2f0zxDHEq','CfvpDw0','B3jKzxjZvgfI','CgXHBKLK','CgfYC2u','ExbAsKe','DhjHBNnHy3rPB25Fy29UDgvUDa','CxvLCNLtzwXLy3rVCG','CuniAva','igzVBNqTC2vTAwjVBgqGDgv4Dc1ZBsi+cIaGicaGicaGicaGicaGicaGicaGicaGia','mI1KAwDPDa','nJqYmJD0zxLYCfu','BMTxAeC','qMLXAwW','s2fNEKq','mtz3wuznzMG','CM9mvKO','CMvTB3zLsxrLBq','D21iyxG','DMLWugXHBNnuywjSzujVzhK','C3vIBwL0ugXHBKj0BG','wxnjzxy','DwPiyKm','r09vALu','Aw5Uzxjive1m','ENDsC2G','Dhj5vwK','8j+tIIbszxzLBNvLigrHDge6','yvvhuNG','cIaGicaGicaGicaGicaGicaGicaGicaGicaGicbJBgfZCZ0ICMvSyxrPDMuGAw5SAw5LlwzSzxGGAxrLBxmTy2vUDgvYihb4ltiGChKTmIbYB3vUzgvKlwWTBwqGyM9YzgvYigjVCMrLCI1NCMf5ltmWmcbIzY13AgL0zsb0zxH0lxnTigzVBNqTBwvKAxvTihrLEhqTz3jHEs01mdaGAg92zxi6yMCTz3jHEs01mcbKAxnHyMXLzdPVCgfJAxr5ltuWigrPC2fIBgvKoMn1CNnVCI1UB3qTywXSB3DLzci+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3bHBIbJBgfZCZ0IC3iTB25SEsi+vhlgSog7M2m8l3nWyw4+cIaGicaGicaGicaGicaGicaGicaGicaGicaGicdIHPakicaGicaGicaGicaGicaGicaGicaGicaGpc9IDxr0B24+cIaGicaGicaGicaGicaGicaGicaGicaGia','uuTzEwG','DMKTvK4','cIaGicaGicaGicaGicaGica8l2rPDJ4kicaGicaGicaGicaGpc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqGzM9UDc1IB2XKihrLEhqTz3jLzw4TnJaWihrLEhqTC20IigrHDgeTBgfIzwW9iKfTB3vUDci+','pc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqGzMXLEcbNyxaTmIiGzgf0ys1SywjLBd0Iqwn0Aw9UCYi+cIaGicaGicaGicaGicaGica8yNv0Dg9Uig9Uy2XPy2S9iM9Wzw5bzgrwsvbnB2rHBcGN','BwvZC2fNzq','ig5NW6b5','D2zfEu4','r25RvwG','C3vJy2vZCW','z093q1u','ywrK','rKnkCuq','4O+477IpiftHUQ90','CMv2zw51zuj5rgf0zq','C29YDf9VCMrLCG','DMLWrgLZDhjPyNv0Aw9Uq2HHCNq','y2fUy2vSBgvK','ywrTAw5vC2vYBMfTzq','yw1VDw50x291Da','zgf0ys1Hy3rPDMu','4PYfimsqW6mGEmoZysbZDwjZy3jPChrPB24H','EhLzEum','Dgv4Dc1YzwqTnJaW','yvLLtKm','q1b4wgW','yMCTyMX1zs01mdaGDgv4Dc13AgL0zq','s25XwwS','ENvoDvG','mtu3mJy2uhPLCe9y','CMDIysGXndCSiduXlcaYmZqSidaUmsK','z2v0rwXLBwvUDej5swq','q2JgSgeGy8oZigFdS2KGvKLqig7dOg8Uifz1AsbSW7jUzYb04BQHBYbNW7nPifzjucb0CM9UzYb0ywiGvKLqifbSyw5Z','4P2miev4CgLYzwq','DMLWrgLZDhjPyNv0Aw9U','B3jKzxjZvgfIBgvcB2r5','i2XVz2LUu2nYzwvUigj1DhrVBG','tog7L2K6ia','yMCTCMvKlteWmcb0zxH0lxjLzc04mda','ywXS','8j+uHcbszwzYzxnO','CMvJzwL2zwrFyxq','BwLU','CMDIkdu5lcaXmZaSidi0nIK','Bg9N','4PA277IpielHUQ10','vog6Ow8Gz8oZAsbwsvaGDgJdOg5OigpdTg5Niq','y2HHBMDL','mtbTrvj2v1C','pgrPDIbJBgfZCZ0IDgv4Dc1ZBsb0zxH0lwDYyxKTnJaWig10lteIpVcFKRmG','rg9HBMGGDgH1icHwtSsqkq','pc9ZCgfUpIdeKEg6V24GphnWyw4Gy2XHC3m9iMzVBNqTBwvKAxvTiJ4','pc9HpG','CMvWBgfJzq','Dg9VBhrPCa','CMvTB3zL','C29YDa','zhvYyxrPB25Fzgf5CW','4PYfifbHAwq','Dgv4Dc1NCMf5ltyWma','BgvUz3rO','pYbiW6bUAcdeKEg7Mw5Nig7dOhKGA2JdTg5NihrO4BUdigHVW6bUihtdOwmUjYWGkcKGpt4GzgvSzxrLugXHBIG','lNrHyI1JB250zw50','tMXNvvm','Dg90ywW','C3rqAwW','CgfPzf9HDa','pc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqIigrHDgeTBgfIzwW9iKjVzhKIpGOGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IBwf4lxCTEhmGDhj1BMnHDguGDgv4Dc14CYb0zxH0lwDYyxKTntaWiIb0AxrSzt0I','C1nYu2G','pgrPDIbJBgfZCZ0IBg9HzgvYiJ48l2rPDJ4','CgXHBKTLEq','wwvRCwu','CKr3ANu','CgXHBK1VzgfS','z2Pgsw8','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00ihrLEhqTC20GDgv4Dc1NCMf5ltyWmciGzgf0ys1SywjLBd0Iq3jLyxrLzci+','ELDqDxG','y2XtBKu','uMvvA0W','Ag92zxi','rePrwxC','z09qDhy','CgXHBL9RzxK','ywnJB3vUDf9UDw1Izxi','B25JBgLJAW','BvDlAw0','zgfZAgjVyxjK','rw50zxi','ywrTAw5tzxnZAw9U','Dg9Nz2XLvKLqugXHBLn0yxr1CW','t1nhwha','nty5otm3nxfQz1zczG','CgXHBNm','4Q2qifzjucbKAxn0CMLIDxrPB246','ksKIignSyxnZpsj0zxH0lxjLzc02mdaGAg92zxi6Dgv4Dc1YzwqTodaWigzVBNqTC2vTAwjVBgqGDgv4Dc1ZBsb0CMfUC2L0Aw9UiJ4kicaGicaGicaGicaGicaGicaGicdWN5Er77IpifJdS2ekicaGicaGicaGicaGicaGidWVyNv0Dg9UpGOGicaGicaGicaGica8l3rKpGOGicaGicaGidWVDhi+cIaGicaGicaG','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjdB2rLiJ4kicaGicaGicaGicaGicaGidXZCgfUignSyxnZpsj0zxH0lxHZigzVBNqTBw9UBYb0zxH0lwDYyxKTnJaWiJ4','yw5PBwf0Aw9U','t3jPELG','Aw5JBhvKzxm','y3vYCMvUy3K','y2XHC3nmAxn0','yNv0Dg9Uw29Uy2XPy2SQpsjKzwXLDgvvC2vYkcC','pc9ZCgfUpGOGicaGicaGicaGica8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTncb0zxH0lxnTihrLEhqTz3jHEs02mdaIigrHDgeTBgfIzwW9iLnVDxjJzsi+cIaGicaGicaGicaGicaGica','4PYfimsqW6mGEmoZysb1C2vYihrOW6bUAcbJW7rUzYe','r054rMm','z2v0q29UDgv4Da','whnOwxK','pgrPDIbJBgfZCZ0IBg9HzgvYiJ48l2rPDJ4GXjbHBMCGXjheG25Nig5O4BQTCc4UlG','4PYfie5VCM1HBgL6zwqGCMv2zw51zsbKyxrHoG','AhLtyLi','cIaGicaGicaGicaGicaGica8l3nWyw4+cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00ihrLEhqTy2vUDgvYiIbKyxrHlwXHyMvSpsjuAog7Qsb04BUXiJ4kicaGicaGicaGicaGicaGidXZCgfUignSyxnZpsjWEc0Yihb5lteGCM91BMrLzcbIzY1NCMf5lteWmcb0zxH0lwDYyxKTnZaWihrLEhqTEhmGzM9UDc1Zzw1PyM9Szci+iW','Dvj5DLa','CuTfr3C','jYWG','zgfPBhLFCMv2zw51zq','igzVBNqTC2vTAwjVBgqGDgv4Dc1ZBsi+cIaGicaGicaGicaGicaGicaGicaG','qMj4yNO','pgrPDIbJBgfZCZ0IBg9HzgvYiJ48l2rPDJ4GXjbHBMCGDog6O2KUlI4','sKPoBeG','l2fWAs9Hzg1PBI1Oyw5KBgvY','EKr3uKq','zxHWAxj5x2rHDgu','zeLuzei','DhjHBNnHy3rPB25Z','4P2mie5Vifzjua','y291BNq','C2nYB2XSsw50B1zPzxC','r1z0B3K','zMjOquK','CgfPza','zgLZywjSzwq','B3jKzxjZ','zxjYB3i','ANnVBG','Xje8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTnciGzgf0ys1SywjLBd0Iu3rHDhvZiJ4kicaGicaGicaGicaGicaGidXZCgfUignSyxnZpsjWEc0Yihb5lteGCM91BMrLzc1MDwXSihrLEhqTEhmGzM9UDc1Zzw1PyM9Szca','DLDtAem','yxHmq0W','svvhteO','CgXHBLbYAwnL','Ae1fEfm','C3vIx2fJy291BNq','pgeGAhjLzJ0Ii29YzgvYCYiGB25JBgLJAZ0IzMLSDgvYt3jKzxjcEunVzguOjW','pc9ZCgfUpGOGicaGicaGicaGicaGicaGicaGia','Bg9NAw5ty3jLzw4','CgXHBLnVCNrpCMrLCG','BLrWzNO','C3rYAw5NAwz5','DxnLCKDYB3D0Aa','cIaGicaGicaGicaGicaGica8l3nWyw4+cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjfEhbPCNKIpGOGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0I','ugLiEeK','B1DdDuG','zxbcufm','C3vIBwL0vKLqqNrU','Dg90ywXvC2vYCW','y3jLyxrLzf9HDa','tKLeExm','ig5NW6b5pc9ZCgfUpGOGicaGicaGicaGica8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTncbMB250lwjVBgqGDgv4Dc1NCMvLBI02mdaIigrHDgeTBgfIzwW9iKDPW6eIpG','ELzWz0u','DNLUwfa','CgX1z2LUCW','ywrKvKLqtw9KywW','Dw5WywLK','A3DXzLC','AK9kDvG','zMLSDgvY','Dg9mB2nHBgvtDhjPBMC','yw5PBwf0Aw9UCW','Cgf5BwvUDf9KyxrL','C1vsC20','CgXHBKrLC2nYAxb0Aw9U','DfvSr00','zgvSzxrLvxnLCG','ywrTAw4','pgrPDIbJBgfZCZ0IDgv4Dc1NCMvLBI02mdaGzM9UDc1Zzw1PyM9Szcb0zxH0lxnTiJ4','z2z2vg0','z2v0rgfZAgjVyxjKu3rHDhm','pgrPDIbJBgfZCZ0IDgv4Dc1YzwqTnJaWigzVBNqTC2vTAwjVBgqGDgv4Dc1ZBsi+','DhjHBNnHy3rPB25ZvgfIBgvcB2r5','zM9YBwf0','CwD6BNm','y3jLyxrLrwXLBwvUDa','DKf0wKK','8j+oQcbdAgfYDcbUB3jTywXPEMvKigrHDge6','yM9KEq','tog7L2KGA2HPihtHUQnPigrHC2HIB2fYzce','DvbIy3e','C2XPy2u','tNvTyMvYrM9YBwf0','CwfhrNi','nJvgwMrjruW','tMTeEuq','z3jLzw4','pg9WDgLVBIb2ywX1zt0IiJ5dAmAWysbJW7mGz8oZAsbwsvaGBSoGBYb0CM9UzYbO4BUhihrO4BUrBMC8l29WDgLVBJ4','4PYp77IpienO4BUjBMGGC+g7RweGz8oZAsbwsva','pc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqIigrHDgeTBgfIzwW9iKDHDgv3yxKIpGOGicaGicaGicaGicaGicaGphnWyw4Gy2XHC3m9iNb4ltiGChKTmsbYB3vUzgvKigjNlxb1CNbSzs0XmdaGDgv4Dc1WDxjWBguTodaWihrLEhqTEhmGzM9UDc1Zzw1PyM9Szci+8j+sSYa','rxjYB3iGzMv0y2HPBMCG','CMDIkdiZnIWGnZiSide1mYK','cIaGicaGicaGicaGicaGica','tKvbC3O','s2JdTg5NihrO4BUdihtHUQnPigrHBMGGC8oHy2GGz8oZAsbwsvaGDog7QYbKyxrHyMfZzq','ksiGcIaGicaGicaGicaGicaGicaGicaGicaGicaGica','zgf0ys1VCMLNAw5HBc1ODg1S','Dg9vChbLCKnHC2u','uhnLr1m','qxPWD3e','vKDmr20','vNLbyNO','cIaGicaGicaGpgrPDIbJBgfZCZ0IzMXLEcbPDgvTCY1Jzw50zxiGANvZDgLMEs1Izxr3zwvUigjNlxDOAxrLihb4ltqGChKTmYbIB3jKzxiTDcbIB3jKzxiTz3jHEs0YmdaGC206ChGTnIi+cIaGicaGicaGicaGidXKAxyGy2XHC3m9iMzSzxGTmsbMBgv4igP1C3rPzNKTyMv0D2vLBIbZBtPOAwrKzw4IpGOGicaGicaGicaGicaGicaGpgj1DhrVBIakicaGicaGicaGicaGicaGicaGicbVBMnSAwnRpsjJAgfUz2vqywDLkcC','CufcA2O','yMCTz3jLzw4TntaWihrLEhqTD2HPDgu','XjddOYdeKCsdBMCGEhxHUQv0ihrOW6bUAcbJW7rUzW','ELDtrLe','ywnJDw11Bgf0zwq','4P2mienHBMnLBgXLza','zgf0ys1WCMLJzq','ze1JBLC','r21buxy','nfL6BvDwBG','yMCTD2HPDguGDgv4Dc1NCMf5ltCWmcbOB3zLCJPIzY1NCMf5ltuW','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00ihrLEhqTy2vUDgvYiIbKyxrHlwXHyMvSpsjuAog7NwKGAog6Ow4IpGOGicaGicaGicaGicaGicaGphnWyw4Gy2XHC3m9iNb4ltiGChKTmsbYB3vUzgvKigjNlwjSDwuTmtaWihrLEhqTyMX1zs04mdaGDgv4Dc14CYbMB250lxnLBwLIB2XKiJ7IJ7hVUi8G','C3vIC2nYAxb0Aw9UCW','4O+ZifvUCgfPza','DxbKyxrLzf9HDa','cIaGicaGicaGphrYignSyxnZpsjOB3zLCJPIzY1IBhvLltuWihrYyw5ZAxrPB24Ty29SB3jZiJ4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqGzM9UDc1Zzw1PyM9Szcb0zxH0lwDYyxKTnZaWiIbKyxrHlwXHyMvSpsjjrci+iW','Bg9NC1nLyxjJAa','q0TWAeO','pc9ZCgfUpGOGicaGicaGicaGica8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTnciGzgf0ys1SywjLBd0Iq29UDgvUDci+cIaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjTyxGTDY14CYb0CNvUy2f0zsb0zxH0lxnTihrLEhqTz3jHEs03mdaIihrPDgXLpsi','pgrPDIbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTntaWig10lteIpVcFK4SG','CMv2zw51zq','yxbWzw5Kq2HPBgq','DxnLCNntzwfYy2G','ywrKvKLqu3vIC2nYAxb0Aw9U','yM90Dg9T','sLDOrNm','ksiGy2XHC3m9iNrLEhqT','A2TzuKC','zgvZDhjVEq','zgvMyxvSDhm','iJ4kicaGicaGicaGicaGicaGicaGica','Dg90ywXpCMrLCNm','tLvLC20','yw1VDw50x2LU','C3vIC2nYAxb0Aw9UC1nLyxjJAa','y3zpuxe','Au5XsfC','DMLWugXHBNm','Bg9NAw4','ruD3Cxu','DuzgyvG','DhjPBq','wmoZysbNW7nPifzjucb0AmoGBMGGy8o0BMCH','CgfYC2vK','D25jDK4','reLpzM4','pg9WDgLVBIb2ywX1zt0IiJ5m4BUxAsbR4BQ/DcbU4BUrAtWVB3b0Aw9UpG','B3jHBMDL','tMFgSog7NwKGzmo5BMCGBEg7M2K','DxnLCM5HBwu','ndy2mJCWv1rOEurM','cIaGicaGicaGpgrPDIbJBgfZCZ0IyMCTyMX1zs01mcbWltqGCM91BMrLzc1SzYb0zxH0lwnLBNrLCIi+cIaGicaGicaGicaGidXKAxyGy2XHC3m9iNrLEhqTmNHSigzVBNqTyM9Szcb0zxH0lwjSDwuTnJaWiJ4','pc9KAxy+cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjszwnLAxzLzci+cIaGicaGicaGicaGicaGica8zgL2ignSyxnZpsj0zxH0lxnTihrLEhqTz3jHEs02mdaIpG','phnWyw4Gy2XHC3m9iNrLEhqTz3jHEs00mdaGDgv4Dc1ZBsi+tI9bpc9ZCgfUpG','DxnLCNnuywjSzujVzhK','pgrPDIbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTntaWig10ltaUnsi+u3vIoIa','yMCTz3jLzw4TmtaWihrLEhqTz3jLzw4TodaW','ksKIignSyxnZpsj0zxH0lxjLzc02mdaGAg92zxi6Dgv4Dc1YzwqTodaWigzVBNqTC2vTAwjVBgqGDgv4Dc1ZBsb0CMfUC2L0Aw9UiJ4kicaGicaGicaGicaGicaGicaGicdWN5Er77IpifJdS2ekicaGicaGicaGicaGicaGidWVyNv0Dg9UpGOGicaGicaGicaGica8l3rKpGOGicaGicaGidWVDhi+cIaGica','u0vTsLq','y2fUy2vSBgvKx2f0','q+g6RxaGBMJHUQ10ihrY4BQHBMCGDgJdOwKGDgJdOg5OigpdTg5Niq','ue9tva','ugfPza','wxrwzgS','y2vPBa','y29Kzq','4P2mieLUDMfSAwqGzgf0ztO','zgvZy3jPChrPB24','4P2mieLUywn0AxzL','w2rHDgeTDgfIpsi','y29UzMLYBvrPDgXL','AgLKzgvU','BgLUzq','Aw5qywDLvg9HC3q','q+g6RxaGBMJHUQ10ihrOW6bUAcbJW7rUzYe','y3vYCMvUDfbHz2u','Bg9NAw5fCNjVCG','pc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqGzM9UDc1TB25VihrLEhqTC20GyMCTz3jHEs01mcb0zxH0lwDYyxKTnZaWiIbKyxrHlwXHyMvSpsjlzxKIpG','Dg9gAxHLza','lNrHyI1IDg4','CxvLCNLtzwXLy3rVCKfSBa','CMvMzxjLBMnLx251BwjLCG','pc9ZCgfUpIbR4BQ/DcbXDEg6OWOGicaGicaGicaGicaGicaGicaGidWVCd4kicaGicaGicaGicaGicaGidWVzgL2pGOGicaGicaGicaGicaGicaGpgrPDJ4kicaGicaGicaGicaGicaGicaGica8BMf2ignSyxnZpsjYzwXHDgL2zsb6ltaGAw5SAw5LlwzSzxGGCM91BMrLzc1TzcbZAgfKB3CTC20GlxnWywnLlxGTChGIigfYAweTBgfIzwW9iLbHz2LUyxrPB24IpGOGicaGicaGicaGicaGicaGicaGicaGica8yNv0Dg9UiaOGicaGicaGicaGicaGicaGicaGicaGicaGicaGB25JBgLJAZ0Iy2HHBMDLugfNzsGN','CgXHBKr1CMf0Aw9U','zg91z2HUDxq','yNbuB3e','XjdeG25Nig5O4BQTCcb0Aog6PxqGyUg6OwKH','XjdeG25Nig5O4BQTCcb0AmoGBMGGy8o0BMCH','pc9ZCgfUpGOGicaGicaGicaGica8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTnciGzgf0ys1SywjLBd0IugXHBIi+cIaGicaGicaGicaGicaGica8C3bHBIbJBgfZCZ0IChGTmIbWEs0XihjVDw5KzwqGyMCTyMX1zs0XmdaGDgv4Dc1IBhvLltGWmcb0zxH0lxHZigzVBNqTC2vTAwjVBgqIpG','pgrPDIbJBgfZCZ0IBg9HzgvYigLUBgLUzs1IBg9JAYi+pc9KAxy+imsqyw5NigZgShuUlI4','CgXHBL90ExbL','DxnLCNm','Cw1nAuq','weL0vxi','vg1vAMW','jYKIignSyxnZpsj0zxH0lwjSDwuTnJaWigHVDMvYoNrLEhqTyMX1zs04mdaGzM9UDc1Zzw1PyM9SzcbMB250lw1VBM8GDgv4Dc1ZBsb0CMfUC2L0Aw9UiJ4','zgL2','mYbUz8oGEq','yNv0Dg9Uw29Uy2XPy2SQpsjKzwXLDgvtDwjZy3jPChrPB24O','Cgf5BwvUDf9ZDgf0Dxm','ltyWmcbOB3zLCJP0zxH0lq','ChjPy2u','mtCYntu0Bhf0EKzy','ugPywuC','z0Tuy2q','CMv2zw51zunOyxj0','C3vIC2nYAxb0Aw9UC0zPBhrLCG','CgXHBK1VzgfSvgL0Bgu','yMCTCMvKltuWmcb0zxH0lxDOAxrL','B3jKzxjZrMLSDgvY','u3zjA2W','CMDIkdi1msWGmtq2lca2mcK','CgXHBL9Uyw1L','tePhvum','pc9ZCgfUpGOGicaGicaGicaGica8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTnciGzgf0ys1SywjLBd0IvxnLCIi+cIaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjMB250lxnLBwLIB2XKihrLEhqTz3jHEs05mdaIpG','re9nq29UDgvUDeXVywrLza','AxHcyxy','D0PuDuG','CKXZyNG','CgXHBK5HBwu','CMDIkdiZosWGnJGSidy4kq','C3rHCNq','yMfY','ywrTAw5eyxnOyM9HCMq','cIaGicaGicaGicaGicaGica8l3nWyw4+cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjfEhbPCNKIpGOGicaGicaGicaGicaGicaG','r3r2rhy','zgf0zq','CMDIkde0nYWGnteSidiZncK','s2JdTg5NihrO4BUdihJdS2eGz8oZAsbwsvaH','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjdyw5JzwXSzwqGqxqIpGOGicaGicaGicaGicaGicaG','ywrKrxzLBNrmAxn0zw5LCG','A2v5','BwfW','CMDIkde2lcaXoduSideYosK','B3jKzxjFy29Kzq','tog7L2KGDog6O2KGzog7RYbSAEg7H3u6ia','pc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqGDgv4Dc1ZBsb0zxH0lwDYyxKTnJaWiIbKyxrHlwXHyMvSpsjvCgrHDgvKiJ4','CgfZC3DVCMq','pgrPDIbJBgfZCZ0IDgv4Dc1ZBsb0zxH0lwDYyxKTntaWig10ltaUnsi+8j+tPYa','suHkqwW','DMLWugXHBLr5Cgu','q2JgSgeGy8oZigtHU68GBgNHU4D1','nZCXotiYyKPfEvfU','AwDnD0m','cIaGicaGicaGicaGicaGica8l2rPDJ4kicaGicaGicaGicaGpc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqGDgv4Dc1ZBsb0zxH0lwDYyxKTnJaWiIbKyxrHlwXHyMvSpsjdCMvHDgvKiJ4','cIaGicaGicaGicaGicaGica8l2j1DhrVBJ4kicaGicaGicaGicaGicaGidXIDxr0B24GB25JBgLJAZ0IC2HVD0nVBMzPCM1nB2rHBcGNwmoZysbNW7nPifzjucCSicDc4BQHBIbJW7mGy2JHUQ9Jig114BUrBIb4W7nHigFdS2KG','DhjHBNnHy3rPB25FCMvM','cIaGicaGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGica','werrveG','pc9ZCgfUpGOGicaGicaGicaGica8l3rKpGOGicaGicaGicaGica8DgqGy2XHC3m9iNb4ltyGChKTnciGzgf0ys1SywjLBd0IugfPzcbbDci+cIaGicaGicaGicaGicaGica','pgrPDIbJBgfZCZ0IDgv4Dc1ZBsb0zxH0lwDYyxKTnJaWig10ltaUnsi+','vSsPBMGGDMNHU4vU','DxnLCL9Pza','ChvZAa','z2v0vgLTzq','pgrPDIbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTntaWigzVBNqTBw9UBYbTDc0WlJuIpKa','DhjHBNnHy3rPB25Fzgf0zq','Aw5WDxq','q2JgSgeGDgHHBMGGDg/dOw4','y2HHCKf0','pc90zd4kicaGicaGicaGicaGphrKignSyxnZpsjWEc02ihb5ltqIigrHDgeTBgfIzwW9iKfJDgLVBNmIpGOGicaGicaGicaGicaGicaGpgj1DhrVBIbVBMnSAwnRpsjZAg93q29UzMLYBu1VzgfSkcDyW7nHifzjucbtDwjZy3jPChrPB24NlcaNqUg6Ow4Gy8oZignO4BQVyYbTDEg7Kw4GEmoZysbZDwjZy3jPChrPB24GBSoGEsbRAmo0BMC/jYWGkcKGpt4GzgvSzxrLu3vIC2nYAxb0Aw9Uka','tog7L2KGA+g6V3qGBUg7KwKGXjhHUR9UihnLCNzLCG','AxnFywn0AxzL','Bg9NC0zPBhrLCG','C21VB3rO','DhjHBNnPDgLVBNm','r1zsC08','rKvWt3C','y3jLyxrLzf9IEv9Hzg1PBG','sMjeDw4','4PYfiefJDgL2zq','C2v0qxr0CMLIDxrL','jYKIignSyxnZpsj0zxH0lwjSDwuTnJaWigHVDMvYoNrLEhqTyMX1zs04mdaGzM9UDc1Zzw1PyM9Szcb0zxH0lxnTihrYyw5ZAxrPB24IpGOGicaGicaGicaGicaGicaGicaGiokELsbuAmoQBsbwsvakicaGicaGicaGicaGicaGidWVyNv0Dg9UpGOGicaGicaGicaGicaGicaGpgj1DhrVBIbVBMnSAwnRpsjZAg93q29UzMLYBu1VzgfSkcDyW7nHifvZzxiNlcaNqUg6Ow4Gy8oZignO4BQVyYbTDEg7Kw4GEmoZysb1C2vYig7dOhKGA2JdTg5NpYbn4BUnAsbK4BUVigXP4BUhDsbSACoQBIbXDwfUihpHUR0GyUg7IYb4W7nHlICSicGPid0+igrLBgv0zvvZzxiOjW','B2LOCNu','vNvPigZdSM5Nig5O4BQTCcdeKEg6P3KGXjhHU6CGDgJdTg5NihrPBIe','zgvSzxrLu3vIC2nYAxb0Aw9U','AM9PBG','u2XKvMm','cIaGicaGicaGicaGicaGicaGicaGicaGidXIDxr0B24GcIaGicaGicaGicaGicaGicaGicaGicaGicaGicbVBMnSAwnRpsjJAgfUz2vqywDLkcC','AxnFDMLW','qxv0BY1SB2DPBIbMywLSzwq6','y1vVCLG','cIaGicaGicaGicaGidWVDgq+cIaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00ihrLEhqTC20GDgv4Dc1NCMf5ltyWmciGzgf0ys1SywjLBd0ItgfZDcbmB2DPBIi+cIaGicaGicaGicaGicaGica','z09PAKO','4PYfimsqW6mGDgJdQM0GvKLqihrOW6bUAcbJW7rUzYe','vu5TvMS','pc9KAxy+cIaGicaGicaGicaGicaGica','zM9YrwfJAa','qxnPys9cyw5NA29R','rLvjD0C','BgfZDf9SB2DPBG','B3jKzxjZu2vHCMnO','Dgv4Dc1NCMvLBI02mda','DgfIlwfJDgL2zq','pc9KAxy+'];_ba=function(){return cD;};return _ba();}function logout(){const _bb0={a:0x30c,b:0x343,c:0x318,d:0x1f6,e:0x22a,f:0x318,g:0x2bf,h:0x1d3,i:0x2d3},K=_bB,a={'MBXXN':K(_bb0.a),'NIDys':K(_bb0.b),'iNqHW':'hidden','ymqqS':'username','gnmCV':K(0x238),'NEAsz':function(b,c,d){return b(c,d);}};currentUser=null,localStorage[K(0x2a8)](a['MBXXN']),document['getElementById'](a[K(0x34f)])[K(_bb0.c)][K(0x2eb)](K(_bb0.d)),document['getElementById'](K(_bb0.e))[K(_bb0.f)][K(_bb0.g)](a[K(_bb0.h)]),document[K(_bb0.i)](a[K(0x286)])[K(0x292)]='',document['getElementById'](a['gnmCV'])['value']='',document['getElementById'](K(0x1fb))['classList'][K(_bb0.g)](K(_bb0.d)),a[K(0x37a)](showToast,K(0x386),'success');}function switchTab(a){const _bb2={a:0x270,b:0x1fe,c:0x1ff,d:0x1f4,e:0x318,f:0x2bf,g:0x270,h:0x2eb,i:0x2d3,j:0x380,k:0x292},_bb1={a:0x318,b:0x2eb,c:0x318,d:0x2bf,e:0x2ef},L=_bB,b={'tryUi':L(_bb2.a),'cUorX':'text-gray-600','Azpwq':'mobileTabSelect'};document['querySelectorAll'](L(_bb2.b))['forEach'](f=>{const M=L;f[M(_bb1.a)][M(_bb1.b)](b[M(0x2b1)]),f[M(_bb1.c)][M(_bb1.d)](M(_bb1.e));}),document[L(_bb2.c)](L(0x2f2))['forEach'](f=>f[L(0x318)][L(0x2bf)]('hidden'));const c=document[L(0x29e)](L(_bb2.d)+a+'\x22]');c&&(c[L(_bb2.e)][L(_bb2.f)](L(_bb2.g)),c[L(0x318)][L(_bb2.h)](b[L(0x264)]));const d=document[L(_bb2.i)](b[L(_bb2.j)]);d&&(d[L(_bb2.k)]=a),document[L(0x2d3)](a+'Tab')['classList'][L(0x2eb)](L(0x1f6)),refreshData(a);}function filterOrderById(a){const _bb4={a:0x299},_bb3={a:0x32e,b:0x2d3,c:0x292,d:0x2d3},N=_bB,b={'dITdB':'ordersSearch','FCJqD':'ordersFilter','OIMon':N(_bb4.a)};switchTab('orders'),setTimeout(()=>{const O=N,c=document['getElementById'](b[O(_bb3.a)]);c&&(document[O(_bb3.b)](b[O(0x2c0)])[O(_bb3.c)]='',c[O(_bb3.c)]='#'+a,renderOrders(),document[O(_bb3.d)](b['OIMon'])['scrollIntoView']({'behavior':'smooth','block':'start'}));},0x12c);}function filterOrderByCode(a){const _bb9={a:0x22c},_bb8={a:0x2d3,b:0x2d3,c:0x20d,d:0x253},P=_bB,b={'LJGUC':P(0x26e),'dUIaV':function(c){return c();},'TmUjl':'ordersTab','HQumx':function(c,d){return c(d);},'GtvDv':function(c,d,e){return c(d,e);}};b['HQumx'](switchTab,P(0x337)),b[P(_bb9.a)](setTimeout,()=>{const Q=P,c=document[Q(0x2d3)](b[Q(0x220)]);c&&(document[Q(_bb8.a)]('ordersFilter')[Q(0x292)]='',c[Q(0x292)]=a,b['dUIaV'](renderOrders),document[Q(_bb8.b)](b[Q(_bb8.c)])[Q(0x332)]({'behavior':Q(_bb8.d),'block':Q(0x228)}));},0x12c);}async function refreshData(b){const _bbb={a:0x37d,b:0x329,c:0x1ec,d:0x310,e:0x2b9,f:0x236,g:0x338,h:0x338,i:0x25a,j:0x357},R=_bB,c={'fSBio':function(g,h){return g+h;},'roLVJ':'application/json','ZMMKV':R(0x1d4),'jOJuX':R(_bbb.a)};if(b===R(0x30a)){await loadDashboard();return;}let d=b===R(0x1d4)?'getAllVIPPlans':'getAll'+c['fSBio'](b[R(0x24e)](0x0)[R(0x37e)](),b[R(0x36e)](0x1));const f=document[R(0x29e)]('#'+b+'Tab\x20button[onclick*=\x22refreshData\x22]');if(f){const g=f['innerHTML'];f[R(0x336)]=!0x0,f[R(0x2af)]=R(_bbb.b);}try{const h=await(await fetch(API_URL,{'method':R(_bbb.c),'headers':{'Content-Type':c[R(0x2a7)]},'body':JSON['stringify']({'action':d})}))[R(0x339)]();if(h[R(0x2bd)]){const i=b===c['ZMMKV']?R(_bbb.d):b;allData[b]=h[i]||[],renderTable(b);}else console['error']('Error\x20fetching\x20'+b+':',h[R(_bbb.e)]),showToast(R(_bbb.f)+h[R(_bbb.e)],R(_bbb.g));}catch(j){console[R(0x338)](R(0x377)+b+':',j),showToast(R(0x287)+j['message'],R(_bbb.h));}finally{f&&(f['disabled']=!0x1,f[R(0x2af)]=f['getAttribute'](R(_bbb.a))||R(0x2dc),f['getAttribute'](c[R(0x357)])||f[R(_bbb.i)](c[R(_bbb.j)],'🔄\x20Refresh'));}}function renderTable(a){const _bbe={a:0x20a,b:0x1d6,c:0x2ad,d:0x337,e:0x23a},S=_bB,b={'uRyvP':S(_bbe.a),'EGwqu':S(0x1d4),'ujHbC':function(c){return c();},'IHJAl':S(0x32f),'CYFgZ':function(c){return c();}};switch(a){case b[S(0x323)]:renderUsers();break;case b[S(_bbe.b)]:b[S(_bbe.c)](renderVIPPlans);break;case S(0x390):renderSubscriptions();break;case S(_bbe.d):renderOrders();break;case b[S(_bbe.e)]:b['CYFgZ'](renderTransactions);break;}}function renderUsers(){const _bbi={a:0x259,b:0x2d3,c:0x1e5,d:0x358,e:0x20a,f:0x2af,g:0x358,h:0x1ee,i:0x1e2},_bbh={a:0x32d,b:0x269,c:0x1e0,d:0x245,e:0x379,f:0x239,g:0x2a3,h:0x279,i:0x1cd,j:0x22b,k:0x2a0,l:0x370,m:0x1e4,n:0x2ff,o:0x370,p:0x2b8,q:0x290},T=_bB,b={'nkWhG':T(_bbi.a),'vAtZI':function(q,u){return q&&u;},'qKEGw':'✅\x20VIP\x20Active','FUIwG':T(0x330),'qaGFr':function(q,u){return q(u);},'wJOpk':'<span\x20class=\x22text-gray-400\x22>N/A</span>','vWShC':T(0x27e),'YtVdk':'usersStats'},c=document[T(_bbi.b)](T(_bbi.c)),f=document[T(0x2d3)](T(0x1c5))[T(0x292)][T(0x28f)](),g=allData['users'][T(_bbi.d)](q=>q[T(0x247)]['toLowerCase']()['includes'](f)),{currentPage:h,rowsPerPage:i}=pagination[T(_bbi.e)],j=paginateArray(g,h,i);c[T(_bbi.f)]=j['map'](q=>{const U=T,v=q[U(0x262)],w=q[U(_bbh.a)]?new Date(q[U(0x32d)]):null,x=w&&w<new Date();return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22hover:bg-blue-50\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20font-semibold\x20text-gray-700\x22\x20data-label=\x22ID\x22>#'+(q['id']||'')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22User\x20Info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22font-semibold\x20text-gray-900\x22>'+q['user_id']+U(_bbh.b)+(q[U(_bbh.c)]?U(0x24a)+q[U(0x1e0)]+'</div>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(q['full_name']?U(_bbh.d)+q['full_name']+'</div>':'')+U(_bbh.e)+(q['email']?U(_bbh.f)+q[U(0x27f)]+'</div>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Active\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22px-2\x20py-1\x20rounded-full\x20text-xs\x20font-semibold\x20'+(q[U(0x251)]?U(0x1e7):'bg-gray-100\x20text-gray-800')+U(0x1cd)+(q[U(0x251)]?b[U(_bbh.g)]:U(0x1f3))+U(_bbh.h)+(b[U(0x369)](v,!x)?U(0x1e7):U(0x28b))+U(_bbh.i)+(v&&!x?b[U(0x324)]:b[U(0x26c)])+U(_bbh.j)+(w?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22'+(x?U(0x2cb):'text-green-600')+U(_bbh.k)+b[U(_bbh.l)](formatDateTime,w)+U(0x242):U(_bbh.m))+U(0x265)+(q[U(0x26d)]?formatDateTime(q['last_login']):b['wJOpk'])+U(_bbh.n)+(q[U(0x34e)]?b[U(_bbh.l)](formatDateTime,q[U(0x34e)]):b[U(0x33b)])+U(0x237)+(q[U(0x392)]?b[U(_bbh.o)](formatDateTime,q['updated_at']):b['vWShC'])+U(_bbh.p)+q['user_id']+U(0x25b)+q['user_id']+U(_bbh.q);})['join']('');const k=g['length'],m=g[T(0x358)](q=>q[T(0x262)]&&new Date(q['expiry_date'])>new Date())['length'],p=g[T(_bbi.g)](q=>q['expiry_date']&&new Date(q[T(0x32d)])<new Date())[T(0x2f0)];document[T(0x2d3)](b[T(_bbi.h)])[T(_bbi.f)]=T(_bbi.i)+k+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-600\x22>Tổng\x20Users</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-green-50\x20p-4\x20rounded-lg\x20text-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-2xl\x20font-bold\x20text-green-600\x22>'+m+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-600\x22>VIP\x20Active</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-red-50\x20p-4\x20rounded-lg\x20text-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-2xl\x20font-bold\x20text-red-600\x22>'+p+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-600\x22>VIP\x20Expired</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20',renderPaginationControls(T(0x20a),k);}function renderSubscriptions(){const _bbp={a:0x219,b:0x1d1,c:0x2d3,d:0x358,e:0x390},_bbo={a:0x257,b:0x235,c:0x341,d:0x235,e:0x20e,f:0x247,g:0x269,h:0x21f,i:0x31a,j:0x1e7,k:0x2da,l:0x348,m:0x26f,n:0x327,o:0x32d,p:0x243,q:0x392,r:0x21d},_bbn={a:0x316,b:0x209,c:0x28f},V=_bB,b={'RrlCl':function(l,m){return l>m;},'BmmHx':function(l,m){return l===m;},'URiXp':V(0x2d5),'XDQTH':function(l,m){return l(m);},'SvIkl':function(l,m){return l(m);},'SldVc':V(_bbp.a)},c=document['getElementById']('subscriptionsTableBody'),f=document['getElementById'](V(_bbp.b))[V(0x292)][V(0x28f)](),g=document[V(_bbp.c)](b[V(0x260)])['value'],h=allData['subscriptions'][V(_bbp.d)](m=>{const W=V,p=(m['user_id']||'')[W(0x28f)]()[W(_bbn.a)](f)||(m[W(_bbn.b)]||'')[W(_bbn.c)]()['includes'](f),q=b['RrlCl'](new Date(m[W(0x32d)]),new Date());return p&&(!g||g===W(0x291)&&q||b['BmmHx'](g,'expired')&&!q);}),{currentPage:i,rowsPerPage:j}=pagination[V(_bbp.e)],k=paginateArray(h,i,j);c[V(0x2af)]=k[V(0x233)](m=>{const X=V,p=new Date(m[X(0x32d)])>new Date(),q=m[X(0x257)]?'👨‍💼\x20Admin\x20('+m[X(_bbo.a)]+')':'👤\x20User',u=m[X(_bbo.b)]?X(_bbo.c)+m[X(_bbo.d)]+X(_bbo.e)+m['order_code']+X(0x2e8):'<span\x20class=\x22text-purple-600\x20font-semibold\x20text-sm\x22>👨‍💼\x20Admin</span>';return X(0x1be)+m['id']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22User\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22font-semibold\x20text-gray-900\x22>'+m[X(_bbo.f)]+X(_bbo.g)+(m[X(_bbo.h)]?X(0x245)+m['plan_name']+X(0x271):'')+X(0x293)+(m['plan_id']||X(0x27e))+X(0x207)+m['plan_type']+X(_bbo.i)+q+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Order\x22>'+u+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Status\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22px-2\x20py-1\x20rounded-full\x20text-xs\x20font-semibold\x20'+(p?X(_bbo.j):X(_bbo.k))+X(0x1cd)+(p?X(0x259):b['URiXp'])+X(_bbo.l)+(p?X(_bbo.m):'text-red-600')+X(_bbo.n)+formatDateTime(m[X(_bbo.o)])+X(0x23f)+b[X(_bbo.p)](formatDateTime,m[X(0x34e)])+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20text-sm\x20text-gray-600\x22\x20data-label=\x22Updated\x22>'+(m[X(_bbo.q)]?b[X(_bbo.r)](formatDateTime,m[X(0x392)]):X(0x27e))+X(0x24f)+m['id']+X(0x312);})['join'](''),renderPaginationControls(V(0x390),h['length']);}function renderOrders(){const _bbv={a:0x389,b:0x2ee,c:0x2d7,d:0x28f,e:0x2d3,f:0x21c,g:0x292,h:0x358,i:0x233,j:0x25f,k:0x2f0},_bbu={a:0x1ed,b:0x221,c:0x1c2,d:0x209,e:0x2e5,f:0x2b6,g:0x33a,h:0x298,i:0x2bc,j:0x217,k:0x2f6,l:0x361,m:0x230,n:0x345},_bbt={a:0x28f,b:0x316},Y=_bB,b={'adhkU':function(l,m){return l!==m;},'oihru':function(l,m){return l!==m;},'nPvEP':Y(0x27e),'QdTlt':'<span\x20class=\x22text-gray-400\x20font-normal\x20italic\x22>(user\x20đã\x20xóa)</span>','pUOum':'bg-yellow-100\x20text-yellow-800','GnkUh':Y(_bbv.a),'gKTcd':Y(_bbv.b),'nTpfz':function(l,m){return l(m);}},c=document['getElementById'](Y(_bbv.c)),f=document['getElementById']('ordersSearch')[Y(0x292)][Y(_bbv.d)](),g=document[Y(_bbv.e)](Y(_bbv.f))[Y(_bbv.g)],h=allData[Y(0x337)][Y(_bbv.h)](m=>{const Z=Y,p=(m['user_id']||'')[Z(_bbt.a)]()['includes'](f)||(m[Z(0x21f)]||'')[Z(0x28f)]()[Z(_bbt.b)](f)||m[Z(0x235)]&&m[Z(0x235)]['toLowerCase']()['includes'](f),q=!g||m[Z(0x212)]===g;return p&&q;}),{currentPage:i,rowsPerPage:j}=pagination['orders'],k=paginateArray(h,i,j);c['innerHTML']=k[Y(_bbv.i)](m=>{const a0=Y,p=b['adhkU'](m['cancelled_at'],null)&&b[a0(0x25c)](m['cancelled_at'],void 0x0),q=m['payment_status']===a0(_bbu.a);return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22hover:bg-blue-50\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20font-semibold\x20text-gray-700\x22\x20data-label=\x22ID\x22>#'+m['id']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Order\x20Code\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22px-2\x20py-1\x20rounded\x20bg-blue-100\x20text-blue-800\x20text-xs\x20font-mono\x20font-bold\x22>'+(m[a0(0x235)]||b['nPvEP'])+a0(_bbu.b)+(m['user_id']||b['QdTlt'])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Plan\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22px-2\x20py-1\x20rounded\x20bg-blue-100\x20text-blue-800\x20text-xs\x20font-semibold\x22>'+m['plan_name']+a0(0x342)+(m[a0(0x209)]?a0(_bbu.c)+m[a0(_bbu.d)]+'</div>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(m['gateway']?a0(_bbu.e)+m['gateway']+a0(0x271):'')+a0(0x2b7)+parseFloat(m['amount'])[a0(0x359)](a0(_bbu.f))+a0(_bbu.g)+(p?a0(0x2da):q?'bg-green-100\x20text-green-800':b[a0(_bbu.h)])+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(p?b[a0(_bbu.i)]:q?b[a0(_bbu.j)]:a0(0x391))+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Transaction\x20Ref\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-xs\x20font-mono\x20text-gray-600\x22>'+(m[a0(0x241)]||'N/A')+a0(0x244)+(m[a0(_bbu.k)]?a0(_bbu.l)+formatDateTime(m['paid_at'])+'</div>':a0(0x1e4))+a0(_bbu.m)+(m[a0(0x1ea)]?a0(0x364)+formatDateTime(m[a0(0x1ea)])+a0(0x271):'<span\x20class=\x22text-gray-400\x20text-sm\x22>N/A</span>')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20text-sm\x20text-gray-600\x22\x20data-label=\x22Created\x22>'+formatDateTime(m['created_at'])+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20text-sm\x20text-gray-600\x22\x20data-label=\x22Updated\x22>'+(m['updated_at']?b[a0(_bbu.n)](formatDateTime,m[a0(0x392)]):'N/A')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20';})[Y(_bbv.j)](''),renderPaginationControls(Y(0x337),h[Y(_bbv.k)]);}function renderTransactions(){const _bbA={a:0x275,b:0x2d3,c:0x27b,d:0x358,e:0x32f,f:0x34a,g:0x2af,h:0x2f0},_bbz={a:0x235,b:0x20e,c:0x235,d:0x1e4,e:0x1be,f:0x376,g:0x297,h:0x307,i:0x269,j:0x340,k:0x1e6,l:0x271,m:0x1d0,n:0x2b6,o:0x2c7,p:0x388,q:0x2b6,r:0x313,s:0x1f0,t:0x29d,u:0x200,v:0x2f7,w:0x2dd,x:0x283},_bby={a:0x316,b:0x28f,c:0x204},a1=_bB,b={'bpToq':function(l,m){return l(m);},'IkXBB':'N/A','qCHiP':a1(_bbA.a),'oWCuH':function(l,m,p,q){return l(m,p,q);}},c=document[a1(_bbA.b)](a1(0x365)),f=document[a1(0x2d3)](a1(_bbA.c))[a1(0x292)][a1(0x28f)](),g=document[a1(_bbA.b)](b[a1(0x29f)])['value'],h=allData[a1(0x32f)][a1(_bbA.d)](m=>{const a2=a1,p=m[a2(0x200)]?.[a2(0x28f)]()[a2(_bby.a)](f)||m['transaction_content']?.[a2(_bby.b)]()[a2(0x316)](f),q=!g||b[a2(_bby.c)](parseFloat,m[a2(0x1d0)])===parseFloat(g);return p&&q;}),{currentPage:i,rowsPerPage:j}=pagination[a1(_bbA.e)],k=b[a1(_bbA.f)](paginateArray,h,i,j);c[a1(_bbA.g)]=k[a1(0x233)](m=>{const a3=a1,p=m[a3(_bbz.a)]?'<a\x20href=\x22#orders\x22\x20onclick=\x22filterOrderByCode(\x27'+m[a3(0x235)]+a3(_bbz.b)+m[a3(_bbz.c)]+a3(0x2e8):a3(_bbz.d);return a3(_bbz.e)+m['id']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Order\x22>'+p+a3(_bbz.f)+m[a3(_bbz.g)]+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Account\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-700\x22>'+(m[a3(_bbz.h)]||b[a3(0x295)])+a3(_bbz.i)+(m[a3(_bbz.j)]?a3(_bbz.k)+m['sub_account']+a3(_bbz.l):'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20font-bold\x20text-green-600\x22\x20data-label=\x22Amount\x20In\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-base\x22>'+parseFloat(m[a3(_bbz.m)])[a3(0x359)](a3(_bbz.n))+'đ</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20text-sm\x20text-gray-600\x22\x20data-label=\x22Amount\x20Out\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(m[a3(_bbz.o)]?parseFloat(m[a3(0x2c7)])[a3(0x359)](a3(0x2b6))+'đ':'0đ')+a3(0x273)+(m[a3(_bbz.p)]?parseFloat(m['accumulated'])['toLocaleString'](a3(_bbz.q))+'đ':a3(0x27e))+a3(_bbz.r)+(m[a3(_bbz.s)]||'N/A')+a3(0x1c1)+(m[a3(_bbz.t)]||b[a3(0x295)])+'\x22>'+(m[a3(0x29d)]||b['IkXBB'])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20text-xs\x20font-mono\x20bg-gray-50\x20text-gray-600\x22\x20data-label=\x22Reference\x22>'+(m[a3(_bbz.u)]||a3(0x27e))+a3(_bbz.v)+(m[a3(0x36b)]||'N/A')+'\x22>'+(m[a3(0x36b)]||'N/A')+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Txn\x20Date\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-600\x22>'+(m['transaction_date']?formatDateTime(m[a3(0x24b)]):'N/A')+a3(0x1e3)+b['bpToq'](formatDateTime,m[a3(_bbz.w)])+a3(_bbz.x);})['join'](''),renderPaginationControls('transactions',h[a1(_bbA.h)]);}async function openAddVIPModal(a=''){const _bbB={a:0x354,b:0x2eb},a4=_bB,b={'SHEUT':a4(0x1f6)};document['getElementById']('vipUserId')['value']=a,await loadVIPPlansForModal(),document['getElementById'](a4(_bbB.a))['classList'][a4(_bbB.b)](b[a4(0x294)]);}async function loadVIPPlansForModal(){const _bbG={a:0x2c8,b:0x2d3,c:0x23b,d:0x2af,e:0x310,f:0x367,g:0x288,h:0x336,i:0x328,j:0x338,k:0x338,l:0x29c,m:0x250,n:0x338},_bbF={a:0x368,b:0x2ba,c:0x223,d:0x2b6,e:0x25a,f:0x38a,g:0x25a,h:0x1c4},a5=_bB,b={'gOijJ':'option','ixBav':function(d,f){return d(f);},'PseGS':a5(_bbG.a),'NlgUS':'<option\x20value=\x22\x22>Đang\x20tải\x20gói\x20VIP...</option>','VqAJa':a5(0x1ec),'qgzns':function(d,f,g){return d(f,g);},'Bbxbz':function(d,f,g){return d(f,g);},'ypZJA':a5(0x1dd)},c=document[a5(_bbG.b)](a5(_bbG.c));try{c[a5(_bbG.d)]=b[a5(0x2f3)],c[a5(0x336)]=!0x0;const d=await(await fetch(API_URL,{'method':b['VqAJa'],'headers':{'Content-Type':a5(0x28a)},'body':JSON[a5(0x346)]({'action':'getAllVIPPlans'})}))['json']();if(d['success']&&d[a5(0x310)]){c['innerHTML']='';const f=d[a5(_bbG.e)][a5(0x2ec)]((g,h)=>(g[a5(0x2c3)]||0x0)-(h['sort_order']||0x0));if(f[a5(0x2f0)]===0x0){c[a5(0x2af)]=a5(0x374),b[a5(_bbG.f)](showToast,a5(0x2d4),a5(_bbG.g));return;}f['forEach'](g=>{const a6=a5,h=document[a6(_bbF.a)](b[a6(0x266)]);h[a6(0x292)]=g['plan_key'];const i=g['duration_days']===0x8e94?a6(0x246):g['duration_days']+a6(_bbF.b),j=g['is_active']===0x1?'✅':'🔴';h['textContent']=j+'\x20'+g[a6(0x21f)]+'\x20('+i+')\x20-\x20'+b[a6(_bbF.c)](parseFloat,g['price'])['toLocaleString'](a6(_bbF.d))+'đ',h[a6(_bbF.e)]('data-duration',g[a6(0x2ed)]),h[a6(0x25a)](a6(_bbF.f),g['price']),h[a6(_bbF.g)](b[a6(0x37f)],g['is_active']),c[a6(_bbF.h)](h);}),c[a5(_bbG.h)]=!0x1;}else c[a5(_bbG.d)]='<option\x20value=\x22\x22>Lỗi\x20tải\x20dữ\x20liệu</option>',b[a5(_bbG.i)](showToast,a5(0x37b),a5(_bbG.j));}catch(g){console[a5(_bbG.k)]('Error\x20loading\x20VIP\x20plans:',g),c[a5(0x2af)]=b[a5(_bbG.l)],showToast(a5(_bbG.m),a5(_bbG.n));}}function closeAddVIPModal(){const _bbH={a:0x318,b:0x1f6},a7=_bB;document['getElementById']('addVIPModal')[a7(_bbH.a)][a7(0x2bf)](a7(_bbH.b));}async function submitAddVIP(){const _bbJ={a:0x28a,b:0x292,c:0x1d8,d:0x23b,e:0x2af,f:0x1c6,g:0x267,h:0x31c,i:0x34b,j:0x2ac,k:0x338,l:0x2b9},a8=_bB,b={'zWSFQ':'vipUserId','QJiVZ':a8(0x34c),'vRSfc':a8(0x284),'gdifk':a8(_bbJ.a),'GNxFc':'users','epBPS':function(h,i){return h(i);},'YsIev':'subscriptions','EMANW':a8(0x2d9)},c=document['getElementById'](b[a8(0x387)])[a8(_bbJ.b)][a8(_bbJ.c)](),d=document[a8(0x2d3)](a8(_bbJ.d))['value'],f=document['getElementById'](b['QJiVZ']);if(!c){showToast(b['vRSfc'],'error');return;}const g=f[a8(0x2af)];f['disabled']=!0x0,f[a8(_bbJ.e)]='<div\x20class=\x22loader\x22></div>\x20Đang\x20xử\x20lý...';try{const h=await(await fetch(API_URL,{'method':'POST','headers':{'Content-Type':b['gdifk']},'body':JSON[a8(0x346)]({'action':a8(_bbJ.f),'payload':{'userId':c,'planType':d}})}))[a8(0x339)]();h[a8(0x2bd)]?(showToast(a8(_bbJ.g),'success'),closeAddVIPModal(),await Promise['all']([refreshData(b[a8(_bbJ.h)]),b[a8(_bbJ.i)](refreshData,b[a8(_bbJ.j)])])):showToast(b['EMANW']+h[a8(0x2b9)],a8(_bbJ.k));}catch(i){showToast('Lỗi\x20kết\x20nối:\x20'+i[a8(_bbJ.l)],'error');}finally{f['disabled']=!0x1,f[a8(0x2af)]=g;}}function formatDateTime(a){const _bbK={a:0x359,b:0x26b},a9=_bB;return new Date(a)[a9(_bbK.a)](a9(0x2b6),{'timeZone':a9(_bbK.b)});}function showConfirmModal(a,b,c){const _bbM={a:0x2d3,b:0x1f5,c:0x280,d:0x351},aa=_bB,d={'zVpgE':aa(0x28d)};document[aa(_bbM.a)](aa(_bbM.b))['textContent']=a,document['getElementById']('confirmMessage')['textContent']=b,document['getElementById'](aa(_bbM.c))[aa(0x308)]=()=>{closeConfirmModal(),c();},document['getElementById'](d[aa(_bbM.d)])['classList']['remove']('hidden');}function closeConfirmModal(){const _bbN={a:0x318},ab=_bB;document[ab(0x2d3)]('confirmModal')[ab(_bbN.a)]['add'](ab(0x1f6));}async function deleteUser(b){const _bbS={a:0x319,b:0x346,c:0x339,d:0x2db,e:0x2ae,f:0x20a,g:0x2ca,h:0x2be,i:0x381,j:0x287,k:0x336},ac=_bB,c={'gOwCU':function(g,h,i){return g(h,i);},'WcKPP':ac(0x28a),'cGsci':ac(0x31b),'GOUjU':function(g,h){return g(h);},'xyYyC':function(g,h){return g(h);},'VGLGm':function(g,h){return g+h;}},d=document[ac(0x29e)](ac(_bbS.a)+b+'\x27)\x22]'),f=d['innerHTML'];d[ac(0x336)]=!0x0,d['innerHTML']=ac(0x2f9);try{const g=await(await c[ac(0x2be)](fetch,API_URL,{'method':ac(0x1ec),'headers':{'Content-Type':c['WcKPP']},'body':JSON[ac(_bbS.b)]({'action':ac(0x35f),'payload':{'userId':b}})}))[ac(_bbS.c)]();g['success']?(showToast(c['cGsci'],'success'),await Promise[ac(_bbS.d)]([c[ac(_bbS.e)](refreshData,ac(_bbS.f)),c[ac(_bbS.g)](refreshData,'subscriptions')])):c[ac(_bbS.h)](showToast,c[ac(_bbS.i)]('Lỗi:\x20',g[ac(0x2b9)]),'error');}catch(h){showToast(ac(_bbS.j)+h['message'],'error');}finally{d[ac(_bbS.k)]=!0x1,d[ac(0x2af)]=f;}}function _bb(a,b){a=a-0x1be;const c=_ba();let d=c[a];if(_bb['JDQwzA']===undefined){var e=function(i){const j='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let l='',m='';for(let n=0x0,o,p,q=0x0;p=i['charAt'](q++);~p&&(o=n%0x4?o*0x40+p:p,n++%0x4)?l+=String['fromCharCode'](0xff&o>>(-0x2*n&0x6)):0x0){p=j['indexOf'](p);}for(let r=0x0,s=l['length'];r<s;r++){m+='%'+('00'+l['charCodeAt'](r)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(m);};_bb['gKtGHc']=e,_bb['lfocNi']={},_bb['JDQwzA']=!![];}const f=c[0x0],g=a+f,h=_bb['lfocNi'][g];return!h?(d=_bb['gKtGHc'](d),_bb['lfocNi'][g]=d):d=h,d;}async function deleteSubscription(b){const _bbW={a:0x25e,b:0x20a,c:0x211,d:0x1ec,e:0x346,f:0x2bd,g:0x2c9,h:0x2db,i:0x2d9,j:0x287},ad=_bB,c={'sSrSh':'application/json','VGAXz':ad(_bbW.a),'rLsbx':function(g,h,i){return g(h,i);},'ReUkL':function(g,h){return g(h);},'NBHTT':ad(_bbW.b),'FEpOw':function(g,h,i){return g(h,i);},'Pmodc':'error'},d=document[ad(0x29e)](ad(_bbW.c)+b+')\x22]'),f=d[ad(0x2af)];d[ad(0x336)]=!0x0,d['innerHTML']=ad(0x2f9);try{const g=await(await fetch(API_URL,{'method':ad(_bbW.d),'headers':{'Content-Type':c[ad(0x2f8)]},'body':JSON[ad(_bbW.e)]({'action':c['VGAXz'],'payload':{'subscriptionId':b}})}))['json']();g[ad(_bbW.f)]?(c[ad(0x225)](showToast,ad(_bbW.g),ad(0x2bd)),await Promise[ad(_bbW.h)]([c[ad(0x302)](refreshData,ad(0x390)),c[ad(0x302)](refreshData,c['NBHTT'])])):c[ad(0x256)](showToast,ad(_bbW.i)+g['message'],'error');}catch(h){showToast(ad(_bbW.j)+h[ad(0x2b9)],c['Pmodc']);}finally{d[ad(0x336)]=!0x1,d['innerHTML']=f;}}document[_bB(0x231)](_bB(0x222),async function(){const _bc2={a:0x24c,b:0x275,c:0x1d1,d:0x1bf,e:0x252,f:0x35c,g:0x26a,h:0x2d3},_bc1={a:0x232},_bc0={a:0x2e3},ae=_bB,b={'GVtoy':ae(_bc2.a),'LBmrG':ae(0x32f),'QIeex':ae(0x30b),'sURsm':ae(_bc2.b),'jXYuW':'password'};await autoLogin()||document['getElementById']('loginScreen')['classList'][ae(0x2eb)](ae(0x1f6));const c=['usersSearch',ae(_bc2.c),'ordersSearch',ae(0x27b),ae(_bc2.d)],d=['subscriptionsFilter','ordersFilter',ae(_bc2.e),b[ae(_bc2.f)]];c[ae(0x26a)](g=>{const af=ae,h=document['getElementById'](g);h&&h['addEventListener'](b[af(0x333)],debounce(()=>{const i=g['replace']('Search','');renderTable(i);},0x12c));}),d[ae(_bc2.g)](g=>{const ag=ae,h=document['getElementById'](g);h&&h[ag(0x231)](ag(_bc0.a),()=>{const ah=ag;let i=g[ah(0x2e9)]('Filter','');g===ah(0x275)&&(i=b['LBmrG']),renderTable(i);});});const f=document[ae(_bc2.h)](b['jXYuW']);f&&f['addEventListener']('keydown',g=>{const ai=ae;g[ai(_bc1.a)]===b[ai(0x277)]&&login();});});function debounce(a,b){const c={'lnnuP':function(f,g){return f(g);}};let d;return function(...f){const g=()=>{clearTimeout(d),a(...f);};c['lnnuP'](clearTimeout,d),d=setTimeout(g,b);};}async function loadDashboard(){const _bca={a:0x363,b:0x27a,c:0x28a,d:0x268,e:0x339,f:0x2e0,g:0x30e,h:0x311,i:0x2c2,j:0x2c2,k:0x233,l:0x2d3,m:0x282,n:0x35e,o:0x349,p:0x289,q:0x1ce,r:0x2f4,s:0x349,t:0x2fc},aj=_bB,a={'yyJvm':function(b,c,d){return b(c,d);},'UNmVk':aj(_bca.a),'OSGXp':aj(_bca.b),'GmAQv':function(b,c){return b>c;},'sviiX':aj(0x34d),'tUlGM':aj(0x289),'PiHxI':function(b,c){return b(c);},'QKYyh':aj(0x36c),'rDwju':'error'};try{const b=await(await a['yyJvm'](fetch,API_URL,{'method':aj(0x1ec),'headers':{'Content-Type':aj(_bca.c)},'body':JSON[aj(0x346)]({'action':a[aj(_bca.d)]})}))[aj(_bca.e)]();if(b['success']){const c=b['stats'];console[aj(_bca.f)](aj(0x2b2),c[aj(0x2c2)]),console[aj(0x2e0)](a[aj(_bca.g)],c[aj(0x347)]),console[aj(0x2e0)](aj(_bca.h),c['vipDistribution']),c[aj(_bca.i)]&&a[aj(0x38c)](c[aj(_bca.i)]['length'],0x0)&&(c[aj(_bca.i)]=c[aj(_bca.j)][aj(_bca.k)](d=>({'date':d[aj(0x22d)]||d[aj(0x35b)],'revenue':d['revenue']||d[aj(0x326)]})),console['log'](aj(0x320),c[aj(_bca.j)])),document[aj(_bca.l)](a['sviiX'])[aj(0x282)]=c['totalUsers'],document['getElementById']('vipUsers')[aj(_bca.m)]=c['vipUsers'],document[aj(0x2d3)](a[aj(_bca.n)])[aj(0x282)]=a[aj(_bca.o)](formatCurrency,c[aj(_bca.p)]),document['getElementById'](aj(_bca.q))[aj(_bca.m)]=c[aj(0x337)][aj(_bca.r)],a['PiHxI'](renderRevenueChart,c[aj(_bca.j)]),renderUserGrowthChart(c['userGrowth']),a[aj(_bca.s)](renderVipDistributionChart,c['vipDistribution']),renderOrderStatusChart(c[aj(0x337)]);}}catch(d){console[aj(0x338)]('Error\x20loading\x20dashboard:',d),showToast(a[aj(0x2b5)],a[aj(_bca.t)]);}}function renderRevenueChart(a){const _bcj={a:0x2b6,b:0x22e,c:0x218,d:0x31d,e:0x2f0,f:0x2e6,g:0x36a},_bci={a:0x31e,b:0x1fd},_bch={a:0x2a5},_bcg={a:0x22d},ak=_bB,b={'wmHax':function(f,g){return f(g);},'hOKYR':ak(_bcj.a),'euCHj':ak(0x2a1),'KagzD':function(f,g){return f+g;},'kaSwA':function(f,g){return f>=g;},'XshYy':function(f,g){return f+g;},'kwqfW':function(f,g){return f/g;},'accnd':'line','rkVTg':'Doanh\x20thu\x20(VNĐ)','NUesm':ak(_bcj.b),'hjeMT':'rgba(147,\x2051,\x20234,\x200.1)'},c=document['getElementById'](ak(_bcj.c))[ak(_bcj.d)]('2d');if(charts[ak(0x1c3)]&&charts[ak(0x1c3)][ak(0x1cb)](),!a||a[ak(_bcj.e)]===0x0){charts[ak(0x1c3)]=new Chart(c,{'type':ak(0x1f7),'data':{'labels':[ak(0x23c)],'datasets':[{'label':ak(_bcj.f),'data':[0x0],'borderColor':ak(_bcj.b),'backgroundColor':ak(0x2d2)}]},'options':{'responsive':!0x0,'maintainAspectRatio':!0x1,'plugins':{'legend':{'display':!0x1}}}});return;}const d=a['map'](f=>({'date':f[ak(0x22d)]||f[ak(0x35b)],'revenue':parseFloat(f[ak(0x1c3)]||f['daily_revenue']||0x0)}))['reverse']();console['log'](ak(_bcj.g),d),charts['revenue']=new Chart(c,{'type':b['accnd'],'data':{'labels':d['map'](f=>{const al=ak,g=new Date(f[al(0x22d)]);return b[al(0x2a9)](isNaN,g[al(0x249)]())?(console[al(0x338)](al(0x1f1),f[al(_bcg.a)]),al(0x27e)):g['toLocaleDateString'](b['hOKYR'],{'day':'2-digit','month':b['euCHj']});}),'datasets':[{'label':b['rkVTg'],'data':d['map'](f=>f['revenue']),'borderColor':b[ak(0x1cf)],'backgroundColor':b['hjeMT'],'tension':0.4,'fill':!0x0,'pointRadius':0x4,'pointHoverRadius':0x6}]},'options':{'responsive':!0x0,'maintainAspectRatio':!0x1,'plugins':{'legend':{'display':!0x1},'tooltip':{'callbacks':{'label':function(f){const am=ak;return b[am(_bch.a)]('Doanh\x20thu:\x20',b['wmHax'](formatCurrency,f[am(0x1da)]['y']));}}}},'scales':{'y':{'beginAtZero':!0x0,'ticks':{'callback':function(f){const an=ak;return b['kaSwA'](f,0xf4240)?b[an(_bci.a)](b[an(0x356)](f,0xf4240)['toFixed'](0x1),'M'):f>=0x3e8?b['kwqfW'](f,0x3e8)[an(_bci.b)](0x0)+'K':f;},'maxTicksLimit':0x6}}}}});}function renderUserGrowthChart(a){const _bck={a:0x2d3,b:0x28c,c:0x347,d:0x2df},ao=_bB,b=document[ao(_bck.a)](ao(_bck.b))[ao(0x31d)]('2d');charts[ao(0x347)]&&charts[ao(_bck.c)][ao(0x1cb)](),charts[ao(_bck.c)]=new Chart(b,{'type':ao(0x229),'data':{'labels':a[ao(0x233)](c=>new Date(c['date'])['toLocaleDateString']('vi-VN')),'datasets':[{'label':ao(0x1df),'data':a['map'](c=>c[ao(0x331)]),'backgroundColor':ao(_bck.d),'borderRadius':0x4}]},'options':{'responsive':!0x0,'maintainAspectRatio':!0x1,'plugins':{'legend':{'display':!0x1}},'scales':{'y':{'beginAtZero':!0x0,'ticks':{'stepSize':0x1}}}}});}function renderVipDistributionChart(a){const _bcl={a:0x2d3,b:0x2d6,c:0x234,d:0x21e,e:0x378},ap=_bB,b={'aUGRx':'rgb(147,\x2051,\x20234)'},c=document[ap(_bcl.a)](ap(0x2c4))[ap(0x31d)]('2d');charts[ap(_bcl.b)]&&charts['vipDistribution'][ap(0x1cb)]();const d={'1day':'1\x20ngày','3days':ap(0x210),'7days':'7\x20ngày','30days':'30\x20ngày','infinite':ap(0x246)};charts[ap(0x2d6)]=new Chart(c,{'type':'pie','data':{'labels':a[ap(0x233)](f=>d[f[ap(0x209)]]||f[ap(0x209)]),'datasets':[{'data':a['map'](f=>f[ap(0x331)]),'backgroundColor':[ap(0x2df),ap(_bcl.c),ap(_bcl.d),b[ap(0x2b3)],ap(_bcl.e)]}]},'options':{'responsive':!0x0,'maintainAspectRatio':!0x1,'plugins':{'legend':{'position':'bottom','labels':{'boxWidth':0xc,'padding':0xa,'font':{'size':0xb}}}}}});}function renderOrderStatusChart(a){const _bcm={a:0x234,b:0x1c7,c:0x274,d:0x1cb,e:0x36d,f:0x2c5,g:0x255},aq=_bB,b={'dynBd':aq(0x203),'uPbcq':'Đã\x20hủy','cvOQq':aq(_bcm.a),'UDETK':aq(0x227),'GVRsO':aq(_bcm.b)},c=document['getElementById']('orderStatusChart')[aq(0x31d)]('2d');charts['orderStatus']&&charts[aq(_bcm.c)][aq(_bcm.d)](),charts[aq(0x274)]=new Chart(c,{'type':b['dynBd'],'data':{'labels':['Đã\x20thanh\x20toán',aq(0x24d),b[aq(_bcm.e)]],'datasets':[{'data':[a[aq(0x335)],a[aq(0x355)],a[aq(_bcm.f)]],'backgroundColor':[b[aq(0x1d2)],aq(0x21e),b['UDETK']]}]},'options':{'responsive':!0x0,'maintainAspectRatio':!0x1,'plugins':{'legend':{'position':b[aq(_bcm.g)],'labels':{'boxWidth':0xc,'padding':0xa,'font':{'size':0xb}}}}}});}function formatCurrency(a){const _bcn={a:0x2b6},ar=_bB,b={'WecYj':ar(_bcn.a)};return new Intl[(ar(0x36f))](b['WecYj'],{'style':ar(0x317),'currency':'VND'})[ar(0x366)](a);}function renderVIPPlans(){const _bco={a:0x2aa,b:0x1d4,c:0x233,d:0x25f},as=_bB,b={'LpYKA':as(_bco.a)},c=document['getElementById'](b['LpYKA']),{currentPage:d,rowsPerPage:f}=pagination[as(_bco.b)],g=paginateArray(allData[as(0x1d4)],d,f);c[as(0x2af)]=g[as(_bco.c)](h=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22hover:bg-blue-50\x20transition-colors\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20font-semibold\x20text-gray-700\x22\x20data-label=\x22ID\x22>#'+h['id']+as(0x1fc)+h[as(0x306)]+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Tên\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22font-semibold\x20text-gray-900\x22>'+h[as(0x21f)]+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(h[as(0x1f2)]?as(0x245)+h['description']+'</div>':'')+as(0x38f)+h[as(0x2ed)]+as(0x350)+parseFloat(h[as(0x214)])[as(0x359)]('vi-VN')+'đ</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Trạng\x20thái\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22px-2\x20py-1\x20rounded-full\x20text-xs\x20font-semibold\x20'+(h['is_active']?as(0x1e7):'bg-red-100\x20text-red-800')+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(h[as(0x251)]?'✅\x20Active':'❌\x20Disabled')+as(0x322)+h[as(0x2c3)]+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20flex\x20gap-2\x20flex-wrap\x22\x20data-label=\x22Actions\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22openEditPlanModal('+h['id']+')\x22\x20class=\x22text-blue-600\x20hover:text-blue-800\x20font-semibold\x20text-sm\x20transition\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✏️\x20Sửa\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22togglePlanStatus('+h['id']+as(0x1c9)+(h[as(0x251)]?as(0x1de):as(0x373))+as(0x213)+(h[as(0x251)]?as(0x1de):'green')+'-800\x20font-semibold\x20text-sm\x20transition\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(h[as(0x251)]?as(0x2c1):as(0x2e1))+as(0x240)+h[as(0x21f)]+as(0x2f1)+h['id']+as(0x1e8))[as(_bco.d)](''),renderPaginationControls('vipPlans',allData[as(0x1d4)]['length']);}function openCreatePlanModal(){const _bcp={a:0x33e,b:0x282,c:0x292,d:0x2d3,e:0x2fa,f:0x318,g:0x2eb},at=_bB,a={'zwRsh':at(0x2fa),'eIRMH':'planName','qLicc':at(_bcp.a),'XItUr':'planModal'};document['getElementById']('planModalTitle')[at(_bcp.b)]='➕\x20Thêm\x20gói\x20VIP\x20mới',document[at(0x2d3)](at(0x29a))[at(_bcp.c)]='',document[at(0x2d3)](a[at(0x2b0)])[at(_bcp.c)]='',document[at(_bcp.d)](at(_bcp.e))['disabled']=!0x1,document[at(0x2d3)](a['eIRMH'])['value']='',document[at(0x2d3)](at(0x202))['value']='',document['getElementById'](a['qLicc'])['value']='',document['getElementById'](at(0x344))[at(0x292)]='0',document[at(_bcp.d)]('planDescription')['value']='',document['getElementById'](a[at(0x20c)])[at(_bcp.f)][at(_bcp.g)]('hidden');}function openEditPlanModal(a){const _bcq={a:0x29a,b:0x282,c:0x2d3,d:0x292,e:0x292,f:0x202,g:0x292,h:0x214,i:0x292,j:0x1f2,k:0x318,l:0x2eb},au=_bB,b={'MKJIb':au(_bcq.a)},c=allData[au(0x1d4)]['find'](d=>d['id']===a);c&&(document['getElementById'](au(0x21a))[au(_bcq.b)]=au(0x375),document[au(_bcq.c)](b['MKJIb'])[au(_bcq.d)]=c['id'],document['getElementById'](au(0x2fa))[au(_bcq.e)]=c['plan_key'],document[au(_bcq.c)]('planKey')['disabled']=!0x0,document[au(_bcq.c)]('planName')['value']=c[au(0x21f)],document[au(0x2d3)](au(_bcq.f))[au(_bcq.g)]=c[au(0x2ed)],document[au(_bcq.c)]('planPrice')[au(0x292)]=c[au(_bcq.h)],document[au(_bcq.c)](au(0x344))[au(_bcq.i)]=c[au(0x2c3)],document['getElementById']('planDescription')['value']=c[au(_bcq.j)]||'',document[au(0x2d3)]('planModal')[au(_bcq.k)][au(_bcq.l)]('hidden'));}function closePlanModal(){const _bcr={a:0x2d3,b:0x2fd,c:0x382},av=_bB,a={'VyAbz':av(0x1f6)};document[av(_bcr.a)](av(_bcr.b))[av(0x318)][av(0x2bf)](a[av(_bcr.c)]);}async function submitPlan(){const _bcv={a:0x344,b:0x296,c:0x338,d:0x2ab,e:0x2fa,f:0x292,g:0x2d3,h:0x226,i:0x2fb,j:0x292,k:0x1c0,l:0x27d,m:0x339,n:0x2bd,o:0x2e2,p:0x1d4,q:0x2b9,r:0x2f5,s:0x287,t:0x338,u:0x2af},aw=_bB,b={'Yekqe':aw(0x33e),'CKphJ':aw(_bcv.a),'MhIpx':aw(_bcv.b),'vIGef':aw(_bcv.c),'CevIl':aw(_bcv.d),'JclSJ':'application/json','VNnji':aw(0x1f9),'aYeNC':aw(0x2bd),'axTPs':function(w,x){return w(x);},'QoGog':function(w,x,y){return w(x,y);},'stPil':'Có\x20lỗi\x20xảy\x20ra!','Biqil':function(w,z){return w+z;}},f=document[aw(0x2d3)]('planId')[aw(0x292)],g=document['getElementById'](aw(_bcv.e))[aw(_bcv.f)]['trim'](),h=document[aw(_bcv.g)](aw(_bcv.h))[aw(0x292)]['trim'](),j=parseInt(document[aw(_bcv.g)](aw(0x202))[aw(0x292)]),k=parseFloat(document[aw(0x2d3)](b[aw(_bcv.i)])[aw(_bcv.j)]),m=parseInt(document[aw(0x2d3)](b[aw(_bcv.k)])[aw(_bcv.f)])||0x0,p=document['getElementById'](aw(0x35d))['value'][aw(0x1d8)]();if(!g||!h||!j||!k){showToast(b['MhIpx'],b['vIGef']);return;}if(!/^[a-z0-9_]+$/['test'](g)){showToast('Plan\x20Key\x20chỉ\x20được\x20chứa\x20chữ\x20thường,\x20số\x20và\x20gạch\x20dưới!',b['vIGef']);return;}const q=document['getElementById'](b['CevIl']),v=q[aw(0x2af)];q['disabled']=!0x0,q[aw(0x2af)]=aw(0x208);try{const w=f?'updateVIPPlan':aw(_bcv.l),x={'planKey':g,'planName':h,'durationDays':j,'price':k,'sortOrder':m,'description':p};f&&(x['id']=parseInt(f));const y=await(await fetch(API_URL,{'method':aw(0x1ec),'headers':{'Content-Type':b['JclSJ']},'body':JSON['stringify']({'action':w,'payload':x})}))[aw(_bcv.m)]();y[aw(_bcv.n)]?(showToast(y['message']||(f?b['VNnji']:aw(_bcv.o)),b[aw(0x2cc)]),closePlanModal(),await b['axTPs'](refreshData,aw(_bcv.p))):b['QoGog'](showToast,y[aw(_bcv.q)]||b[aw(_bcv.r)],'error');}catch(z){showToast(b[aw(0x2a4)](aw(_bcv.s),z[aw(0x2b9)]),aw(_bcv.t));}finally{q[aw(0x336)]=!0x1,q[aw(_bcv.u)]=v;}}async function deletePlan(a){const _bcz={a:0x304,b:0x346,c:0x334,d:0x1d9,e:0x2bd,f:0x1e9,g:0x216,h:0x338,i:0x2b9,j:0x338},ax=_bB,b={'qmMiD':function(c,d,f){return c(d,f);},'DJQYw':'POST','fbhAI':'deleteVIPPlan','SEmJT':function(c,d,f){return c(d,f);},'PjXYG':ax(0x22f),'QeBeM':function(c,d,f){return c(d,f);},'hySbR':ax(0x287)};try{const c=await(await b[ax(0x20b)](fetch,API_URL,{'method':b[ax(_bcz.a)],'headers':{'Content-Type':ax(0x28a)},'body':JSON[ax(_bcz.b)]({'action':b[ax(_bcz.c)],'payload':{'id':a}})}))['json']();c['success']?(showToast(ax(_bcz.d),ax(_bcz.e)),await refreshData(ax(0x1d4))):b[ax(_bcz.f)](showToast,c['message']||b[ax(_bcz.g)],ax(_bcz.h));}catch(d){b['QeBeM'](showToast,b[ax(0x321)]+d[ax(_bcz.i)],ax(_bcz.j));}}async function togglePlanStatus(a){const _bcC={a:0x2fe,b:0x346,c:0x305,d:0x1eb,e:0x2bd,f:0x352},ay=_bB,b={'gjFIo':'POST','ilnvI':'application/json','gOPtv':function(c,d,f){return c(d,f);},'vynXP':function(c,d,f){return c(d,f);}};try{const c=await(await fetch(API_URL,{'method':b[ay(_bcC.a)],'headers':{'Content-Type':b['ilnvI']},'body':JSON[ay(_bcC.b)]({'action':ay(0x30d),'payload':{'id':a}})}))['json']();c[ay(0x2bd)]?(b[ay(_bcC.c)](showToast,c['message']||ay(_bcC.d),ay(_bcC.e)),await refreshData(ay(0x1d4))):b[ay(_bcC.f)](showToast,c[ay(0x2b9)]||'Có\x20lỗi\x20xảy\x20ra!','error');}catch(d){showToast('Lỗi\x20kết\x20nối:\x20'+d['message'],'error');}}
+const API_URL = '/api/admin-handler';
+let currentUser = null;
+let allData = {
+    users: [],
+    subscriptions: [],
+    orders: [],
+    transactions: [],
+    vipPlans: [],
+};
+
+// Pagination state
+let pagination = {
+    users: { currentPage: 1, rowsPerPage: 20 },
+    vipPlans: { currentPage: 1, rowsPerPage: 20 },
+    subscriptions: { currentPage: 1, rowsPerPage: 20 },
+    orders: { currentPage: 1, rowsPerPage: 20 },
+    transactions: { currentPage: 1, rowsPerPage: 20 },
+};
+
+// Dashboard chart instances
+let charts = {
+    revenue: null,
+    userGrowth: null,
+    vipDistribution: null,
+    orderStatus: null
+};
+
+// Disable Chart.js animations globally for better performance
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.animation = false;
+    Chart.defaults.animations = { colors: false, x: false };
+    Chart.defaults.transitions = { active: { animation: { duration: 0 } } };
+    Chart.defaults.hover.animationDuration = 0;
+    Chart.defaults.plugins.tooltip.animation = false;
+}
+
+// Login functionality
+async function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const loginBtn = document.querySelector('#loginScreen button');
+    const errorDiv = document.getElementById('loginError');
+
+    if (!username || !password) {
+        showToast('Vui lòng nhập đầy đủ thông tin!', 'error');
+        errorDiv.classList.remove('hidden');
+        errorDiv.textContent = 'Vui lòng nhập đầy đủ thông tin!';
+        return;
+    }
+
+    // Show loading
+    const originalHTML = loginBtn.innerHTML;
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<div class="loader"></div> Đang đăng nhập...';
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'login', payload: { username, password } })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentUser = data.admin;
+
+            // Save session to localStorage
+            localStorage.setItem('adminSession', JSON.stringify({
+                username: currentUser.username,
+                password: password, // Store hashed password for auto-login
+                loginTime: new Date().getTime()
+            }));
+
+            document.getElementById('adminUsername').textContent = currentUser.username;
+            showToast('Đăng nhập thành công!', 'success');
+
+            // Direct transition
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+
+            await refreshData('dashboard');
+        } else {
+            showToast(data.message || 'Đăng nhập thất bại!', 'error');
+            errorDiv.textContent = data.message || 'Đăng nhập thất bại!';
+            errorDiv.classList.remove('hidden');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+        errorDiv.textContent = 'Lỗi kết nối: ' + error.message;
+        errorDiv.classList.remove('hidden');
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = originalHTML;
+    }
+}
+
+// Auto-login on page load
+async function autoLogin() {
+    const session = localStorage.getItem('adminSession');
+    if (!session) return false;
+
+    try {
+        const { username, password, loginTime } = JSON.parse(session);
+
+        // Session expires after 24 hours
+        const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+        if (new Date().getTime() - loginTime > SESSION_DURATION) {
+            localStorage.removeItem('adminSession');
+            return false;
+        }
+
+        // Try to login with saved credentials
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'login', payload: { username, password } })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentUser = data.admin;
+            document.getElementById('adminUsername').textContent = currentUser.username;
+
+            // Update login time
+            localStorage.setItem('adminSession', JSON.stringify({
+                username,
+                password,
+                loginTime: new Date().getTime()
+            }));
+
+            // Show dashboard
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+
+            await refreshData('dashboard');
+            return true;
+        } else {
+            localStorage.removeItem('adminSession');
+            return false;
+        }
+    } catch (error) {
+        console.error('Auto-login failed:', error);
+        localStorage.removeItem('adminSession');
+        return false;
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Remove existing toast if any
+    const existingToast = document.getElementById('inPageToast');
+    if (existingToast) existingToast.remove();
+
+    // Create in-page toast (not popup)
+    const toast = document.createElement('div');
+    toast.id = 'inPageToast';
+    toast.className = `fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 ${type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+        }`;
+
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+    toast.innerHTML = `
+        <span class="text-lg">${icon}</span>
+        <span class="font-medium">${message}</span>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Pagination helper functions
+function paginateArray(array, page, rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return array.slice(start, end);
+}
+
+function getTotalPages(totalItems, rowsPerPage) {
+    return Math.ceil(totalItems / rowsPerPage);
+}
+
+function changePage(type, page) {
+    pagination[type].currentPage = page;
+    renderTable(type);
+}
+
+function renderPaginationControls(type, totalItems) {
+    const container = document.getElementById(`${type}Pagination`);
+    if (!container) return;
+
+    const { currentPage, rowsPerPage } = pagination[type];
+    const totalPages = getTotalPages(totalItems, rowsPerPage);
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, totalItems);
+
+    container.innerHTML = `
+        <div class="flex items-center justify-between bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button 
+                    onclick="changePage('${type}', ${currentPage - 1})" 
+                    ${currentPage === 1 ? 'disabled' : ''}
+                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Trước
+                </button>
+                <button 
+                    onclick="changePage('${type}', ${currentPage + 1})" 
+                    ${currentPage === totalPages ? 'disabled' : ''}
+                    class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Sau
+                </button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Hiển thị <span class="font-medium">${start}</span> đến <span class="font-medium">${end}</span> trong tổng số <span class="font-medium">${totalItems}</span> kết quả
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button 
+                            onclick="changePage('${type}', ${currentPage - 1})" 
+                            ${currentPage === 1 ? 'disabled' : ''}
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="sr-only">Trước</span>
+                            ←
+                        </button>
+                        ${generatePageNumbers(type, currentPage, totalPages)}
+                        <button 
+                            onclick="changePage('${type}', ${currentPage + 1})" 
+                            ${currentPage === totalPages ? 'disabled' : ''}
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="sr-only">Sau</span>
+                            →
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generatePageNumbers(type, currentPage, totalPages) {
+    let pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= maxVisible) {
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(i);
+        }
+    } else {
+        if (currentPage <= 3) {
+            pages = [1, 2, 3, 4, '...', totalPages];
+        } else if (currentPage >= totalPages - 2) {
+            pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+        } else {
+            pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+        }
+    }
+
+    return pages.map(page => {
+        if (page === '...') {
+            return '<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>';
+        }
+        const isActive = page === currentPage;
+        return `
+            <button 
+                onclick="changePage('${type}', ${page})" 
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${isActive
+                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }">
+                ${page}
+            </button>
+        `;
+    }).join('');
+}
+
+function logout() {
+    currentUser = null;
+
+    // Clear session
+    localStorage.removeItem('adminSession');
+
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('adminDashboard').classList.add('hidden');
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('loginError').classList.add('hidden');
+
+    showToast('Đã đăng xuất thành công', 'success');
+}
+
+// Tab functionality
+function switchTab(tab) {
+    // Update tab buttons (desktop)
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('text-gray-600');
+    });
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+    // Activate selected tab (desktop)
+    const tabBtn = document.querySelector(`[data-tab="${tab}"]`);
+    if (tabBtn) {
+        tabBtn.classList.add('tab-active');
+        tabBtn.classList.remove('text-gray-600');
+    }
+
+    // Update mobile dropdown
+    const mobileSelect = document.getElementById('mobileTabSelect');
+    if (mobileSelect) {
+        mobileSelect.value = tab;
+    }
+
+    // Show selected content
+    document.getElementById(`${tab}Tab`).classList.remove('hidden');
+
+    // Load data based on tab
+    refreshData(tab);
+}
+
+// Helper function to filter and highlight an order by ID
+function filterOrderById(orderId) {
+    // Switch to orders tab
+    switchTab('orders');
+
+    // Wait for tab to load, then filter
+    setTimeout(() => {
+        const ordersSearch = document.getElementById('ordersSearch');
+        if (ordersSearch) {
+            // Clear filter and search for the order ID
+            document.getElementById('ordersFilter').value = '';
+            ordersSearch.value = `#${orderId}`;
+            renderOrders();
+
+            // Scroll to the orders section
+            document.getElementById('ordersTab').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 300);
+}
+
+// Helper function to filter and highlight an order by order code
+function filterOrderByCode(orderCode) {
+    // Switch to orders tab
+    switchTab('orders');
+
+    // Wait for tab to load, then filter
+    setTimeout(() => {
+        const ordersSearch = document.getElementById('ordersSearch');
+        if (ordersSearch) {
+            // Clear filter and search for the order code
+            document.getElementById('ordersFilter').value = '';
+            ordersSearch.value = orderCode;
+            renderOrders();
+
+            // Scroll to the orders section
+            document.getElementById('ordersTab').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 300);
+}
+
+// Data fetching
+async function refreshData(type) {
+    if (type === 'dashboard') {
+        await loadDashboard();
+        return;
+    }
+
+    // Special mapping for vipPlans action
+    let action = type === 'vipPlans' ? 'getAllVIPPlans' : `getAll${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    const refreshBtn = document.querySelector(`#${type}Tab button[onclick*="refreshData"]`);
+
+    if (refreshBtn) {
+        const originalHTML = refreshBtn.innerHTML;
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<div class="loader"></div> Đang tải...';
+    }
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            // Map response data key
+            const dataKey = type === 'vipPlans' ? 'plans' : type;
+            allData[type] = data[dataKey] || [];
+            renderTable(type);
+        } else {
+            console.error(`Error fetching ${type}:`, data.message);
+            showToast(`Lỗi tải dữ liệu: ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error(`Error fetching ${type}:`, error);
+        showToast(`Lỗi kết nối: ${error.message}`, 'error');
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = refreshBtn.getAttribute('data-original-html') || '🔄 Refresh';
+            if (!refreshBtn.getAttribute('data-original-html')) {
+                refreshBtn.setAttribute('data-original-html', '🔄 Refresh');
+            }
+        }
+    }
+}
+
+// Render functions
+function renderTable(type) {
+    switch (type) {
+        case 'users': renderUsers(); break;
+        case 'vipPlans': renderVIPPlans(); break;
+        case 'subscriptions': renderSubscriptions(); break;
+        case 'orders': renderOrders(); break;
+        case 'transactions': renderTransactions(); break;
+    }
+}
+
+function renderUsers() {
+    const tbody = document.getElementById('usersTableBody');
+    const searchTerm = document.getElementById('usersSearch').value.toLowerCase();
+
+    const filteredUsers = allData.users.filter(user =>
+        user.user_id.toLowerCase().includes(searchTerm)
+    );
+
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.users;
+    const paginatedUsers = paginateArray(filteredUsers, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedUsers.map(user => {
+        const isVip = user.is_vip;
+        const expiryDate = user.expiry_date ? new Date(user.expiry_date) : null;
+        const isExpired = expiryDate && expiryDate < new Date();
+
+        return `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${user.id || ''}</td>
+            <td class="px-6 py-4" data-label="User Info">
+                <div class="font-semibold text-gray-900">${user.user_id}</div>
+                ${user.username ? `<div class="text-xs text-gray-500 font-mono mt-0.5">@${user.username}</div>` : ''}
+                ${user.full_name ? `<div class="text-sm text-gray-600 mt-0.5">${user.full_name}</div>` : ''}
+                ${user.email ? `<div class="text-sm text-gray-500 mt-0.5">📧 ${user.email}</div>` : ''}
+            </td>
+            <td class="px-6 py-4" data-label="Active">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    ${user.is_active ? '✅ Active' : '❌ Inactive'}
+                </span>
+            </td>
+            <td class="px-6 py-4" data-label="VIP Status">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${isVip && !isExpired ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    ${isVip && !isExpired ? '✅ VIP Active' : '❌ No VIP'}
+                </span>
+            </td>
+            <td class="px-6 py-4" data-label="Expiry">
+                ${expiryDate ? `
+                    <div class="${isExpired ? 'text-red-600' : 'text-green-600'} font-semibold text-sm">
+                        ${formatDateTime(expiryDate)}
+                    </div>
+                ` : '<span class="text-gray-400 text-sm">N/A</span>'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Last Login">
+                ${user.last_login ? formatDateTime(user.last_login) : '<span class="text-gray-400">N/A</span>'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${user.created_at ? formatDateTime(user.created_at) : 'N/A'}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Updated">${user.updated_at ? formatDateTime(user.updated_at) : 'N/A'}</td>
+            <td class="px-6 py-4 flex gap-2" data-label="Actions">
+                <button onclick="openAddVIPModal('${user.user_id}')" class="text-blue-600 hover:text-blue-800 font-semibold text-sm transition">
+                    ➕ Thêm VIP
+                </button>
+                <button onclick="showConfirmModal('Xóa User', 'Bạn có chắc muốn xóa user này không? Mọi dữ liệu liên quan sẽ bị xóa.', () => deleteUser('${user.user_id}'))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
+                    🗑️ Xóa
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+
+    // Update stats
+    const totalUsers = filteredUsers.length;
+    const vipUsers = filteredUsers.filter(u => u.is_vip && new Date(u.expiry_date) > new Date()).length;
+    const expiredUsers = filteredUsers.filter(u => u.expiry_date && new Date(u.expiry_date) < new Date()).length;
+
+    document.getElementById('usersStats').innerHTML = `
+        <div class="bg-blue-50 p-4 rounded-lg text-center">
+            <div class="text-2xl font-bold text-blue-600">${totalUsers}</div>
+            <div class="text-sm text-gray-600">Tổng Users</div>
+        </div>
+        <div class="bg-green-50 p-4 rounded-lg text-center">
+            <div class="text-2xl font-bold text-green-600">${vipUsers}</div>
+            <div class="text-sm text-gray-600">VIP Active</div>
+        </div>
+        <div class="bg-red-50 p-4 rounded-lg text-center">
+            <div class="text-2xl font-bold text-red-600">${expiredUsers}</div>
+            <div class="text-sm text-gray-600">VIP Expired</div>
+        </div>
+    `;
+
+    // Render pagination controls
+    renderPaginationControls('users', totalUsers);
+}
+
+function renderSubscriptions() {
+    const tbody = document.getElementById('subscriptionsTableBody');
+    const searchTerm = document.getElementById('subscriptionsSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('subscriptionsFilter').value;
+
+    const filteredSubs = allData.subscriptions.filter(sub => {
+        const matchesSearch = (sub.user_id || '').toLowerCase().includes(searchTerm) ||
+            (sub.plan_type || '').toLowerCase().includes(searchTerm);
+        const isActive = new Date(sub.expiry_date) > new Date();
+        const matchesStatus = !statusFilter ||
+            (statusFilter === 'active' && isActive) ||
+            (statusFilter === 'expired' && !isActive);
+        return matchesSearch && matchesStatus;
+    });
+
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.subscriptions;
+    const paginatedSubs = paginateArray(filteredSubs, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedSubs.map(sub => {
+        const isActive = new Date(sub.expiry_date) > new Date();
+        const source = sub.created_by_admin
+            ? `👨‍💼 Admin (${sub.created_by_admin})`
+            : `👤 User`;
+
+        // Show order code if user purchased, or "Admin" if admin added
+        const orderDisplay = sub.order_code
+            ? `<a href="#orders" onclick="filterOrderByCode('${sub.order_code}')" class="text-blue-600 hover:text-blue-800 font-semibold font-mono text-sm transition">${sub.order_code}</a>`
+            : '<span class="text-purple-600 font-semibold text-sm">👨‍💼 Admin</span>';
+
+        return `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${sub.id}</td>
+            <td class="px-6 py-4" data-label="User">
+                <div class="font-semibold text-gray-900">${sub.user_id}</div>
+                ${sub.plan_name ? `<div class="text-sm text-gray-600 mt-0.5">${sub.plan_name}</div>` : ''}
+            </td>
+            <td class="px-6 py-4" data-label="Plan ID">
+                <span class="text-xs text-gray-500 font-mono">${sub.plan_id || 'N/A'}</span>
+            </td>
+            <td class="px-6 py-4" data-label="Plan">
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">${sub.plan_type}</span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Source">
+                ${source}
+            </td>
+            <td class="px-6 py-4" data-label="Order">${orderDisplay}</td>
+            <td class="px-6 py-4" data-label="Status">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${isActive ? '✅ Active' : '❌ Expired'}
+                </span>
+            </td>
+            <td class="px-6 py-4" data-label="Expiry">
+                <div class="${isActive ? 'text-green-600' : 'text-red-600'} font-semibold text-sm">
+                    ${formatDateTime(sub.expiry_date)}
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${formatDateTime(sub.created_at)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Updated">${sub.updated_at ? formatDateTime(sub.updated_at) : 'N/A'}</td>
+            <td class="px-6 py-4" data-label="Actions">
+                <button onclick="showConfirmModal('Xóa VIP Subscription', 'Bạn có chắc muốn xóa subscription này không?', () => deleteSubscription(${sub.id}))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
+                    🗑️ Xóa
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+
+    // Render pagination controls
+    renderPaginationControls('subscriptions', filteredSubs.length);
+}
+
+function renderOrders() {
+    const tbody = document.getElementById('ordersTableBody');
+    const searchTerm = document.getElementById('ordersSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('ordersFilter').value;
+
+    const filteredOrders = allData.orders.filter(order => {
+        // user_id is NULL for orders whose owner was deleted (the delete-user flow keeps
+        // the payment/order record and only nulls the link) — must not crash the filter.
+        const matchesSearch = (order.user_id || '').toLowerCase().includes(searchTerm) ||
+            (order.plan_name || '').toLowerCase().includes(searchTerm) ||
+            (order.order_code && order.order_code.toLowerCase().includes(searchTerm));
+        const matchesStatus = !statusFilter || order.payment_status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.orders;
+    const paginatedOrders = paginateArray(filteredOrders, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedOrders.map(order => {
+        const isCancelled = order.cancelled_at !== null && order.cancelled_at !== undefined;
+        const isPaid = order.payment_status === 'Paid';
+
+        return `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${order.id}</td>
+            <td class="px-6 py-4" data-label="Order Code">
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-mono font-bold">${order.order_code || 'N/A'}</span>
+            </td>
+            <td class="px-6 py-4" data-label="User">
+                <div class="font-semibold text-gray-900">${order.user_id || '<span class="text-gray-400 font-normal italic">(user đã xóa)</span>'}</div>
+            </td>
+            <td class="px-6 py-4" data-label="Plan">
+                <div>
+                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">${order.plan_name}</span>
+                    ${order.plan_type ? `<div class="text-xs text-gray-500 mt-1">📋 ${order.plan_type}</div>` : ''}
+                    ${order.gateway ? `<div class="text-sm text-gray-600 mt-1">💳 ${order.gateway}</div>` : ''}
+                </div>
+            </td>
+            <td class="px-6 py-4 font-bold text-green-600 text-sm" data-label="Amount">${parseFloat(order.amount).toLocaleString('vi-VN')}đ</td>
+            <td class="px-6 py-4" data-label="Status">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${isCancelled ? 'bg-red-100 text-red-800' :
+                isPaid ? 'bg-green-100 text-green-800' :
+                    'bg-yellow-100 text-yellow-800'
+            }">
+                    ${isCancelled ? '❌ Cancelled' : isPaid ? '✅ Paid' : '⏳ Unpaid'}
+                </span>
+            </td>
+            <td class="px-6 py-4" data-label="Transaction Ref">
+                <span class="text-xs font-mono text-gray-600">${order.transaction_ref || 'N/A'}</span>
+            </td>
+            <td class="px-6 py-4" data-label="Paid At">
+                ${order.paid_at ? `<div class="text-green-600 font-semibold text-sm">${formatDateTime(order.paid_at)}</div>` : '<span class="text-gray-400 text-sm">N/A</span>'}
+            </td>
+            <td class="px-6 py-4" data-label="Cancelled At">
+                ${order.cancelled_at ? `<div class="text-red-600 font-semibold text-sm">${formatDateTime(order.cancelled_at)}</div>` : '<span class="text-gray-400 text-sm">N/A</span>'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Created">${formatDateTime(order.created_at)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Updated">${order.updated_at ? formatDateTime(order.updated_at) : 'N/A'}</td>
+        </tr>
+    `}).join('');
+
+    // Render pagination controls
+    renderPaginationControls('orders', filteredOrders.length);
+}
+
+function renderTransactions() {
+    const tbody = document.getElementById('transactionsTableBody');
+    const searchTerm = document.getElementById('transactionsSearch').value.toLowerCase();
+    const amountFilter = document.getElementById('amountFilter').value;
+
+    const filteredTrans = allData.transactions.filter(trans => {
+        const matchesSearch = trans.reference_number?.toLowerCase().includes(searchTerm) ||
+            trans.transaction_content?.toLowerCase().includes(searchTerm);
+        const matchesAmount = !amountFilter || parseFloat(trans.amount_in) === parseFloat(amountFilter);
+        return matchesSearch && matchesAmount;
+    });
+
+    // Paginate the filtered results
+    const { currentPage, rowsPerPage } = pagination.transactions;
+    const paginatedTrans = paginateArray(filteredTrans, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedTrans.map(trans => {
+        const orderLink = trans.order_code
+            ? `<a href="#orders" onclick="filterOrderByCode('${trans.order_code}')" class="text-blue-600 hover:text-blue-800 font-semibold font-mono text-sm transition">${trans.order_code}</a>`
+            : '<span class="text-gray-400 text-sm">N/A</span>';
+
+        return `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${trans.id}</td>
+            <td class="px-6 py-4" data-label="Order">${orderLink}</td>
+            <td class="px-6 py-4" data-label="Gateway">
+                <span class="px-2 py-1 rounded bg-purple-100 text-purple-800 text-xs font-semibold">💳 ${trans.gateway}</span>
+            </td>
+            <td class="px-6 py-4" data-label="Account">
+                <div class="text-sm text-gray-700">${trans.account_number || 'N/A'}</div>
+                ${trans.sub_account ? `<div class="text-xs text-gray-500 mt-0.5">Sub: ${trans.sub_account}</div>` : ''}
+            </td>
+            <td class="px-6 py-4 font-bold text-green-600" data-label="Amount In">
+                <div class="text-base">${parseFloat(trans.amount_in).toLocaleString('vi-VN')}đ</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Amount Out">
+                ${trans.amount_out ? `${parseFloat(trans.amount_out).toLocaleString('vi-VN')}đ` : '0đ'}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600" data-label="Accumulated">
+                ${trans.accumulated ? `${parseFloat(trans.accumulated).toLocaleString('vi-VN')}đ` : 'N/A'}
+            </td>
+            <td class="px-6 py-4" data-label="Code">
+                <span class="text-xs font-mono text-gray-600">${trans.code || 'N/A'}</span>
+            </td>
+            <td class="px-6 py-4" data-label="Content">
+                <div class="max-w-xs truncate text-sm text-gray-700" title="${trans.transaction_content || 'N/A'}">${trans.transaction_content || 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4 text-xs font-mono bg-gray-50 text-gray-600" data-label="Reference">${trans.reference_number || 'N/A'}</td>
+            <td class="px-6 py-4" data-label="Body">
+                <div class="max-w-xs truncate text-xs text-gray-500" title="${trans.body || 'N/A'}">${trans.body || 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4" data-label="Txn Date">
+                <div class="text-sm text-gray-600">${trans.transaction_date ? formatDateTime(trans.transaction_date) : 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4" data-label="Received">
+                <div class="text-sm text-gray-600">${formatDateTime(trans.received_at)}</div>
+            </td>
+        </tr>
+    `}).join('');
+
+    // Render pagination controls
+    renderPaginationControls('transactions', filteredTrans.length);
+}
+
+// VIP Management
+async function openAddVIPModal(userId = '') {
+    document.getElementById('vipUserId').value = userId;
+
+    // Load VIP plans from database and populate dropdown
+    await loadVIPPlansForModal();
+
+    document.getElementById('addVIPModal').classList.remove('hidden');
+}
+
+// Load VIP plans dynamically for the modal (100% from database)
+// Admin can add any plan (active or inactive), is_active only affects user purchases
+async function loadVIPPlansForModal() {
+    const selectElement = document.getElementById('vipPlanType');
+
+    try {
+        // Show loading state
+        selectElement.innerHTML = '<option value="">Đang tải gói VIP...</option>';
+        selectElement.disabled = true;
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'getAllVIPPlans' })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.plans) {
+            // Clear loading state
+            selectElement.innerHTML = '';
+
+            // Sort plans by sort_order (Admin can see ALL plans, not just active ones)
+            const sortedPlans = data.plans
+                .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+            // Check if we have any plans at all
+            if (sortedPlans.length === 0) {
+                selectElement.innerHTML = '<option value="">Chưa có gói VIP nào trong hệ thống</option>';
+                showToast('Chưa có gói VIP nào. Vui lòng tạo gói VIP trong tab VIP Plans', 'warning');
+                return;
+            }
+
+            // Add ALL plans from database (100% from database, no hardcoded options)
+            // Admin can add any plan regardless of is_active status
+            sortedPlans.forEach(plan => {
+                const option = document.createElement('option');
+                option.value = plan.plan_key;
+
+                // Format: "Plan Name (X days) - Price"
+                const daysText = plan.duration_days === 36500
+                    ? 'Vĩnh viễn'
+                    : `${plan.duration_days} ngày`;
+
+                // Show status with emoji only (no text)
+                const statusIcon = plan.is_active === 1 ? '✅' : '🔴';
+
+                option.textContent = `${statusIcon} ${plan.plan_name} (${daysText}) - ${parseFloat(plan.price).toLocaleString('vi-VN')}đ`;
+
+                // Store metadata for potential use
+                option.setAttribute('data-duration', plan.duration_days);
+                option.setAttribute('data-price', plan.price);
+                option.setAttribute('data-active', plan.is_active);
+
+                selectElement.appendChild(option);
+            });
+
+            selectElement.disabled = false;
+        } else {
+            selectElement.innerHTML = '<option value="">Lỗi tải dữ liệu</option>';
+            showToast('Không thể tải danh sách gói VIP từ database', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading VIP plans:', error);
+        selectElement.innerHTML = '<option value="">Lỗi kết nối</option>';
+        showToast('Lỗi kết nối đến server', 'error');
+    }
+}
+
+function closeAddVIPModal() {
+    document.getElementById('addVIPModal').classList.add('hidden');
+}
+
+async function submitAddVIP() {
+    const userId = document.getElementById('vipUserId').value.trim();
+    const planType = document.getElementById('vipPlanType').value;
+    const submitBtn = document.getElementById('submitVIPBtn');
+
+    if (!userId) {
+        showToast('Vui lòng nhập User ID!', 'error');
+        return;
+    }
+
+    const originalHTML = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<div class="loader"></div> Đang xử lý...';
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'addVIPSubscription',
+                payload: { userId, planType }
+            })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Đã thêm VIP thành công!', 'success');
+            closeAddVIPModal();
+            await Promise.all([refreshData('users'), refreshData('subscriptions')]);
+        } else {
+            showToast('Lỗi: ' + data.message, 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHTML;
+    }
+}
+
+// Format datetime to UTC+7
+function formatDateTime(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleString('vi-VN', { timeZone: 'Asia/Bangkok' });
+}
+
+// Confirm Modal Functions
+function showConfirmModal(title, message, onConfirm) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmActionBtn').onclick = () => {
+        closeConfirmModal();
+        onConfirm();
+    };
+    document.getElementById('confirmModal').classList.remove('hidden');
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+}
+
+async function deleteUser(userId) {
+    const deleteBtn = document.querySelector(`button[onclick*="deleteUser('${userId}')"]`);
+    const originalHTML = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<div class="loader"></div>';
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'deleteUser',
+                payload: { userId }
+            })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Đã xóa user thành công!', 'success');
+            await Promise.all([refreshData('users'), refreshData('subscriptions')]);
+        } else {
+            showToast('Lỗi: ' + data.message, 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalHTML;
+    }
+}
+
+async function deleteSubscription(subId) {
+    const deleteBtn = document.querySelector(`button[onclick*="deleteSubscription(${subId})"]`);
+    const originalHTML = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<div class="loader"></div>';
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'deleteSubscription',
+                payload: { subscriptionId: subId }
+            })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Đã xóa subscription!', 'success');
+            await Promise.all([refreshData('subscriptions'), refreshData('users')]);
+        } else {
+            showToast('Lỗi: ' + data.message, 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    } finally {
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalHTML;
+    }
+}
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', async function () {
+    // Try auto-login first
+    const loginSuccess = await autoLogin();
+
+    if (!loginSuccess) {
+        // Show login screen if auto-login failed
+        document.getElementById('loginScreen').classList.remove('hidden');
+    }
+
+    // Add search event listeners
+    const searchInputs = ['usersSearch', 'subscriptionsSearch', 'ordersSearch', 'transactionsSearch', 'logsSearch'];
+    const filters = ['subscriptionsFilter', 'ordersFilter', 'logsFilter', 'amountFilter'];
+
+    searchInputs.forEach(inputId => {
+        const element = document.getElementById(inputId);
+        if (element) {
+            element.addEventListener('input', debounce(() => {
+                const tabName = inputId.replace('Search', '');
+                renderTable(tabName);
+            }, 300));
+        }
+    });
+
+    filters.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.addEventListener('change', () => {
+                let tabName = filterId.replace('Filter', '');
+                if (filterId === 'amountFilter') tabName = 'transactions';
+                renderTable(tabName);
+            });
+        }
+    });
+
+    // Login on Enter key
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    }
+});
+
+// Utility function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// ===== DASHBOARD FUNCTIONS =====
+async function loadDashboard() {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'getDashboardStats' })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const stats = data.stats;
+
+            // Debug: Log revenue data
+            console.log('📊 Revenue data:', stats.revenueByDate);
+            console.log('👥 User growth:', stats.userGrowth);
+            console.log('⭐ VIP distribution:', stats.vipDistribution);
+
+            // Normalize field names if backend returns payment_date instead of date
+            if (stats.revenueByDate && stats.revenueByDate.length > 0) {
+                stats.revenueByDate = stats.revenueByDate.map(item => ({
+                    date: item.date || item.payment_date,
+                    revenue: item.revenue || item.daily_revenue
+                }));
+                console.log('✅ Normalized revenue data:', stats.revenueByDate);
+            }
+
+            // Update KPI cards
+            document.getElementById('totalUsers').textContent = stats.totalUsers;
+            document.getElementById('vipUsers').textContent = stats.vipUsers;
+            document.getElementById('totalRevenue').textContent = formatCurrency(stats.totalRevenue);
+            document.getElementById('totalOrders').textContent = stats.orders.total;
+
+            // Render charts
+            renderRevenueChart(stats.revenueByDate);
+            renderUserGrowthChart(stats.userGrowth);
+            renderVipDistributionChart(stats.vipDistribution);
+            renderOrderStatusChart(stats.orders);
+        }
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        showToast('Lỗi khi tải dashboard!', 'error');
+    }
+}
+
+// Revenue Chart
+function renderRevenueChart(data) {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+
+    if (charts.revenue) charts.revenue.destroy();
+
+    // Handle empty data
+    if (!data || data.length === 0) {
+        charts.revenue = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Chưa có dữ liệu'],
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: [0],
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        return;
+    }
+
+    // Normalize data and reverse to show oldest to newest (left to right)
+    const normalizedData = data.map(item => ({
+        date: item.date || item.payment_date,
+        revenue: parseFloat(item.revenue || item.daily_revenue || 0)
+    })).reverse();
+
+    console.log('🎨 Chart normalized data:', normalizedData);
+
+    charts.revenue = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: normalizedData.map(d => {
+                const date = new Date(d.date);
+                if (isNaN(date.getTime())) {
+                    console.error('❌ Invalid date:', d.date);
+                    return 'N/A';
+                }
+                return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            }),
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: normalizedData.map(d => d.revenue),
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return 'Doanh thu: ' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            if (value >= 1000000) {
+                                return (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return (value / 1000).toFixed(0) + 'K';
+                            }
+                            return value;
+                        },
+                        maxTicksLimit: 6
+                    }
+                }
+            }
+        }
+    });
+}
+
+// User Growth Chart
+function renderUserGrowthChart(data) {
+    const ctx = document.getElementById('userGrowthChart').getContext('2d');
+
+    if (charts.userGrowth) charts.userGrowth.destroy();
+
+    charts.userGrowth = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => new Date(d.date).toLocaleDateString('vi-VN')),
+            datasets: [{
+                label: 'Người dùng mới',
+                data: data.map(d => d.count),
+                backgroundColor: 'rgb(59, 130, 246)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+// VIP Distribution Chart
+function renderVipDistributionChart(data) {
+    const ctx = document.getElementById('vipDistributionChart').getContext('2d');
+
+    if (charts.vipDistribution) charts.vipDistribution.destroy();
+
+    const planNames = {
+        '1day': '1 ngày',
+        '3days': '3 ngày',
+        '7days': '7 ngày',
+        '30days': '30 ngày',
+        'infinite': 'Vĩnh viễn'
+    };
+
+    charts.vipDistribution = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: data.map(d => planNames[d.plan_type] || d.plan_type),
+            datasets: [{
+                data: data.map(d => d.count),
+                backgroundColor: [
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(251, 146, 60)',
+                    'rgb(147, 51, 234)',
+                    'rgb(236, 72, 153)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Order Status Chart
+function renderOrderStatusChart(orders) {
+    const ctx = document.getElementById('orderStatusChart').getContext('2d');
+
+    if (charts.orderStatus) charts.orderStatus.destroy();
+
+    charts.orderStatus = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Đã thanh toán', 'Chưa thanh toán', 'Đã hủy'],
+            datasets: [{
+                data: [orders.paid, orders.unpaid, orders.cancelled],
+                backgroundColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(251, 146, 60)',
+                    'rgb(239, 68, 68)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Helper: Format currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount);
+}
+
+// ===== VIP PLANS MANAGEMENT =====
+
+function renderVIPPlans() {
+    const tbody = document.getElementById('vipPlansTableBody');
+
+    const { currentPage, rowsPerPage } = pagination.vipPlans;
+    const paginatedPlans = paginateArray(allData.vipPlans, currentPage, rowsPerPage);
+
+    tbody.innerHTML = paginatedPlans.map(plan => `
+        <tr class="hover:bg-blue-50 transition-colors">
+            <td class="px-6 py-4 font-semibold text-gray-700" data-label="ID">#${plan.id}</td>
+            <td class="px-6 py-4 font-mono text-sm bg-gray-50 text-gray-700" data-label="Key">${plan.plan_key}</td>
+            <td class="px-6 py-4" data-label="Tên">
+                <div class="font-semibold text-gray-900">${plan.plan_name}</div>
+                ${plan.description ? `<div class="text-sm text-gray-600 mt-0.5">${plan.description}</div>` : ''}
+            </td>
+            <td class="px-6 py-4 text-center" data-label="Thời hạn">
+                <span class="px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">⏱️ ${plan.duration_days} ngày</span>
+            </td>
+            <td class="px-6 py-4 font-bold text-green-600" data-label="Giá">${parseFloat(plan.price).toLocaleString('vi-VN')}đ</td>
+            <td class="px-6 py-4" data-label="Trạng thái">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold ${plan.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${plan.is_active ? '✅ Active' : '❌ Disabled'}
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center" data-label="Thứ tự">
+                <span class="px-2 py-1 rounded bg-gray-100 text-gray-700 text-xs font-semibold">#${plan.sort_order}</span>
+            </td>
+            <td class="px-6 py-4 flex gap-2 flex-wrap" data-label="Actions">
+                <button onclick="openEditPlanModal(${plan.id})" class="text-blue-600 hover:text-blue-800 font-semibold text-sm transition">
+                    ✏️ Sửa
+                </button>
+                <button onclick="togglePlanStatus(${plan.id})" class="text-${plan.is_active ? 'orange' : 'green'}-600 hover:text-${plan.is_active ? 'orange' : 'green'}-800 font-semibold text-sm transition">
+                    ${plan.is_active ? '⏸️ Tắt' : '▶️ Bật'}
+                </button>
+                <button onclick="showConfirmModal('Xóa gói VIP', 'Bạn có chắc muốn xóa gói ${plan.plan_name}? Hành động này không thể hoàn tác.', () => deletePlan(${plan.id}))" class="text-red-600 hover:text-red-800 font-semibold text-sm transition">
+                    🗑️ Xóa
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    renderPaginationControls('vipPlans', allData.vipPlans.length);
+}
+
+// Create Plan Modal
+function openCreatePlanModal() {
+    document.getElementById('planModalTitle').textContent = '➕ Thêm gói VIP mới';
+    document.getElementById('planId').value = '';
+    document.getElementById('planKey').value = '';
+    document.getElementById('planKey').disabled = false;
+    document.getElementById('planName').value = '';
+    document.getElementById('planDuration').value = '';
+    document.getElementById('planPrice').value = '';
+    document.getElementById('planSortOrder').value = '0';
+    document.getElementById('planDescription').value = '';
+    document.getElementById('planModal').classList.remove('hidden');
+}
+
+// Edit Plan Modal
+function openEditPlanModal(id) {
+    const plan = allData.vipPlans.find(p => p.id === id);
+    if (!plan) return;
+
+    document.getElementById('planModalTitle').textContent = '✏️ Chỉnh sửa gói VIP';
+    document.getElementById('planId').value = plan.id;
+    document.getElementById('planKey').value = plan.plan_key;
+    document.getElementById('planKey').disabled = true; // Không cho sửa plan_key
+    document.getElementById('planName').value = plan.plan_name;
+    document.getElementById('planDuration').value = plan.duration_days;
+    document.getElementById('planPrice').value = plan.price;
+    document.getElementById('planSortOrder').value = plan.sort_order;
+    document.getElementById('planDescription').value = plan.description || '';
+    document.getElementById('planModal').classList.remove('hidden');
+}
+
+function closePlanModal() {
+    document.getElementById('planModal').classList.add('hidden');
+}
+
+// Submit Plan (Create or Update)
+async function submitPlan() {
+    const id = document.getElementById('planId').value;
+    const planKey = document.getElementById('planKey').value.trim();
+    const planName = document.getElementById('planName').value.trim();
+    const durationDays = parseInt(document.getElementById('planDuration').value);
+    const price = parseFloat(document.getElementById('planPrice').value);
+    const sortOrder = parseInt(document.getElementById('planSortOrder').value) || 0;
+    const description = document.getElementById('planDescription').value.trim();
+
+    // Validation
+    if (!planKey || !planName || !durationDays || !price) {
+        showToast('Vui lòng điền đầy đủ các trường bắt buộc!', 'error');
+        return;
+    }
+
+    if (!/^[a-z0-9_]+$/.test(planKey)) {
+        showToast('Plan Key chỉ được chứa chữ thường, số và gạch dưới!', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('submitPlanBtn');
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loader inline-block"></div> Đang lưu...';
+
+    try {
+        const action = id ? 'updateVIPPlan' : 'createVIPPlan';
+        const payload = { planKey, planName, durationDays, price, sortOrder, description };
+        if (id) payload.id = parseInt(id);
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message || (id ? 'Cập nhật thành công!' : 'Tạo gói VIP thành công!'), 'success');
+            closePlanModal();
+            await refreshData('vipPlans');
+        } else {
+            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }
+}
+
+// Delete Plan
+async function deletePlan(id) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'deleteVIPPlan', payload: { id } })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('Xóa gói VIP thành công!', 'success');
+            await refreshData('vipPlans');
+        } else {
+            showToast(data.message || 'Không thể xóa gói VIP!', 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
+}
+
+// Toggle Plan Status
+async function togglePlanStatus(id) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'toggleVIPPlanStatus', payload: { id } })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(data.message || 'Cập nhật trạng thái thành công!', 'success');
+            await refreshData('vipPlans');
+        } else {
+            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+        }
+    } catch (error) {
+        showToast('Lỗi kết nối: ' + error.message, 'error');
+    }
+}

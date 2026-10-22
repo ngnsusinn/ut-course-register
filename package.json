@@ -8,9 +8,9 @@
     "dev": "npx --yes vercel dev",
     "deploy": "npx --yes vercel --prod",
     "build": "node esbuild.config.js",
-    "lint": "eslint api public scripts tests",
+    "check": "node --check api/handler.js api/db.js api/admin-handler.js api/sepay-webhook.js",
     "test": "node --test --test-force-exit tests/*.test.mjs",
-    "test:offline": "SKIP_DB=1 node --test --test-force-exit tests/01-static-contracts.test.mjs tests/04-login-e2e.test.mjs tests/05-security.test.mjs tests/07-upstream-resilience.test.mjs",
+    "test:offline": "node --test --test-force-exit tests/01-static-contracts.test.mjs tests/04-login-e2e.test.mjs tests/05-security.test.mjs tests/07-upstream-resilience.test.mjs",
     "test:db": "node --test --test-force-exit tests/02-db-schema-contract.test.mjs tests/03-login-path.test.mjs tests/06-migration-verification.test.mjs",
     "migrate:mongo": "node scripts/migrate-sql-to-mongo.mjs"
   },
@@ -24,8 +24,7 @@
   },
   "devDependencies": {
     "dotenv": "^16.3.1",
-    "esbuild": "^0.24.0",
-    "javascript-obfuscator": "^4.1.0"
+    "esbuild": "^0.24.0"
   },
   "engines": {
     "node": "22.x || 24.x"

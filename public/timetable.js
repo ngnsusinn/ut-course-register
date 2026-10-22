@@ -1,1 +1,402 @@
-function _cb(a,b){a=a-0x1b8;const c=_ca();let d=c[a];if(_cb['WfnyNZ']===undefined){var e=function(i){const j='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let l='',m='';for(let n=0x0,o,p,q=0x0;p=i['charAt'](q++);~p&&(o=n%0x4?o*0x40+p:p,n++%0x4)?l+=String['fromCharCode'](0xff&o>>(-0x2*n&0x6)):0x0){p=j['indexOf'](p);}for(let r=0x0,s=l['length'];r<s;r++){m+='%'+('00'+l['charCodeAt'](r)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(m);};_cb['hqXbSN']=e,_cb['MIMVxU']={},_cb['WfnyNZ']=!![];}const f=c[0x0],g=a+f,h=_cb['MIMVxU'][g];return!h?(d=_cb['hqXbSN'](d),_cb['MIMVxU'][g]=d):d=h,d;}function _ca(){const bm=['sxDNAgm','zgf0yxnLDa','q2eGnq','B253yxjKCW','Aw5Uzxjive1m','mtu6nda','C2nOzwr1BgvezxrHAwXZ','odrrvuzrrge','q2eGmW','B2HsC1a','phrOignSyxnZpsjIB3jKzxiGyM9YzgvYlwDYyxKTmZaWihb4ltiGChKTmYb0zxH0lwnLBNrLCIbMB250lxnLBwLIB2XKiIbJB2XZCgfUpsiYiJ5dysbO4BUnyZWVDgG+','otmXounpBLrrqG','CMDIkdi1nsWGmtuYlcaWkq','y2XPy2S','ic0G','pc90CJ48l3rOzwfKpJX0yM9KEt4','CM91BMq','mZbbBxPPt3i','CgHVBMC','Bwf4','DhrXveC','phrKignSyxnZpsjIB3jKzxiGyM9YzgvYlwDYyxKTmZaWihb4ltiGChKTmIi+','pc90yM9KEt48l3rHyMXLpG','ndLirfnwrwi','C2HVD1rPBwv0ywjSzu1VzgfS','ndi0tgPNBKrl','zs1SzwfYBMLUzW','DgLTzxrHyMXLlw1VzgfS','mdK6mJu','CgHHC2u','CxfMuw8','mta6mJu','BgvUz3rO','AgLKzgvU','cIaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica','DMKTvK4','mte6mJu','mtC6mZa','ywrKrxzLBNrmAxn0zw5LCG','pc90Ad4','icbqAgfZzsaYoIbgCM9T','CNHwuuG','z2v0rwXLBwvUDej5swq','ugjps28','zgf5CW','uLDYvgG','CMDIkdaSideZncWGmtm3kq','BwfW','mdC6mZu','BMDHEuTLDfrODwm','icbqAgfZzsaXoIbczwzVCMu','C29Tzq','pc90CJ4','nde3nJK1m2nQrLbnuG','q2JHU6CGBMJHUQ10','A2v5CW','zM9YrwfJAa','ywrK','tLfYDvu','phrYpG','quD6y0W','zfjYz1e','DMfSDwvZ','DgLLDeHVyW','B0TXBNy','s09iyxO','cIaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IBwiTmIbSyxn0oM1IltaGCc0YihjVDw5KzwqGDgv4Dc13AgL0zsb0zxH0lxnTiIbZDhLSzt0IyMfJA2DYB3vUzc1JB2XVCJOG','vhrAze0','q25Asuu','icbmyxjNzxn0igDHCdO','pgeGAhjLzJ0I','nJi0mZaXnKTbDvb4AG','Dg9mB2nHBgveyxrLu3rYAw5N','yKT1D1i','tfzbELK','vgJHU6KGna','z2v0u2vSzwn0zwrdBgfZC2vZrgf0yq','vgJHU6KGnG','q2eGna','mJu4uKzzC3b3','lNrPBwv0ywjSzs10ywiTyNrU','zMXHDa','mtm4mdy0ogvhANLwqW','Dg9eyxrLu3rYAw5N','vgJHU6KGnq','iokgKIa','DeLxsMW','mtG6mZa','q2eGmG','BwfmB3biB2nqAgfU','DgH1','Bg9HzgLUzW','pc90zd4','BMDHEujHDerHDq','DgfUr0O','r2ruse4','mtq6nta','pc9ZCgfUpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica','DgfYz2v0','igrHExm','mdG6mJu','wgnjuM8','phrHyMXLignSyxnZpsj3lwz1BgWGyM9YzgvYlwnVBgXHChnLiIbZDhLSzt0IBwLUlxDPzhrOoIa5mdbWEdSIpG','C2v0','CvPXCeu','A1bnyNi','q1HRALi','tI9b','CMvTB3zL','q2XHC3nLCYb3AxrOigvHCMXPzxn0ihn0yxj0igrHDgvZoG','ufPRq1e','ChvZAa','rKHUBfe','C29YDa','4PYxie5VihnPz25PzMLJyw50igDHCcbMB3vUzcaOBgfYz2vZDcbNyxa6','ugryrfu','Bg1ZtgLUAW','DgvUtw9Usg9J','twz6Cgu','mtm6mJu','CxvLCNLtzwXLy3rVCKfSBa','yM9YzgvYlxrLywWTnJaW','phrYpJX0zcbJBgfZCZ0IyM9YzgvYigjVCMrLCI1NCMf5ltmWmcbWEc00ihb5ltiGDgv4Dc1Jzw50zxiGzM9UDc1IB2XKigjNlwDYyxKTmtaWiIbYB3DZCgfUpsi','Bg9N','mJb6ruDKCKe','Awz5AKS','mtq6mtu','q2eGnG','pgrPDIbJBgfZCZ0IzMXLEcbPDgvTCY1Jzw50zxiGz2fWlteIpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3zNignSyxnZpsj3ltmGAc0ZiIbMAwXSpsjUB25LiIb2Awv3qM94psiWidaGmJqGmJqIihn0CM9Rzt0Iy3vYCMvUDenVBg9YiJ48Cgf0AcbZDhjVA2uTBgLUzwnHCd0ICM91BMqIihn0CM9Rzs1SAw5LAM9PBJ0ICM91BMqIihn0CM9Rzs13Awr0Ad0ImIiGzd0IttKUnZuGmtDmosaYmgWTmsaXAdHSlteTms0UnZuTm00ZideZAde4ttuGmtDOmtrHmIaYidaGmdaYltjwnweYidiGmcaWmc0YltjinweYidiGmcaWmc0Yidj2mtbHmIaYidaGmdaYidj6iIaVpJWVC3zNpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3bHBJ5fluXLyxjUAw5Npc9ZCgfUpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGidWVzgL2pG','mtm3nJi4ufPgwvre','BwLU','iIb0yxjNzxq9iL9IBgfUAYiGy2XHC3m9iMLUBgLUzs1MBgv4igL0zw1ZlwnLBNrLCIbNyxaTmsb0zxH0lxDOAxrLihvUzgvYBgLUzsbOB3zLCJP0zxH0lxLLBgXVDY0YmdaIpJXZDMCGy2XHC3m9iNCTmYbOltmIigzPBgW9iM5VBMuIihzPzxDcB3G9iJaGmcaYncaYnciGC3rYB2TLpsjJDxjYzw50q29SB3iIpJXWyxrOihn0CM9Rzs1SAw5Ly2fWpsjYB3vUzciGC3rYB2TLlwXPBMvQB2LUpsjYB3vUzciGC3rYB2TLlxDPzhrOpsiYiIbKpsjnmtiGmtrSos01ltKTns05iduGosa1EIbnmtiGmtrSnI4XnI0ZlJqYmMeXmI4WodmGmtiUmdGZidaGmdeUnJy1idyUndC5qteXlJK1mIaXms45ntiGmcaWmdeYidiWlJa1nweXms45ntiGmteUotuYidaGmdaTnI44mJqTmI45otGGmtiUmdC4ideYlJa3ocaWidaXlJy2ns02lJq3ouWXmIaXnhOGtteYide0BdKTns05ltuTosa1idKGnxPTmcaWBdyUmtyTmY40mJjHmtiUmdGZideYlJa4mYaWidaXlJy2nsa2lJq3oueXms45ntiGmteUotuYidaGmdaXmIaYmc4WntvHmteUotuYideXlJK1mIaWidaWltyUodi0ltiUotK4ideYlJa3ocaXmI4WnZGGmcaWms42nJuTnI40nZLmmtiGmtr6iIaVpJWVC3zNpKXnuZWVyt4','yLDyzfu','nJGXmta4meX0s1bovW','mti6mJu','Dgv4Dc1NCMf5ltyWma','mJq1mZGWt2jHrxzc','y2XHC3nmAxn0','qvPrzNC','zgf0zq','uhjVy2vZC2LUzYbYzwDPC3rLCMvKigrHDgeGzM9YihbOyxnLoG','v3rvDvm','AgfZ','yM9YzgvYlwiTna','q2eGmq','txfKDuW','vgJHU6KGnW','pc90zd48l3rYpG'];_ca=function(){return bm;};return _ca();}(function(a,b){const _caA={a:0x1ce,b:0x24b,c:0x215,d:0x1da,e:0x1dc,f:0x244,g:0x23f,h:0x1ca},a6=_cb,c=a();while(!![]){try{const d=-parseInt(a6(_caA.a))/0x1*(-parseInt(a6(0x212))/0x2)+-parseInt(a6(0x1d4))/0x3*(parseInt(a6(_caA.b))/0x4)+-parseInt(a6(0x248))/0x5+-parseInt(a6(_caA.c))/0x6*(parseInt(a6(_caA.d))/0x7)+parseInt(a6(_caA.e))/0x8*(-parseInt(a6(_caA.f))/0x9)+-parseInt(a6(_caA.g))/0xa*(-parseInt(a6(0x1f8))/0xb)+parseInt(a6(_caA.h))/0xc*(parseInt(a6(0x20a))/0xd);if(d===b)break;else c['push'](c['shift']());}catch(e){c['push'](c['shift']());}}}(_ca,0xe2273),(function(){const _cbl={a:0x1df,b:0x1c8,c:0x1e8,d:0x1e4,e:0x1d0,f:0x1cb,g:0x1eb,h:0x1d2,i:0x1de,j:0x21e},_cbk={a:0x1f7,b:0x200,c:0x1c5,d:0x22b,e:0x1f9,f:0x231,g:0x235,h:0x1bb,i:0x1ed,j:0x233,k:0x23b,l:0x1db},_cbb={a:0x1d8,b:0x22c,c:0x1e1,d:0x1fb,e:0x1fb,f:0x1f2,g:0x234,h:0x23e,i:0x221,j:0x1e3,k:0x228,l:0x20b,m:0x218,n:0x1e6,o:0x23e,p:0x208,q:0x1d3,r:0x1f5,s:0x1ee,t:0x1fb,u:0x1fa,v:0x1d9},_caR={a:0x1e3,b:0x1f3,c:0x23a,d:0x241,e:0x1bc,f:0x245,g:0x1d6,h:0x1d1},_caQ={a:0x216,b:0x1f4},a7=_cb,a={'ifyjK':a7(0x227),'RWrTh':a7(_cbl.a),'DCrnd':a7(0x249),'WtUuS':a7(_cbl.b),'BvHkM':a7(_cbl.c),'qluso':'20:10','aqjwr':function(c,d){return c+d;},'GdTHN':a7(_cbl.d),'HgNhq':a7(_cbl.e),'MqduL':function(c,d){return c(d);},'KOHaz':a7(_cbl.f),'dRrgQ':'Ca\x204','qZqpE':a7(0x210),'sanlK':function(c,d){return c*d;},'aSACb':function(c,d){return c>=d;},'PZkCQ':a7(_cbl.g),'rnoIN':a7(_cbl.h),'FHnlQ':a7(_cbl.i),'oKqnv':'timetable-content','vsBKo':a7(0x213),'AGzcL':'DOMContentLoaded'},b=function(){const _cbg={a:0x1fc},_cbd={a:0x20f,b:0x1b8,c:0x222},_caW={a:0x22a,b:0x21c,c:0x238},_caF={a:0x1c0},a9=a7,c={'Iwghc':function(u,z){const a8=_cb;return a[a8(_caF.a)](u,z);},'kPMbr':a9(_cbk.a),'DFKao':a9(0x1bf),'ohRsP':a[a9(0x204)],'rxVQH':a[a9(_cbk.b)],'bKuwR':a9(_cbk.c),'qqfQo':'Thứ\x203','bWXdU':a[a9(_cbk.d)],'tIWJl':a9(_cbk.e),'tanGJ':function(u,z){return u>z;},'CYcZC':function(u,z){return u<z;},'DTGNy':function(u,z){return u-z;},'dryGY':function(u,z){return u+z;},'XcIRo':function(u,z){return a['sanlK'](u,z);},'CFwja':'vi-VN','fXVTZ':function(u,z){return u>z;},'NQruU':function(u,z){return a['aSACb'](u,z);},'suclV':a[a9(_cbk.f)],'PbOKo':a9(_cbk.g),'VeCeJ':a9(_cbk.h),'peVSy':a['rnoIN'],'CFeBc':function(u,z){return u(z);},'jnRip':a9(0x24a),'LVAzY':function(u){return u();}},d=document[a9(_cbk.i)](a[a9(_cbk.j)]),e=document[a9(0x1ed)]('view-timetable-btn'),g=document[a9(_cbk.i)]('close-timetable-modal'),h=document['getElementById'](a[a9(0x203)]),i=document[a9(_cbk.k)](a['vsBKo']);let j=0x1,l=[],n=[];const o=u=>{const aa=a9;if(!u)return[];const z=u['toString']()['split']('-');if(z['length']!==0x2)return[];const A=parseInt(z[0x0]),B=parseInt(z[0x1]);if(isNaN(A)||isNaN(B))return[];const E=[];for(let F=A;F<=B;F++)E[aa(0x232)](F);return E;},p=u=>u>=0x1&&u<=0x3?a9(0x1bf):u>=0x4&&u<=0x6?a9(0x21b):u>=0x7&&u<=0x9?a9(0x1cb):u>=0xa&&u<=0xc?a9(0x211):u>=0xd&&u<=0xf?a9(0x1c5):u>=0x10&&u<=0x12?a9(0x242):'',q=u=>{const ab=a9;if(!u['ngayBatDau']||!u[ab(0x1f4)])return!0x1;const z=new Date(u[ab(0x220)])[ab(_caQ.a)](),A=new Date(u[ab(_caQ.b)])['toDateString']();return z===A;},r=u=>{const ac=a9;if(!u||u[ac(_caR.a)]===0x0)return'';const z={0x1:'06:45',0x2:ac(_caR.b),0x3:a[ac(0x240)],0x4:a[ac(0x1f0)],0x5:ac(0x1e2),0x6:ac(0x1e7),0x7:a['DCrnd'],0x8:ac(_caR.c),0x9:ac(_caR.d),0xa:ac(0x223),0xb:a[ac(_caR.e)],0xc:'16:40',0xd:a['BvHkM'],0xe:ac(0x21a),0xf:'19:20',0x10:a['qluso'],0x11:'21:00',0x12:'21:50'},A=Math[ac(_caR.f)](...u),B=Math[ac(_caR.g)](...u),E=z[A]||'',F=z[a['aqjwr'](B,0x1)]||z[B]||'';return E+ac(_caR.h)+F;},s=z=>{const _cba={a:0x23d,b:0x1e3},_cb6={a:0x1c9},_cb5={a:0x21d,b:0x202,c:0x1e3,d:0x22e,e:0x237},_cb4={a:0x22e,b:0x1c9},_cb3={a:0x1d7,b:0x202,c:0x1f6,d:0x21c,e:0x202,f:0x22d},_caZ={a:0x23e,b:0x1ba,c:0x20b},_caY={a:0x238},_caX={a:0x220},ad=a9,A={'wnyqh':function(P,Q){return c['Iwghc'](P,Q);},'uQvXA':ad(0x1fe),'iumof':function(P,Q){return P<=Q;},'CnZIE':ad(_cbb.a),'AZQfw':c[ad(_cbb.b)]},B={'Sáng':[c['DFKao'],'Ca\x202'],'Chiều':[c[ad(0x1cc)],c[ad(0x1ec)]],'Tối':[c[ad(0x20c)],'Ca\x206']},F=['Thứ\x202',c[ad(_cbb.c)],ad(0x20e),ad(0x217),c[ad(0x247)],ad(0x1c1),c[ad(0x219)]],G={};for(let P=0x2;P<=0x8;P++)G[P]={},Object[ad(0x201)](B)[ad(0x214)]()[ad(0x1fb)](Q=>{G[P][Q]=[];});let I=new Map();l[ad(_cbb.d)](Q=>{const ae=ad;if(Q['scheduleDetails']&&Q[ae(0x1c9)]['length']>0x0){let R=null;Q['scheduleDetails']['forEach'](U=>{const af=ae;if(U[af(0x220)]){const V=new Date(U['ngayBatDau']);(!R||V<R)&&(R=V);}}),R&&I[ae(_caW.a)](Q[ae(_caW.b)],{'date':R,'tenMonHoc':Q[ae(_caW.c)]});}}),n[ad(_cbb.e)](Q=>{const ag=ad;if(Q[ag(0x1c9)]&&Q[ag(0x1c9)]['length']>0x0){let R=null;Q['scheduleDetails'][ag(0x1fb)](U=>{const ah=ag;if(U[ah(_caX.a)]){const V=new Date(U[ah(0x220)]);(!R||V<R)&&(R=V);}}),R&&!I[ag(0x1bd)](Q['maLopHocPhan'])&&I[ag(0x22a)](Q[ag(0x21c)],{'date':R,'tenMonHoc':Q[ag(_caY.a)]});}});let J=[...I[ad(0x201)]()][ad(0x1f2)](Q=>Q[ad(0x1ba)]);J=[...new Set(J['map'](Q=>Q['getTime']()))][ad(_cbb.f)](Q=>new Date(Q)),J[ad(_cbb.g)]((Q,R)=>Q-R);let K=null;if(console[ad(_cbb.h)](ad(0x230)),I[ad(0x1fb)]((Q,R)=>{const ai=ad;console[ai(_caZ.a)]('\x20\x20'+Q['tenMonHoc']+'\x20('+R+'):\x20'+Q[ai(_caZ.b)][ai(_caZ.c)]('vi-VN'));}),c[ad(_cbb.i)](J['length'],0x1)){let Q=0x0,R=-0x1;for(let V=0x0;c['CYcZC'](V,c['DTGNy'](J[ad(_cbb.j)],0x1));V++){const W=J[c['dryGY'](V,0x1)]-J[V],X=W/(c[ad(_cbb.k)](0x18*0x3c,0x3c)*0x3e8);console['log']('Gap:\x20'+J[V][ad(_cbb.l)](c['CFwja'])+ad(_cbb.m)+J[V+0x1]['toLocaleDateString'](ad(_cbb.n))+'\x20=\x20'+Math['round'](X)+ad(0x226)),c['fXVTZ'](W,Q)&&(Q=W,R=V);}const U=Q/(0x18*0x3c*0x3c*0x3e8);U>=0x2&&c[ad(0x1fd)](R,0x0)?(K=J[R+0x1],console[ad(_cbb.o)]('✓\x20Phase\x20boundary\x20detected\x20at:',K[ad(0x20b)](ad(_cbb.n))),console[ad(0x23e)](ad(_cbb.p),Math[ad(_cbb.q)](U),ad(0x1ef)),console[ad(0x23e)](ad(_cbb.r),K[ad(0x20b)]('vi-VN')),console[ad(0x23e)](c['suclV'],K['toLocaleDateString']('vi-VN'),ad(0x1c6))):console[ad(0x23e)](c[ad(_cbb.s)],Math['round'](U),'days).\x20All\x20schedules\x20will\x20be\x20in\x20Phase\x201.');}const N=Y=>!Y[ad(0x220)]||!K||new Date(Y[ad(0x220)])<K?0x1:0x2;console['log'](c['VeCeJ'],z),l[ad(_cbb.t)](Y=>{const _cb0={a:0x1c3},ak=ad,Z={'ttqTG':function(a0,a1){const aj=_cb;return c[aj(_cb0.a)](a0,a1);},'Mfzpe':function(a0,a1){return a0===a1;},'CXkjR':ak(_cb4.a),'TtZdM':function(a0,a1){return a0(a1);}};!Y[ak(_cb4.b)]||Y['scheduleDetails']['length']===0x0||Y[ak(0x1c9)]['forEach'](a0=>{const al=ak;if(q(a0)||Z[al(_cb3.a)](N,a0)!==z)return;const a1=a0[al(0x21d)];if(!a1||a1<0x2||a1>0x8)return;const a2=o(a0[al(_cb3.b)]);if(Z[al(0x239)](a2[al(0x1e3)],0x0))return;const a3=p(a2[0x0]);if(!a3)return;G[a1][a3][al(_cb3.c)](a4=>a4[al(0x21c)]===Y['maLopHocPhan'])||G[a1][a3][al(0x232)]({'tenMonHoc':Y['tenMonHoc'],'maLopHocPhan':Y[al(_cb3.d)],'tietHoc':a0[al(_cb3.e)],'periods':a2,'phong':a0[al(0x1d5)]||Z[al(_cb3.f)],'timeRange':Z[al(0x206)](r,a2),'lmsLink':a0[al(0x237)]||'','isRegistered':!0x0});});}),console['log']('Processing\x20selected\x20data\x20for\x20phase:',z),n['forEach'](Y=>{const am=ad;l['some'](Z=>Z[am(0x21c)]===Y[am(0x21c)])||!Y[am(0x1c9)]||Y['scheduleDetails'][am(0x1e3)]===0x0||Y[am(_cb6.a)]['forEach'](Z=>{const an=am;if(q(Z)||N(Z)!==z)return;const a0=Z[an(_cb5.a)];if(!a0||a0<0x2||a0>0x8)return;const a1=A['wnyqh'](o,Z[an(_cb5.b)]);if(a1[an(_cb5.c)]===0x0)return;const a2=p(a1[0x0]);if(!a2)return;G[a0][a2]['some'](a3=>a3[an(0x21c)]===Y[an(0x21c)])||G[a0][a2][an(0x232)]({'tenMonHoc':Y[an(0x238)],'maLopHocPhan':Y['maLopHocPhan'],'tietHoc':Z[an(0x202)],'periods':a1,'phong':Z[an(0x1d5)]||an(_cb5.d),'timeRange':A['wnyqh'](r,a1),'lmsLink':Z[an(_cb5.e)]||'','isRegistered':!0x1});});});let O=ad(0x229);return O+='<thead><tr\x20class=\x22bg-gradient-to-r\x20from-teal-50\x20to-teal-100\x22>',O+=ad(0x1cd),F['forEach'](Y=>{const ao=ad;O+='<th\x20class=\x22border\x20border-gray-300\x20px-2\x20py-3\x20text-center\x20font-semibold\x22>'+Y+ao(0x1ea);}),O+=c['peVSy'],Object[ad(_cbb.u)](B)['forEach'](Y=>{const _cb9={a:0x207,b:0x1b9},ap=ad,Z=B[Y];O+=ap(_cba.a)+(Z[ap(_cba.b)]+0x1)+'\x22>'+Y+ap(0x1c2),Z[ap(0x1fb)](a0=>{const _cb8={a:0x1f1,b:0x205,c:0x1e5,d:0x209,e:0x237,f:0x246},aq=ap;O+=A['uQvXA'],O+='<td\x20class=\x22border\x20border-gray-300\x20px-4\x20py-2\x20text-center\x20font-semibold\x20bg-gray-50\x22>'+a0+'</td>';for(let a1=0x2;A['iumof'](a1,0x8);a1++){const a2=G[a1][a0]||[];a2[aq(0x1e3)]===0x0?O+='<td\x20class=\x22border\x20border-gray-300\x20px-2\x20py-2\x22></td>':(O+=A[aq(_cb9.a)],a2['forEach'](a3=>{const ar=aq,a4=a3['isRegistered']?ar(_cb8.a):ar(0x1cf),a5=a3[ar(0x1d5)]&&a3[ar(0x1d5)]['toLowerCase']()['includes'](ar(0x1dd))?ar(0x243):'';O+=ar(_cb8.b)+a4+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-semibold\x22>'+a3[ar(0x238)]+'</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mt-1\x20space-y-0.5\x20text-xs\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-mono\x22>'+a3['maLopHocPhan']+'</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-3\x20h-3\x22\x20fill=\x22none\x22\x20viewBox=\x220\x200\x2024\x2024\x22\x20stroke=\x22currentColor\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M12\x206.253v13m0-13C10.832\x205.477\x209.246\x205\x207.5\x205S4.168\x205.477\x203\x206.253v13C4.168\x2018.477\x205.754\x2018\x207.5\x2018s3.332.477\x204.5\x201.253m0-13C13.168\x205.477\x2014.754\x205\x2016.5\x205c1.747\x200\x203.332.477\x204.5\x201.253v13C19.832\x2018.477\x2018.247\x2018\x2016.5\x2018c-1.746\x200-3.332.477-4.5\x201.253\x22\x20/></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>Tiết:\x20'+a3[ar(0x202)]+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-3\x20h-3\x22\x20fill=\x22none\x22\x20viewBox=\x220\x200\x2024\x2024\x22\x20stroke=\x22currentColor\x22><path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M12\x208v4l3\x203m6-3a9\x209\x200\x2011-18\x200\x209\x209\x200\x200118\x200z\x22\x20/></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>'+a3['timeRange']+ar(0x224)+a5+ar(_cb8.c)+(a3['lmsLink']?ar(_cb8.d)+a3[ar(_cb8.e)]+ar(_cb8.f):'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';}),O+=aq(0x21f));}O+=A[aq(_cb9.b)];});}),O+=ad(_cbb.v),O;},t=()=>{const as=a9,u=s(j);h[as(0x1c7)]=u;};window[a9(_cbk.l)]=()=>{const at=a9;window['getRegisteredClassesData']&&(l=window['getRegisteredClassesData']()),window['getSelectedClassesData']&&(n=window[at(_cbd.a)]()),d[at(_cbd.b)][at(0x22f)](a[at(_cbd.c)]),t();},e&&e['addEventListener'](a9(0x1d0),()=>{const au=a9;window[au(0x1db)]();}),g&&g[a9(0x1e9)](a['HgNhq'],()=>{const av=a9;d[av(0x1b8)]['add'](a['GdTHN']);}),d&&d['addEventListener'](a9(0x1d0),u=>{const aw=a9;u[aw(0x225)]===d&&d[aw(0x1b8)][aw(_cbg.a)](aw(0x1e4));}),i[a9(0x1fb)](u=>{const _cbi={a:0x1c4,b:0x1e0,c:0x1fb,d:0x1be},_cbh={a:0x236,b:0x24a},ax=a9,z={'PdXDU':ax(0x23c)};u['addEventListener'](a['HgNhq'],()=>{const ay=ax;j=c['CFeBc'](parseInt,u[ay(_cbi.a)][ay(_cbi.b)]),i[ay(_cbi.c)](A=>{const az=ay;A['classList'][az(0x22f)]('border-b-4',z[az(_cbh.a)],'text-teal-600'),A[az(0x1b8)][az(0x1fc)](az(_cbh.b));}),u['classList']['add'](ay(_cbi.d),ay(0x23c),'text-teal-600'),u[ay(0x1b8)][ay(0x22f)](c['jnRip']),c[ay(0x20d)](t);});});};document['readyState']===a7(_cbl.j)?document['addEventListener'](a[a7(0x1ff)],b):b();}()));
+// ============================================
+// TIMETABLE MODAL FUNCTIONALITY
+// ============================================
+
+(function() {
+    const boot = function() {
+    const timetableModal = document.getElementById('timetable-modal');
+    const viewTimetableBtn = document.getElementById('view-timetable-btn');
+    const closeTimetableModal = document.getElementById('close-timetable-modal');
+    const timetableContent = document.getElementById('timetable-content');
+    const timetableTabBtns = document.querySelectorAll('.timetable-tab-btn');
+    
+    let currentPhase = 1; // Default to phase 1
+    let registeredData = [];
+    let selectedData = [];
+    
+    // Parse periods from string like "3-4" or "10-12"
+    const parseTietHoc = (tietHoc) => {
+        if (!tietHoc) return [];
+        const parts = tietHoc.toString().split('-');
+        if (parts.length !== 2) return [];
+        const start = parseInt(parts[0]);
+        const end = parseInt(parts[1]);
+        if (isNaN(start) || isNaN(end)) return [];
+        const periods = [];
+        for (let i = start; i <= end; i++) {
+            periods.push(i);
+        }
+        return periods;
+    };
+    
+    // Get session (ca) from first period number (for classes spanning multiple sessions)
+    // Ca 1: 1-3, Ca 2: 4-6, Ca 3: 7-9, Ca 4: 10-12, Ca 5: 13-15, Ca 6: 16-18
+    const getSessionFromPeriod = (firstPeriod) => {
+        if (firstPeriod >= 1 && firstPeriod <= 3) return 'Ca 1';
+        if (firstPeriod >= 4 && firstPeriod <= 6) return 'Ca 2';
+        if (firstPeriod >= 7 && firstPeriod <= 9) return 'Ca 3';
+        if (firstPeriod >= 10 && firstPeriod <= 12) return 'Ca 4';
+        if (firstPeriod >= 13 && firstPeriod <= 15) return 'Ca 5';
+        if (firstPeriod >= 16 && firstPeriod <= 18) return 'Ca 6';
+        return '';
+    };
+    
+    // Check if schedule is only one day (ngayBatDau = ngayKetThuc)
+    const isSingleDaySchedule = (schedule) => {
+        if (!schedule.ngayBatDau || !schedule.ngayKetThuc) return false;
+        const startDate = new Date(schedule.ngayBatDau).toDateString();
+        const endDate = new Date(schedule.ngayKetThuc).toDateString();
+        return startDate === endDate;
+    };
+
+    // Get time range from periods
+    const getTimeRange = (periods) => {
+        if (!periods || periods.length === 0) return '';
+        const timePeriods = {
+            1: '06:45', 2: '07:35', 3: '08:25', 4: '09:25',
+            5: '10:25', 6: '11:25', 7: '12:25', 8: '13:25',
+            9: '14:15', 10: '14:50', 11: '15:40', 12: '16:40',
+            13: '17:30', 14: '18:30', 15: '19:20', 16: '20:10',
+            17: '21:00', 18: '21:50'
+        };
+        const firstPeriod = Math.min(...periods);
+        const lastPeriod = Math.max(...periods);
+        const startTime = timePeriods[firstPeriod] || '';
+        const endTime = timePeriods[lastPeriod + 1] || timePeriods[lastPeriod] || '';
+        return `${startTime} - ${endTime}`;
+    };
+    
+    // Generate timetable HTML
+    const generateTimetable = (phase) => {
+        const sessions = {
+            'Sáng': ['Ca 1', 'Ca 2'],
+            'Chiều': ['Ca 3', 'Ca 4'],
+            'Tối': ['Ca 5', 'Ca 6']
+        };
+        
+        const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+        
+        // Build timetable grid: grid[thu][session] = [classes]
+        const grid = {};
+        
+        // Initialize grid for all days and sessions
+        for (let thu = 2; thu <= 8; thu++) {
+            grid[thu] = {};
+            Object.values(sessions).flat().forEach(session => {
+                grid[thu][session] = [];
+            });
+        }
+        
+        // Auto-detect phases based on earliest ngayBatDau of each class
+        // Collect earliest start date for each class (by maLopHocPhan)
+        let classStartDates = new Map(); // maLopHocPhan -> earliest start date
+        
+        registeredData.forEach(cls => {
+            if (cls.scheduleDetails && cls.scheduleDetails.length > 0) {
+                let earliestDate = null;
+                cls.scheduleDetails.forEach(schedule => {
+                    if (schedule.ngayBatDau) {
+                        const date = new Date(schedule.ngayBatDau);
+                        if (!earliestDate || date < earliestDate) {
+                            earliestDate = date;
+                        }
+                    }
+                });
+                if (earliestDate) {
+                    classStartDates.set(cls.maLopHocPhan, {
+                        date: earliestDate,
+                        tenMonHoc: cls.tenMonHoc
+                    });
+                }
+            }
+        });
+        
+        selectedData.forEach(cls => {
+            if (cls.scheduleDetails && cls.scheduleDetails.length > 0) {
+                let earliestDate = null;
+                cls.scheduleDetails.forEach(schedule => {
+                    if (schedule.ngayBatDau) {
+                        const date = new Date(schedule.ngayBatDau);
+                        if (!earliestDate || date < earliestDate) {
+                            earliestDate = date;
+                        }
+                    }
+                });
+                if (earliestDate && !classStartDates.has(cls.maLopHocPhan)) {
+                    classStartDates.set(cls.maLopHocPhan, {
+                        date: earliestDate,
+                        tenMonHoc: cls.tenMonHoc
+                    });
+                }
+            }
+        });
+        
+        // Get all unique earliest dates and sort
+        let uniqueStartDates = [...classStartDates.values()].map(v => v.date);
+        uniqueStartDates = [...new Set(uniqueStartDates.map(d => d.getTime()))].map(t => new Date(t));
+        uniqueStartDates.sort((a, b) => a - b);
+        
+        let phaseBoundary = null;
+        
+        console.log('Classes with earliest start dates:');
+        classStartDates.forEach((value, key) => {
+            console.log(`  ${value.tenMonHoc} (${key}): ${value.date.toLocaleDateString('vi-VN')}`);
+        });
+        
+        if (uniqueStartDates.length > 1) {
+            // Find the largest gap between consecutive start dates
+            let maxGap = 0;
+            let maxGapIndex = -1;
+            
+            for (let i = 0; i < uniqueStartDates.length - 1; i++) {
+                const gap = uniqueStartDates[i + 1] - uniqueStartDates[i];
+                const gapDays = gap / (24 * 60 * 60 * 1000);
+                
+                console.log(`Gap: ${uniqueStartDates[i].toLocaleDateString('vi-VN')} → ${uniqueStartDates[i + 1].toLocaleDateString('vi-VN')} = ${Math.round(gapDays)} days`);
+                
+                if (gap > maxGap) {
+                    maxGap = gap;
+                    maxGapIndex = i;
+                }
+            }
+            
+            const maxGapDays = maxGap / (24 * 60 * 60 * 1000);
+            
+            // If gap is at least 2 days, use it as phase boundary
+            if (maxGapDays >= 2 && maxGapIndex >= 0) {
+                phaseBoundary = uniqueStartDates[maxGapIndex + 1];
+                console.log('✓ Phase boundary detected at:', phaseBoundary.toLocaleDateString('vi-VN'));
+                console.log('  Largest gap:', Math.round(maxGapDays), 'days');
+                console.log('  Phase 1: Before', phaseBoundary.toLocaleDateString('vi-VN'));
+                console.log('  Phase 2: From', phaseBoundary.toLocaleDateString('vi-VN'), 'onwards');
+            } else {
+                console.log('✗ No significant gap found (largest gap:', Math.round(maxGapDays), 'days). All schedules will be in Phase 1.');
+            }
+        }
+        
+        // Helper function to determine phase of a schedule
+        const getSchedulePhase = (schedule) => {
+            if (!schedule.ngayBatDau || !phaseBoundary) return 1;
+            const startDate = new Date(schedule.ngayBatDau);
+            return startDate < phaseBoundary ? 1 : 2;
+        };
+        
+        // Process registered classes
+        console.log('Processing registered data for phase:', phase);
+        registeredData.forEach(cls => {
+            if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
+            
+            cls.scheduleDetails.forEach(schedule => {
+                // Skip single-day schedules (ngayBatDau = ngayKetThuc)
+                if (isSingleDaySchedule(schedule)) return;
+                
+                // Filter by phase
+                if (getSchedulePhase(schedule) !== phase) return;
+                
+                const thu = schedule.thu; // 2-8
+                if (!thu || thu < 2 || thu > 8) return;
+                
+                const periods = parseTietHoc(schedule.tietHoc);
+                if (periods.length === 0) return;
+                
+                const session = getSessionFromPeriod(periods[0]);
+                if (!session) return;
+                
+                // Check if already exists
+                const exists = grid[thu][session].some(item => item.maLopHocPhan === cls.maLopHocPhan);
+                if (!exists) {
+                    grid[thu][session].push({
+                        tenMonHoc: cls.tenMonHoc,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        tietHoc: schedule.tietHoc,
+                        periods: periods,
+                        phong: schedule.phong || 'N/A',
+                        timeRange: getTimeRange(periods),
+                        lmsLink: schedule.lmsLink || '',
+                        isRegistered: true
+                    });
+                }
+            });
+        });
+        
+        // Process selected classes
+        console.log('Processing selected data for phase:', phase);
+        selectedData.forEach(cls => {
+            // Skip if already registered
+            if (registeredData.some(reg => reg.maLopHocPhan === cls.maLopHocPhan)) return;
+            
+            if (!cls.scheduleDetails || cls.scheduleDetails.length === 0) return;
+            
+            cls.scheduleDetails.forEach(schedule => {
+                // Skip single-day schedules (ngayBatDau = ngayKetThuc)
+                if (isSingleDaySchedule(schedule)) return;
+                
+                // Filter by phase
+                if (getSchedulePhase(schedule) !== phase) return;
+                
+                const thu = schedule.thu;
+                if (!thu || thu < 2 || thu > 8) return;
+                
+                const periods = parseTietHoc(schedule.tietHoc);
+                if (periods.length === 0) return;
+                
+                const session = getSessionFromPeriod(periods[0]);
+                if (!session) return;
+                
+                const exists = grid[thu][session].some(item => item.maLopHocPhan === cls.maLopHocPhan);
+                if (!exists) {
+                    grid[thu][session].push({
+                        tenMonHoc: cls.tenMonHoc,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        tietHoc: schedule.tietHoc,
+                        periods: periods,
+                        phong: schedule.phong || 'N/A',
+                        timeRange: getTimeRange(periods),
+                        lmsLink: schedule.lmsLink || '',
+                        isRegistered: false
+                    });
+                }
+            });
+        });
+        
+        // Generate HTML
+        let html = '<table class="w-full border-collapse" style="min-width: 900px;">';
+        
+        // Header row
+        html += '<thead><tr class="bg-gradient-to-r from-teal-50 to-teal-100">';
+        html += '<th class="border border-gray-300 px-2 py-3 text-center font-semibold" colspan="2">Ca học</th>';
+        
+        dayNames.forEach(dayName => {
+            html += `<th class="border border-gray-300 px-2 py-3 text-center font-semibold">${dayName}</th>`;
+        });
+        
+        html += '</tr></thead><tbody>';
+        
+        // Body rows
+        Object.keys(sessions).forEach(caName => {
+            const sessionList = sessions[caName];
+            
+            // Ca name row (rowspan)
+            html += `<tr><td class="border border-gray-300 px-4 py-2 text-center font-bold bg-gray-100" rowspan="${sessionList.length + 1}">${caName}</td></tr>`;
+            
+            sessionList.forEach(session => {
+                html += '<tr>';
+                html += `<td class="border border-gray-300 px-4 py-2 text-center font-semibold bg-gray-50">${session}</td>`;
+                
+                // Loop through days (thu 2-8)
+                for (let thu = 2; thu <= 8; thu++) {
+                    const classes = grid[thu][session] || [];
+                    
+                    if (classes.length === 0) {
+                        html += '<td class="border border-gray-300 px-2 py-2"></td>';
+                    } else {
+                        html += '<td class="border border-gray-300 px-2 py-2">';
+                        
+                        classes.forEach(cls => {
+                            const bgColor = cls.isRegistered ? 'rgb(0, 134, 137)' : 'rgb(255, 152, 0)';
+                            // Check if E-Learning
+                            const isELearning = cls.phong && cls.phong.toLowerCase().includes('e-learning');
+                            const roomHtml = isELearning 
+                                ? `<div class="flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    <span>E-Learning</span>
+                                   </div>` 
+                                : '';
+                            
+                            html += `
+                                <div class="mb-2 last:mb-0 p-2 rounded text-white text-sm" style="background-color: ${bgColor}">
+                                    <p class="font-semibold">${cls.tenMonHoc}</p>
+                                    <div class="mt-1 space-y-0.5 text-xs">
+                                        <p class="font-mono">${cls.maLopHocPhan}</p>
+                                        <div class="flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                                            <span>Tiết: ${cls.tietHoc}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            <span>${cls.timeRange}</span>
+                                        </div>
+                                        ${roomHtml}
+                                        ${cls.lmsLink ? `<a href="${cls.lmsLink}" target="_blank" class="inline-flex items-center gap-1 text-white underline hover:text-yellow-200"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>LMS</a>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</td>';
+                    }
+                }
+                
+                html += '</tr>';
+            });
+        });
+        
+        html += '</tbody></table>';
+        
+        return html;
+    };
+    
+    // Update timetable display
+    const updateTimetable = () => {
+        const html = generateTimetable(currentPhase);
+        timetableContent.innerHTML = html;
+    };
+    
+    // Expose show function globally (must be after generateTimetable is defined)
+    window.showTimetableModal = () => {
+        // Get data from global scope (exposed in app.js)
+        if (window.getRegisteredClassesData) registeredData = window.getRegisteredClassesData();
+        if (window.getSelectedClassesData) selectedData = window.getSelectedClassesData();
+        
+        timetableModal.classList.remove('hidden');
+        updateTimetable();
+    };
+
+    // View timetable button click handler
+    if (viewTimetableBtn) {
+        viewTimetableBtn.addEventListener('click', () => {
+            window.showTimetableModal();
+        });
+    }
+    
+    // Event handlers
+    if (closeTimetableModal) {
+        closeTimetableModal.addEventListener('click', () => {
+            timetableModal.classList.add('hidden');
+        });
+    }
+    
+    if (timetableModal) {
+        timetableModal.addEventListener('click', (e) => {
+            if (e.target === timetableModal) {
+                timetableModal.classList.add('hidden');
+            }
+        });
+    }
+    
+    timetableTabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const phase = parseInt(btn.dataset.phase);
+            currentPhase = phase;
+            
+            // Update active tab
+            timetableTabBtns.forEach(b => {
+                b.classList.remove('border-b-4', 'border-teal-600', 'text-teal-600');
+                b.classList.add('text-gray-600');
+            });
+            btn.classList.add('border-b-4', 'border-teal-600', 'text-teal-600');
+            btn.classList.remove('text-gray-600');
+            
+            updateTimetable();
+        });
+    });
+    };
+
+    // Code-splitting entry guard: index.html loads this chunk lazily (first "Xem thời khóa
+    // biểu" click or idle preload), by which time DOMContentLoaded has often already fired.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+})();

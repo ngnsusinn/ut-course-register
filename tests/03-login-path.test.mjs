@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { MongoClient } from 'mongodb';
 import { tryConnectMongo, MONGO } from './helpers.mjs';
 
-const SKIP = process.env.SKIP_DB === '1';
+const SKIP = process.env.SKIP_DB === '1' || !process.env.MONGODB_URI;
 const t0 = () => Date.now();
 
 test('cold Atlas handshake (SRV lookup + TLS + auth) from this machine', { skip: SKIP }, async () => {

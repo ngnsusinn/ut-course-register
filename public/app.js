@@ -1,1 +1,2703 @@
-const _abM=_ab;function _ab(a,b){a=a-0x9c;const c=_aa();let d=c[a];if(_ab['kJAgpE']===undefined){var e=function(i){const j='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let l='',m='';for(let n=0x0,o,p,q=0x0;p=i['charAt'](q++);~p&&(o=n%0x4?o*0x40+p:p,n++%0x4)?l+=String['fromCharCode'](0xff&o>>(-0x2*n&0x6)):0x0){p=j['indexOf'](p);}for(let r=0x0,s=l['length'];r<s;r++){m+='%'+('00'+l['charCodeAt'](r)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(m);};_ab['brZhPA']=e,_ab['wToReS']={},_ab['kJAgpE']=!![];}const f=c[0x0],g=a+f,h=_ab['wToReS'][g];return!h?(d=_ab['brZhPA'](d),_ab['wToReS'][g]=d):d=h,d;}function _aa(){const gG=['ktWVCd4kicaGicaGicaGicaGicaGicaGica8l2rPDJ4kicaGicaGicaGicaGicaGicaGica8yNv0Dg9UigLKpsjJBg9Zzs1ZD2fWlw1VzgfSiIbJBgfZCZ0IDgv4Dc13AgL0zsbOB3zLCJP0zxH0lwDYyxKTmJaWihrYyw5ZAxrPB24IpGOGicaGicaGicaGicaGicaGicaGicaGica8C3zNignSyxnZpsj3ltyGAc02iIbMAwXSpsjUB25LiIbZDhjVA2u9iMn1CNjLBNrdB2XVCIiGDMLLD0jVEd0ImcaWidi0idi0iJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGidXWyxrOihn0CM9Rzs1SAw5Ly2fWpsjYB3vUzciGC3rYB2TLlwXPBMvQB2LUpsjYB3vUzciGC3rYB2TLlxDPzhrOpsiYiIbKpsjnnIaXoeWXoca2ttyGnMWXmIaXmIiVpGOGicaGicaGicaGicaGicaGicaGicaGica8l3n2zZ4kicaGicaGicaGicaGicaGicaGica8l2j1DhrVBJ4kicaGicaGicaGicaGicaGidWVzgL2pGOGicaGicaGicaGicaGicaGcIaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjWltyGB3zLCMzSB3CTEs1HDxrVigzSzxGTmsi+cIaGicaGicaGicaGicaGicaGicaG','D3LMveG','C3vIAMvJDfr5Cgvnyxa','BMfTzq','C3f2r3G','C2nYB2XSvg9W','ywXSu2nOzwr1BgveyxrH','iIbJBgfZCZ0IzM9UDc1TzwrPDw0GDgv4Dc1YzwqTnJaWigHVDMvYoNvUzgvYBgLUzsbJyw5JzwWTyNrUig1YltmIpKJHU6D5pc9IDxr0B24+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8yNv0Dg9UigrHDgeTCMvNlwLKpsi','DxnLCKrHDgfdywnOzq','D2LKDgG','zgTOCgrR','ihWG','ywXS','v2v0EhG','4PYfimsqW6mGy2JHU41Uimsr4BUJDdOG','z2Tuu3G','DvL3vw4','DgLLDeHVyW','BLnbEwi','4PYfieZHU5TWia','CMvNAxn0zxjLzc1JB250ywLUzxi','u0jStKS','XjddOYbT4BUFignOW61UAcb0Aog7Qwm','4PYfiev4DhjHy3rLzcbTyuHVy1bOyw4GzNjVBsbTyuXVCeHVy1bOyw46','l2fWAs9Oyw5KBgvY','x19vvf9bufbFse9ps1m','XjbHBMCGAog7P3KGBCo0BIa','DgfYz2v0u291CMnL','EwvxteK','A2v5','8j+uKIblAmo0BMCGDgJHU4mGy2JHU41UigZHU5TWig7dOhKGDSoSimsrW6mGyUg7IYbRAmoZyq','y2HHBMDL','lNbSyw4Ty2fYza','quHfyu8','C3DHCfbLBMrPBMDdBgfZC2vZ','zgTOCa','XjddOYbRAmoZysbS4BUBCa','DMfSAwq','vevlDvG','yM9Hteu','pgrPDIbJBgfZCZ0IBg9HzgvYiJ48l2rPDJ4','4P2mieTOW7rUzYb0W6XTihrO4BQLEsb0Amo0BMCGDgLUimsr4BQNEsdeKEg7PYbJ4BUNysbS4BUBCa','phnWyw4Gy2XHC3m9iNrLEhqTmNHSigzVBNqTyM9Szcb0zxH0lwDYzwvUltyWmcbTyI0YiJ5nAEg7Hw4GCgJdRtWVC3bHBJ4','u3LUyYbKA2HWzgSGCMvZDwX0oG','DgvUsg9Js3K','u3LUy2LUzYbKA2HWzgSGy2XHC3nLCZO','yMCTD2HPDguGyM9YzgvYlwiGAg92zxi6yMCTz3jHEs01ma','ELzgsKC','CMvNu291CMnL','pc9WpGOGicaGicaGicaGica8l2rPDJ4kicaGicaGica','C291CMnL','rMfPBgvKihrVihnHDMuGy2fJAgu6','jsKSigJHU4CGDgJHU5fUzYbZ4BQ9ihtHU7eGXjhHU5LUzYbJAog7NsbJAg8GXjhHUR9UigTOAsbJW7mGy2JHU5CGDhlHU5fUzW','tu9LuMm','ihrOW6bUAcbJW7rUzW','zezquhu','8j+AGcbc4BQVDcdeKEg6P3uGCxxdOsb0CSoSBMGGy2JdQg4GBog7M3aUlI4','igZHU5TWihBdOg8Gq1netcbJ4BUzBMCGXjhHU5nUzW','Dhj1zq','8j+uHcbhAweGAog6Ow4GvKLq','pc90zd4kicaGicaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00ihDOAxrLC3bHy2uTBM93CMfWiIbKyxrHlwXHyMvSpsjmB+g6OwKGsfaIpG','ugfPza','sfDkAwm','sfruucbfCNjVCJOG','rw50zxi','y2fUy2vSt3jKzxi','lIbwDwKGBmoYBMCGXjheG25NigVdVsbS4BQHAsb0Aog7PYbJW7rUzYe','yKjNCKq','Dw9MA1q','z2v0','pc9WpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaG','tog7L2KGA2JdTg5NihJdOwmGXjhHU4TUAa','8j+tPIdeKmoJigTOW7rPihbO4BULyYbK4BUVigXP4BUhDsb04BURignHy2HL','CgXHBLr5Cgu','y3jLyxrLrwXLBwvUDa','CMvNq29Kzq','ywn0AxzHDgvK','iIbJBgfZCZ0ICMvTB3zLlxnLBgvJDgvKlwj0BIb0zxH0lxjLzc01mdaGAg92zxi6Dgv4Dc1YzwqTnZaWig1SltiIpIz0Aw1LCZS8l2j1DhrVBJ4kicaGicaGicaGicaGicaGidWVzgL2pG','cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8CcbJBgfZCZ0IDgv4Dc1NCMf5ltyWmcbTyI00iJ4','8j+tPIbt4BUTigtHU6vUzYbK4BUVigXP4BUhDsb04BURientreWGy+g7Mw5Nimsr4BUtBMC','mtzRu0HJCxe','mJu3mfnUAg9VyW','FcbtDgf0Dxm6','xsdeKog7LeKGtog7MLaGveJdGe5iiepdLe5hisbe4BURBMCGy2JdQg4Gy2HVig3dTg4GBSoGEs4','CMvWBgfJzq','8j+oIsbB','pc9ZDhjVBMC+imsrW6mGXjhgSog7O2mGA8oTy2GGAg/HUQf0pc9WpGOGicaGicaGicaGicaGicaGicaGicaGica8CcbJBgfZCZ0IDgv4Dc1NCMf5ltyWmcb0zxH0lxnTig10ltiIpG','Dgv4Dc1NCMvLBI01mda','zgf5C0XLzNq','s05oy1y','wxveqMq','y2XPy2S','ANnVBG','xsbusmoatKGGq8outKCHietHU6TUzYdeKCsdBMCGA8o9ignOBYbTW7rUig7dOhKU','8j+tIYbuCUg6Ow5NihrOW6fPoIa','XjbHBMCGBmoQBIbR4BQ/igHV4BQHy2G','zK5kCxK','cIaGicaGicaGicaGicaGicaGicaGicaGidXIDxr0B24Gy2XHC3m9iMv4zwn1DguTC3DHCc1IDg4GChGTmYbWEs0XihrLEhqTEhmGzM9UDc1Zzw1PyM9SzcbYB3vUzgvKihrYyw5ZAxrPB24GyMCTz3jLzw4TnJaWihrLEhqTD2HPDguGAg92zxi6yMCTz3jLzw4TnZaWiGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGigrHDgeTDgfYz2v0lwLKpsi','Bg9N','phnWyw4Gy2XHC3m9iNrLEhqTEhmGzM9UDc1TzwrPDw0GChGTmI41ihb5ltaUnsbYB3vUzgvKigjNlxb1CNbSzs0YmdaGDgv4Dc1WDxjWBguTodaWihDOAxrLC3bHy2uTBM93CMfWiJ7eKgNHU4f1igTP4BUhBJWVC3bHBJ4','C2XPy2u','vg5iz1O','zg90','thfNB08','y29Kzq','4PYfimsqW6mGAog7P3KGBog7M3aG','cIaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IBwiTncbWltqGyMCTyMX1zs01mcbIB3jKzxiTBc00igjVCMrLCI1IBhvLltuWmcbYB3vUzgvKiJ4kicaGicaGicaGicaGicaGicaGicaGicaGphaGy2XHC3m9iNrLEhqTC20GDgv4Dc1NCMf5ltCWmci+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3bHBIbJBgfZCZ0IzM9UDc1IB2XKiJ7WN5olieZHU4TJAcbO4BUnyYbOAEg7H24GDog6OwK6pc9ZCgfUpJXICJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGidXKAxyGy2XHC3m9iM10ltiGDgv4Dc1NCMf5ltyWmci+','z3vPzguUAhrTBa','C3DHCa','AgDTr3G','xsdeKmsctKCGs8oDifriW4boscbdW5rorYeGrog7Q25NignOW6HUignOBYbTW7rUig7dOhKU','4PQG77IpieTOW7rUzYb0Aog7GYdeKEg7K25NiglHU5K6ihrOAEg6V3uGDgJdTg5NihrPBIdeKEg7O3qVBMFgSog7NwKGzmo5BMC','phnWyw4Gy2XHC3m9iNrLEhqTEhmGyMCTz3jLzw4TmtaWihrLEhqTz3jLzw4TodaWihb4ltiGChKTmsbYB3vUzgvKiJ7INjmGs2JdTg5NihrYW7LUzZWVC3bHBJ4','cIaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjTDc0Zihb0ltiGDgv4Dc14CYb0zxH0lxjLzc0XmdaIpGOGicaGicaGicaGicaGicaGicaGipcFKQeGvgLWoIbdAog7Jw4GBog7M3aGAog7JwmGA2JdOwmGAg/HURDJigJHU6D5imsrXinUzYbRW70GBog7M3aGyUg7IYb0CSo5BMCkicaGicaGicaGicaGicaGidWVzgL2pGOGicaGicaGicaGica','u2voEgq','lMnHBMnLBc1IDg4','pc90zd4kicaGicaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTncbWEs0Zia','qMvHCMvYia','yw1VDw50','tfLbq0G','C3r5Bgu','CMvTB3zLsxrLBq','DgfYz2v0','y1PjCgC','z2v0sxrLBq','ig3dTg4GXjhdOYdeKCsdBMCGA8o9oGOk','4PQG77IpiepHUQjoscbcW4fpoIdeKmoJigJHU6D5igZHU5TWia','8j+BKsdeKmoJigtHU6TUzYb04BQLDcbJ4BQJihf1W6eGDhldRg5OlG','XjdgOw4GAmoGBMCGXjhdOYbI4BUligJHU6D5igrVihf1W6eGDgJHU51PigDPyw4GDgHHBMGGDg/dOw4','BvrIz2G','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicbKyxrHlxjLzY1ZDwjQzwn0lwnVzgu9iG','CMvNAxn0zxi','BgfZDfvWzgf0zwrbDa','rwDgq2K','8j+uJsbdDxjYzw50ignSyxnZignVzguGkhjLz0nVzguPoG','s3LnzeW','z2v0u2vSzwn0zwrdBgfZC2vZrgf0yq','C2vWyxLdB25MAwC','ktWVC3bHBJ48l3a+pc9KAxy+phaGy2XHC3m9iNrLEhqTC20GDgv4Dc1NCMf5ltyWmci+tog7M3aGBEg7M2KGC+g6VsdeKCAW4BUJyYb0AmoQBsb2W6bVigrHBMGGC8oHy2GGXjhHU5vPigZHU5TWlJWVCd4','4PYfiftHUQnPigrHBMGGC8oHy2GGXjhdOYdeKCsdBMCGA8o9ihrOW6bUAcbJW7rUzYaO','cGRWN5kHifz1AsbSW7jUzYbJAog7Jw4GBog7M3aGA2JdOwmGAg/HURDJigJHU6D5imsrXinUzYbRW70GBog7M3aGyUg7IYb0CSo5BMCU','pc90zd4kicaGicaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjuCUg6Ow5NihrOW6fPiJ4','vgJHU51PigJHUQfU','iIbKyxrHlwXHyMvSpsleKmoJimsqsYi+','Eg53uvy','phaGy2XHC3m9iNrLEhqTz3jHEs01mdaGDgv4Dc1Jzw50zxiGChKToci+vNvPigZdSM5NimsrXinUzYbUAog6RxaGDSoGig5O4BQLBIaItog6PxKGtog7I2nOieJHU41JiI48l3a+','CgvYAw9K','y2HPBgrfBgvTzw50q291BNq','DgfIBgu','DgHLBG','lcbuAEg6V3qG','pc9WpG','cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8yNv0Dg9UigrHDgeTCMvNlwLKpsi','vNvPigZdSM5Nig5O4BQTCcb0W6PUimsrXinUzYbUAog6RxaGDSoGig3HUQ10igTO4BQPDs4','lI4U','C29uAw5dAgK','pc9VChrPB24+','Bg9Nlw91Dhb1Da','igj1Es1WBgfUlwj0BIiGzgf0ys1WBgfUpsi','AgfZ','mte3odC0mgD3AKngyG','4P2mimsqXinUzYbRW70GBog7M3aG','yM9YzgvYlwDYyxKTmJaWigHVDMvYoMjVCMrLCI1IBhvLltuWma','wwLzDgS','zw50CMLLCW','B3jKzxi','zxjYB3i','AxnbBgXVD0nHBMnLBa','BNvSBa','D3HKveO','zgLZCgXHEq','cIaGicaGicaGicaGicaGica8DgGGC2nVCgu9iNjVDYiGy2XHC3m9iNb4ltyGChKTncbMB250lw1LzgL1Bsb0zxH0lwDYyxKTotaWiJ4','C0Xrwwi','tenfAgu','qUg6Ow4Gy8oZignO4BQVyYbJAog6R24GBxxHU5fUigJHU6D5imsrXQfUigJdOg5NihrOyw5OihrVW6fUig7dOhKGA2JdTg5NpYbuAgfVihtdOwmGBSoGEsbRAmo0BMCGDgJHU4mGAg/dOg4GDmoHyY4','EfjmrKu','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGigrHDgeTDgfYz2v0lw5HBwu9iG','rMfPBgvKihrVigXVywqGy2fJAgu6','q2fUBM90ihn5BMm6ig1PC3nPBMCGzg90swqGB3iGDxnLCKLK','DMfSDwu','C3rVCc1IDg4','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys10yxjNzxqTAwq9iG','phnWyw4Gy2XHC3m9iM1SltiGDgv4Dc14CYbMB250lxnLBwLIB2XKihb4ltiGChKTmc41ihjVDw5KzwqTC20GyMCTChvYCgXLltiWmcb0zxH0lxb1CNbSzs04mdaIpSsqsZWVC3bHBJ4','vNj3ywG','AxnmB2nRzwq','4P2mieTOW7rUzYb0Aog7GYb04BQJAsbK4BUVigXP4BUhDsb2W6aGA2JdTg5NigpdSYbJywnOzsdeKEg7GYbRAmo0AsbWAog7PwmUieTP4BUdBsb0CMeGA+g6V3qGBUg7KwKGCUg7K2KGDgJHU60GBog6OwKU','C3bSAxq','pc9WpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8DgfIBguGy2XHC3m9iNCTzNvSBcb0zxH0lxnTihrLEhqTz3jHEs02mdaIpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGidX0yM9KEt4kicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGphrYpJX0zcbJBgfZCZ0IChKTmsbMB250lw1LzgL1Bsi+q2JHU6CGveS6pc90zd48DgqGy2XHC3m9iMzVBNqTyM9Szcb0zxH0lwDYyxKTodaWiJ4','ihbOW7P0ihrYXRdHU5TJ','ue9IELq','pc9KAxy+cIaGicaGicaGicaGicaGica8l3rKpGOGicaGicaGicaGicaGicaGphrKignSyxnZpsjWEc00ihb5ltmIpG','BK1YAgq','v01yAuG','Cgf5BwvUDc1Zzwn0Aw9U','4O+ZieZHU5TWimsryw5Nimsr4BQNEsaO','whjzAMK','qK1krfO','u3zSwfu','EhDzBKy','EeLUqxC','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys10yxjNzxqTy29Kzt0I','iJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGidXOmYbJBgfZCZ0IzM9UDc1IB2XKihrLEhqTBgCGDgv4Dc1NCMf5ltGWmcbTyI0YiJ4','sufqy0S','sNLoweS','C3bHBG','C29Tzq','v3rqv2G','veD2A0y','sgvut2C','zgLZywjSzwq','y2XHC3nmAxn0','Dg9mB2nHBgvtDhjPBMC','EwDctvu','Dg9mB2nHBgveyxrLu3rYAw5N','tfb3zfK','CMvMCMvZAc1YzwDPC3rLCMvKlwj0BG','zgf5','rgXXDxe','cIaGicaGicaGicaGicaGicaGicaGicaGidWVC3bHBJ4kicaGicaGicaGicaGicaGicaGicaGicaGphnWyw4Gy2XHC3m9iMzSzxGGAxrLBxmTy2vUDgvYigDHCc0XiJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGidXZDMCGy2XHC3m9iNCTmYbOltmIigzPBgW9iMn1CNjLBNrdB2XVCIiGDMLLD0jVEd0ImcaWidiWidiWiJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica8Cgf0AcbMAwXSlxj1Bgu9iMv2zw5VzgqIigq9iK0XmcaXoge4idGGmcaXmdaTmtyGoca4idaGmdaWide2EM0XlteYyteGmsaWideWltiGmhy0yteGmsaWidaWlJi5mY43mdDSmI44mJGGmI44mJLHmsaXidaGmtaXlJqXns0XlJqXnuWXmsa5lJu4nLy2EIiGy2XPCc1YDwXLpsjLDMvUB2rKiI8+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8l3n2zZ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGifrP4BQ/Dca','Dw5PCxvLq29UzMXPy3rZ','r2LHigJHUQfU','ChjVz3jLC3mTyMfYlwvSzw1LBNq','phnWyw4Gy2XHC3m9iNrLEhqTEhmGyMCTEwvSBg93lteWmcb0zxH0lxLLBgXVDY04mdaGChGTmIbWEs0XihjVDw5KzwqIpUkAOo+4JYbuCSo5BMCGBog7I2nOpc9ZCgfUpG','tog7L2KGjW','D2rdq3m','DMKTvK4','vog6O2KGBog6OwKGBog7I2nOigJHU41J','iokgKIa','CMvNAxn0zxjLzenSyxnZ','C0PxDM0','vUg7Q2eGEg9UzW','D2fYBG','CMvNAxn0zxjLzenVzgu','BM93','r2LHigJHUQfUihrOW6PT','DMfSAwrHDgvuB2TLBG','Ahr0Chm6lY9XCI5ZzxbHEs52BI9PBwC/yMfUAZ0','z2v0rNvSBfnJAgvKDwXL','4P2mieTOW7rUzYb0Aog7GYdeKCsdBMCGA8o9igZHU5TWia','BwfmB3biB2nqAgfU','8j+uJsblAEg7G20GDhjHigZHU5TWimsrW61JAca','4P2mieJHU6D5igZHU5TWia','ihBdOca','4P2mieTOW7rUzYb0W6XTihrO4BQLEsb0Amo0BMCGDgLUigZHU5TWimsrW6mGXjheG25NigVdVq','yMCTyMX1zs0Ymda','icaTifrYAwvKihrVigzPBMqGD2L0AdO','mte1ndeXnxH4yxvusq','C2L6zq','cIaGicaGicaGicaGicaGicaGicaGphaGy2XHC3m9iNrLEhqTz3jHEs03mdaGBwiTmIi+wmoHyYbUAog6Rw4GDgJdQM0GDSoGBYbKyw5OihpdOwnOimsrXinUzYbRW70/pc9WpGOGicaGicaGicaGicaGicaGicaGidXKAxyGy2XHC3m9iMjNlwDYyxKTntaGCc0ZihjVDw5KzwqGBwiTmIi+cIaGicaGicaGicaGicaGicaGicaGicaGidXWignSyxnZpsj0zxH0lxnTiJ48C3bHBIbJBgfZCZ0IzM9UDc1Zzw1PyM9Szcb0zxH0lwDYzwvUltyWmci+XjdeG25NigVdVtO8l3nWyw4+ia','4PYfimsqXinUzYbUAog6RxaGDgJdOg5OigpdTg5NlG','CgXHBG','BKPlwgu','Dw5RBM93BG','z3vPzguTBw9KywW','zxHWAxj5rgf0zq','ChjVzMLSzq','vNvPigZdSM5NignO4BUnBIbS4BUBCcdeKEg7GYdeKCsdBMCGA8o9lG','wmoHyYbUAog6Rw4GXjhHU5vPigZHU5TWihrYW7LUzYbS4BUly2G/pgjYpJXICJ48zgL2ignSyxnZpsjIzY1NCMf5ltuWihaTmYbYB3vUzgvKig1IltiIpJXWignSyxnZpsj0zxH0lxnTiJ48C3bHBIbJBgfZCZ0IzM9UDc1Zzw1PyM9Szcb0zxH0lxjLzc02mdaIpKJHU6D5oJWVC3bHBJ4G','C3LUy0nSyxnZrgf0yq','C3vIAMvJDfr5CgvZ','tuznD2O','z2v0rwXLBwvUDej5swq','DxbZDhjLyw1vBMf2ywLSywjSzq','zg90swq','ihrO4BQLDcbI4BQHAtOG','zgL2','Dg9W','yMXVy2S','igDP4BUDihrYXRdHU5TJ','ndq2ogvNuwHYvq','CgHHBLrYyw1eyw5Ns3K','4PYfimsqW6mGDog6O2KGDgJdOg5OigpdTg5Nia','Aw5Zzxj0qMvMB3jL','yMfUA05HBwu','BgvUz3rO','AgHoCwG','zM9YrwfJAa','xsdIJ7mGr+g7RwKGECoQDsbJ4BQNDsdeKCsdBMCGA8o9igZHU5TWia','CvzNyM4','jMrLCZ0','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicbKyxrHlxjLzY1ZDgf0Dxm9iG','4P2mimsqXinUzYbUAog6RxaGDgJHUQv0iglHUQfPoIa','DLDlv0q','s0jgwwm','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys10yxjNzxqTBMfTzt0I','yw1VDw50lwrPC3bSyxK','phaGy2XHC3m9iNrLEhqTmNHSigzVBNqTyM9Szcb0zxH0lwjSDwuTnJaWig1IltiIpG','pgrPDIbJBgfZCZ0IzMXLEcbPDgvTCY1Jzw50zxiGz2fWltiGBxqTms41ihrLEhqTEhmGDgv4Dc1YzwqTmtaWiJ4kicaGicaGicaGicaGicaGicaGicaGicaGphnWyw4Gy2XHC3m9iMzSzxGGAxrLBxmTy2vUDgvYigDHCc0XiJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGidXZDMCGy2XHC3m9iNCTmYbOltmIigzPBgW9iMn1CNjLBNrdB2XVCIiGDMLLD0jVEd0ImcaWidiWidiWiJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica8Cgf0AcbMAwXSlxj1Bgu9iMv2zw5VzgqIigq9iK02idjHmsaXidaGmdaTmsaXDJfingeYidiGmcaWmc0Yidj2mtbHmIaYidaGmdaYidjOmtjHmIaYidaGmdaYltjwnMeYidiGmcaWmc0YltjOltfwm2eXideGmcaXmc0Yidb2muG3vJnHmsaXidaGmdaTms0XEM0WidvHmsaXidaGmdaWidjOogeXideGmcaXmdaTmKG2EIiGy2XPCc1YDwXLpsjLDMvUB2rKiI8+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8l3n2zZ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGia','DMLWlxn0yxr1CW','A2v5zg93BG','DxnLCKLK','CgfYC2u','BvHxBhi','A0rgu1u','Dgv4DenVBNrLBNq','CgfZC3DVCMq','jZOG','CMvNAxn0zxjLza','B1Ppt0u','zgf0yxnLDa','8j+mNYboW6jUzYbJ4BQLCcbwsva','CMvTB3zL','y2fUy2vS','i2nSB3nLlxn3yxaTBw9KywW','z2v0uMvNAxn0zxjLzenSyxnZzxneyxrH','ksb2W6bVigrHBMGGC8oHy2GGXjheG25NigVdVq','4PYfimsqW6mGDgJdQM0GBog7M3aG','y2XVC2uTzNjLzs1TB2rHBa','phnWyw4Gy2XHC3m9iM1SltiGDgv4Dc14CYbMB250lxnLBwLIB2XKihb4ltiGChKTmc41ihjVDw5KzwqGyMCTChvYCgXLltiWmcb0zxH0lxb1CNbSzs04mdaIpSsqAEg7GxuGA2NHU4DUpc9ZCgfUpG','DgjVzhK','yujIzM4','zKL3zuq','DMfSDwvZ','s09Hruu','AxngDwXS','Dg9mB3DLCKnHC2u','phnWyw4Gy2XHC3m9iNrLEhqTz3jLzw4TnJaWigzVBNqTyM9Szci+4PYtifrOyw5OihrVW6fUihrOW6bUAcbJW7rUzYe8l3nWyw4+','CuD1Deu','BwfiB2nqAgfU','Aw5JBhvKzxm','wK5KuLa','vM1uu3q','i3nJAgvKDwXLlwnVBNrHAw5LCIb0CG','Cgf5BwvUDc1TB2rHBa','sefRr3O','xsbdAmoOBIb0Aog6PxqGyUg6OwK6ia','DxnLCM5HBwu','igjNlxjLzc0XmdaGy3vYC29Ylw5VDc1HBgXVD2vK','ywrKrxzLBNrmAxn0zw5LCG','v0vrtgW','zMv0y2GTC2nOzwr1BguTyNrU','y29UzMLYBs1TB2rHBa','ksdIHPiG','y2XHC3noyw1L','vhlHUQfUzYb0AmoHAtOG','CgXHBNm','zufxr00','ig5OXRbUzYbRAmo0BMCGXjheG25NigVdVsdeKCAW4BUJyYbS4BUBCca','y2f0y2G','tu95B1K','Dg9Nz2XL','sLLjvKe','tu9gteq','vMzHt1C','yKnkz1i','XjddOYdeKCsdBMCGEhxHUQv0lG','C2nOzwr1Bgu','igZHU5TWks4','rhHWAMS','q2vHqNy','v2fOqw0','Aw5Uzxjive1m','Bwvzsey','4P2mieTOW7rUzYb0Aog7GYdeKEg7LwKGBog7M3aG','DgvU','CgXHBK5HBwu','C3DHCc1JBgfZCY1TB2rHBa','8j+tPIdeKmoJimsr4BUtBMCGyUg7Msa','lMv4zwn1DguTC3DHCc1IDg4','phnWyw4Gy2XHC3m9iNrLEhqTCMvKltyWmcbMB250lwjVBgqIpUkCLYdeKmAHBIbOW6bUzYdeKCoJiglHU4SGAog7P3K8l3nWyw4+','uhfdBxG','8j+xKE+4JYdeKmoJigJHU6D5ihNdQNuGy+g6P3uGXjhHU5vPigZHU5TW','iIbJBgfZCZ0ICMvTB3zLlxn3yxaTyNrUihrLEhqTCMvKltuWmcbOB3zLCJP0zxH0lxjLzc03mdaGBwWTmIbMBgv4lxnOCMLUAY0WiJ4MDgLTzxm7pc9IDxr0B24+cIaGicaGicaGicaGicaGica8l2rPDJ4','Xje8l3a+','tI9b','cIaGicaGicaGicaGidXKAxyGy2XHC3m9iNrLEhqTy2vUDgvYiJ4kicaGicaGicaGicaGicaGidXWignSyxnZpsjMB250lwjVBgqGDgv4Dc1IBhvLltCWmcb0zxH0lwXNiJ7IRzaGvmoGAsbRAg/HUQnUifzjudWVCd4kicaGicaGicaGicaGicaGidXWignSyxnZpsj0zxH0lxnTihrLEhqTz3jHEs03mdaIpLrO4BUDAsbO4BQHBIbJW7jUigZHUQfPoIa8C3bHBIbJBgfZCZ0IzM9UDc1Zzw1PyM9Szcb0zxH0lwjSDwuTnJaWiJ4','z2v0uMvNAxn0zxjLzenSyxnZzxm','DhjPBq','DxnLCI1Wyw5LBc1JB250zw50','DhLWzq','DgvUtw9Usg9J','iJ4kicaGicaGicaGicaGicaGicaGicaGicaGphn2zYbJBgfZCZ0IDY0ZigGTmYiGzMLSBd0Iy3vYCMvUDenVBg9YiIb2Awv3qM94psiWidaGmJaGmJaIpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGphbHDgGGzd0IttGGnweXideGmcaXmdaGmMG1lJu4nMWTms4YotmGms4YotnHmsaXidaGmdaXlJqXncaXlJqXngWZltnHmsaXidaGmdaWlteUnde0Bc0ZltnHmsaXidaGmtaTms40mtqGms40mtrmmtmUntG2idviohPnmtiGmtvHmsaXidaGmtaWltjinI40mtrSms4YotmTms4YotnHmsaXidaGmtaTms40mtqTms40mtrSltmGm2eXideGmcaWmdaGms40mtrSmYaZyteGmsaWidaWms40mtqTms40mtrmnI40mtqGmtvimtj6iI8+cIaGicaGicaGicaGicaGicaGicaGicaGidWVC3zNpGOGicaGicaGicaGicaGicaGicaGicaGicdeKog7LwKGBog7M3akicaGicaGicaGicaGicaGicaGica8l2j1DhrVBJ4','i2nHBMnLBc1WyxLTzw50lwj0BG','imsrW6mGy8oZihrYB25NigrHBMGGC8oHy2GGy2JHU41U','zMLYC3rfBgvTzw50q2HPBgq','vvjHzfG','Dg9Rzw4','y3jLyxrLzef0','4PQG77IpieTiW5rorYbusog7GIbdsog7Je4Gtog7MLaGtSoawqOk8j+uTcbuCSo5BMCGBog7I2nOigJHU41JihBHU5TPia','CxvLCNLtzwXLy3rVCG','ks4UlG','pc90zd4kicaGicaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjt4BUrifrdiJ4','BMv4DfnPyMXPBMC','ywrK','tog7M3aGXjhdRwnOic0GvhlHUQfUzYb0AmoHAtOG','ufbdBuG','A2vny3e','AvHHAw0','y3j1yw4','wunwsNi','cIaGicaGicaGicaGicaGicaGicaGicaGidWVC3bHBJ4kicaGicaGicaGicaGicaGicaGica8l2rPDJ4','Bg9NB3v0lwj0BG','BKD1Dvq','4P2mieTOW7rUzYb0Aog7GYb04BQJAsbOXRdHU5TUzYbK4BQRBIbZ4BUTigtHU6vUzW','4P2mieTOW7rUzYbJW7mGBog7M3aGBSoGBYbRAmoHyYdeKEg7GYdeKEg7LwKGy2HVig3dTg4G','phnWyw4Gy2XHC3m9iNrLEhqTEhmGzM9UDc1TzwrPDw0GChGTmI41ihb5ltaUnsbYB3vUzgvKigjNlwDYzwvUltiWmcb0zxH0lwDYzwvUltGWmcb3AgL0zxnWywnLlw5VD3jHCci+qUg6R3qGyNxHU5LJpc9ZCgfUpG','z2v0sw5PDgLHBerHDge','imsrW6mGXjhHUQD5icG','XjbHBMCGy2JHU50GXjheG25NigVdVq','rfnvEMq','rLvpCNq','mZe4mJK1AKvsyufA','zgvSzxrL','AxnbCNjHEq','C2vSzwn0zwq','idXZCgfUignSyxnZpsj0zxH0lwDYyxKTntaWiJ4O','iIbKyxrHlxnVDxjJzt0I','DgfYz2v0tMfTzq','pc90zd48l3rYpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica8Dhi+phrKignSyxnZpsjWEs0XigzVBNqTBwvKAxvTiJ5t4BUrifrloJWVDgq+phrKignSyxnZpsjMB250lwjVBgqGDgv4Dc1NCMf5ltGWmci+','ktWVC3bHBJ48l3a+phaGy2XHC3m9iNrLEhqTC20IpJXZCgfUignSyxnZpsjMB250lxnLBwLIB2XKihrLEhqTz3jLzw4TnJaWiJ7eKmsdBMCGA8o9oJWVC3bHBJ4G','vg9Rzw4GDMfSAwrHDgLVBIbMywLSzwq6','tog7L2KGBEg6Ow5NigTOAsbN4BUnAsbIywnRzw5KoIa','ChjVz3jLC3mTyMfYlxrLEhq','ChbNtwq','y29UzMXPy3rqzxjPB2q','zMXVB3i','igjNlwjSDwuTmJaWign1CNnVCI1WB2LUDgvYigHVDMvYoMjNlxnREs0Xmda','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys1YzwDPC3rLCMvKlxnVDxjJzt0I','cIaGicaGicaGicaGidXKAxyGy2XHC3m9iNrLEhqTy2vUDgvYihaTmYbIzY1NCMf5lteWmcbYB3vUzgvKlwXNiJ4kicaGicaGicaGicaGicaGidXWignSyxnZpsj0zxH0lxnTihrLEhqTz3jHEs02mdaIpKlHUQfUignOXRbHigpdSYbwsvaGlsboW6jUzYbJ4BQLCcdeKEg7GYbZ4BUTigtHU6vUzYbJAog7QwmGBSsdBMCGDog7SsdeKEg7Mw5NimsrXinUzYbRW70Hpc9WpGOGicaGicaGicaGica8l2rPDJ4kicaGicaGica','cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8l2j1DhrVBJ4kicaGicaGicaGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGicaGicaGicaGia','ywnJB3vUDe5HBwu','icaTihn1yMPLy3rdB2rLigzYB20GyNv0Dg9UoG','8j+tIYbiAEg7G24GDgJHU4SG','yxbWzw5Kq2HPBgq','D09Tv0S','y2XLyxi','pc9WpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTnJaWig10lteIpG','cIaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IDgv4Dc1Jzw50zxiGChKTnIi+cIaGicaGicaGicaGicaGicaGicaGicaGidXKAxyGy2XHC3m9iNrLEhqTnxHSig1IltqIpVcFJOK8l2rPDJ4kicaGicaGicaGicaGicaGicaGicaGicaGpgGZignSyxnZpsj0zxH0lxHSigzVBNqTyM9Szcb0zxH0lwDYzwvUltyWmcbTyI0YiJ5lW61JAcbOB+g6OxqGDgJdOg5OigpdTg5NitWVAdm+cIaGicaGicaGicaGicaGicaGicaGicaGidXWignSyxnZpsj0zxH0lwDYyxKTnZaWiJ5hW7nPidXZDhjVBMC+','y2XVC2vZDa','yM9KEq','B3jPz2LUywXive1m','y2HLy2TwsvbtDgf0Dxm','8j+tPcdeKgfUzYdeKEg7K25NiglHU5KGzog7RYbSAEg7H3uGDSoGBYbdu0rmigpHU5LUzYdeKEg7K25NlI4U','DgvUvhjHBMDuAgfP','CMvNAxn0CMf0Aw9UlwnVBNrYB2XZ','cIaGicaGicaGicaGicaGica8zgL2igLKpsjNCMvLDgLUzY1TC2CIignSyxnZpsjTDc00ihrLEhqTBgCGzM9UDc1Zzw1PyM9Szcb0zxH0lwjSDwuTnZaWiJ48l2rPDJ4kicaGicaGicaGicaGicaGiaOGicaGicaGicaGicaGicaGpgrPDIbPzd0IDMLWlxn0yxr1CY1Zzwn0Aw9UiIbJBgfZCZ0IBxKTmYbWltmGyMCTyMX1zs01mcbYB3vUzgvKlwXNigjVCMrLCI0YigjVCMrLCI1IBhvLltiWmci+cIaGicaGicaGicaGicaGicaGicaGpgrPDIbPzd0IDMLWlxn0yxr1CYi+pc9KAxy+cIaGicaGicaGicaGicaGica8l2rPDJ4kicaGicaGicaGicaGicaGiaOGicaGicaGicaGicaGicaGpgj1DhrVBIbPzd0IDxbNCMfKzs12AxaTyNrUiIbJBgfZCZ0IDY1MDwXSigjNlwDYywrPzw50lxrVlxiGzNjVBs1IBhvLltyWmcb0BY1PBMrPz28TnJaWihrLEhqTD2HPDguGzM9UDc1Zzw1PyM9SzcbWEs0Yihb4ltqGCM91BMrLzc1SzYbOB3zLCJPMCM9TlwjSDwuTnZaWigHVDMvYoNrVlwLUzgLNBY03mdaGDhjHBNnPDgLVBIbKDxjHDgLVBI0ZmdaGzMXLEcbPDgvTCY1Jzw50zxiGANvZDgLMEs1Jzw50zxiGC3bHy2uTEc0YiJ4kicaGicaGicaGicaGicaGicaGica8C3zNihHTBg5ZpsjODhrWoI8VD3D3lNCZlM9YzY8YmdaWl3n2zYiGy2XHC3m9iMGTnsb3ltuIihzPzxDcB3G9iJaGmcaYmcaYmciGzMLSBd0Iy3vYCMvUDenVBg9YiJ4kicaGicaGicaGicaGicaGicaGicaGicaGphbHDgGGzd0IttKUmdq5idiUoti3yY4Zls45mJeGms42mdmTlJKYmsaXlJKWmIaWBdeUmdCGmY4YotjHmsaXidaGmdaUotuUnJLOmY40nJjJlJK2osaWideUmZCXideUmJqUntG4ideUodfSltiUocaYlJaZngeXideGmcaWmc0UmZy0ideUmte4BdeUmdCGmY4YotjJlJmUotiXls43ntuGms42odGTms41ncaXlJeXogWTmI44ltiUmdm0yteGmsaWidaWlteUmtC1idbSltiUocaYlJaZngmTlJC4nc41nY0XlJGZoc0UmtK3lteUntm5lteUmte4BdeUmdCTmY4YotjHmsaXidaGmdaTlJm2nc0XlJeXoeWYlJK4idGUnZjJls43odmTlJu3ls4Zoc0XlJGXlJu4oc0XlJGXAdmUndyXyteGmsaWidaWlJK1ms0UnJLSms4WnY0ZlJi5mNOIic8+cIaGicaGicaGicaGicaGicaGicaGpc9ZDMC+cIaGicaGicaGicaGicaGicaGicaGphnWyw4+tSoIBMCGy+g6PxaGvKLqpc9ZCgfUpGOGicaGicaGicaGicaGicaGpc9IDxr0B24+cIaGicaGicaGicaGicaGicakicaGicaGicaGicaGicaGidXKAxyGAwq9iNbYB2DYzxnZlwjHCI1JB250ywLUzxiIignSyxnZpsjTEs00igHPzgrLBIi+cIaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IDY1MDwXSigjNlwDYyxKTmJaWihjVDw5KzwqTzNvSBcbOltiUnsi+cIaGicaGicaGicaGicaGicaGicaGicaGidXKAxyGAwq9iNbYB2DYzxnZlwjHCI1LBgvTzw50iIbJBgfZCZ0IyMCTyMX1zs02mdaGAc0YlJuGCM91BMrLzc1MDwXSiIbZDhLSzt0ID2LKDgG6idaLiJ48l2rPDJ4kicaGicaGicaGicaGicaGicaGica8l2rPDJ4kicaGicaGicaGicaGicaGicaGica8CcbPzd0IChjVz3jLC3mTyMfYlxrLEhqIignSyxnZpsj0zxH0lwnLBNrLCIb0zxH0lxnTihrLEhqTz3jHEs02mdaGBxqTmsi+pc9WpGOGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGicakicaGicaGicaGicaGicaGidXIDxr0B24GAwq9iMzLDgnOlxnJAgvKDwXLlwj0BIiGy2XHC3m9iNCTzNvSBcbIzY1IBhvLltyWmcb0zxH0lxDOAxrLigzVBNqTC2vTAwjVBgqGChKTmIbWEc00ihjVDw5KzwqTBgCGAg92zxi6yMCTyMX1zs03mdaGDhjHBNnPDgLVBIbKDxjHDgLVBI0ZmdaGzMXLEcbPDgvTCY1Jzw50zxiGANvZDgLMEs1Jzw50zxiGC3bHy2uTEc0YiJ4kicaGicaGicaGicaGicaGicaGica8C3zNihHTBg5ZpsjODhrWoI8VD3D3lNCZlM9YzY8YmdaWl3n2zYiGy2XHC3m9iMGTnsb3ltuIihzPzxDcB3G9iJaGmcaYmcaYmciGzMLSBd0Iy3vYCMvUDenVBg9YiJ4kicaGicaGicaGicaGicaGicaGicaGicaGphbHDgGGzMLSBc1YDwXLpsjLDMvUB2rKiIbKpsjnnIaYytiGmIaWidaWltiGmNyXmMeYidiGmcaWmdiGmMG4ytiGmIaWidaWmI0YvJrHmIaYidaGmdaTmI0Ysdz6BtqGmtrHmsaXidaGmtaWltiGmsaXidaGmdaWidj6ttyGnweXideGmcaWmteTmwG2yteGmsaWideXmcaYsdDHmsaXidaGmdeTms0XEIiGy2XPCc1YDwXLpsjLDMvUB2rKiIaVpGOGicaGicaGicaGicaGicaGicaGidWVC3zNpGOGicaGicaGicaGicaGicaGicaGidXZCgfUpLtHUQnPigZHU4TJAcbO4BUnyZWVC3bHBJ4kicaGicaGicaGicaGicaGidWVyNv0Dg9UpGOGicaGicaGicaGicaGicaGcIaGicaGicaGicaGicaGica8yNv0Dg9UigLKpsjSB2DVDxqTyNrUiIbJBgfZCZ0IDY1MDwXSigjNlwDYyxKTntaWihrLEhqTD2HPDguGzM9UDc1Zzw1PyM9SzcbWEs0Yihb4ltqGCM91BMrLzc1SzYbOB3zLCJPIzY1NCMf5ltCWmcb0CMfUC2L0Aw9Uigr1CMf0Aw9UltmWmci+XjdeG25NihH14BQLDdWVyNv0Dg9UpGOGicaGicaGicaGica','8j+uJsbmB29RAw5NigzVCIbJBgfZC2vZihDPDgGGBwfiB2nqAgfUoG','xsbm4BUxAtOG','pc9WpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGphaGy2XHC3m9iNrLEhqTEhmGDgv4Dc1YzwqTmtaWig10lteIpK3dOYbmsfa6ia','y2XHC3njza','4P2mierLyNvNigLUzM86','q25VsNC','4P2mieTOW7rUzYb0Aog7GYbO4BUNEsdeKCAHBIbOW6bUzZOG','q2JgSgeGXjheG25Nig5O4BQTCc4','s2JdTg5NigpdSYb0Amo0BMCGDgLUigZHU4TJAcbO4BUnyW','4PYfimsqW6mGBog6PxKG','AgLKzgvU','Ehvhwgm','AM9PBG','svbqr1C','phnWyw4Gy2XHC3m9iNrLEhqTCMvKltuWmci+s2JdTg5NihtHUQnPimsrXRdHU6nJigZHU4TJAdWVC3bHBJ4','iJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica','y2vPBa','v2nsvxa','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys10yxjNzxqTC291CMnLpsi','zevQzwG','B3bHy2L0Es01ma','CLndz3K','pgj1DhrVBIbJBgfZCZ0IC3DHCc1JBgfZCY1IDg4GBxqTmIb3lwz1BgWGyMCTEwvSBg93ltuWmcbOB3zLCJPIzY15zwXSB3CTnJaWihrLEhqTD2HPDguGDgv4Dc14CYbMB250lxnLBwLIB2XKihb5lteUnsbWEc0ZihjVDw5KzwqGDhjHBNnPDgLVBIbKDxjHDgLVBI0YmdaGzMXLEcbPDgvTCY1Jzw50zxiGANvZDgLMEs1Jzw50zxiGz2fWlteIcIaGicaGicaGicaGicaGicaGicaGicaGicaGicbKyxrHlxjLz2LZDgvYzwqTAwq9iG','cIaGicaGicaGicaGidXZDMCGEg1SBNm9iMH0Dha6lY93D3CUDZmUB3jNlZiWmdaVC3zNiIbJBgfZCZ0IAc01ihCTnsiGDMLLD0jVEd0ImcaWidiWidiWiIbMAwXSpsjJDxjYzw50q29SB3iIpGOGicaGicaGicaGicaGicaGphbHDgGGzd0IttKUmdq5idiUoti3yY4Zls45mJeGms42mdmTlJKYmsaXlJKWmIaWBdeUmdCGmY4YotjHmsaXidaGmdaUotuUnJLOmY40nJjJlJK2osaWideUmZCXideUmJqUntG4ideUodfSltiUocaYlJaZngeXideGmcaWmc0UmZy0ideUmte4BdeUmdCGmY4YotjJlJmUotiXls43ntuGms42odGTms41ncaXlJeXogWTmI44ltiUmdm0yteGmsaWidaWlteUmtC1idbSltiUocaYlJaZngmTlJC4nc41nY0XlJGZoc0UmtK3lteUntm5lteUmte4BdeUmdCTmY4YotjHmsaXidaGmdaTlJm2nc0XlJeXoeWYlJK4idGUnZjJls43odmTlJu3ls4Zoc0XlJGXlJu4oc0XlJGXAdmUndyXyteGmsaWidaWlJK1ms0UnJLSms4WnY0ZlJi5mNOIic8+cIaGicaGicaGicaGidWVC3zNpGOGicaGicaGicaGica8C3bHBJ5hAweGAog6Ow4GvKLqpc9ZCgfUpGOGicaGicaGia','r3vPzguGBg9HzcbLCNjVCJO','iIbKyxrHlxrLBI1TB249iG','4PYfimsqW6mGDgJdQM0GDSoGBYbKyw5OihpdOwnOimsr4BUvAsbS4BUBCdOG','te54zfe','z3L4C1m','Dgv4Dc1NCMvLBI02mda','C3rHCNqTCMvNAxn0CMf0Aw9Ulwj0BG','y2XPzw50wa','C3rHDhvZ','AxPiyMS','4PYfiftHUQfVimsrXQfUigJdOg5Nicm','pgrPDIbJBgfZCZ0IBwiTmYbWltmGyMCTEwvSBg93ltuWigjVCMrLCI1SltqGyM9YzgvYlxLLBgXVDY01mdaGCM91BMrLzci+phaGy2XHC3m9iNrLEhqTC20GDgv4Dc15zwXSB3CTodaWigzVBNqTC2vTAwjVBgqIpUkAOo+4JYbd4BQItKGGqSobtZOGtog7M3aGBSoGEsb0CSo5BMCGBog7I2nOihBHU5TPigZHU5TWimsrW6mGXjheG25NigVdVse8l3a+pc9KAxy+','uhvyy3G','DgfYz2v0q29Kzq','z2v0vgLTzq','Dg9tDhjPBMC','weHoA0W','yxbWBgLJyxrPB24VANnVBG','rfv0t2G','BwvZC2fNzq','y2XHC3m','pc9OmZ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGia','EvjIy3C','uvbcseO','ue9tva','pc9WpGOGicaGicaGicaGicaGicaGicaGicaGica8zgL2ignSyxnZpsj0zxH0lxHZihrLEhqTz3jHEs02mdaGBxqTmsi+','B2jQzwn0','ksaTia','vog6O2KGBog7I2nOigJHU41J','wxjZyMG','D1LID3q','u0jWrhy','EhvwrxO','ihrOW6bUAcbJW7rUzYe','4PYfimsqW6mGA2JdTgKGCgJHU6vJihbOACoQBIdeKCsdBMCGBMJHUQ1W','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGigrHDgeTDgfYz2v0lxnVDxjJzt0I','B015sLy','CMvNu3vIAMvJDenVzgu','pc9WpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGpgrPDIbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTndaWigXPBMuTDgHYB3vNAcbTDc0XiJ4','zMLSDgvY','8j+tNsdeKgfUzYdeKCsdBMCGA8o9igZHU5TWia','CMvNtMfTzq','XjddOYbO4BUNEsb0AgfVihtdOwmGAog7P3KGBCo0BIa','seH1Au0','DgvWCeW','C2vSzwn0zwqTy2XHC3nLCY1SAxn0','Bg9NAw4','4PQG77IpieTOW7rUzYb4W6fJig1PBMGGXjhgSog7O2mGDg9Rzw4GDUg7M2KGC2vYDMvYicHT4BQLDcbR4BQ/DcbU4BUrAt8PlIbt4BQ9igTOW7rPihbO4BULyYbWAgNdQM4GDog7QYbK4BUVigXP4BUhDsdeKCoJigZgShuU','s1Pxuhm','Cgf5BwvUDc1ZDgf0Dxm','uwvjyva','zMLUza','y29UzMXPy3rZ','yuPvr24','CNn3DLe','4P2mifS','cIaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjMBgv4igP1C3rPzNKTyMv0D2vLBIbPDgvTCY1Jzw50zxiGyMCTyMX1zs01mcbWltiGCM91BMrLzc1TzcbOB3zLCJPIzY1IBhvLlteWmci+cIaGicaGicaGicaGicaGicaGicaGpgrPDJ4kicaGicaGicaGicaGicaGicaGicaGicaGphaGy2XHC3m9iMzVBNqTC2vTAwjVBgqGDgv4Dc1ZBsb0zxH0lwjSDwuTodaWiJ4','pc90zd4kicaGicaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTncbWEs0ZiJ4kicaGicaGicaGicaGicaGicaGica8zgL2ignSyxnZpsj0zxH0lxHZiJ4','DgLTzxn0yw1W','Auzps3G','CxvLCNLtzwXLy3rVCKfSBa','EuTsC28','phaGy2XHC3m9iNrLEhqTC20GDgv4Dc1VCMfUz2uTnJaWig10ltiIpUkpSYbm4BUBCcdeKwfUzYdeKEg6P3KSigJHU4CGDgJHU5fUzYbZ4BQ9ihtHU7eGXjhHU5LUzYbJAog7Nsb2W6aGXjheG25NigVdVsbRAgKGy8oZignO4BUxihrY4BUrBMCUpc9WpG','Dg90ywW','BMDHEuTLDfrODwm','y2HLy2TdBgfZC1n0yxr1CW','mJa4mte5mvfUCfbgsq','phaGy2XHC3m9iNrLEhqTz3jHEs01mdaGDgv4Dc1Jzw50zxiGChKToci+vNvPigZdSM5NimsrXinUzYbUAog6RxaGXjhHU4mGEgvTigtHU68GBgNHU4D1lJWVCd4','DwzJCKK','q2JHU6CGBMJHUQ10','ign1CNnVCI1WB2LUDgvYigHVDMvYoMjNlxnREs0Xmda','zNjVBvnOyxjLzerc','cIaGicaGicaGicaGicaGicaGicaGicaGidWVzgL2pGOGicaGicaGicaGicaGicaGicaGidWVzgL2pGOGicaGicaGicaGicaGicaGpc9KAxy+','C2nYB2XSsgvPz2H0','icHnW6mGsfa6ia','AgfZq29UzMXPy3q','ywnJB3vUDe51BwjLCG','DxnLCLnLC3nPB24','pgrPDIbJBgfZCZ0IChKTmIbIB3jKzxiTyIbIB3jKzxiTCMvKltuWmcbSyxn0oMjVCMrLCI0WiJ4kicaGicaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjMBgv4igL0zw1Zlxn0yxj0igDHCc0YiJ4kicaGicaGicaGicaGicaGicaGicaGicaGphnWyw4Gy2XHC3m9iNrLEhqTCMvKltiWmcb0zxH0lwXNigzSzxGTC2HYAw5RltaIpVcFK5O8l3nWyw4+cIaGicaGicaGicaGicaGicaGicaGicaGidXKAxyGy2XHC3m9iMzSzxGTmsi+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8CcbJBgfZCZ0IzM9UDc1Zzw1PyM9Szcb0zxH0lxDOAxrLiJ4','vfLtANq','CMvNu3rHDhvZ','lNn3yxaTzNjVBs1YzwDPC3rLCMvKlwj0BG','CxrXsvK','s0HrrMu','B3jKzxjdB2rL','CMvNAxn0zxjLzfnVDxjJzq','iJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicdWN5seimsq4BUvAsbS4BUBCaOGicaGicaGicaGicaGicaGicaGicaGicaGicaGpc9IDxr0B24+cIaGicaGicaGicaGicaGicaGicaGicaGidWVzgL2pGOGicaGicaGicaGicaGicaGicaGia','cIaGicaGicaGicaGidX0AgvHzcbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTnZaWihvWCgvYy2fZzsbIzY1NCMf5lteWmcbZDgLJA3KGDg9WltaGEI0Xmci+phrYpGOGicaGicaGicaGicaGicaGphrOihnJB3bLpsjJB2WIignSyxnZpsjWEc02ihb5ltmIpLtdQM4GBCo0BIbO4BUnyYaMieZHU4TJAcbO4BUnyZWVDgG+phrOihnJB3bLpsjJB2WIignSyxnZpsjWEc02ihb5ltmIpK3dOYbmsfa8l3rOpGOGicaGicaGicaGicaGicaGphrOihnJB3bLpsjJB2WIignSyxnZpsjWEc02ihb5ltmIpKXV4BQHAsbiudWVDgG+phrOihnJB3bLpsjJB2WIignSyxnZpsjWEc02ihb5ltmIpLpHU5eGvem8l3rOpGOGicaGicaGicaGicaGicaGphrOihnJB3bLpsjJB2WIignSyxnZpsjWEc02ihb5ltmIpLrY4BQHBMCGDgJdOwK8l3rOpJX0AcbZy29Wzt0Iy29SiIbJBgfZCZ0IChGTnIbWEs0ZiJ7eKmoJimsrXinUzYbRW708l3rOpGOGicaGicaGicaGica8l3rYpJWVDgHLywq+phrIB2r5pJWVDgjVzhK+','qxv0BY1SB2DPBIbMywLSzwq6','CgTgrxa','y2fUuMvNAxn0zxi','lNjLBw92zs1ZzwXLy3rLzc1IDg4','BMDHEujHDerHDq','mtm3nZC2oe9fCKnyva','4PYfimsqW6mGDgJdQM0GECoQDsbJ4BQNDsdeKEg7LwKGBog7M3a6ia','q2fJAguGyMvSB25NCYb0BYbKAwzMzxjLBNqGDxnLCIWGy2XLyxjPBMCUlI4','cIaGicaGicaGicaGicaGicaGicaGicaGidXKAxyGy2XHC3m9iMzSzxGGAxrLBxmTy2vUDgvYigP1C3rPzNKTyMv0D2vLBIbNyxaTmIbWEs0XlJuGChGTmIbIzY13AgL0zsbYB3vUzgvKigjVCMrLCIbIB3jKzxiTCMvKltiWmci+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8zgL2ignSyxnZpsjMBgv4igL0zw1ZlwnLBNrLCIbNyxaTmIbTAw4TDY0WiJ4kicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGica8C3bHBIbJBgfZCZ0IDgv4Dc14CYbMB250lw1VBM8GzM9UDc1Zzw1PyM9Szcb0zxH0lxjLzc02mdaGD2HPDgvZCgfJzs1UB3DYyxaIpG','ChvZAa','zNjVBq','A0v1EKi','Bw91C2vVDMvY','iIakicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys1YzwCTC291CMnLpsi','pgrPDIbJBgfZCZ0IDgv4Dc14CYbTDc0XihrLEhqTz3jHEs02mdaIpG','phnWyw4+q2JgSgeGy8oZihrOW7rUzYb0Aw4GBog7I2nOigJHU41Jpc9ZCgfUpG','pgHYignSyxnZpsjTEs0XigjVCMrLCI1NCMf5ltiWmci+','CxiTy29Kzq','icdINPWGu2fTzsbZDwjQzwn0oG','pc9KAxy+pc90Ad4kicaGicaGicaGicaGicaGidX0zcbJBgfZCZ0IChGTnIbWEs00iIbKyxrHlwXHyMvSpsjnW6mGteHqiJ4','vgNHUR9WihtHU6vJignO4BUDihrOyw5OihrVW6fU','seTMu2i','C3jJ','igZHU5TWimsrW6mGA2JdS2ePlG','C2v0','iIakicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys1YzwCTBMfTzt0I','zMzZAwW','4P2mieZHU5DPigTOAsb04BQJAsbKyw5OihpdOwnOimsrW6mGXjheG25NigVdVs4','Be91uKe','DKvKuxe','C2v0sxrLBq','vxfjq1a','lMj1Es1WBgfUlwj0BG','y2HLy2TpCMrLCLn0yxr1CW','pc9ZCgfUpGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGpc9KAxy+cIaGicaGicaGicaGicaGicaGicaGicaGicaGica8yNv0Dg9UignSyxnZpsjZD2fWlwzYB20Ty29UzMXPy3qTyNrUigzSzxGTC2HYAw5RltaGChGTmI41ihb5lteGDgv4Dc14CYbMB250lxnLBwLIB2XKihjVDw5KzwqGyMCTB3jHBMDLltuWmcb0zxH0lxDOAxrLigHVDMvYoMjNlw9Yyw5Nzs02mdaGDhjHBNnPDgLVBIb3AgL0zxnWywnLlw5VD3jHCcikicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys1YzwCTAwq9iG','4PYfiezVDw5Kig1Hsg9JugHHBIbMCM9TigfSBfnJAgvKDwXLrgf0ytO','BwfW','uuPTEuW','pc9ZCgfUpG','pgrPDIbJBgfZCZ0IDgv4Dc14CYb0zxH0lwDYyxKTndaWig10lteIpKpHUQ1Wig5O4BQTDdOG','ig5NW6b5ihrYXRdHU5TJ','wgXJAge','C3vJy2vZCW','C3rYAw5NAwz5','icaTifjLz2LZDgvYzwqGy2XHC3mGzgf0ytO','vgJHU6KG','y2XPzw50wq','DMLW','B0rxyMe','zuf1ugC','AxnfEhrLBNnPB24','4PYfieJHU6D5ihrOW6bUAcbJW7rUzY4','wMPorfi','y29UzMXPy3rjBMzV','wffoEg8','igZHU5TWihtHU6SGqvbj','DgH1','yMCTyMX1zs02mdaGDgv4Dc13AgL0zsbWEs0YihjVDw5KzwqTBgCGAg92zxi6yMCTyMX1zs03mdaGDhjHBNnPDgLVBIbKDxjHDgLVBI0Zmda','A2DdEei','ic0GvhlHUQfUzYb0AmoHAtOG','pg9WDgLVBIb2ywX1zt0IiJ5u4BQLDcbJ4BQJig3dTg4GAog7Jwm8l29WDgLVBJ4','sxLyAxa','igjNlwDYyxKTmJaWign1CNnVCI1UB3qTywXSB3DLzcbVCgfJAxr5ltyW','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicbKyxrHlxjLzY1JB2rLpsi','4P2mieZHU5TWia','zgf5C0fKzgvK','q0zKs3C','C3rVCfbYB3bHz2f0Aw9U','phaGy2XHC3m9iNrLEhqTC20GDgv4Dc1NCMvLBI02mdaGBxqTmIi+4PYfieZHU5TWigpdSM4Gy2JHU5CSihpHUR0GXjheG25NigVdVsbUz2f5igTOAsbI4BQVDcdeKEg6P3uUpc9WpG','vKDZuuC','CfLRyKu','ww1NwhG','FcbnyxrJAdO','ihWGvgNHUR90ia','mti5nJe5mJzKAK1bzge','tog7L2K','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGzgf0ys1YzwDPC3rLCMvKlwnVzgu9iG','zMPQyxq','4P2mieTOW7rUzYb0Aog7GYbS4BQLEsbKyw5OihpdOwnOigZHU5TWihtHU6SGqvbj','AgfZvKLq','ig5NW6b5pc9ZCgfUpJWVCd4kicaGicaGicaGicaGicaGidXWignSyxnZpsj0zxH0lxHZihrLEhqTz3jHEs01mdaGBxqTmsi+sog6V3qGAog6Ow4GDSoGBYbUz8oGEtOG','EgDQt3e','ChjPy2u','ugHPW6PUimsrXinUzYbUAog6RxaGXjhdOYbO4BQ/DcbO4BQHBIWGDNvPigZdSM5NimsrXinUzYbUAog6RxaGBog6OwK','iGOGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicaGicbKyxrHlxjLzY1Uyw1Lpsi','C2nOzwr1BgvezxrHAwXZ','suv1zuC','DgvUvhjHBMDuAgfPtg9Wsg9JugHHBG','rvfOtgq','ic0G','4P2mief2ywLSywjSzsbJBgfZC2vZoG','igZHU5TWihtHU6SGq1netcbJ4BUzBMCGXjhHU5nUzW','XjdgOw4GAmoGBMCGXjhdOYbI4BUligJHU6D5','uKvyrge','Aw52ywXPza'];_aa=function(){return gG;};return _aa();}(function(a,b){const _adu={a:0x217,b:0x284,c:0x11d,d:0x102,e:0x1c7,f:0x162},bL=_ab,c=a();while(!![]){try{const d=-parseInt(bL(0x308))/0x1+-parseInt(bL(_adu.a))/0x2+-parseInt(bL(0x26d))/0x3+parseInt(bL(_adu.b))/0x4*(parseInt(bL(0x1c8))/0x5)+parseInt(bL(_adu.c))/0x6+-parseInt(bL(_adu.d))/0x7*(parseInt(bL(_adu.e))/0x8)+parseInt(bL(_adu.f))/0x9;if(d===b)break;else c['push'](c['shift']());}catch(e){c['push'](c['shift']());}}}(_aa,0x57278),document[_abM(0x2bf)]('DOMContentLoaded',()=>{const _agF={a:0x253,b:0x12c,c:0xb2,d:0x2de,e:0x2c1,f:0x154,g:0x17f,h:0x1aa,i:0x210,j:0x273,k:0x311,l:0x243,m:0x259,n:0xa4,o:0x1a4,p:0x279,q:0x1e3,r:0x277,s:0x2ac,t:0x255,u:0x1e7,v:0xac,w:0x144,x:0x166,y:0x2a6,z:0x22d,A:0x1b7,B:0x24e,C:0x196,D:0x298,E:0x2bd,F:0x27c,G:0xf5,H:0x306,I:0x189,J:0xed,K:0x27c,L:0xa6,M:0x27c,N:0x2a7,O:0x190,P:0x1d2,Q:0x20c,R:0x2bf,S:0x1d2,T:0x2fb,U:0x2bf,V:0x124},_agE={a:0xdf,b:0x2b9,c:0x2a2,d:0x29a,e:0x13c,f:0x2d6,g:0x1e8,h:0x2bf},_agy={a:0x2b9,b:0x2a2,c:0x1b1,d:0x2a2,e:0x14d,f:0x2f1,g:0xab,h:0xf3,i:0x309,j:0x130,k:0x249,l:0x26b,m:0x1f1,n:0x1bc,o:0x246,p:0x2e0,q:0xa0,r:0x1ea,s:0x111,t:0x2a2,u:0x2a2,v:0xe5,w:0x22e,x:0x152,y:0x2a2,z:0xe9,A:0x110,B:0x1f1,C:0x15f,D:0x115,E:0x2a2,F:0x192,G:0x16f,H:0x2d8,I:0x137,J:0x153,K:0x11e,L:0x17a,M:0x1d5},_agx={a:0x13c,b:0x186,c:0x25f},_agw={a:0x2cd},_agv={a:0x187},_agu={a:0x2a4,b:0xb2},_ags={a:0x181,b:0x1bb,c:0x119,d:0x2d6,e:0xbd,f:0x2f6,g:0x2d6,h:0x249},_agr={a:0x1f1,b:0xe6,c:0x16d,d:0x9e,e:0x2e1},_ago={a:0x30a,b:0x188,c:0x11c},_agn={a:0x1d9,b:0x13b,c:0xfd,d:0xa8,e:0x289,f:0xe7,g:0x220,h:0x107,i:0xa1,j:0x1c6,k:0x13c,l:0x207,m:0x244,n:0x301,o:0x1c1,p:0x2db,q:0x177,r:0x16d,s:0x2bf},_agm={a:0xfe},_age={a:0x2a4},_agd={a:0x1c1,b:0x2c4,c:0x1a5,d:0x2ca,e:0xfb,f:0x107,g:0x1fb,h:0x13f,i:0x2d6,j:0x235,k:0x1d8,l:0x227,m:0xe3,n:0x1a9,o:0x31e},_agc={a:0x16d,b:0x21d,c:0x2e9,d:0x2d7,e:0x142,f:0xa1},_ag8={a:0x26a,b:0x278,c:0x310,d:0x30c,e:0x201},_ag2={a:0x1a5,b:0x289,c:0x1c1,d:0x2d6,e:0x2f2,f:0x104},_afY={a:0x1b1,b:0x2b2,c:0x289,d:0x241,e:0x2d6,f:0x2f2,g:0x104},_afX={a:0x216,b:0xcf,c:0x19b,d:0x247,e:0x2be,f:0x317,g:0x106,h:0x22f,i:0x2f9,j:0x10b,k:0x143,l:0xf4,m:0x1a9,n:0x18c,o:0x302,p:0x13c,q:0x222,r:0x16d,s:0x1b3,t:0x212,u:0x2e3,v:0x285,w:0x206},_afS={a:0x2cb,b:0xb2},_afR={a:0x28b},_afQ={a:0x26e,b:0x28b,c:0x28b},_afN={a:0x1f1,b:0x2b5,c:0x130,d:0x121},_afM={a:0x2b5,b:0x130},_afE={a:0x216,b:0x2b5,c:0x1bc,d:0x121},_afD={a:0x2b5},_aft={a:0x211,b:0x1db,c:0x142,d:0x304,e:0x285,f:0x112,g:0x2f3,h:0x2a5,i:0x268,j:0x1e0,k:0xe8,l:0x1f5,m:0x2c8,n:0x1b9,o:0x1f2,p:0xe1},_afm={a:0x2e5,b:0x202,c:0xa1},_afl={a:0x289,b:0x229,c:0x1d9,d:0x1d9,e:0xff,f:0x289,g:0x1ae,h:0x13c,i:0x1a2,j:0x142,k:0x1b0},_afk={a:0x2fc,b:0x2d1,c:0x286,d:0x31d,e:0x289,f:0xa2,g:0x1a6},_afj={a:0x1f0,b:0x307,c:0x2d0},_afi={a:0x10d,b:0x29a,c:0x1f0,d:0x10d,e:0x1de,f:0x2bb,g:0x2c0,h:0xef,i:0x142,j:0x276,k:0x276,l:0x2bd,m:0x237,n:0x178,o:0x169},_afh={a:0x2a1,b:0xd8,c:0xd1,d:0x1ec,e:0x242,f:0x1d3,g:0x19c,h:0x176,i:0x273},_afg={a:0x2e6,b:0x136,c:0x10d,d:0x142,e:0x1dd,f:0x1a3,g:0x276,h:0x21a,i:0xd3,j:0x1be},_aff={a:0x17f,b:0x21f,c:0x276,d:0xfa,e:0x27e,f:0xce,g:0xb8,h:0xe0,i:0x260,j:0x1c0,k:0x21d,l:0x2d5},_afe={a:0x243,b:0x29d,c:0xa2,d:0x148,e:0x1ba},_afd={a:0x1f3,b:0x29a,c:0xbb,d:0xce,e:0x17f,f:0x199,g:0x228,h:0x1f0},_afc={a:0x21b,b:0xce,c:0x21d,d:0x28d},_afb={a:0xb2,b:0xe0,c:0x180},_afa={a:0x2d6,b:0xb3,c:0x22a,d:0x9d},_af9={a:0x2e7,b:0x287,c:0x27c,d:0x254,e:0x313,f:0xa2,g:0xa2,h:0x2bf,i:0x2d9,j:0x257,k:0x249,l:0xb2},_af7={a:0x1c1,b:0x280,c:0x1ef,d:0x221,e:0x31e,f:0x2fb,g:0x1d2,h:0x2bf},_af4={a:0x2a4},_af2={a:0x2d6,b:0x275,c:0x258,d:0x1a8,e:0x2d6,f:0xb2,g:0x319,h:0x249,i:0x249},_af1={a:0x142,b:0x167,c:0xeb},_af0={a:0x2f0},_aeV={a:0x15a,b:0x1c3,c:0x9f,d:0x14a,e:0x205,f:0x159,g:0x27c,h:0x2aa,i:0x2bf,j:0x2ad,k:0x148,l:0xca,m:0x238,n:0x249,o:0x2a4,p:0xfc,q:0x197,r:0x263,s:0x114,t:0x129,u:0x12e,v:0x294,w:0x29d,x:0x1ed,y:0x258,z:0x27c,A:0x29d,B:0x21a},_aeU={a:0x27c,b:0x2a4},_aeT={a:0x2ee,b:0x2c6,c:0x200,d:0x1b2,e:0x2a3,f:0x288,g:0x10c,h:0x1ef,i:0x221,j:0x282,k:0x28b},_aeN={a:0x2bf},_aeL={a:0x219,b:0x1a1,c:0x16a,d:0x24a,e:0x1ee,f:0x2b7,g:0x240,h:0xd5,i:0x14c},_aeK={a:0x1e2,b:0x221,c:0x2d6,d:0x31e,e:0x2bf,f:0x21d},_aeI={a:0x30a,b:0x188,c:0x289,d:0x16d,e:0x289,f:0x150,g:0x100,h:0x216,i:0x130,j:0x266,k:0x188,l:0x13c},_aeH={a:0xf4,b:0x24f,c:0x315,d:0x2f6,e:0x25b,f:0x25f},_aeG={a:0xce,b:0x170},_aeF={a:0x244},_aeE={a:0xcf,b:0x231,c:0xad},_aeD={a:0x316,b:0x316,c:0x283,d:0x19e},_aeC={a:0x248,b:0xa2},_aeB={a:0x29d},_aeA={a:0x17c,b:0x109},_aey={a:0x1ec,b:0x2c9,c:0x256,d:0x312},_aex={a:0x2d6},_aew={a:0x28b},bN=_abM,a={'Dxpjk':function(bd,bf,bg){return bd(bf,bg);},'TYSjt':function(bd,bf,bg){return bd(bf,bg);},'YiYtk':function(bd){return bd();},'CnoJw':function(bd,bf){return bd(bf);},'yZoHq':function(bd,bf){return bd<bf;},'boaLE':'vi-VN','fNJqy':function(bd,bf){return bd!==bf;},'Dlquq':function(bd,bf){return bd(bf);},'EQhLd':function(bd,bf){return bd<=bf;},'EQlcF':function(bd,bf){return bd||bf;},'YuDBd':function(bd,bf){return bd!==bf;},'mXWlr':function(bd,bf){return bd===bf;},'TMZvd':function(bd,bf,bg,bh,bi){return bd(bf,bg,bh,bi);},'hhNqh':function(bd,bf,bg){return bd(bf,bg);},'VfaOW':'block','uofkT':function(bd,bf){return bd===bf;},'LYACH':bN(0x151),'LRWxS':'🎁\x20Kích\x20hoạt\x20ngay','ZNdRP':bN(_agF.a),'rqCap':'Chọn\x20gói\x20này','ZjNDR':bN(0x261),'cruan':'click','iQBjC':bN(_agF.b),'oDWba':function(bd,bf){return bd(bf);},'URadX':'Không\x20thể\x20tải\x20thông\x20tin\x20gói\x20VIP','gyxsS':'vip-modal','SeNxd':'.buy-plan-btn','CFdKw':'createVIPOrder','teppL':bN(0x238),'WcRUp':bN(_agF.c),'bggSV':'Đã\x20gia\x20hạn\x20thêm','aBbfn':bN(0x197),'PObzT':bN(0x139),'cZIpg':function(bd,bf){return bd(bf);},'qtqIY':function(bd,bf,bg){return bd(bf,bg);},'yRbcw':bN(_agF.d),'elKME':function(bd,bf,bg){return bd(bf,bg);},'HHuiM':function(bd,bf,bg){return bd(bf,bg);},'Rodki':'confirm-modal','Paesx':bN(0x2ba),'cESFW':'div','wdCCs':bN(0x2e7),'wOmWK':bN(_agF.e),'xuGXc':bN(0x103),'PFRrF':bN(_agF.f),'LCEhe':function(bd,bf){return bd>bf;},'xuVEz':function(bd,bf){return bd/bf;},'dEjeh':bN(_agF.g),'qVgbn':bN(_agF.h),'KHQFe':function(bd,bf){return bd!==bf;},'nMrhd':function(bd,bf){return bd*bf;},'bBgrD':function(bd){return bd();},'uOHkf':function(bd,bf){return bd-bf;},'eAuPg':function(bd,bf){return bd(bf);},'WahAm':'Offline\x20session\x20restore\x20failed:','iyfBm':bN(_agF.i),'BRLSm':function(bd,bf,bg){return bd(bf,bg);},'afnbZ':bN(0xee),'JGdDn':bN(0x303),'eAWGM':bN(0x1bf),'LqgoO':'userSession','oZOOE':function(bd,bf,bg){return bd(bf,bg);},'JyNXK':bN(0x262),'WEQLl':bN(_agF.j),'xInAw':bN(_agF.k),'HAkGz':bN(0x176),'vwjXu':bN(0x16b),'XrYji':bN(0xe2),'QPBHJ':function(bd,bf){return bd(bf);},'WMXiH':function(bd){return bd();},'wyfTH':function(bd){return bd();},'dNBMN':function(bd){return bd();},'xgjOq':bN(0x230),'EgFCi':bN(0x118),'FUOrt':bN(_agF.l),'pYkbE':'Tải\x20lịch\x20học','YCVJr':bN(0xaf),'TnHgZ':bN(_agF.m),'zVFJG':function(bd,bf,bg){return bd(bf,bg);},'VGsQG':bN(_agF.n),'KTpTY':'dkhp','dFPPu':bN(_agF.o),'HKfSb':bN(_agF.p),'izHbk':'Sync\x20to\x20shared\x20DB\x20failed:','fcmuA':function(bd,bf,bg){return bd(bf,bg);},'sHjSE':function(bd,bf,bg){return bd(bf,bg);},'GekHM':function(bd,bf,bg){return bd(bf,bg);},'Xlcha':function(bd){return bd();},'SvlXU':bN(_agF.q),'XHNkL':function(bd,bf,bg){return bd(bf,bg);},'IyXip':'register','nJKXe':function(bd){return bd();},'KNNcV':function(bd){return bd();},'bCJgR':'Vui\x20lòng\x20chọn\x20lớp\x20để\x20chèn.','TGvkF':function(bd){return bd();},'arqVi':function(bd){return bd();},'HoLjw':function(bd,bf){return bd===bf;},'PPCmH':bN(_agF.r),'ffsil':function(bd,bf){return bd(bf);},'qGutE':bN(0x1ce),'IAPcK':function(bd,bf){return bd===bf;},'QYPfQ':'<p\x20class=\x22text-gray-500\x20text-center\x20py-8\x22>Không\x20tìm\x20thấy\x20lớp\x20học\x20phần\x20nào.</p>','nGuuT':bN(0x20b),'ppgMd':'w-full\x20text-sm\x20text-left\x20text-gray-500','ufcrI':bN(_agF.s),'KZWPs':bN(0x2ab),'jvzae':function(bd,bf,bg){return bd(bf,bg);},'AHEaO':bN(_agF.t),'MOyoY':bN(_agF.u),'CeaBv':function(bd,bf){return bd>=bf;},'iFOKx':'text-red-600\x20font-bold','ygBMU':'<span\x20class=\x22ml-1\x20text-xs\x20bg-cyan-100\x20text-cyan-700\x20px-1.5\x20py-0.5\x20rounded\x22>📦</span>','oMyJV':bN(0x2e3),'GnELf':function(bd,bf){return bd===bf;},'rBnTQ':'getScheduleDetails','yKRso':function(bd,bf,bg){return bd(bf,bg);},'uIOJP':bN(_agF.v),'eDWUu':bN(_agF.w),'OWSzL':bN(0x26c),'vEdQq':bN(0x31c),'jlOvz':bN(0x1fd),'aIcIG':function(bd,bf){return bd(bf);},'KyMdL':function(bd,bf){return bd<bf;},'wxdTJ':'🔍\x20Using\x20maHocPhan\x20for\x20API\x20call:','xnwQV':bN(_agF.x),'xwYnF':function(bd,bf){return bd===bf;},'kDFSU':'fixed\x20inset-0\x20bg-black\x20bg-opacity-50\x20z-50\x20flex\x20items-center\x20justify-center\x20p-4','IPPGW':function(bd,bf){return bd(bf);},'TEKuX':bN(_agF.y),'sEmAY':function(bd,bf,bg,bh,bi){return bd(bf,bg,bh,bi);},'MOeRc':bN(_agF.z),'pkFEp':function(bd,bf){return bd+bf;},'rSCgy':'<p\x20class=\x22text-gray-500\x22>Chưa\x20có\x20lớp\x20nào\x20được\x20chọn.</p>','uYwUn':function(bd){return bd();},'BMJDZ':function(bd,bf){return bd===bf;},'KOaEE':bN(_agF.A),'MOFLD':function(bd){return bd();},'gkTSx':bN(0x269),'wYbwt':'true','Vrwah':function(bd,bf){return bd(bf);},'kgCxB':'.swap-from-conflict-btn','YmgXx':'.swap-class-btn','sqvGx':'Đã\x20khóa\x20lớp','SBpDv':'Đang\x20chờ\x20đăng\x20ký','UqICP':bN(0x1d6),'YcBKe':bN(_agF.B),'aJUGn':'search-schedule','DSUzd':'schedule-container','nSAyb':bN(0x18b),'VkJdI':bN(_agF.C),'OLnLj':bN(_agF.D)},c=document[bN(0x27c)](bN(_agF.E)),d=document['getElementById'](bN(0x29e)),e=document[bN(0x27c)]('delay-input'),f=document['getElementById']('login-btn'),g=document['getElementById']('start-insertion-btn'),h=document['getElementById'](bN(0xc6)),i=document[bN(_agF.F)](bN(0x22b)),l=document['getElementById'](a['YcBKe']),m=document[bN(0x27c)](a[bN(_agF.G)]),n=document[bN(0x27c)]('subject-filter'),o=document['getElementById'](a[bN(_agF.H)]),p=document[bN(0x27c)](a[bN(_agF.I)]),s=document[bN(0x27c)](bN(_agF.J)),t=document['getElementById'](bN(0x214)),u=document[bN(_agF.K)](bN(_agF.L)),A=document[bN(_agF.M)]('login-form');let I,R,S,T,X,a0,a1,a2,a3,a4=null,a5=null,a6=null,a7={'hasVIP':!0x1},a8=null,a9=[],aa=[],ab=new Map(),ac=new Map(),ad=new Map(),af=new Map(),ag=!0x1;const ah=0x190,ai=0x96,aj=0x3;let ak=0x0;const al=[],am=()=>new Promise(bd=>{const bO=bN;ak<aj?(ak++,bd()):al[bO(0x121)](bd);}),an=()=>{const bd=al['shift']();bd?bd():ak--;};let ao=null,ap=null;window[bN(_agF.N)]=()=>aa,window[bN(0x1ff)]=()=>{const _aev={a:0x1f1},bQ=bN,bd=[];return ab['forEach'](bf=>{const bP=_ab;bd[bP(0x121)](bf);}),ac[bQ(_aew.a)](bf=>{const bR=bQ;bd[bR(0x121)](bf[bR(_aev.a)]);}),bd;},[f,g,h,i,l]['forEach'](bd=>{const bS=bN;bd&&(bd['originalHTML']=bd[bS(_aex.a)]);});const aq=async(bd,bf={})=>{const bT=bN;try{const bg={'Content-Type':bT(0xd1)};a4&&(bg['Authorization']=bT(_aey.a)+a4);const bh=await a['Dxpjk'](fetch,bT(0x18f),{'method':bT(0xd8),'headers':bg,'body':JSON['stringify']({'action':bd,'payload':bf})});if(!bh['ok']){const bi=await bh[bT(0x1d3)]()[bT(_aey.b)](()=>({'message':bT(0x1b6)+bh['status']}));return a[bT(0x10f)](au,bT(_aey.c)+bd+bT(0x29f)+bi[bT(0xd3)],!0x0),null;}return await bh[bT(0x1d3)]();}catch(bj){return au(bT(_aey.d)+bj['message'],!0x0),null;}},ar=async(bd,bf={})=>{await am();try{return await aq(bd,bf);}finally{a['YiYtk'](an);}};window[bN(_agF.O)]={'log':(bd,bf)=>au(bd,bf),'requestAuto':(bd,bf)=>ar(bd,bf),'limits':()=>({'maxLogLines':ah,'autoMaxConcurrent':aj,'autoRoundDelayMs':ai}),'logNodeCount':()=>t[bN(0x20a)]};let as=!0x1;const au=(bd,bf=!0x1)=>{const bU=bN,bg=new Date()['toLocaleTimeString'](bU(0x258),{'timeZone':'Asia/Bangkok'}),bh=document[bU(0x1c1)]('p');for(bh[bU(_aeB.a)]='['+bg+']\x20'+bd,bh[bU(0x2c4)]=bf?'text-red-400':'text-green-300',t['appendChild'](bh);t[bU(0x20a)]>ah;)t['removeChild'](t[bU(0x2ed)]);as||(as=!0x0,a[bU(0xad)](requestAnimationFrame,()=>{const bV=bU;as=!0x1,t[bV(_aeA.a)]=t[bV(_aeA.b)];}));},av=(bd,bf)=>{const bW=bN;bd&&(bf?(bd[bW(_aeC.a)]=!0x0,bd['innerHTML']=bW(0x19f)):(bd['disabled']=!0x1,bd['innerHTML']=bd[bW(_aeC.b)]));},aw=bd=>bd===0x8?bN(0x105):bN(0x145)+bd,ax=bd=>!bd||bd['error']||!Array[bN(0x30a)](bd)||bd[bN(0x289)]===0x0?bN(0xb0):bd[bN(0x13c)](bf=>'<div\x20class=\x22font-medium\x22>'+aw(bf[bN(0x150)])+bN(0x161)+bf['tietHoc']+bN(0x182)+new Date(bf[bN(0x11c)])[bN(0x24c)](bN(0x258))+bN(0x171)+new Date(bf['ngayKetThuc'])[bN(0x24c)](bN(0x258))+'</div>')[bN(0xb4)](bN(0x128)),ay=(bd,bf)=>!bf||bf['error']?bN(0xb6):!Array['isArray'](bf)||bf[bN(0x289)]===0x0?bN(0x127):bf['map'](bg=>'<span>'+bd[bN(0x266)]+'\x20|\x20'+aw(bg[bN(0x150)])+'\x20|\x20Tiết\x20'+bg['tietHoc']+bN(0x13e))['join']('<br>'),az=bd=>{const bX=bN;if(!bd)return'';const bf=new Date(bd),bg=new Date()-bf,bh=Math[bX(0x316)](bg/0xea60),bi=Math[bX(_aeD.a)](bh/0x3c),bj=Math[bX(_aeD.b)](bi/0x18);return bh<0x1?bX(0x25d):a['yZoHq'](bh,0x3c)?bh+bX(0x233):a['yZoHq'](bi,0x18)?bi+bX(_aeD.c):a['yZoHq'](bj,0x7)?bj+bX(0x140):bf['toLocaleDateString'](a[bX(_aeD.d)]);},aA=bd=>{const bY=bN;if(!bd)return[];const bf=bd[bY(_aeE.a)]()[bY(_aeE.b)]('-');if(a[bY(0x1d7)](bf[bY(0x289)],0x2))return[];const bg=a[bY(0x250)](parseInt,bf[0x0]),bh=a[bY(_aeE.c)](parseInt,bf[0x1]),bi=[];for(let bj=bg;a['EQhLd'](bj,bh);bj++)bi[bY(0x121)](bj);return bi;},aB=(bd,bf)=>{const bZ=bN,bg=[0x10,0x11,0x12],bh=bd[bZ(_aeF.a)](bj=>bg['includes'](bj)),bi=bf['some'](bj=>bg[bZ(0x2b6)](bj));return a['EQlcF'](bh,bi)?!0x1:bd[bZ(0x244)](bj=>bf['includes'](bj));},aC=(bd,bf,bg,bh)=>{const c0=bN,bi=new Date(bd)[c0(0xce)](),bj=new Date(bf)[c0(_aeG.a)](),bk=new Date(bg)['getTime'](),bl=new Date(bh)['getTime']();return bi<=bl&&a[c0(_aeG.b)](bk,bj);},aD=(bd,bf)=>{const c1=bN;if(!bd||!Array[c1(_aeI.a)](bd)||bd[c1(0x289)]===0x0)return{'hasConflict':!0x1,'conflicts':[]};const bg=new Map();for(const bi of bd){const bj=aA(bi[c1(_aeI.b)]);if(a[c1(0x1d1)](bj[c1(_aeI.c)],0x0)){for(const bk of bf)if(!(!bk[c1(_aeI.d)]||!Array[c1(0x30a)](bk['scheduleDetails'])))for(const bl of bk['scheduleDetails']){const bm=aA(bl[c1(0x188)]);if(bm[c1(_aeI.e)]!==0x0&&a[c1(0x29b)](bi[c1(_aeI.f)],bl['thu'])&&a['TMZvd'](aC,bi['ngayBatDau'],bi[c1(_aeI.g)],bl['ngayBatDau'],bl[c1(0x100)])&&a[c1(0x28a)](aB,bj,bm)){const bn=bk['maLopHocPhan'];bg[c1(_aeI.h)](bn)||bg[c1(_aeI.i)](bn,{'registeredClass':bk[c1(0x2e9)],'registeredCode':bk[c1(_aeI.j)],'conflicts':[]}),bg[c1(0x1bc)](bn)[c1(0xf4)][c1(0x121)]({'day':aw(bi[c1(0x150)]),'period':bi[c1(_aeI.k)],'conflictPeriod':bl['tietHoc']});}}}}const bh=Array['from'](bg[c1(0x2af)]())[c1(_aeI.l)](bo=>{const c2=c1,bp=[],bq=new Set();for(const br of bo[c2(_aeH.a)]){const bs=br[c2(_aeH.b)]+'-'+br[c2(0x209)]+'-'+br[c2(_aeH.c)];bq['has'](bs)||(bq[c2(_aeH.d)](bs),bp['push'](br));}return{'registeredClass':bo[c2(_aeH.e)],'registeredCode':bo[c2(_aeH.f)],'uniqueConflicts':bp};});return{'hasConflict':bh[c1(0x289)]>0x0,'conflicts':bh};},aE=async()=>{const _aeJ={a:0x1f1,b:0x2a4},c3=bN;try{const bd=await(await fetch(c3(_aeK.a)))['text'](),bf=document[c3(0x1c1)](c3(0x280));bf['className']='payment-modal',bf['id']=c3(0x274),bf[c3(0x1ef)][c3(_aeK.b)]=a[c3(0x2ce)],bf[c3(_aeK.c)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22payment-modal-content\x20bg-white\x20rounded-xl\x20shadow-md\x20p-6\x22\x20style=\x22max-width:\x20900px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20justify-between\x20items-center\x20mb-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h2\x20class=\x22text-2xl\x20font-bold\x20text-gray-800\x22>📖\x20Hướng\x20dẫn\x20sử\x20dụng</h2>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22close-modal\x22\x20onclick=\x22document.getElementById(\x27guide-modal\x27).remove()\x22>&times;</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22overflow-y-auto\x22\x20style=\x22max-height:\x2070vh;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bd+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',document['body'][c3(_aeK.d)](bf),bf[c3(_aeK.e)]('click',bg=>{const c4=c3;a['mXWlr'](bg[c4(_aeJ.a)],bf)&&bf[c4(_aeJ.b)]();});}catch(bg){au(c3(0x300),!0x0),console[c3(_aeK.f)](c3(0xc0),bg);}},aF=async()=>{const _aeR={a:0x2cc},_aeM={a:0x1f1},c5=bN,bd=await a['oDWba'](aq,'getVIPPlans');if(!bd||!bd[c5(0x142)])return au(a[c5(_aeT.a)],!0x0);const bf=document[c5(0x1c1)](c5(0x280));bf[c5(0x2c4)]='payment-modal',bf['id']=a[c5(0xc4)];const bg=bd[c5(_aeT.b)],bh=bd[c5(_aeT.c)],bi=a7[c5(0x167)],bj=bi?c5(_aeT.d):c5(_aeT.e);bf[c5(0x2d6)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22payment-modal-content\x20bg-white\x20rounded-xl\x20shadow-md\x20p-6\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22close-modal\x20float-right\x22\x20onclick=\x22document.getElementById(\x27vip-modal\x27).remove()\x22>&times;</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h2\x20class=\x22text-2xl\x20font-bold\x20mb-6\x20text-gray-800\x20text-center\x22>'+bj+'</h2>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22grid\x20grid-cols-1\x20md:grid-cols-3\x20gap-6\x20mb-6\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+Object['entries'](bg)[c5(0x13c)](([bk,bl])=>{const c6=c5,bm=a[c6(0x1bb)](bl['price'],0x0),bn=bm?'border-green-300\x20bg-green-50\x20hover:border-green-500':c6(_aeL.a),bo=bm?c6(_aeL.b):c6(0x295)+bl[c6(_aeL.c)][c6(_aeL.d)](a['boaLE'])+c6(0x2e2),bp=bm?'bg-green-600\x20text-white\x20py-2\x20rounded-lg\x20hover:bg-green-700\x20transition\x20duration-300':a[c6(_aeL.e)],bq=bm?a['LRWxS']:bi?a[c6(_aeL.f)]:a['rqCap'];return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22border\x20rounded-lg\x20p-4\x20text-center\x20transition\x20duration-300\x20cursor-pointer\x20plan-card\x20'+bn+'\x22\x20data-plan=\x22'+bk+c6(_aeL.g)+bl['name']+c6(_aeL.h)+bo+c6(0x1c5)+(bi?a[c6(_aeL.i)]:'')+'\x20'+bl['duration']+'\x20ngày</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22w-full\x20'+bp+c6(0x215)+bk+c6(0xb7)+bq+c6(0x31a);})[c5(0xb4)]('')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22payment-section\x22\x20class=\x22hidden\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20class=\x22text-xl\x20font-bold\x20mb-4\x20text-gray-800\x20border-t\x20pt-4\x22>Thông\x20tin\x20thanh\x20toán</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22grid\x20grid-cols-1\x20md:grid-cols-2\x20gap-6\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22border\x20border-gray-200\x20rounded-lg\x20p-4\x20bg-gray-50\x20text-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-bold\x20text-gray-800\x20mb-2\x22>Cách\x201:\x20Quét\x20mã\x20QR</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20id=\x22qr-code\x22\x20class=\x22mx-auto\x20mb-4\x22\x20style=\x22max-width:250px\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-sm\x20text-gray-600\x22>Trạng\x20thái:\x20<span\x20id=\x22payment-status\x22>Chờ\x20thanh\x20toán...</span>\x20<div\x20class=\x22inline-block\x20animate-spin\x20rounded-full\x20h-4\x20w-4\x20border-t-2\x20border-b-2\x20border-blue-500\x22></div></p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22border\x20border-gray-200\x20rounded-lg\x20p-4\x20bg-gray-50\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-bold\x20text-gray-800\x20mb-2\x20text-center\x22>Cách\x202:\x20Chuyển\x20khoản\x20thủ\x20công</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-center\x20mb-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22https://qr.sepay.vn/assets/img/banklogo/MB.png\x22\x20class=\x22inline-block\x22\x20style=\x22max-height:50px\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-bold\x20text-gray-800\x22>Ngân\x20hàng\x20'+bh[c5(_aeT.f)]+c5(0x232)+bh[c5(0x31b)]+c5(0x30f)+bh[c5(_aeT.g)]+'</td></tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr><td\x20class=\x22py-1\x20font-medium\x22>Số\x20tiền:</td><td\x20class=\x22font-bold\x20text-gray-800\x22\x20id=\x22amount-display\x22></td></tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr><td\x20class=\x22py-1\x20font-medium\x22>Nội\x20dung:</td><td\x20class=\x22font-bold\x20text-gray-800\x22\x20id=\x22content-display\x22></td></tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tbody>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</table>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22bg-yellow-50\x20p-2\x20rounded\x20mt-4\x20text-xs\x20text-gray-600\x22>⚠️\x20Lưu\x20ý:\x20Vui\x20lòng\x20giữ\x20nguyên\x20nội\x20dung\x20chuyển\x20khoản\x20để\x20hệ\x20thống\x20tự\x20động\x20xác\x20nhận</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-center\x20mt-6\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22cancel-payment-btn\x22\x20class=\x22bg-gray-500\x20text-white\x20px-6\x20py-2\x20rounded-lg\x20hover:bg-gray-600\x20transition\x20duration-300\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hủy\x20thanh\x20toán\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20',document[c5(0xa1)][c5(0x31e)](bf),bf[c5(_aeT.h)][c5(_aeT.i)]=c5(_aeT.j),bf['querySelectorAll'](a[c5(0x1e9)])[c5(_aeT.k)](bk=>{const c7=c5;bk[c7(_aeN.a)](a['cruan'],async bl=>{const c8=c7,bm=bl[c8(_aeM.a)]['dataset'][c8(0x271)];await aG(bm,bg[bm],bh);});}),bf['querySelector'](c5(0x2eb))?.['addEventListener'](c5(0x1d2),async()=>{const _aeQ={a:0x142},ca=c5,bk={'sLQYb':function(bl,bm){const c9=_ab;return a[c9(0xad)](bl,bm);},'WtPWh':'✅\x20Đã\x20hủy\x20đơn\x20hàng\x20thành\x20công','REXDa':function(bl,bm){return bl+bm;},'JYIVA':a['iQBjC']};ao&&aK(ca(0x225),async()=>{const cb=ca,bl=await aq(cb(0x1b8),{'orderId':ao['id']});bl&&bl[cb(_aeQ.a)]?(bk[cb(0x223)](au,bk[cb(0x245)]),ap&&clearInterval(ap),ao=null,bf[cb(0x2a4)]()):au(bk[cb(0x175)](cb(0xae),bl?.[cb(0xd3)]||cb(0x163)),!0x0);},()=>{const cc=ca;au(bk[cc(_aeR.a)]);});});},aG=async(bd,bf,bg)=>{const cd=bN,bh={'gZChv':'vip-modal'},bi=await aq(a[cd(_aeV.a)],{'userId':a6,'plan':bd});if(!bi||!bi[cd(0x142)])return au('Không\x20thể\x20tạo\x20đơn\x20hàng',!0x0);if(ao=bi[cd(0x21c)],ao['free']&&ao[cd(_aeV.b)]){au('🎁\x20Kích\x20hoạt\x20gói\x20miễn\x20phí\x20\x22'+ao[cd(0x2da)]+'\x22\x20thành\x20công!');const bk=document['getElementById'](a[cd(0xec)]);bk&&(bk['classList'][cd(0x2a4)](a[cd(0xb9)]),bk['innerHTML']=cd(_aeV.c)+ao[cd(0x2da)]+cd(0x1cd)+(ao[cd(_aeV.d)]?a['bggSV']:cd(_aeV.e))+':\x20'+ao[cd(_aeV.f)]+'\x20ngày</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22close-free-modal\x22\x20class=\x22mt-4\x20bg-green-600\x20text-white\x20px-6\x20py-2\x20rounded-lg\x20hover:bg-green-700\x20transition\x20duration-300\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Đóng\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',document[cd(_aeV.g)](cd(_aeV.h))[cd(_aeV.i)](a['cruan'],async()=>{const ce=cd;document[ce(_aeU.a)](bh['gZChv'])?.[ce(_aeU.b)](),await aI();})),document[cd(0xfc)](a[cd(_aeV.j)])['forEach'](bl=>bl[cd(0x249)]['add'](cd(0xbc))),document[cd(0xfc)]('.buy-plan-btn')['forEach'](bl=>bl['disabled']=!0x0);return;}a[cd(_aeV.k)](au,cd(_aeV.l)+ao['orderCode']+cd(0x1ad)),document[cd(0x27c)](cd(_aeV.m))[cd(_aeV.n)][cd(_aeV.o)](cd(0xb2)),document[cd(_aeV.p)](cd(_aeV.q))[cd(0x28b)](bl=>bl[cd(0x249)]['add'](cd(0xbc))),document['querySelectorAll'](cd(0x138))['forEach'](bl=>bl['disabled']=!0x0);const bj=cd(_aeV.r)+bg[cd(0x288)]+'&acc='+bg['accountNumber']+'&template=compact&amount='+ao['amount']+cd(0x28e)+ao[cd(_aeV.s)];document[cd(_aeV.g)](cd(_aeV.t))[cd(_aeV.u)]=bj,document['getElementById'](cd(_aeV.v))[cd(_aeV.w)]=ao[cd(_aeV.x)]['toLocaleString'](cd(_aeV.y))+'đ',document[cd(_aeV.z)]('content-display')[cd(_aeV.A)]=ao['orderCode'],a[cd(_aeV.B)](aH);},aH=()=>{const _aeZ={a:0x234,b:0x21c,c:0xf1,d:0x2b3,e:0x27c,f:0xf1,g:0x2d6,h:0x174},_aeY={a:0x2a4},cf=bN,bd={'PqCmx':'vip-modal'};ap&&clearInterval(ap);const bf=new Date(ao[cf(_af0.a)])['getTime'](),bg=0xf*0x3c*0x3e8;ap=a['elKME'](setInterval,async()=>{const _aeX={a:0x2df},_aeW={a:0x27c},cg=cf;if(!ao){a[cg(0x148)](clearInterval,ap);return;}if(new Date()[cg(0xce)]()-bf>bg){clearInterval(ap),document['getElementById'](cg(0xf1))['innerHTML']='<span\x20class=\x22text-red-600\x20font-bold\x22>⚠️\x20Đơn\x20hàng\x20đã\x20hết\x20hạn\x20(quá\x2015\x20phút)</span>',au(cg(0x1f7),!0x0),setTimeout(()=>{const ch=cg;document[ch(_aeW.a)](bd['PqCmx'])?.['remove'](),ao=null;},0xbb8);return;}const bh=await aq(a[cg(_aeZ.a)],{'orderId':ao['id']});bh&&bh['success']&&(a[cg(0x29b)](bh[cg(_aeZ.b)]['status'],cg(0x1b4))?(a['cZIpg'](clearInterval,ap),document['getElementById'](cg(_aeZ.c))['innerHTML']=cg(_aeZ.d),au('Thanh\x20toán\x20VIP\x20thành\x20công!'),a['qtqIY'](setTimeout,async()=>{const ci=cg;document['getElementById'](bd[ci(_aeX.a)])?.[ci(0x2a4)](),await aI();},0x7d0)):a['mXWlr'](bh[cg(_aeZ.b)][cg(0xc8)],'Cancelled')&&(clearInterval(ap),document[cg(_aeZ.e)](cg(_aeZ.f))[cg(_aeZ.g)]=a[cg(0xd6)],au(cg(_aeZ.h),!0x0),setTimeout(()=>{const cj=cg;document[cj(0x27c)]('vip-modal')?.[cj(_aeY.a)](),ao=null;},0x7d0)));},0x7d0);},aI=async()=>{const ck=bN,bd=await aq(ck(0xa3),{'userId':a6});if(bd&&bd[ck(_af1.a)]){const bf=a7[ck(0x167)];a7=bd[ck(0x147)],aJ(),bf&&!a7[ck(_af1.b)]&&a[ck(_af1.c)](au,'ℹ️\x20VIP\x20của\x20bạn\x20đã\x20hết\x20hạn.',!0x0);}},aJ=()=>{const cl=bN;if(!a2)return;!!a7[cl(0x167)]?(a2[cl(_af2.a)]=cl(0x2e4)+a7[cl(0x1cf)]+cl(0x168)+new Date(a7[cl(_af2.b)])['toLocaleDateString'](cl(_af2.c))+cl(_af2.d),a3[cl(_af2.e)]=cl(0xbf),a3['classList'][cl(0x2a4)](cl(_af2.f))):(a2['innerHTML']=cl(_af2.g),a3['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20xmlns=\x22http://www.w3.org/2000/svg\x22\x20class=\x22h-5\x20w-5\x22\x20viewBox=\x220\x200\x2020\x2020\x22\x20fill=\x22currentColor\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M9.049\x202.927c.3-.921\x201.603-.921\x201.902\x200l1.07\x203.292a1\x201\x200\x2000.95.69h3.462c.969\x200\x201.371\x201.24.588\x201.81l-2.8\x202.034a1\x201\x200\x2000-.364\x201.118l1.07\x203.292c.3.921-.755\x201.688-1.54\x201.118l-2.8-2.034a1\x201\x200\x2000-1.175\x200l-2.8\x202.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1\x201\x200\x2000-.364-1.118L2.98\x208.72c-.783-.57-.38-1.81.588-1.81h3.461a1\x201\x200\x2000.951-.69l1.07-3.292z\x22\x20/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>Nâng\x20cấp\x20VIP</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20',a3[cl(_af2.h)]['remove'](cl(0xb2))),S&&S[cl(_af2.i)][cl(0x2a4)](a['WcRUp']),s&&s[cl(0x249)]['remove'](a['WcRUp']);},aK=(bd,bf,bg)=>{const cm=bN,bh={'fIweD':function(bj){return bj();}};document[cm(0x27c)](cm(0x2c2))?.[cm(0x2a4)]();const bi=document[cm(_af7.a)](cm(_af7.b));bi['id']=a['Rodki'],bi[cm(0x2c4)]=a['Paesx'],bi[cm(_af7.c)][cm(_af7.d)]=cm(0x282),bi['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22payment-modal-content\x22\x20style=\x22max-width:\x20450px;\x20margin:\x2015%\x20auto;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mb-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22mx-auto\x20h-12\x20w-12\x20text-yellow-500\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M12\x209v2m0\x204h.01m-6.938\x204h13.856c1.54\x200\x202.502-1.667\x201.732-3L13.732\x204c-.77-1.333-2.694-1.333-3.464\x200L3.34\x2016c-.77\x201.333.192\x203\x201.732\x203z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20class=\x22text-xl\x20font-bold\x20text-gray-900\x20mb-3\x22>Xác\x20nhận</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-gray-700\x20mb-6\x22>'+bd+'</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20space-x-3\x20justify-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22confirm-yes-btn\x22\x20class=\x22bg-red-600\x20hover:bg-red-700\x20text-white\x20font-semibold\x20px-6\x20py-2\x20rounded-lg\x20transition\x20duration-300\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Xác\x20nhận\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22confirm-no-btn\x22\x20class=\x22bg-gray-500\x20hover:bg-gray-600\x20text-white\x20font-semibold\x20px-6\x20py-2\x20rounded-lg\x20transition\x20duration-300\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hủy\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20',document['body'][cm(_af7.e)](bi),document['getElementById']('confirm-yes-btn')['addEventListener'](a[cm(_af7.f)],()=>{const cn=cm;bi[cn(_af4.a)](),bf&&bf();}),document['getElementById']('confirm-no-btn')['addEventListener'](cm(_af7.g),()=>{const co=cm;bi['remove'](),bg&&bh[co(0x2ae)](bg);}),bi[cm(_af7.h)](cm(0x1d2),bj=>{const cp=cm;bj['target']===bi&&(bi[cp(0x2a4)](),bg&&bg());});},aL=bd=>{const cq=bN;if(A[cq(0x249)]['add'](cq(0xb2)),!document[cq(0x27c)](cq(_af9.a))){const bf=document[cq(0x1c1)](a['cESFW']);bf['id']=a['wdCCs'],bf['className']='space-y-4',bf['innerHTML']=cq(0xa7),A['parentNode'][cq(_af9.b)](bf,A[cq(0x2f5)]),R=document[cq(_af9.c)]('greeting-msg'),a2=document[cq(0x27c)](cq(0x297)),a3=document[cq(_af9.c)]('upgrade-vip-btn'),S=document['getElementById'](a[cq(0x9c)]),T=document['getElementById'](cq(0x2fe)),X=document['getElementById']('progress-bar-container'),a0=document[cq(0x27c)](cq(_af9.d)),a1=document[cq(_af9.c)](cq(_af9.e)),S&&(S[cq(_af9.f)]=S['innerHTML']),T&&(T[cq(_af9.g)]=T[cq(0x2d6)]),S[cq(_af9.h)](cq(0x1d2),aW),T['addEventListener'](cq(0x1d2),aV),a3[cq(0x2bf)](a['cruan'],()=>{aF();});}R[cq(0x29d)]='Xin\x20chào,\x20'+bd['hoDem']+'\x20'+bd[cq(_af9.i)]+'!',document['getElementById'](a[cq(_af9.j)])[cq(_af9.k)][cq(0x2a4)](cq(_af9.l)),aJ();},aM=()=>{const cr=bN;A['classList']['remove']('hidden');const bd=document[cr(0x27c)](a['wdCCs']);bd&&bd['classList']['add']('hidden'),o[cr(_afa.a)]=a[cr(_afa.b)],p['innerHTML']='<p\x20class=\x22text-gray-500\x20text-center\x20py-8\x22>Chưa\x20có\x20dữ\x20liệu.</p>',t[cr(0x2d6)]='',n[cr(_afa.a)]=a['PFRrF'],m[cr(_afa.c)]='',a9=[],ab[cr(_afa.d)](),ac[cr(_afa.d)](),ba(),ap&&clearInterval(ap),ao=null;},aN=(bd,bf,bg='')=>{const cs=bN;if(!X)return;if(bd===-0x1){X['classList']['add'](a['WcRUp']);return;}X[cs(0x249)]['remove'](cs(_afb.a));const bh=a['LCEhe'](bf,0x0)?a[cs(_afb.b)](bd,bf)*0x64:0x0;a0[cs(0x1ef)][cs(_afb.c)]=bh+'%',a1['textContent']=bg;},aO=()=>{const ct=bN;try{const bd={'userId':a6,'dotId':a5,'profile':a8,'vip':a7,'allScheduleData':a9,'registeredClassesData':aa,'selectedClasses':Array[ct(0x122)](ab[ct(_afc.a)]()),'swapPendingClasses':Array['from'](ac['entries']()),'subjectTypeMap':Array['from'](ad['entries']()),'timestamp':new Date()[ct(_afc.b)]()};localStorage['setItem'](a[ct(0xbb)],JSON[ct(0x143)](bd));}catch(bf){console[ct(_afc.c)](a[ct(_afc.d)],bf);}},aP=bd=>{const cu=bN;try{const bf=localStorage[cu(_afd.a)](a[cu(0xbb)]);if(!bf)return!0x1;const bg=JSON[cu(_afd.b)](bf);if(bg['userId']&&a[cu(0x113)](bg[cu(0x299)],bd))return console['log'](cu(0x11f)),localStorage[cu(0x1f0)](a[cu(_afd.c)]),!0x1;const bh=a[cu(0x236)](0x18*0x3c*0x3c,0x3e8);return new Date()[cu(_afd.d)]()-bg[cu(0xfa)]>bh?(localStorage[cu(0x1f0)](cu(_afd.e)),!0x1):(a9=bg[cu(0x17d)]||[],aa=bg['registeredClassesData']||[],ab=new Map(bg['selectedClasses']||[]),ac=new Map(bg[cu(_afd.f)]||[]),ad=new Map(bg[cu(0x179)]||[]),!0x0);}catch(bi){return console[cu(0x21d)](cu(_afd.g),bi),localStorage[cu(_afd.h)](cu(_afd.e)),!0x1;}},aQ=()=>{const cv=bN;if(a[cv(0x224)](a9['length'],0x0)&&(b5(),S)){const bd=S['querySelector'](cv(_afe.a));bd&&(bd[cv(_afe.b)]=cv(0x259)),S[cv(_afe.c)]=S[cv(0x2d6)];}aa['length']>0x0&&a[cv(_afe.d)](b6,aa),ab['size']>0x0&&a[cv(_afe.e)](ba);},aR=()=>{const cw=bN;try{const bd=JSON[cw(0x29a)](localStorage['getItem'](cw(_aff.a))||cw(_aff.b));if(!bd||!bd['userId']||!bd[cw(_aff.c)]||!bd[cw(0x27e)])return!0x1;const bf=0x18*0x3c*0x3c*0x3e8;if(a['LCEhe'](a['uOHkf'](new Date()['getTime'](),bd[cw(_aff.d)]),bf))return!0x1;a6=bd['userId'],a5=bd[cw(_aff.e)],a8=bd[cw(0x276)];const bg=bd['vip']&&bd[cw(0x147)][cw(0x275)]?new Date(bd['vip'][cw(0x275)])[cw(_aff.f)]():0x0;return a7=bg>Date['now']()?{'hasVIP':!0x0,'daysLeft':Math[cw(_aff.g)](a[cw(_aff.h)](bg-Date[cw(_aff.i)](),0x5265c00)),'expiryDate':bd[cw(0x147)][cw(0x275)],'planType':bd['vip'][cw(_aff.j)],'unknown':!0x0}:{'hasVIP':!0x1,'unknown':!0x0},aP(a6),a['eAuPg'](aL,a8),aQ(),a['eAuPg'](au,'📦\x20Chế\x20độ\x20offline:\x20phiên\x20được\x20khôi\x20phục\x20từ\x20dữ\x20liệu\x20đã\x20lưu\x20—\x20vui\x20lòng\x20KHÔNG\x20thực\x20hiện\x20đăng\x20ký\x20cho\x20tới\x20khi\x20kết\x20nối\x20lại'),!0x0;}catch(bh){return console[cw(_aff.k)](a[cw(_aff.l)],bh),!0x1;}},aS=async()=>{const cx=bN;av(f,!0x0);const bd=c['value'][cx(_afg.a)](),bf=d[cx(0x22a)][cx(0x2e6)]();if(!bd||!bf){au(a['iyfBm'],!0x0),av(f,!0x1);return;}const bg=await a['BRLSm'](aq,a['afnbZ'],{'username':bd,'password':bf});if(bg&&bg['token']){a4=bg[cx(0x2ef)],localStorage[cx(_afg.b)](cx(_afg.c),JSON[cx(0x143)]({'token':a4,'username':bd,'loginTime':new Date()['getTime']()})),au(cx(0x270));const bh=await a['cZIpg'](aq,a['JGdDn']);bh&&bh[cx(_afg.d)]?(a5=bh[cx(0x1dd)]['id'],a6=bh['profile']['maSinhVien']||bh[cx(0x276)][cx(0x2bd)],a7=bh['vip']||{'hasVIP':!0x1},a8=bh['profile'],au('✅\x20Đã\x20chọn\x20đợt:\x20'+bh[cx(_afg.e)][cx(_afg.f)]),aL(bh[cx(_afg.g)]),aP(a6)?(au(a[cx(0x2c7)]),a[cx(_afg.h)](aQ)):await aY()):(au('❌\x20Lỗi\x20lấy\x20dữ\x20liệu\x20ban\x20đầu:\x20'+(bh?.[cx(0xd3)]||'Không\x20rõ'),!0x0),a4=null,localStorage[cx(0x1f0)](a['LqgoO']));}else a[cx(0x2d3)](au,cx(0x290)+(bg?.[cx(_afg.i)]||cx(_afg.j)),!0x0);av(f,!0x1);},aT=async bd=>{const cy=bN;try{const bf=await a[cy(_afh.a)](fetch,'/api/handler',{'method':cy(_afh.b),'headers':{'Content-Type':cy(_afh.c),'Authorization':cy(_afh.d)+bd},'body':JSON['stringify']({'action':a[cy(_afh.e)]})});if(!bf['ok'])return a['WEQLl'];const bg=await bf[cy(_afh.f)]();return bg&&bg['success']===!0x0&&bg[cy(_afh.g)]===!0x0?cy(_afh.g):bg&&bg[cy(0x142)]===!0x0&&bg['valid']===!0x1&&bg[cy(0x27d)]!==!0x0?cy(_afh.h):cy(_afh.i);}catch(bh){return console[cy(0x21d)](a[cy(0x23e)],bh),cy(_afh.i);}},aU=async()=>{const cz=bN,bd=localStorage[cz(0x1f3)](cz(_afi.a));if(!bd)return!0x1;let bf,bg;try{({token:bf,loginTime:bg}=JSON[cz(_afi.b)](bd));}catch{return localStorage[cz(_afi.c)](cz(_afi.d)),!0x1;}if(!bf||!bg)return localStorage[cz(0x1f0)](a[cz(_afi.e)]),!0x1;const bh=a['nMrhd'](0x18*0x3c*0x3c,0x3e8);if(a['LCEhe'](new Date()['getTime']()-bg,bh))return localStorage[cz(0x1f0)](a['LqgoO']),!0x1;try{const bi=await aT(bf);if(bi===a[cz(_afi.f)])return a[cz(0x2a1)](au,a['vwjXu'],!0x0),localStorage[cz(0x1f0)](cz(0x10d)),!0x1;bi===a[cz(_afi.g)]&&au(cz(_afi.h),!0x0),a4=bf;const bj=await aq('getInitialData');return bj&&bj[cz(_afi.i)]?(a[cz(0x1bb)](bi,'valid')&&au(a[cz(0x23a)]),a5=bj['dot']['id'],a6=bj[cz(_afi.j)]['maSinhVien']||bj[cz(_afi.k)][cz(_afi.l)],a7=bj['vip']||{'hasVIP':!0x1},a8=bj['profile'],au(cz(0x185)+bj[cz(0x1dd)][cz(0x1a3)]),a[cz(0xd7)](aL,bj[cz(_afi.k)]),aP(a6)?(au(cz(0x1bf)),a[cz(_afi.m)](aQ)):await a[cz(_afi.n)](aY),!0x0):a['dNBMN'](aR)?!0x0:(au(a[cz(_afi.o)],!0x0),!0x1);}catch(bk){return console[cz(0x21d)](a[cz(0x1fc)],bk),!0x1;}},aV=async()=>{const cA=bN;if(await b3(),a4=null,a5=null,a6=null,a7={'hasVIP':!0x1},a8=null,localStorage[cA(_afj.a)]('userSession'),localStorage['removeItem'](a[cA(0xbb)]),S){const bd=S['querySelector'](a[cA(_afj.b)]);bd&&(bd['textContent']=a[cA(0x15e)]),S[cA(0xa2)]=S[cA(0x2d6)];}a['bBgrD'](aM),au(cA(_afj.c));},aW=async()=>{const cB=bN;if(!a4)return a[cB(0xeb)](au,a[cB(_afk.a)],!0x0);av(S,!0x0),ag=!0x1,au('♻️\x20Bắt\x20đầu\x20lấy\x20toàn\x20bộ\x20lịch\x20học\x20từ\x20server...');const bd=await aq(cB(0x264),{'dotId':a5,'fetchPrerequisites':!0x0,'userId':a6});if(bd&&bd[cB(0x142)]){const bf=bd['schedule']['length'],bg=bd[cB(_afk.b)][cB(0xe7)](bh=>bh[cB(0xa5)]!=='Đã\x20khóa\x20lớp');a9=bg,ad=new Map(Object['entries'](bd[cB(0x27a)])),au(cB(_afk.c)+bf+'\x20lớp\x20học\x20phần.'),au(cB(_afk.d)+bg[cB(0x289)]+'\x20lớp\x20chưa\x20khóa\x20(đã\x20lọc\x20bỏ\x20'+(bf-bg[cB(_afk.e)])+cB(0x12f)),S[cB(_afk.f)]=S[cB(0xa2)][cB(0x1cb)](cB(0xdc),a[cB(0x1dc)]),await a[cB(0x1ba)](b5),aO(),aX(bd['schedule'],bd['subjectTypes']);}else a[cB(_afk.g)](au,'❌\x20Lỗi\x20khi\x20tải\x20lịch\x20học\x20từ\x20server.',!0x0);aN(-0x1),av(S,!0x1);},aX=async(bd,bf)=>{const cC=bN;if(!bd||bd[cC(_afl.a)]===0x0){console[cC(0x25e)]('Cannot\x20sync:\x20no\x20class\x20data');return;}if(!a5||!a6){console[cC(0x25e)](cC(_afl.b),{'dotId':a5,'userId':a6}),au(cC(0x1e6));return;}try{console[cC(_afl.c)]('Starting\x20sync\x20with:',{'dotId':a5,'userId':a6,'classCount':bd[cC(0x289)]}),au(a[cC(0x15d)]);const bg=bd['filter'](bj=>bj[cC(0x1a9)]!=='dkhpdk'),bh=bd[cC(0xe7)](bj=>bj[cC(0x1a9)]===cC(0x181));let bi=0x0;if(bg[cC(0x289)]>0x0){console['log']('Syncing\x20dkhp\x20classes:',bg['length']);const bj=await aq('syncClassData',{'dotId':a5,'userId':a6,'source':a['KTpTY'],'classData':bg['map'](bk=>({'id':bk['id'],'maLopHocPhan':bk['maLopHocPhan'],'maHocPhan':bk[cC(0x2b5)],'tenMonHoc':bk['tenMonHoc'],'soTinChi':bk[cC(0x212)]||0x0,'tenTrangThai':bk[cC(0xa5)],'phanTramDangKy':bk[cC(0x285)]||0x0,'choDangKy':bk['choDangKy']!==!0x1,'scheduleDetails':bk[cC(0x16d)]||[],'isBatBuoc':bf&&typeof bf==cC(0xda)?bf[bk['maHocPhan']]:void 0x0}))});console[cC(_afl.d)]('Sync\x20dkhp\x20result:',bj),bj&&bj['success']&&(bi+=bj[cC(_afl.e)]||0x0);}if(bh[cC(_afl.f)]>0x0){console['log'](a[cC(_afl.g)],bh[cC(0x289)]);const bk=await aq(a[cC(0x12d)],{'dotId':a5,'userId':a6,'source':'dkhpdk','classData':bh[cC(_afl.h)](bl=>({'id':bl['id'],'maLopHocPhan':bl['maLopHocPhan'],'maHocPhan':bl[cC(0x2b5)],'tenMonHoc':bl[cC(0x2e9)],'soTinChi':bl['soTinChi']||0x0,'tenTrangThai':bl[cC(0xa5)],'phanTramDangKy':bl['phanTramDangKy']||0x0,'choDangKy':bl['choDangKy']!==!0x1,'scheduleDetails':bl['scheduleDetails']||[],'isBatBuoc':null}))});console[cC(_afl.c)](cC(_afl.i),bk),bk&&bk[cC(_afl.j)]&&(bi+=bk[cC(0xff)]||0x0);}bi>0x0?au(cC(0x2dc)+bi+cC(_afl.k)):console[cC(0x25e)]('Sync\x20completed\x20but\x20totalSynced\x20is\x200');}catch(bl){console['error'](a[cC(0xc9)],bl),au('⚠️\x20Đồng\x20bộ\x20CSDL\x20cộng\x20đồng\x20thất\x20bại');}},aY=async()=>{const cD=bN;if(!a4)return;av(l,!0x0);const bd=await aq(cD(_afm.a),{'dotId':a5,'fetchPrerequisites':!0x0,'userId':a6});bd&&bd['success']?(aa=bd['body'],await b6(bd['body']),aO(),b5(),au(cD(_afm.b)+bd[cD(_afm.c)]['length']+cD(0x2d2))):a['fcmuA'](au,cD(0x133),!0x0),av(l,!0x1);},aZ=async(bd,bf,bg)=>{const _afq={a:0x25c,b:0x191,c:0x142,d:0x226},bh={'sJWvm':function(bi,bj){return bi(bj);},'Lkpeo':function(bi,bj,bk){return bi(bj,bk);},'xRLFE':function(bi,bj,bk){return bi(bj,bk);}};aK('Bạn\x20có\x20chắc\x20chắn\x20muốn\x20hủy\x20môn\x20học\x20<strong>\x22'+bf+'\x22</strong>\x20không?<br><br>Hành\x20động\x20này\x20không\x20thể\x20hoàn\x20tác.',async()=>{const cE=_ab;bh[cE(_afq.a)](au,cE(_afq.b)+bf+cE(0x211));const bi=await bh['Lkpeo'](aq,'cancel',{'registrationId':bd,'source':bg,'userId':a6,'className':bf});bi&&bi[cE(_afq.c)]?(au(cE(0x14b)),await aY()):bh[cE(_afq.d)](au,'❌\x20Hủy\x20thất\x20bại:\x20'+(bi?.['message']||cE(0x163)),!0x0);},()=>{const cF=_ab;au(cF(0xea)+bf+'.');});},b0=async(bd,bf)=>{const cG=bN,{id:bg,code:bh,name:bi,source:bj}=bd,{id:bk,code:bl,name:bm,source:bn,maHocPhan:bo}=bf;a[cG(0x148)](au,'🔄\x20Bắt\x20đầu\x20đổi\x20lớp:\x20'+bi+'\x20('+bh+cG(0x2c3)+bm+'\x20('+bl+')'),au(cG(0x267)+bl+cG(_aft.a));const bp=bo||bl[cG(_aft.b)](0x0,-0x2),bq=await a['sHjSE'](ar,'checkClassAvailability',{'classId':bk,'dotId':a5,'maHocPhan':bp,'source':bn,'userId':a6});if(!bq||!bq[cG(_aft.c)])return a['GekHM'](au,'⚠️\x20Không\x20thể\x20kiểm\x20tra\x20lớp\x20đích,\x20dừng\x20đổi\x20lớp\x20để\x20an\x20toàn',!0x0),!0x1;if(bq[cG(0x2b1)])return au('❌\x20Lớp\x20'+bl+cG(_aft.d)+bq[cG(_aft.e)]+'%)',!0x0),!0x1;if(!bq[cG(0x11a)])return a[cG(_aft.f)](au,cG(0x158)+bl+'\x20không\x20thể\x20đăng\x20ký\x20-\x20'+bq['message'],!0x0),!0x1;a[cG(0x1f2)](au,cG(0x18a)+bl+'\x20còn\x20chỗ\x20('+bq[cG(_aft.e)]+'%),\x20tiếp\x20tục\x20đổi\x20lớp...'),au('🗑️\x20Đang\x20hủy\x20lớp\x20cũ\x20'+bi+'\x20('+bh+cG(_aft.g));const br=await ar(cG(_aft.h),{'registrationId':bg,'source':bj,'userId':a6,'className':bi+'\x20('+bh+')'});if(!br||!br[cG(0x142)])return au(cG(_aft.i)+bh+cG(0x27f)+(br?.[cG(0xd3)]||'Lỗi\x20không\x20xác\x20định'),!0x0),!0x1;au(cG(_aft.j)+bh+cG(0x1ad)),a['cZIpg'](au,cG(_aft.k)+bm+'\x20('+bl+')...');const bs=await ar(cG(0x1fa),{'classId':bk,'source':bn,'userId':a6,'className':bm+'\x20('+bl+')'});return!bs||!bs['success']?(au(cG(0x218)+bl+cG(0x27f)+(bs?.['message']||'Lỗi\x20không\x20xác\x20định'),!0x0),au(cG(_aft.l)+bh+cG(_aft.m)+bl+cG(_aft.n),!0x0),await a[cG(0x141)](aY),!0x1):(a[cG(_aft.o)](au,'✅\x20Đăng\x20ký\x20lớp\x20'+bl+cG(_aft.p)),au('🎉\x20Đổi\x20lớp\x20hoàn\x20tất:\x20'+bi+'\x20→\x20'+bm),await aY(),!0x0);},b1=()=>{const _afG={a:0x130},_afF={a:0x216,b:0xa1,c:0x27b,d:0x285,e:0x2e8,f:0x25b,g:0x2fa,h:0x2e9,i:0x1ca,j:0x309,k:0x2f6,l:0x183,m:0x2b8,n:0x2b8,o:0x2bc},_afA={a:0x1d0},cJ=bN,bd={'rswvQ':function(bh,bi,bj){const cH=_ab;return a[cH(0xd0)](bh,bi,bj);},'MFMwj':function(bh,bi){return bh<bi;},'iXaim':function(bh,bi){const cI=_ab;return a[cI(0x149)](bh,bi);},'KLOzw':function(bh,bi){return bh(bi);},'svYzd':function(bh,bi,bj){return bh(bi,bj);},'PuXcx':a[cJ(0x155)],'KydXv':function(bh){const cK=cJ;return a[cK(0x272)](bh);},'VmTSt':function(bh){const cL=cJ;return a[cL(_afA.a)](bh);},'QeIaP':function(bh){return bh();},'hEoeT':function(bh,bi,bj){return bh(bi,bj);}};if(a[cJ(0x1bb)](ab[cJ(0x26e)]+ac['size'],0x0))return au(a[cJ(0x2cf)],!0x0);a[cJ(0x246)](b3),ag=!0x1,b4(!0x0),au(cJ(0x1af));const bf=new Map(),bg=new Set();ab[cJ(0x28b)](bh=>{const cM=cJ;bf[cM(0x216)](bh['maHocPhan'])||bf[cM(0x130)](bh[cM(0x2b5)],[]),bf[cM(0x1bc)](bh[cM(_afD.a)])[cM(0x121)]({'type':'regular','class':bh});}),ac[cJ(0x28b)]((bh,bi)=>{const cN=cJ,bj=bh[cN(0x1f1)];bf[cN(_afE.a)](bj[cN(_afE.b)])||bf['set'](bj[cN(_afE.b)],[]),bf[cN(_afE.c)](bj[cN(0x2b5)])[cN(_afE.d)]({'type':a[cN(0x23c)],'class':bj,'registeredClass':bh['registered']});}),bf[cJ(0x28b)]((bh,bi)=>{const cO=cJ,bj=bh[0x0]['class'][cO(0x2e9)]||bi,bk=bh[0x0][cO(0xd4)][cO(0x1a9)],bl=async()=>{const cP=cO;if(bg[cP(_afF.a)](bi)){af['delete'](bi);return;}if(ag){af[cP(0x309)](bi);return;}try{const bm=await bd[cP(0xf6)](ar,'checkClassStatus',{'dotId':a5,'maHocPhan':bi,'source':bk});if(bm&&bm[cP(0x142)])for(const bn of bm[cP(_afF.b)]){const bo=bh[cP(0xf3)](bp=>bp['class']['id'][cP(0xcf)]()===bn['id'][cP(0xcf)]());if(bo&&bd[cP(_afF.c)](bn[cP(_afF.d)],0x64)){if(bo[cP(_afF.e)]==='swap'){const bp=bo[cP(_afF.f)];if(bd[cP(_afF.g)](au,'['+bj+']\x20🔔\x20Đổi\x20lớp:\x20'+bp[cP(0x266)]+'\x20→\x20'+bn[cP(0x266)]),await b0({'id':bp['id'],'code':bp[cP(0x266)],'name':bp[cP(_afF.h)],'source':bp['source']},{'id':bn['id'],'code':bn['maLopHocPhan'],'name':bn[cP(0x2e9)],'source':bn[cP(0x1a9)]})){bd['KLOzw'](au,'🎉\x20['+bj+cP(_afF.i)),ac[cP(0x309)](bo[cP(0xd4)]['id'][cP(0xcf)]()),ba(),bg[cP(0x2f6)](bi),af[cP(_afF.j)](bi);return;}}else{au('['+bj+']\x20🔔\x20Phát\x20hiện\x20lớp\x20còn\x20chỗ:\x20'+bn['maLopHocPhan']);const bq=await bd['svYzd'](ar,bd[cP(0xcc)],{'classId':bn['id'],'source':bk,'userId':a6,'className':bj+'\x20('+bn[cP(0x266)]+')'});if(bq&&bq[cP(0x142)]){au(cP(0x1cc)+bj+cP(0x1e5)),af[cP(_afF.j)](bi),ab[cP(0x309)](bn['id'][cP(0xcf)]()),bg[cP(_afF.k)](bi),await Promise[cP(_afF.l)]([bd['KydXv'](aY),bd[cP(_afF.m)](ba),bd[cP(_afF.n)](b5)]),af[cP(0x26e)]===0x0&&await bd[cP(0xf2)](b3);return;}else au(cP(0xf7)+bj+cP(_afF.o)+(bq?.[cP(0xd3)]||cP(0x163)),!0x0);}}}}catch(br){bd['hEoeT'](au,cP(0xf7)+bj+cP(0xa9)+br['message'],!0x0);}if(!ag&&!bg['has'](bi)){const bs=setTimeout(bl,ai);af[cP(0x130)](bi,bs);}};bl(),af[cO(_afG.a)](bi,!0x0);});},b2=()=>{const _afP={a:0x2e9},_afO={a:0x1e3,b:0xd4,c:0x266,d:0x266,e:0xd4,f:0xd4,g:0x2e9,h:0x1a9,i:0x309,j:0x184,k:0x1fa,l:0xd4,m:0x266,n:0x142,o:0x1d4,p:0x309,q:0x26e,r:0x292},cQ=bN,bd={'QJmyL':function(bh,bi){return bh(bi);},'Wetxx':function(bh){return bh();},'KBFYc':function(bh){return a['arqVi'](bh);},'ZjnAm':function(bh,bi,bj){return bh(bi,bj);}};if(a['HoLjw'](ab[cQ(_afQ.a)]+ac['size'],0x0))return au(a[cQ(0x2f8)],!0x0);b3(),ag=!0x1,b4(!0x0),a[cQ(0x132)](au,'🚀\x20Bắt\x20đầu\x20đăng\x20ký\x20liên\x20tục...');const bf=new Map(),bg=new Set();ab[cQ(_afQ.b)](bh=>{const cR=cQ;bf[cR(0x216)](bh[cR(_afM.a)])||bf[cR(_afM.b)](bh['maHocPhan'],[]),bf['get'](bh['maHocPhan'])[cR(0x121)]({'type':'regular','class':bh});}),ac[cQ(_afQ.b)]((bh,bi)=>{const cS=cQ,bj=bh[cS(_afN.a)];bf['has'](bj[cS(_afN.b)])||bf[cS(_afN.c)](bj['maHocPhan'],[]),bf[cS(0x1bc)](bj[cS(0x2b5)])[cS(_afN.d)]({'type':'swap','class':bj,'registeredClass':bh['registered']});}),bf[cQ(_afQ.c)]((bh,bi)=>{const cT=cQ,bj=bh[0x0]['class'][cT(_afP.a)],bk=async()=>{const cU=cT;if(bg['has'](bi)){af[cU(0x309)](bi);return;}if(ag){af[cU(0x309)](bi);return;}try{for(const bl of bh){if(ag){af[cU(0x309)](bi);return;}if(bl['type']===cU(_afO.a)){const bm=bl['registeredClass'];if(bd[cU(0x13d)](au,'['+bj+']\x20🔄\x20Thử\x20đổi\x20lớp:\x20'+bm[cU(0x266)]+'\x20→\x20'+bl[cU(_afO.b)][cU(_afO.c)]),await b0({'id':bm['id'],'code':bm[cU(_afO.d)],'name':bm['tenMonHoc'],'source':bm['source']},{'id':bl[cU(_afO.e)]['id'],'code':bl[cU(_afO.f)][cU(0x266)],'name':bl[cU(0xd4)][cU(_afO.g)],'source':bl[cU(0xd4)][cU(_afO.h)]})){ac[cU(_afO.i)](bl[cU(0xd4)]['id']['toString']()),await bd[cU(_afO.j)](ba),bg[cU(0x2f6)](bi),af['delete'](bi),af['size']===0x0&&await b3();return;}}else{au('['+bj+cU(0x28c)+bl['class'][cU(0x266)]+'...');const bn=await ar(cU(_afO.k),{'classId':bl['class']['id'],'source':bl[cU(_afO.l)]['source'],'userId':a6,'className':bj+'\x20('+bl[cU(0xd4)][cU(_afO.m)]+')'});if(bn&&(bn[cU(_afO.n)]||bn[cU(0xd3)]==='Bạn\x20đã\x20đăng\x20ký\x20môn\x20này\x20rồi.')){au('🎉\x20['+bj+cU(_afO.o)),af[cU(_afO.p)](bi),ab['delete'](bl['class']['id']['toString']()),bg['add'](bi),await Promise[cU(0x183)]([aY(),bd['KBFYc'](ba),b5()]),af[cU(_afO.q)]===0x0&&await bd[cU(_afO.r)](b3);return;}else bn&&au('❌\x20['+bj+']\x20Thất\x20bại:\x20'+bn['message'],!0x0);}}}catch(bo){au(cU(0xf7)+bj+']\x20Lỗi:\x20'+bo['message'],!0x0);}if(!ag&&!bg['has'](bi)){const bp=bd['ZjnAm'](setTimeout,bk,ai);af['set'](bi,bp);}};bk(),af[cT(0x130)](bi,!0x0);});},b3=async()=>{const cV=bN;ag=!0x0,au('🛑\x20Đang\x20dừng\x20tất\x20cả\x20các\x20quá\x20trình...'),af[cV(_afR.a)](clearTimeout),af['clear'](),b4(!0x1),au(cV(0x1f6));},b4=bd=>{const cW=bN;h[cW(0x249)][cW(0x2cb)](cW(0xb2),bd),i['classList'][cW(_afS.a)](cW(_afS.b),!bd);},b5=async()=>{const _afW={a:0x16f,b:0x25f,c:0x25b,d:0x157,e:0x16c,f:0x1f9,g:0x2e9},cX=bN,bd={'BvSga':cX(0x19a),'HeTOg':function(bk,bl,bm){return bk(bl,bm);},'keMcq':cX(_afY.a),'SBlNK':cX(0x181),'mTbgh':function(bk,bl){return bk===bl;},'fLNmm':function(bk,bl){return bk(bl);},'HbwPu':a[cX(0x2b4)]},bf=m['value'][cX(_afY.b)](),bg=n['value'];if(a['LCEhe'](a9[cX(_afY.c)],0x0)){const bk=[...new Set(a9['map'](bl=>bl['tenMonHoc']))]['sort']();n['innerHTML']=a['PFRrF']+bk[cX(0x13c)](bl=>'<option\x20value=\x22'+bl+'\x22\x20'+(bl===bg?cX(0x30b):'')+'>'+bl+cX(0x213))[cX(0xb4)]('');}const bh=a9['filter'](bl=>(!bg||bl[cX(0x2e9)]===bg)&&(bl['tenMonHoc']+'\x20'+bl[cX(0x266)]+'\x20'+bl[cX(0x2b5)])[cX(0x2b2)]()[cX(0x2b6)](bf));if(a[cX(_afY.d)](bh[cX(_afY.c)],0x0)){o[cX(_afY.e)]=a9[cX(_afY.c)]===0x0?cX(0x208):a['QYPfQ'];return;}const bi=document['createElement'](a['nGuuT']);bi['className']=a[cX(0x314)],bi['innerHTML']=cX(0x117);const bj=bi[cX(_afY.f)](a[cX(_afY.g)]);bh['forEach'](bl=>{const cY=cX,bm=document[cY(0x1c1)]('tr'),bn=ab[cY(_afX.a)](bl['id'][cY(_afX.b)]()),bo=bl[cY(0xa5)]===cY(_afX.c),bp=bd[cY(_afX.d)](aD,bl[cY(0x16d)],aa),bq=bp[cY(0x10b)];let br='bg-white\x20border-b\x20transition-colors\x20duration-200';bo?br+=cY(0x156):bq?br+=cY(_afX.e):bn?br+=cY(_afX.f):br+=cY(_afX.g),bm['className']=br,bm[cY(0x2a2)]['classId']=bl['id'],bo&&(bm[cY(0x2a2)][cY(_afX.h)]=bd[cY(_afX.i)]),bq&&(bm[cY(0x2a2)][cY(_afX.j)]=bd[cY(0x2f9)],bm[cY(0x2a2)][cY(0x14d)]=JSON[cY(_afX.k)](bp[cY(_afX.l)]));const bs=ad[cY(0x1bc)](bl['maHocPhan']),bt=bl[cY(_afX.m)]===bd[cY(_afX.n)]?cY(0x1da):bd[cY(0x1f8)](bs,void 0x0)?'N/A':bs?cY(_afX.o):'<span\x20class=\x22text-xs\x20font-medium\x20px-2.5\x20py-0.5\x20rounded\x20bg-red-200\x20text-red-800\x20whitespace-nowrap\x22>Tự\x20chọn</span>';let bu='';if(bq){const bv=bp['conflicts'][cY(_afX.p)](bw=>{const cZ=cY,bx=aa[cZ(0xf3)](bC=>bC[cZ(0x266)]===bw[cZ(0x25f)]),by=bx?bx['id']:'',bz=bx?bx['source']:bd['BvSga'],bA=bx?bx[cZ(0x2b5)]:'',bB=bx&&bx[cZ(_afW.a)]||'';return cZ(0x120)+bw[cZ(_afW.b)]+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-xs\x20text-gray-600\x20truncate\x22>'+bw[cZ(_afW.c)]+cZ(0x13a)+by+cZ(_afW.d)+bw[cZ(_afW.b)]+cZ(_afW.e)+bw[cZ(0x25b)]+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-reg-source=\x22'+bz+cZ(_afW.f)+bA+cZ(0x28f)+bB+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-target-id=\x22'+bl['id']+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-target-code=\x22'+bl['maLopHocPhan']+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-target-name=\x22'+bl[cZ(_afW.g)]+cZ(0x116);})['join']('');bu+='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mt-2\x20p-2\x20bg-red-50\x20border-l-4\x20border-red-500\x20rounded\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x20mb-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-4\x20h-4\x20text-red-600\x20flex-shrink-0\x22\x20fill=\x22currentColor\x22\x20viewBox=\x220\x200\x2020\x2020\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20fill-rule=\x22evenodd\x22\x20d=\x22M8.257\x203.099c.765-1.36\x202.722-1.36\x203.486\x200l5.58\x209.92c.75\x201.334-.213\x202.98-1.742\x202.98H4.42c-1.53\x200-2.493-1.646-1.743-2.98l5.58-9.92zM11\x2013a1\x201\x200\x2011-2\x200\x201\x201\x200\x20012\x200zm-1-8a1\x201\x200\x2000-1\x201v3a1\x201\x200\x20002\x200V6a1\x201\x200\x2000-1-1z\x22\x20clip-rule=\x22evenodd\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-xs\x20font-bold\x20text-red-800\x22>TRÙNG\x20LỊCH\x20HỌC</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22space-y-1.5\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bv+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';}bm[cY(0x2d6)]=cY(_afX.q)+bl['tenMonHoc']+bu+'<div\x20class=\x22text-xs\x20mt-1\x20text-gray-600\x22>'+bd['fLNmm'](ax,bl[cY(_afX.r)])+'</div></th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Mã\x20LHP\x22>'+bl['maLopHocPhan']+cY(_afX.s)+bt+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Số\x20TC\x22>'+(bl[cY(0x212)]===0x0?'':bl[cY(_afX.t)]??'N/A')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Trạng\x20thái\x22>'+(bl[cY(0xa5)]||cY(_afX.u))+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x20font-semibold\x20'+(bl[cY(_afX.v)]>=0x64?'text-red-500':bd['HbwPu'])+cY(_afX.w)+bl[cY(0x285)]+'%</td>',bj[cY(0x31e)](bm);}),o['innerHTML']='',o['appendChild'](bi);},b6=async bd=>{const _ag1={a:0x2c4,b:0x181,c:0x2b5,d:0xf3,e:0x222,f:0x2e9,g:0x126,h:0x12b,i:0x16f,j:0x305,k:0x1d6,l:0x20f,m:0xc1,n:0x2e9,o:0x30d,p:0x17e,q:0x125,r:0x31e},d0=bN,bf={'nzXrl':d0(_ag2.a),'LNxdQ':function(bi,bj){const d1=d0;return a[d1(0x241)](bi,bj);},'LPhnj':a[d0(0xf0)],'aHmSi':function(bi,bj){return bi!==bj;}};if(!bd||bd[d0(_ag2.b)]===0x0){p['innerHTML']='<p\x20class=\x22text-gray-500\x20text-center\x20py-8\x22>Bạn\x20chưa\x20đăng\x20ký\x20học\x20phần\x20nào.</p>';return;}const bg=document[d0(_ag2.c)](a[d0(0x2ff)]);bg['className']=a['ppgMd'],bg[d0(_ag2.d)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<thead\x20class=\x22text-xs\x20text-gray-700\x20uppercase\x20bg-gray-100\x20sticky\x20top-0\x20z-10\x22><tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-6\x20py-3\x22>Tên\x20môn\x20học\x20&\x20Lịch\x20học</th><th\x20scope=\x22col\x22\x20class=\x22px-6\x20py-3\x22>Mã\x20LHP</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-6\x20py-3\x22>Số\x20TC</th><th\x20scope=\x22col\x22\x20class=\x22px-6\x20py-3\x22>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-6\x20py-3\x22>Hành\x20động</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr></thead><tbody></tbody>';const bh=bg[d0(_ag2.e)](a[d0(_ag2.f)]);bd[d0(0x28b)](bi=>{const d2=d0,bj=document['createElement']('tr');bj[d2(_ag1.a)]=bf['nzXrl'];const bk=bf[d2(0xc3)](bi['source'],d2(_ag1.b))?bf['LPhnj']:'';let bl=bi[d2(_ag1.c)];if(!bl){const bm=a9[d2(_ag1.d)](bn=>bn['maLopHocPhan']===bi['maLopHocPhan']);bm&&(bl=bm[d2(_ag1.c)]);}bj[d2(0x2d6)]=d2(_ag1.e)+bi[d2(_ag1.f)]+'\x20'+bk+d2(_ag1.g)+ax(bi[d2(0x16d)])+d2(_ag1.h)+bi[d2(0x266)]+d2(0x2f4)+(bi['soTinChi']===0x0?'':bi['soTinChi']??d2(0x2e3))+d2(0x204)+(bi[d2(_ag1.i)]||d2(0x2e3))+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-6\x20py-4\x22\x20data-label=\x22Hành\x20động\x22>'+(bi[d2(0x21e)]===!0x1&&bi[d2(0x16f)]!==d2(_ag1.j)&&bf['aHmSi'](bi[d2(0x16f)],d2(_ag1.k))?'':d2(_ag1.l)+(bi['id']??'')+d2(_ag1.m)+(bi[d2(_ag1.n)]??'')+d2(_ag1.o)+(bi['source']??'')+d2(_ag1.p)+(bi['id']??'')+'\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-reg-code=\x22'+(bi['maLopHocPhan']??'')+d2(0x131)+(bi[d2(0x2e9)]??'')+d2(_ag1.q)+(bi['source']??'')+d2(0x1f9)+(bl??'')+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-reg-status=\x22'+(bi['tenTrangThaiLopHocPhan']||'')+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22font-medium\x20text-blue-600\x20hover:underline\x20swap-from-registered-btn\x22>Xem\x20lớp\x20khác</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20')+'</td>',bh[d2(_ag1.r)](bj);}),p[d0(_ag2.d)]='',p[d0(0x31e)](bg);},b7=async(bd,bf)=>{const _ag6={a:0x28b,b:0x309},d3=bN,bg={'ZYqdG':function(bq,br){return bq===br;},'IEueG':function(bq,br){return bq(br);}},{id:bh,code:bi,name:bj,source:bk}=bd,{id:bl,code:bm,name:bn}=bf,bo=aa['find'](bq=>bq['id'][d3(0xcf)]()===bh);if(!bo){au(d3(_ag8.a),!0x0);return;}const bp=a9[d3(0xf3)](bq=>bq['id'][d3(0xcf)]()===bl);if(!bp){a['jvzae'](au,'❌\x20Không\x20tìm\x20thấy\x20thông\x20tin\x20lớp\x20đích',!0x0);return;}aK(d3(_ag8.b)+bj+d3(0x30c)+bi+d3(_ag8.c)+bn+d3(_ag8.d)+bm+d3(_ag8.e),()=>{const d4=d3;let bq=null;ac[d4(_ag6.a)]((br,bs)=>{const d5=d4;bg['ZYqdG'](br[d5(0x2a0)]['id']['toString'](),bh)&&(bq=bs);}),bq&&ac[d4(_ag6.b)](bq),ac[d4(0x130)](bl,{'registered':bo,'target':bp}),bg[d4(0x16e)](au,d4(0xc2)+bj+'\x20('+bi+d4(0x2c3)+bn+'\x20('+bm+')'),ba(),b5();},()=>{});},b8=async bd=>{const _agl={a:0x2a2,b:0x2a2,c:0xcd,d:0x10b,e:0x1b1,f:0xf3,g:0x216,h:0x2ec,i:0xcb,j:0x285,k:0x26f},_agb={a:0x12a,b:0xa5},d7=bN,bf={'TcJPn':function(bt,bu){const d6=_ab;return a[d6(0x113)](bt,bu);},'HWJic':'|\x20isCurrent:','QybRc':function(bt,bu){return a['GnELf'](bt,bu);},'meYHF':a['rBnTQ']},{id:bg,code:bh,name:bi,source:bj,subjectCode:bk,status:bl}=bd,bm=aa['find'](bt=>bt['id'][d7(0xcf)]()===bg);if(!bm){au(d7(0x26a),!0x0);return;}let bn=bk||bm['maHocPhan'];if(!bn&&bh&&(bn=bh['slice'](0x0,-0x2),console[d7(_agn.a)](d7(0x18e),bh,'->',bn)),!bn){const bt=a9['find'](bu=>bu['id'][d7(0xcf)]()===bg||bu['maLopHocPhan']===bh);bt&&(bn=bt[d7(0x2b5)],console[d7(_agn.a)](d7(_agn.b),bn));}if(!bn){a[d7(_agn.c)](au,'❌\x20Không\x20tìm\x20thấy\x20mã\x20học\x20phần\x20của\x20lớp\x20này',!0x0),console[d7(0x1d9)](a['uIOJP']),console['log'](a['eDWUu'],bm),console['log'](a['OWSzL'],{'regId':bg,'regCode':bh}),console[d7(0x1d9)](a[d7(0x135)],bk);return;}console[d7(0x1d9)](d7(_agn.d),bn),console['log']('📊\x20Total\x20classes\x20in\x20allScheduleData:',a9[d7(_agn.e)]),console[d7(_agn.a)](a['jlOvz'],bh);let bo=a9[d7(_agn.f)](bu=>{const d8=d7,bv=bu[d8(0x2b5)]===bn&&bu['maLopHocPhan']!==bh&&bf['TcJPn'](bu[d8(0xa5)],d8(0x19b));return bu[d8(0x2b5)]===bn&&console[d8(0x1d9)](d8(_agb.a),bu[d8(0x266)],bf[d8(0x1b5)],bf['QybRc'](bu[d8(0x266)],bh),d8(0x1c9),bu[d8(_agb.b)],d8(0x160),bv),bv;});if(console[d7(_agn.a)]('Classes\x20found\x20in\x20allScheduleData:',bo[d7(0x289)]),bo['length']===0x0){a['aIcIG'](au,'🔍\x20Không\x20tìm\x20thấy\x20lớp\x20trong\x20cache,\x20đang\x20lấy\x20từ\x20API\x20cho\x20môn\x20'+bi+'...');let bu=bn;(!bu||a[d7(0x1fe)](bu['length'],0x2))&&(bu=bh['slice'](0x0,-0x2),console[d7(0x1d9)](d7(0x18e),bh,'->',bu)),console[d7(0x1d9)](a[d7(_agn.g)],bu);const bv=await aq(d7(0x101),{'dotId':a5,'maHocPhan':bu,'source':bj});let bw=bv?.[d7(_agn.h)]||!0x1;bv&&bv['success']&&Array['isArray'](bv[d7(_agn.i)])?(bw&&au(d7(_agn.j)),bo=(await Promise['all'](bv['body'][d7(_agn.k)](async bx=>{const d9=d7;if(bx[d9(_agc.a)]&&!bx['scheduleDetails'][d9(_agc.b)])return{...bx,'maHocPhan':bu,'tenMonHoc':bx[d9(_agc.c)]||bi,'source':bj,'fromSharedDB':bx['fromSharedDB']||bw};const by=await aq(bf[d9(_agc.d)],{'classId':bx['id'],'source':bj});return{...bx,'maHocPhan':bu,'tenMonHoc':bx['tenMonHoc']||bi,'source':bj,'scheduleDetails':by?.[d9(_agc.e)]?by[d9(_agc.f)]:{'error':!0x0},'fromSharedDB':bw};})))['filter'](bx=>bx[d7(0x266)]!==bh&&bx[d7(0xa5)]!==d7(0x19b)),console['log']('Classes\x20fetched\x20from\x20API:',bo[d7(_agn.e)]),au(bw?'✅\x20Đã\x20lấy\x20'+bo['length']+d7(0x173):d7(0xb1)+bo[d7(0x289)]+d7(0x14f))):au(a[d7(_agn.l)],!0x0);}const bp=bo[d7(_agn.m)](bx=>bx['fromSharedDB']);if(a[d7(0x23d)](bo[d7(_agn.e)],0x0)){au(d7(_agn.n)+bi+d7(0x10a)+bn+')',!0x0);return;}const bq=document[d7(_agn.o)](d7(0x280));bq['id']=d7(_agn.p),bq[d7(0x2c4)]=a[d7(0x29c)];const br=bp?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mb-4\x20p-3\x20bg-cyan-50\x20border-l-4\x20border-cyan-500\x20rounded\x20flex\x20items-start\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-xl\x22>📦</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-bold\x20text-sm\x20text-cyan-800\x22>Dữ\x20liệu\x20từ\x20CSDL\x20cộng\x20đồng</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-xs\x20text-cyan-700\x20mt-1\x22>Một\x20số\x20lớp\x20được\x20lấy\x20từ\x20cơ\x20sở\x20dữ\x20liệu\x20chia\x20sẻ.\x20Thông\x20tin\x20%\x20đăng\x20ký\x20có\x20thể\x20chưa\x20cập\x20nhật\x20mới\x20nhất.</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20':'';bq['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-white\x20rounded-lg\x20shadow-xl\x20max-w-6xl\x20w-full\x20max-h-[90vh]\x20overflow-hidden\x20flex\x20flex-col\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22bg-gradient-to-r\x20from-blue-600\x20to-indigo-600\x20text-white\x20px-6\x20py-4\x20flex\x20justify-between\x20items-center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h2\x20class=\x22text-2xl\x20font-bold\x22>�\x20Xem\x20lớp\x20khác</h2>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22text-sm\x20text-blue-100\x20mt-1\x22>Môn\x20học:\x20'+bi+'\x20('+bh+d7(_agn.q)+br+d7(0x1e1)+a[d7(0xb5)](ax,bm[d7(_agn.r)])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20class=\x22text-lg\x20font-bold\x20text-gray-800\x20mb-3\x22>Chọn\x20lớp\x20muốn\x20đăng\x20ký:</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22overflow-x-auto\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<table\x20class=\x22w-full\x20text-sm\x20text-left\x20text-gray-500\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<thead\x20class=\x22text-xs\x20text-gray-700\x20uppercase\x20bg-gray-100\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-4\x20py-3\x22>Mã\x20LHP</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-4\x20py-3\x22>Lịch\x20học</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-4\x20py-3\x22>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-4\x20py-3\x22>Đã\x20ĐK</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20scope=\x22col\x22\x20class=\x22px-4\x20py-3\x22>Hành\x20động</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</thead>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tbody\x20id=\x22swap-classes-tbody\x22></tbody>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</table>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20',document['body']['appendChild'](bq);const bs=bq[d7(0x2f2)]('#swap-classes-tbody');bo['forEach'](bx=>{const da=d7,by=document[da(_agd.a)]('tr');by[da(_agd.b)]=da(_agd.c);const bz=b9(bm[da(0x16d)],bx['scheduleDetails']),bA=bz?a[da(0x198)]:a[da(_agd.d)],bB=a[da(0x2d4)](bx['phanTramDangKy'],0x64)?a[da(_agd.e)]:da(0xc5),bC=bx[da(_agd.f)]?a[da(0x24b)]:'',bD=bx[da(0x107)]&&bx[da(_agd.g)]?da(_agd.h)+a['oDWba'](az,bx[da(0x1fb)])+'</div>':'';by[da(_agd.i)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x20font-medium\x22>'+bx['maLopHocPhan']+bC+da(0xf9)+a[da(0x148)](ax,bx[da(0x16d)])+da(_agd.j)+(bx[da(0xa5)]||a[da(0xe4)])+bD+da(0x1eb)+bB+'\x22>'+bx['phanTramDangKy']+'%</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22px-4\x20py-3\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20flex-col\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bA+da(_agd.k)+bx['id']+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-target-code=\x22'+bx[da(0x266)]+da(_agd.l)+bx['tenMonHoc']+da(_agd.m)+bx[da(_agd.n)]+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-has-conflict=\x22'+bz+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✓\x20Chọn\x20đăng\x20ký\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',bs[da(_agd.o)](by);}),bq[d7(0x2f2)](a[d7(0x19d)])['addEventListener']('click',()=>{const db=d7;bq[db(_age.a)]();}),bq[d7(_agn.s)]('click',bx=>{const dc=d7;bx[dc(0x1f1)]===bq&&bq[dc(0x2a4)]();}),bq['querySelectorAll'](d7(0x2dd))[d7(0x28b)](bx=>{const dd=d7,by={'DUtOh':function(bz){return bz();},'XQNxo':'❌\x20Không\x20tìm\x20thấy\x20thông\x20tin\x20lớp','LPwdY':dd(_agm.a)};bx[dd(0x2bf)](dd(0x1d2),async()=>{const _agj={a:0x2a9,b:0x239,c:0x123},df=dd,bz={'lOuRA':function(bJ,bK){return bJ(bK);},'kEuzB':function(bJ){const de=_ab;return by[de(0xd2)](bJ);}},bA=bx[df(_agl.a)]['targetId'],bB=bx[df(_agl.b)][df(_agl.c)],bC=bx[df(0x2a2)][df(0x30e)],bD=bx[df(0x2a2)]['targetSource'],bE=bx[df(0x2a2)][df(_agl.d)]===df(_agl.e),bF=bo[df(_agl.f)](bJ=>bJ['id'][df(0xcf)]()===bA);if(!bF){alert(by[df(0x14e)]),console['log']('❌\x20Debug:\x20targetId\x20=',bA),console['log'](df(0x172),bo['map'](bJ=>({'id':bJ['id'],'code':bJ[df(0x266)]})));return;}if(ab[df(_agl.g)](bA)){au('⚠️\x20Lớp\x20'+bB+df(_agl.h),!0x0);return;}const bG=bE?df(_agl.i):'',bH=bF[df(_agl.j)]>=0x64?by[df(0x24d)]:df(0x15c),bI='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bG+df(_agl.k)+bC+df(0x30c)+bB+')</span></p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bH+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';aK(bI,()=>{const dg=df;ab['set'](bA,bF),bz[dg(0x134)](au,dg(_agj.a)+bC+'\x20('+bB+dg(0x2a8)),bF[dg(0x285)]>=0x64&&au(dg(_agj.b)+bF[dg(0x285)]+dg(0x1ab)),bz['kEuzB'](ba),bz[dg(_agj.c)](b5),bq['remove']();},()=>{});});});},b9=(bd,bf)=>{const dh=bN;if(!bd||!Array['isArray'](bd)||bd['length']===0x0||!bf||!Array[dh(_ago.a)](bf)||bf['length']===0x0)return!0x1;for(const bg of bd){const bh=aA(bg[dh(_ago.b)]);if(bh[dh(0x289)]!==0x0)for(const bi of bf){const bj=aA(bi['tietHoc']);if(a[dh(0x1d1)](bj[dh(0x289)],0x0)&&a[dh(0x241)](bg[dh(0x150)],bi[dh(0x150)])&&a['sEmAY'](aC,bg[dh(0x11c)],bg['ngayKetThuc'],bi[dh(_ago.c)],bi[dh(0x100)])&&aB(bh,bj))return!0x0;}}return!0x1;},ba=async()=>{const _agq={a:0x1a9,b:0x181,c:0xf8,d:0xd9,e:0x16d,f:0x1c4},di=bN,bd={'ARagc':di(_ags.a),'FmRjp':function(bg,bh,bi){return bg(bh,bi);}};if(a[di(_ags.b)](a[di(_ags.c)](ab['size'],ac['size']),0x0)){s[di(_ags.d)]=a[di(_ags.e)],u[di(0x249)][di(_ags.f)]('hidden'),aO();return;}let bf='';ab[di(0x28b)](bg=>{const dj=di,bh=bg[dj(_agq.a)]===dj(_agq.b)?a[dj(0x1ac)]:'';bf+=dj(_agq.c)+bg[dj(0x2e9)]+'\x20'+bh+dj(_agq.d)+ay(bg,bg[dj(_agq.e)])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20data-class-id=\x22'+bg['id']+dj(_agq.f);}),ac[di(0x28b)]((bg,bh)=>{const dk=di,bi=bg['registered'],bj=bg[dk(_agr.a)],bk=bi[dk(0x1a9)]==='dkhpdk'?dk(0x22d):'',bl=bj[dk(0x1a9)]===bd['ARagc']?dk(0x22d):'';bf+='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20justify-between\x20items-center\x20bg-yellow-50\x20border-2\x20border-yellow-400\x20p-2\x20rounded-md\x20hover:bg-yellow-100\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x20mb-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-4\x20h-4\x20text-yellow-600\x20flex-shrink-0\x22\x20fill=\x22currentColor\x22\x20viewBox=\x220\x200\x2020\x2020\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20fill-rule=\x22evenodd\x22\x20d=\x22M8\x204a4\x204\x200\x20100\x208\x204\x204\x200\x20000-8zM2\x208a6\x206\x200\x201110.89\x203.476l4.817\x204.817a1\x201\x200\x2001-1.414\x201.414l-4.816-4.816A6\x206\x200\x20012\x208z\x22\x20clip-rule=\x22evenodd\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-xs\x20font-bold\x20text-yellow-800\x20uppercase\x22>Đổi\x20lớp</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Old\x20class\x20(strikethrough)\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mb-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-semibold\x20text-sm\x20text-gray-500\x20line-through\x20decoration-2\x22>'+bi['tenMonHoc']+'\x20'+bk+dk(_agr.b)+bd['FmRjp'](ay,bi,bi[dk(_agr.c)])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Arrow\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x20my-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-5\x20h-5\x20text-green-600\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20viewBox=\x220\x200\x2024\x2024\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20stroke-width=\x222\x22\x20d=\x22M13\x207l5\x205m0\x200l-5\x205m5-5H6\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22text-xs\x20font-semibold\x20text-green-700\x22>Đổi\x20sang</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20New\x20class\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22font-semibold\x20text-sm\x20text-green-800\x22>'+bj['tenMonHoc']+'\x20'+bl+dk(_agr.d)+ay(bj,bj['scheduleDetails'])+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20data-target-class-id=\x22'+bh+dk(_agr.e);}),s[di(_ags.g)]=bf,u[di(_ags.h)][di(0x2a4)](a['WcRUp']),aO();},bb=document['getElementById']('guide-btn');bb&&bb['addEventListener'](bN(_agF.P),()=>{aE();}),aU()[bN(_agF.Q)](bd=>{const dl=bN;bd||A['classList'][dl(_agu.a)](dl(_agu.b));}),f[bN(_agF.R)](bN(0x1d2),aS),l[bN(0x2bf)](bN(_agF.S),()=>{const dm=bN;a[dm(_agv.a)](aY);}),g['addEventListener'](a[bN(_agF.T)],b1),h['addEventListener'](bN(0x1d2),b2),i['addEventListener']('click',b3),m['addEventListener']('input',()=>b5()),n[bN(0x2bf)](a['VkJdI'],()=>b5()),d[bN(_agF.U)](a['OLnLj'],bd=>{const dn=bN;a[dn(0x23b)](bd[dn(0x194)],a[dn(0x2b0)])&&a[dn(_agw.a)](aS);}),document['addEventListener'](bN(0x1d2),bd=>{const dp=bN,bf=bd['target']['closest'](dp(_agy.a));if(bf){if(a[dp(0x29b)](bf[dp(_agy.b)][dp(0x22f)],dp(_agy.c))){au(dp(0x195),!0x0);return;}if(bf['dataset']['hasConflict']===a[dp(0xde)]){const bo=JSON['parse'](bf[dp(_agy.d)][dp(_agy.e)]),bp=bo[dp(0x13c)]((bq,br)=>{const dq=dp,bs=bq[dq(0x252)][dq(_agx.a)](bt=>bt[dq(0x24f)]+dq(0x20d)+bt[dq(0x315)])['join'](a[dq(_agx.b)]);return br+0x1+'.\x20'+bq['registeredClass']+'\x20('+bq[dq(_agx.c)]+dq(0xdb)+bs;})[dp(0xb4)]('\x0a');au(dp(_agy.f)+bo[dp(0x289)]+dp(0x1f4)+bp+dp(0x203),!0x0);return;}const bm=bf[dp(0x2a2)][dp(_agy.g)],bn=a9[dp(_agy.h)](bq=>bq['id']['toString']()===bm);if(!bn)return;ab[dp(0x216)](bm)?ab[dp(_agy.i)](bm):ab[dp(_agy.j)](bm,bn),bf[dp(_agy.k)][dp(0x2cb)](dp(_agy.l)),ba();}const bg=bd[dp(_agy.m)]['closest'](dp(0x11b));if(bg){const bq=bg['dataset'][dp(0xab)],br=ab[dp(0x1bc)](bq);ab['delete'](bq);const bs=document['querySelector']('#schedule-container\x20tr[data-class-id=\x27'+bq+'\x27]');bs&&bs['classList'][dp(0x2a4)]('bg-blue-200'),a[dp(0x237)](ba);}const bh=bd[dp(0x1f1)][dp(0xa0)]('.remove-swap-btn');if(bh){const bt=bh[dp(0x2a2)]['targetClassId'],bu=ac[dp(_agy.n)](bt);ac['delete'](bt),a[dp(_agy.o)](ba),au(dp(_agy.p));}const bi=bd[dp(0x1f1)][dp(_agy.q)](dp(_agy.r));if(bi){const {regId:bv,tenMon:bw,source:bx}=bi['dataset'];aZ(bv,bw,bx);}const bj=bd['target'][dp(_agy.q)](dp(_agy.s));if(bj){const by={'id':bj[dp(_agy.t)]['regId'],'code':bj[dp(_agy.u)][dp(0x1c2)],'name':bj['dataset'][dp(0xe9)],'source':bj[dp(0x2a2)]['regSource'],'subjectCode':bj[dp(0x2a2)][dp(_agy.v)],'status':bj[dp(_agy.b)][dp(0x110)]};a[dp(_agy.w)](b8,by);}const bk=bd[dp(_agy.m)]['closest'](a[dp(_agy.x)]);if(bk){bd[dp(0x15b)]();const bz={'id':bk[dp(_agy.y)]['regId'],'code':bk[dp(0x2a2)][dp(0x1c2)],'name':bk[dp(0x2a2)][dp(_agy.z)],'source':bk['dataset'][dp(0x1a7)],'subjectCode':bk['dataset']['regSubjectCode'],'status':bk[dp(_agy.y)][dp(_agy.A)]},bA={'id':bk['dataset']['targetId'],'code':bk[dp(0x2a2)]['targetCode'],'name':bk[dp(0x2a2)]['targetName']};b7(bz,bA);}const bl=bd[dp(_agy.B)][dp(_agy.q)](a[dp(_agy.C)]);if(bl){const bB={'id':bl[dp(_agy.t)]['registeredId'],'code':bl['dataset']['registeredCode'],'name':bl['dataset']['registeredName'],'source':bl[dp(_agy.b)][dp(_agy.D)]},bC={'id':bl['dataset']['targetId'],'code':bl[dp(_agy.E)][dp(0xcd)],'name':bl['dataset'][dp(0x30e)],'source':bl['dataset'][dp(_agy.F)]},bD=aa['find'](bH=>bH['id']['toString']()===bB['id']),bE=a9['find'](bH=>bH['id']['toString']()===bC['id']);if(!bD||!bE){au(dp(0x1a0),!0x0);return;}const bF=bD[dp(_agy.G)]||'';if(bF===a[dp(0x17b)]){a[dp(0x2a1)](au,dp(_agy.H)+bB['code']+dp(0x153)+bF,!0x0);return;}if(bF===dp(0x18d)){au(dp(_agy.H)+bB[dp(0x1df)]+dp(0x153)+bF,!0x0);return;}if(bD['isAllowCancel']===!0x1&&a[dp(0x1d7)](bF,a[dp(0xdf)])&&bF!==a[dp(_agy.I)]){au(dp(_agy.H)+bB['code']+dp(_agy.J)+bF,!0x0);return;}const bG=bE[dp(0xa5)]||'';if(bG===dp(0x19b)){au(dp(0x265)+bC[dp(0x1df)]+'\x20-\x20Trạng\x20thái:\x20'+bG,!0x0);return;}ac[dp(0x130)](bC['id'],{'registered':bD,'target':bE}),au(dp(_agy.K)+bB[dp(_agy.L)]+dp(0x25a)+bC['name']),au(dp(_agy.M)+bF+dp(0x25a)+bG),ba(),bc&&(bc['remove'](),bc=null);}});let bc=null;document[bN(0x2bf)](bN(_agF.V),bd=>{const _agC={a:0x1ef,b:0x281},_agB={a:0x252,b:0x193,c:0x18d,d:0x2c5,e:0x1d6,f:0xbe,g:0x25b,h:0x293,i:0x10e,j:0xaa},dr=bN,bf={'yeWLI':'Không\x20tìm\x20thấy\x20thông\x20tin\x20lớp','Yrsbh':function(bh,bi){return bh!==bi;},'hgmGx':a[dr(_agE.a)],'fjjat':'Đã\x20khóa\x20lớp','vWKWD':function(bh,bi){return bh+bi;}},bg=bd['target'][dr(0xa0)](dr(_agE.b));if(bg&&bg[dr(_agE.c)]['hasConflict']==='true'){bc&&(bc[dr(0x2a4)](),bc=null);const bh=JSON[dr(_agE.d)](bg[dr(_agE.c)]['conflictInfo']),bi=bg[dr(0x2a2)]['classId'],bj=a9['find'](bm=>bm['id']['toString']()===bi),bk=bh[dr(_agE.e)](bm=>{const ds=dr,bn=bm[ds(_agB.a)]['map'](bs=>ds(0x296)+bs[ds(0x24f)]+ds(0x251)+bs[ds(0x315)]+ds(0x2fd))['join'](''),bo=aa[ds(0xf3)](bs=>bs[ds(0x266)]===bm[ds(0x25f)]);let bp=!0x1,bq='';if(!bo)bq=bf[ds(_agB.b)];else{const bs=bo[ds(0x16f)]||'',bt=bj?.['tenTrangThai']||'';bs==='Đã\x20khóa\x20lớp'?bq='Trạng\x20thái:\x20'+bs:bs===ds(_agB.c)?bq=ds(_agB.d)+bs:bo[ds(0x21e)]===!0x1&&bf[ds(0xdd)](bs,bf[ds(0x1e4)])&&bs!==ds(_agB.e)?bq=ds(0x2c5)+bs:bt===bf[ds(0x165)]?bq=ds(0x2f7)+bt:bp=!0x0;}const br=bp?ds(_agB.f)+bo['id']+ds(0x164)+bm['registeredCode']+'\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-registered-name=\x22'+bm[ds(_agB.g)]+ds(0x318)+bo[ds(0x1a9)]+ds(0x22c)+bi+ds(0x23f)+(bj?.['maLopHocPhan']||'')+ds(_agB.h)+(bj?.['tenMonHoc']||'')+ds(0xba)+(bj?.['source']||'')+ds(0x2ea):'<p\x20class=\x22mt-2\x20text-xs\x20text-yellow-300\x22>⚠️\x20Không\x20thể\x20đổi:\x20'+bq+ds(0x20e);return ds(_agB.i)+bm['registeredClass']+ds(_agB.j)+bm[ds(0x25f)]+ds(0x1bd)+bn+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+br+ds(0x108);})[dr(0xb4)]('');bc=document['createElement']('div'),bc['className']='fixed\x20bg-gradient-to-br\x20from-red-600\x20to-red-700\x20text-white\x20px-4\x20py-3\x20rounded-xl\x20shadow-2xl\x20z-50\x20max-w-md\x20border-2\x20border-red-500',bc[dr(_agE.f)]='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x20mb-3\x20pb-2\x20border-b\x20border-red-500\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22w-6\x20h-6\x20text-yellow-300\x22\x20fill=\x22currentColor\x22\x20viewBox=\x220\x200\x2020\x2020\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20fill-rule=\x22evenodd\x22\x20d=\x22M8.257\x203.099c.765-1.36\x202.722-1.36\x203.486\x200l5.58\x209.92c.75\x201.334-.213\x202.98-1.742\x202.98H4.42c-1.53\x200-2.493-1.646-1.743-2.98l5.58-9.92zM11\x2013a1\x201\x200\x2011-2\x200\x201\x201\x200\x20012\x200zm-1-8a1\x201\x200\x2000-1\x201v3a1\x201\x200\x20002\x200V6a1\x201\x200\x2000-1-1z\x22\x20clip-rule=\x22evenodd\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22font-bold\x20text-lg\x22>TRÙNG\x20LỊCH\x20HỌC</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bk+dr(_agE.g),document['body'][dr(0x31e)](bc);const bl=bm=>{const dt=dr,bn=bm[dt(0xc7)]+0xf,bo=bf[dt(0x291)](bm[dt(0x146)],0xf);bc['style']['left']=bn+'px',bc[dt(_agC.a)][dt(_agC.b)]=bo+'px';};bl(bd),bg[dr(_agE.h)]('mousemove',bl),bg['addEventListener']('mouseleave',()=>{bc&&(bc['remove'](),bc=null);});}});}));
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const delayInput = document.getElementById('delay-input');
+    const loginBtn = document.getElementById('login-btn');
+    const startInsertionBtn = document.getElementById('start-insertion-btn');
+    const startRegistrationBtn = document.getElementById('start-registration-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const refreshRegisteredBtn = document.getElementById('refresh-registered-btn');
+    const searchInput = document.getElementById('search-schedule');
+    const subjectFilter = document.getElementById('subject-filter');
+    const scheduleContainer = document.getElementById('schedule-container');
+    const registeredContainer = document.getElementById('registered-container');
+    const selectedList = document.getElementById('selected-classes-list');
+    const logOutput = document.getElementById('log-output');
+    const registrationControls = document.getElementById('registration-controls');
+    const loginForm = document.getElementById('login-form');
+
+    // Dynamically created elements
+    let userPanel, greetingMsg, fetchBtn, logoutBtn, progressBarContainer, progressBarElement, progressBarText, vipStatusElement, upgradeVipBtn;
+
+    // State
+    let authToken = null;
+    let dotId = null;
+    let userId = null;
+    let vipStatus = { hasVIP: false };
+    let userProfile = null; // portal profile snapshot — also cached for offline session restore
+    let allScheduleData = [];
+    let registeredClassesData = []; // Store registered classes for conflict detection
+    let selectedClasses = new Map();
+    let swapPendingClasses = new Map(); // Store classes pending swap: key = targetClassId, value = { registered, target }
+    let subjectTypeMap = new Map();
+    let registrationIntervals = new Map();
+    let isProcessStopped = false;
+
+    // --- Auto-loop performance guards ---
+    // Hanging an auto-registration session used to lag the whole browser until F5:
+    //   * the log output grew unbounded (one <p> per attempt, thousands per hour) and every
+    //     append forced a synchronous layout (scrollTop = scrollHeight);
+    //   * the subject loops hammered the API with setTimeout(0) and no concurrency cap, so
+    //     every browser connection slot was occupied and manual clicks queued forever.
+    const MAX_LOG_LINES = 400;           // DOM nodes kept in the on-screen log
+    const AUTO_ROUND_DELAY_MS = 150;     // breather between auto-loop rounds
+    const AUTO_MAX_CONCURRENT = 3;       // auto requests in flight — leaves slots for UI actions
+    let autoSlotsUsed = 0;
+    const autoSlotQueue = [];
+    const autoSlotAcquire = () => new Promise(resolve => {
+        if (autoSlotsUsed < AUTO_MAX_CONCURRENT) { autoSlotsUsed++; resolve(); }
+        else autoSlotQueue.push(resolve);
+    });
+    const autoSlotRelease = () => {
+        const next = autoSlotQueue.shift();
+        if (next) next(); else autoSlotsUsed--;
+    };
+    let currentOrder = null;
+    let paymentCheckInterval = null;
+    
+    // Expose data for timetable module
+    window.getRegisteredClassesData = () => registeredClassesData;
+    window.getSelectedClassesData = () => {
+        const allClasses = [];
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            allClasses.push(cls);
+        });
+        
+        // Add target classes from swap pending (not registered classes)
+        swapPendingClasses.forEach(swap => {
+            allClasses.push(swap.target);
+        });
+        
+        return allClasses;
+    };
+
+    // Assign originalHTML safely
+    const buttons = [loginBtn, startInsertionBtn, startRegistrationBtn, stopBtn, refreshRegisteredBtn];
+    buttons.forEach(btn => { if (btn) btn.originalHTML = btn.innerHTML; });
+
+    // === BACKEND COMMUNICATION ===
+    const backendRequest = async (action, payload = {}) => {
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            const response = await fetch('/api/handler', { method: 'POST', headers, body: JSON.stringify({ action, payload }) });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: `HTTP Error: ${response.status}` }));
+                log(`Lỗi '${action}': ${errorData.message}`, true);
+                return null;
+            }
+            return await response.json();
+        } catch (error) {
+            log(`Lỗi mạng khi gọi backend: ${error.message}`, true);
+            return null;
+        }
+    };
+
+    // Same as backendRequest but gated through the auto-slot semaphore (see MAX constants).
+    // Manual UI requests never queue behind the auto loops: at most AUTO_MAX_CONCURRENT
+    // auto calls are in flight, the rest of the browser's connection pool stays free
+    // for clicks, payment polling and page loads even while auto-register is hammering.
+    const backendRequestAuto = async (action, payload = {}) => {
+        await autoSlotAcquire();
+        try {
+            return await backendRequest(action, payload);
+        } finally {
+            autoSlotRelease();
+        }
+    };
+
+    // Verification seam: lets the browser-level regression harness (tests/01 style VM run on
+    // the BUILT bundle) exercise the perf guards without screen-driving the whole UI.
+    window.__UT_APP_HOOKS = {
+        log: (msg, isErr) => log(msg, isErr),
+        requestAuto: (action, payload) => backendRequestAuto(action, payload),
+        limits: () => ({ maxLogLines: MAX_LOG_LINES, autoMaxConcurrent: AUTO_MAX_CONCURRENT, autoRoundDelayMs: AUTO_ROUND_DELAY_MS }),
+        logNodeCount: () => logOutput.childElementCount
+    };
+
+    // --- UTILITY FUNCTIONS ---
+    // Log is called on EVERY auto-loop iteration (thousands per hour when a slot never opens).
+    // It must stay O(1): capped DOM size, textContent (no HTML parsing), and one batched
+    // scroll per frame instead of forcing layout on every append — otherwise an idle session
+    // grows tens of thousands of <p> nodes and the tab freezes until F5.
+    let logScrollQueued = false;
+    const log = (message, isError = false) => {
+        const timestamp = new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Bangkok' });
+        const logEntry = document.createElement('p');
+        logEntry.textContent = `[${timestamp}] ${message}`;
+        logEntry.className = isError ? 'text-red-400' : 'text-green-300';
+        logOutput.appendChild(logEntry);
+        while (logOutput.childElementCount > MAX_LOG_LINES) {
+            logOutput.removeChild(logOutput.firstElementChild);
+        }
+        if (!logScrollQueued) {
+            logScrollQueued = true;
+            requestAnimationFrame(() => {
+                logScrollQueued = false;
+                logOutput.scrollTop = logOutput.scrollHeight;
+            });
+        }
+    };
+
+    const toggleLoading = (button, isLoading) => {
+        if (!button) return;
+        if (isLoading) {
+            button.disabled = true;
+            button.innerHTML = `<div class="loader"></div>`;
+        } else {
+            button.disabled = false;
+            button.innerHTML = button.originalHTML;
+        }
+    };
+
+    const formatDayOfWeek = (thu) => {
+        if (thu === 8) return 'Chủ nhật';
+        return `Thứ ${thu}`;
+    };
+
+    const formatScheduleDetail = (details) => {
+        if (!details || details.error || !Array.isArray(details) || details.length === 0) {
+            return 'Không có thông tin lịch học';
+        }
+        return details.map(d => `<div class="font-medium">${formatDayOfWeek(d.thu)} | Tiết ${d.tietHoc} | ${new Date(d.ngayBatDau).toLocaleDateString('vi-VN')} - ${new Date(d.ngayKetThuc).toLocaleDateString('vi-VN')}</div>`).join('<hr class="my-1 border-gray-200">');
+    };
+
+    const formatSelectedClassDetail = (cls, details) => {
+        if (!details || details.error) return `<span class="text-red-500">Không tải được lịch</span>`;
+        if (!Array.isArray(details) || details.length === 0) return '<span>Chưa có thông tin lịch học</span>';
+        return details.map(detail => `<span>${cls.maLopHocPhan} | ${formatDayOfWeek(detail.thu)} | Tiết ${detail.tietHoc}</span>`).join('<br>');
+    };
+
+    // Format relative time for shared DB data
+    const formatLastUpdated = (timestamp) => {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) return 'Vừa xong';
+        if (diffMins < 60) return `${diffMins} phút trước`;
+        if (diffHours < 24) return `${diffHours} giờ trước`;
+        if (diffDays < 7) return `${diffDays} ngày trước`;
+        return date.toLocaleDateString('vi-VN');
+    };
+
+    // --- SCHEDULE CONFLICT DETECTION ---
+    
+    // Parse period string "1-3" or "4-6" to array [1, 2, 3] or [4, 5, 6]
+    const parsePeriods = (tietHoc) => {
+        if (!tietHoc) return [];
+        const parts = tietHoc.toString().split('-');
+        if (parts.length !== 2) return [];
+        const start = parseInt(parts[0]);
+        const end = parseInt(parts[1]);
+        const periods = [];
+        for (let i = start; i <= end; i++) {
+            periods.push(i);
+        }
+        return periods;
+    };
+
+    // Check if two period arrays overlap
+    // Example: [1,2,3] and [2,3,4] overlap, [1,2,3] and [4,5,6] don't overlap
+    // Exception: Period 16-18 (evening class) never conflicts with any other periods
+    const periodsOverlap = (periods1, periods2) => {
+        // Check if either period set contains evening periods (16, 17, 18)
+        const eveningPeriods = [16, 17, 18];
+        const hasEvening1 = periods1.some(p => eveningPeriods.includes(p));
+        const hasEvening2 = periods2.some(p => eveningPeriods.includes(p));
+        
+        // If either period set is evening class, no conflict
+        if (hasEvening1 || hasEvening2) {
+            return false;
+        }
+        
+        // Normal conflict check for non-evening periods
+        return periods1.some(p => periods2.includes(p));
+    };
+
+    // Check if two date ranges overlap
+    const dateRangesOverlap = (start1, end1, start2, end2) => {
+        const s1 = new Date(start1).getTime();
+        const e1 = new Date(end1).getTime();
+        const s2 = new Date(start2).getTime();
+        const e2 = new Date(end2).getTime();
+        return s1 <= e2 && s2 <= e1;
+    };
+
+    // Check if a class schedule conflicts with registered classes
+    const checkScheduleConflict = (classScheduleDetails, registeredClassesData) => {
+        if (!classScheduleDetails || !Array.isArray(classScheduleDetails) || classScheduleDetails.length === 0) {
+            return { hasConflict: false, conflicts: [] };
+        }
+
+        // Use Map to group conflicts by registered class (maLopHocPhan)
+        const conflictMap = new Map();
+
+        for (const schedule of classScheduleDetails) {
+            const schedulePeriods = parsePeriods(schedule.tietHoc);
+            if (schedulePeriods.length === 0) continue;
+
+            for (const registered of registeredClassesData) {
+                if (!registered.scheduleDetails || !Array.isArray(registered.scheduleDetails)) continue;
+
+                for (const regSchedule of registered.scheduleDetails) {
+                    const regPeriods = parsePeriods(regSchedule.tietHoc);
+                    if (regPeriods.length === 0) continue;
+
+                    // Check if same day of week
+                    if (schedule.thu === regSchedule.thu) {
+                        // Check if date ranges overlap
+                        if (dateRangesOverlap(
+                            schedule.ngayBatDau, schedule.ngayKetThuc,
+                            regSchedule.ngayBatDau, regSchedule.ngayKetThuc
+                        )) {
+                            // Check if periods overlap
+                            if (periodsOverlap(schedulePeriods, regPeriods)) {
+                                // Group by registered class code to avoid duplicates
+                                const key = registered.maLopHocPhan;
+                                
+                                if (!conflictMap.has(key)) {
+                                    conflictMap.set(key, {
+                                        registeredClass: registered.tenMonHoc,
+                                        registeredCode: registered.maLopHocPhan,
+                                        conflicts: []
+                                    });
+                                }
+                                
+                                // Add this specific conflict detail
+                                conflictMap.get(key).conflicts.push({
+                                    day: formatDayOfWeek(schedule.thu),
+                                    period: schedule.tietHoc,
+                                    conflictPeriod: regSchedule.tietHoc
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Convert map to array and format conflicts
+        const conflicts = Array.from(conflictMap.values()).map(conflict => {
+            // Get unique day-period combinations
+            const uniqueConflicts = [];
+            const seen = new Set();
+            
+            for (const c of conflict.conflicts) {
+                const key = `${c.day}-${c.period}-${c.conflictPeriod}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueConflicts.push(c);
+                }
+            }
+            
+            return {
+                registeredClass: conflict.registeredClass,
+                registeredCode: conflict.registeredCode,
+                uniqueConflicts: uniqueConflicts // Keep detailed conflict info for tooltip
+            };
+        });
+
+        return {
+            hasConflict: conflicts.length > 0,
+            conflicts: conflicts
+        };
+    };
+
+    // --- VIP FUNCTIONS ---
+    const showGuideModal = async () => {
+        try {
+            const response = await fetch('guide.html');
+            const guideContent = await response.text();
+            
+            const modal = document.createElement('div');
+            modal.className = 'payment-modal';
+            modal.id = 'guide-modal';
+            modal.style.display = 'block';
+            
+            modal.innerHTML = `
+                <div class="payment-modal-content bg-white rounded-xl shadow-md p-6" style="max-width: 900px;">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">📖 Hướng dẫn sử dụng</h2>
+                        <span class="close-modal" onclick="document.getElementById('guide-modal').remove()">&times;</span>
+                    </div>
+                    <div class="overflow-y-auto" style="max-height: 70vh;">
+                        ${guideContent}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        } catch (error) {
+            log('❌ Không thể tải hướng dẫn sử dụng', true);
+            console.error('Guide load error:', error);
+        }
+    };
+
+    const showAboutModal = () => {
+        const modal = document.createElement('div');
+        modal.className = 'payment-modal';
+        modal.id = 'about-modal';
+        modal.style.display = 'block';
+        modal.innerHTML = `
+            <div class="payment-modal-content bg-white rounded-xl shadow-md p-6" style="max-width: 800px;">
+                <div class="flex justify-between items-center mb-4 border-b pb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">🎓</span>
+                        <h2 class="text-2xl font-bold text-gray-800">Về Dự Án Tool DKHP UTH</h2>
+                    </div>
+                    <span class="close-modal" onclick="document.getElementById('about-modal').remove()">&times;</span>
+                </div>
+                <div class="overflow-y-auto space-y-4 text-sm text-gray-700" style="max-height: 70vh;">
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+                        <h3 class="font-bold text-blue-900 text-base mb-1">Sứ Mệnh & Mục Đích</h3>
+                        <p class="leading-relaxed">Tool DKHP UTH ra đời nhằm giải quyết vấn đề nghẽn mạng, quá tải máy chủ và rớt kết nối mỗi khi cổng đăng ký học phần Trường Đại học Giao thông vận tải TP.HCM (UTH) mở đợt. Hệ thống giúp sinh viên lập kế hoạch, phát hiện trùng thời khóa biểu và tự động hóa thao tác đăng ký nhanh chóng, mượt mà.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="p-3 bg-gray-50 border rounded-lg">
+                            <h4 class="font-bold text-gray-900 mb-1">⚡ Tự Động Hóa Thông Minh</h4>
+                            <p class="text-xs text-gray-600">Chế độ chèn lớp tự động quét slot trống, bắt cơ hội nhả lớp tức thời và đổi lớp học phần an toàn tuyệt đối.</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 border rounded-lg">
+                            <h4 class="font-bold text-gray-900 mb-1">📅 Trực Quan Hóa Thời Khóa Biểu</h4>
+                            <p class="text-xs text-gray-600">Trình diễn lịch học trực quan theo tuần và từng giai đoạn học, cảnh báo xung đột phòng và giờ học ngay lập tức.</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 border rounded-lg">
+                            <h4 class="font-bold text-gray-900 mb-1">🌐 Dữ Liệu Cộng Đồng (Crowdsourced)</h4>
+                            <p class="text-xs text-gray-600">Cơ chế đồng bộ và chia sẻ dữ liệu lịch học giữa các bạn sinh viên, giảm thiểu 90% áp lực request dồn lên Portal trường.</p>
+                        </div>
+                        <div class="p-3 bg-gray-50 border rounded-lg">
+                            <h4 class="font-bold text-gray-900 mb-1">🛡️ Bảo Mật & Ổn Định</h4>
+                            <p class="text-xs text-gray-600">Không lưu mật khẩu, chỉ dùng token phiên làm việc ngắn hạn. Tự động giãn cách retry với exponential backoff & jitter.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
+                        <h4 class="font-bold text-emerald-900 mb-1">💎 Cam Kết Cộng Đồng</h4>
+                        <ul class="list-disc list-inside text-xs text-emerald-800 space-y-1">
+                            <li><strong>Tính năng cốt lõi miễn phí:</strong> Xem lịch, lập kế hoạch, phát hiện trùng lịch và trực quan hóa TKB luôn hoàn toàn miễn phí.</li>
+                            <li><strong>Thân thiện hạ tầng:</strong> Giới hạn số kết nối đồng thời và có hàng đợi semaphore để không làm quá tải trình duyệt và server trường.</li>
+                            <li><strong>Bảo mật danh tính:</strong> Dữ liệu người dùng được lưu cục bộ an toàn trên trình duyệt của bạn (Session Storage).</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-xs text-gray-500 pt-2 border-t flex flex-col sm:flex-row justify-between items-center gap-2">
+                        <span>Được xây dựng với sự tâm huyết dành cho cộng đồng sinh viên UTH ❤️</span>
+                        <span class="font-mono bg-gray-100 px-2 py-1 rounded">UTH Dev Team • 2026</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    };
+
+    const showVIPModal = async () => {
+        const plansRes = await backendRequest('getVIPPlans');
+        if (!plansRes || !plansRes.success) {
+            return log('Không thể tải thông tin gói VIP', true);
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'payment-modal';
+        modal.id = 'vip-modal';
+
+        const plans = plansRes.plans;
+        const sepayConfig = plansRes.sepayConfig;
+        
+        // Check if user has VIP to show appropriate title
+        const isRenewal = vipStatus.hasVIP;
+        const modalTitle = isRenewal ? '🔄 Gia hạn VIP' : '🌟 Nâng cấp VIP';
+
+        modal.innerHTML = `
+            <div class="payment-modal-content bg-white rounded-xl shadow-md p-6">
+                <span class="close-modal float-right" onclick="document.getElementById('vip-modal').remove()">&times;</span>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">${modalTitle}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    ${Object.entries(plans).map(([key, plan]) => {
+                        const isFree = plan.price === 0;
+                        const cardStyle = isFree 
+                            ? 'border-green-300 bg-green-50 hover:border-green-500' 
+                            : 'border-gray-200 hover:border-blue-500';
+                        const priceText = isFree 
+                            ? '<span class="text-2xl font-bold text-green-600 mb-2">Miễn phí</span>' 
+                            : `<p class="text-2xl font-bold text-blue-600 mb-2">${(plan.price).toLocaleString('vi-VN')}đ</p>`;
+                        const btnStyle = isFree
+                            ? 'bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition duration-300'
+                            : 'bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300';
+                        const btnText = isFree ? '🎁 Kích hoạt ngay' : (isRenewal ? 'Gia hạn' : 'Chọn gói này');
+                        return `
+                        <div class="border rounded-lg p-4 text-center transition duration-300 cursor-pointer plan-card ${cardStyle}" data-plan="${key}">
+                            <h3 class="font-bold text-lg text-gray-800 mb-2">${plan.name}</h3>
+                            ${priceText}
+                            <p class="text-gray-600 mb-4">${isRenewal ? 'Gia hạn thêm' : ''} ${plan.duration} ngày</p>
+                            <button class="w-full ${btnStyle} buy-plan-btn" data-plan="${key}">
+                                ${btnText}
+                            </button>
+                        </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div id="payment-section" class="hidden">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800 border-t pt-4">Thông tin thanh toán</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 text-center">
+                            <p class="font-bold text-gray-800 mb-2">Cách 1: Quét mã QR</p>
+                            <img id="qr-code" class="mx-auto mb-4" style="max-width:250px">
+                            <p class="text-sm text-gray-600">Trạng thái: <span id="payment-status">Chờ thanh toán...</span> <div class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div></p>
+                        </div>
+                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <p class="font-bold text-gray-800 mb-2 text-center">Cách 2: Chuyển khoản thủ công</p>
+                            <div class="text-center mb-4">
+                                <img src="https://qr.sepay.vn/assets/img/banklogo/MB.png" class="inline-block" style="max-height:50px">
+                                <p class="font-bold text-gray-800">Ngân hàng ${sepayConfig.bankName}</p>
+                            </div>
+                            <table class="w-full text-sm text-gray-600">
+                                <tbody>
+                                    <tr><td class="py-1 font-medium">Chủ TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountName}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số TK:</td><td class="font-bold text-gray-800">${sepayConfig.accountNumber}</td></tr>
+                                    <tr><td class="py-1 font-medium">Số tiền:</td><td class="font-bold text-gray-800" id="amount-display"></td></tr>
+                                    <tr><td class="py-1 font-medium">Nội dung:</td><td class="font-bold text-gray-800" id="content-display"></td></tr>
+                                </tbody>
+                            </table>
+                            <p class="bg-yellow-50 p-2 rounded mt-4 text-xs text-gray-600">⚠️ Lưu ý: Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống tự động xác nhận</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <button id="cancel-payment-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
+                            Hủy thanh toán
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+
+        // Handle plan selection
+        modal.querySelectorAll('.buy-plan-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const plan = e.target.dataset.plan;
+                await createVIPOrder(plan, plans[plan], sepayConfig);
+            });
+        });
+
+        // Handle cancel payment
+        // Handle cancel payment - CẬP NHẬT MỚI
+// Handle cancel payment - CẬP NHẬT MỚI VỚI CUSTOM MODAL
+modal.querySelector('#cancel-payment-btn')?.addEventListener('click', async () => {
+    if (!currentOrder) return;
+    
+    showConfirmModal(
+        'Bạn có chắc chắn muốn hủy đơn hàng thanh toán này không? Thao tác này không thể hoàn tác.',
+        async () => {
+            // User confirmed - cancel the order
+            const cancelRes = await backendRequest('cancelOrder', { orderId: currentOrder.id });
+            
+            if (cancelRes && cancelRes.success) {
+                log('✅ Đã hủy đơn hàng thành công');
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                }
+                currentOrder = null;
+                modal.remove();
+            } else {
+                log('❌ Không thể hủy đơn hàng: ' + (cancelRes?.message || 'Lỗi'), true);
+            }
+        },
+        () => {
+            // User cancelled - do nothing
+            log('Tiếp tục chờ thanh toán');
+        }
+    );
+});
+
+
+    };
+
+    const createVIPOrder = async (planKey, planData, sepayConfig) => {
+        const orderRes = await backendRequest('createVIPOrder', { userId, plan: planKey });
+
+        if (!orderRes || !orderRes.success) {
+            return log('Không thể tạo đơn hàng', true);
+        }
+
+        currentOrder = orderRes.order;
+
+        // FREE PLAN: Activate directly, no payment needed
+        if (currentOrder.free && currentOrder.activated) {
+            log(`🎁 Kích hoạt gói miễn phí "${currentOrder.planName}" thành công!`);
+            
+            // Show success in the modal
+            const paymentSection = document.getElementById('payment-section');
+            if (paymentSection) {
+                paymentSection.classList.remove('hidden');
+                paymentSection.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="text-5xl mb-4">🎉</div>
+                        <h3 class="text-xl font-bold text-green-600 mb-2">Kích hoạt thành công!</h3>
+                        <p class="text-gray-700">Gói <strong>${currentOrder.planName}</strong> đã được kích hoạt</p>
+                        <p class="text-gray-600 text-sm mt-2">${currentOrder.isExtension ? 'Đã gia hạn thêm' : 'Thời hạn'}: ${currentOrder.daysAdded} ngày</p>
+                        <button id="close-free-modal" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-300">
+                            Đóng
+                        </button>
+                    </div>
+                `;
+                document.getElementById('close-free-modal').addEventListener('click', async () => {
+                    document.getElementById('vip-modal')?.remove();
+                    await checkAndUpdateVIPStatus();
+                });
+            }
+            
+            document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
+            document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
+            return;
+        }
+
+        // PAID PLAN: Normal payment flow
+        log(`✅ Tạo đơn hàng #${currentOrder.orderCode} thành công`);
+
+        // Show payment section
+        document.getElementById('payment-section').classList.remove('hidden');
+        document.querySelectorAll('.plan-card').forEach(card => card.classList.add('opacity-50'));
+        document.querySelectorAll('.buy-plan-btn').forEach(btn => btn.disabled = true);
+
+        // Update payment info - use orderCode instead of id
+        const qrUrl = `https://qr.sepay.vn/img?bank=${sepayConfig.bankName}&acc=${sepayConfig.accountNumber}&template=compact&amount=${currentOrder.amount}&des=${currentOrder.orderCode}`;
+        document.getElementById('qr-code').src = qrUrl;
+        document.getElementById('amount-display').textContent = `${currentOrder.amount.toLocaleString('vi-VN')}đ`;
+        document.getElementById('content-display').textContent = currentOrder.orderCode;
+
+        // Start checking payment status
+        startPaymentCheck();
+    };
+
+    const startPaymentCheck = () => {
+    if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+    
+    const orderCreatedTime = new Date(currentOrder.createdAt).getTime();
+    const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+    
+    paymentCheckInterval = setInterval(async () => {
+        if (!currentOrder) {
+            clearInterval(paymentCheckInterval);
+            return;
+        }
+        
+        // Check if order has timed out
+        const now = new Date().getTime();
+        if (now - orderCreatedTime > TIMEOUT_MS) {
+            clearInterval(paymentCheckInterval);
+            document.getElementById('payment-status').innerHTML = 
+                '<span class="text-red-600 font-bold">⚠️ Đơn hàng đã hết hạn (quá 15 phút)</span>';
+            log('Đơn hàng đã bị hủy do quá thời gian thanh toán', true);
+            
+            setTimeout(() => {
+                document.getElementById('vip-modal')?.remove();
+                currentOrder = null;
+            }, 3000);
+            return;
+        }
+        
+        // Check payment status
+        const statusRes = await backendRequest('checkOrderStatus', { orderId: currentOrder.id });
+        
+        if (statusRes && statusRes.success) {
+            if (statusRes.order.status === 'Paid') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-green-600 font-bold">✓ Thanh toán thành công!</span>';
+                log('Thanh toán VIP thành công!');
+                
+                setTimeout(async () => {
+                    document.getElementById('vip-modal')?.remove();
+                    await checkAndUpdateVIPStatus();
+                }, 2000);
+            } else if (statusRes.order.status === 'Cancelled') {
+                clearInterval(paymentCheckInterval);
+                document.getElementById('payment-status').innerHTML = 
+                    '<span class="text-red-600 font-bold">✗ Đơn hàng đã bị hủy</span>';
+                log('Đơn hàng đã bị hủy', true);
+                
+                setTimeout(() => {
+                    document.getElementById('vip-modal')?.remove();
+                    currentOrder = null;
+                }, 2000);
+            }
+        }
+    }, 2000); // Check every 2 seconds
+};
+
+
+    const checkAndUpdateVIPStatus = async () => {
+        const vipRes = await backendRequest('checkVIPStatus', { userId });
+        if (vipRes && vipRes.success) {
+            const previousVIPStatus = vipStatus.hasVIP;
+            vipStatus = vipRes.vip;
+            updateVIPDisplay();
+            
+            // If VIP status changed from active to expired: notify only. Registration no
+            // longer requires VIP, so a running auto-process is deliberately left untouched.
+            if (previousVIPStatus && !vipStatus.hasVIP) {
+                log('ℹ️ VIP của bạn đã hết hạn.', true);
+            }
+        }
+    };
+    
+    // VIP status is checked ON DEMAND only: on login and on every page load (F5) it arrives
+    // inside getInitialData; payment/activation flows refresh it once via
+    // checkAndUpdateVIPStatus(). The old 7-second expiry poll was removed — it hammered the
+    // API for a status that only ever changes server-side at webhook/expiry time.
+	
+    const updateVIPDisplay = () => {
+    if (!vipStatusElement) return;
+
+    const isVip = !!vipStatus.hasVIP;
+
+    if (isVip) {
+        vipStatusElement.innerHTML = `
+            <div class="text-center">
+                <p class="font-bold text-blue-700 text-lg">⭐ Tài khoản VIP</p>
+                <p class="text-sm text-gray-700">Thời hạn còn lại: <span class="font-semibold text-blue-600">${vipStatus.daysLeft} ngày</span></p>
+                <p class="text-xs text-gray-500 mt-1">Hết hạn vào ngày: ${new Date(vipStatus.expiryDate).toLocaleDateString('vi-VN')}</p>
+            </div>
+        `;
+        
+        // Change button to "Gia hạn VIP" when user has VIP
+        upgradeVipBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Gia hạn VIP</span>
+        `;
+        upgradeVipBtn.classList.remove('hidden');
+    } else {
+        vipStatusElement.innerHTML = `
+            <div class="text-center p-3 bg-gray-100 rounded-lg">
+                <p class="text-sm text-gray-600">Bạn chưa có VIP - Nâng cấp để sử dụng chức năng tự động đăng ký!</p>
+            </div>
+        `;
+        
+        // Reset button to "Nâng cấp VIP" when no VIP
+        upgradeVipBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>Nâng cấp VIP</span>
+        `;
+        upgradeVipBtn.classList.remove('hidden');
+    }
+
+    // Always show fetchBtn and selectedList regardless of VIP status
+    if (fetchBtn) fetchBtn.classList.remove('hidden');
+    if (selectedList) selectedList.classList.remove('hidden');
+};
+
+	// === CUSTOM CONFIRMATION MODAL ===
+const showConfirmModal = (message, onConfirm, onCancel) => {
+    // Remove existing modal if any
+    document.getElementById('confirm-modal')?.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'confirm-modal';
+    modal.className = 'payment-modal';
+    modal.style.display = 'block';
+    
+    modal.innerHTML = `
+        <div class="payment-modal-content" style="max-width: 450px; margin: 15% auto;">
+            <div class="text-center">
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Xác nhận</h3>
+                <p class="text-gray-700 mb-6">${message}</p>
+                <div class="flex space-x-3 justify-center">
+                    <button id="confirm-yes-btn" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Xác nhận
+                    </button>
+                    <button id="confirm-no-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded-lg transition duration-300">
+                        Hủy
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Event listeners
+    document.getElementById('confirm-yes-btn').addEventListener('click', () => {
+        modal.remove();
+        if (onConfirm) onConfirm();
+    });
+    
+    document.getElementById('confirm-no-btn').addEventListener('click', () => {
+        modal.remove();
+        if (onCancel) onCancel();
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            if (onCancel) onCancel();
+        }
+    });
+};
+
+    // --- UI UPDATE FUNCTIONS ---
+    const updateUIAfterLogin = (profile) => {
+        loginForm.classList.add('hidden');
+
+        // Create user panel if not exists
+        if (!document.getElementById('user-panel-content')) {
+            const panelContainer = document.createElement('div');
+            panelContainer.id = 'user-panel-content';
+            panelContainer.className = 'space-y-4';
+            panelContainer.innerHTML = `
+                <div id="greeting-msg" class="mt-4 text-lg font-semibold text-blue-700"></div>
+                
+                <div id="vip-status-section" class="my-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                    <div id="vip-status"></div>
+                </div>
+                
+                <button id="upgrade-vip-btn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span>Nâng cấp VIP</span>
+                </button>
+                
+                <div id="progress-bar-container" class="my-4 hidden">
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress-bar-element" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="progress-bar-text" class="text-center text-sm text-gray-600 mt-1"></p>
+                </div>
+                
+                <button id="fetch-schedule-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 14a1 1 0 100-2 1 1 0 000 2zM6 5a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Tải lịch học</span>
+                </button>
+                
+                <button id="logout-btn" class="w-full bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Đăng xuất</button>
+            `;
+            loginForm.parentNode.insertBefore(panelContainer, loginForm.nextSibling);
+
+            // Re-assign element variables
+            greetingMsg = document.getElementById('greeting-msg');
+            vipStatusElement = document.getElementById('vip-status');
+            upgradeVipBtn = document.getElementById('upgrade-vip-btn');
+            fetchBtn = document.getElementById('fetch-schedule-btn');
+            logoutBtn = document.getElementById('logout-btn');
+            progressBarContainer = document.getElementById('progress-bar-container');
+            progressBarElement = document.getElementById('progress-bar-element');
+            progressBarText = document.getElementById('progress-bar-text');
+
+            // Add event listeners
+            if (fetchBtn) fetchBtn.originalHTML = fetchBtn.innerHTML;
+            if (logoutBtn) logoutBtn.originalHTML = logoutBtn.innerHTML;
+            fetchBtn.addEventListener('click', fetchFullSchedule);
+            logoutBtn.addEventListener('click', handleLogout);
+            upgradeVipBtn.addEventListener('click', () => {
+                showVIPModal();
+            });
+            // Removed auto-fetch on prerequisite toggle change - user should manually refresh if needed
+        }
+
+        greetingMsg.textContent = `Xin chào, ${profile.hoDem} ${profile.ten}!`;
+        document.getElementById('user-panel-content').classList.remove('hidden');
+
+        // Update VIP display
+        updateVIPDisplay();
+    };
+
+    const resetUI = () => {
+        loginForm.classList.remove('hidden');
+        const panel = document.getElementById('user-panel-content');
+        if (panel) panel.classList.add('hidden');
+
+        scheduleContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập để xem dữ liệu.</p>';
+        registeredContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Chưa có dữ liệu.</p>';
+        logOutput.innerHTML = '';
+        subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>';
+        searchInput.value = '';
+        allScheduleData = [];
+        selectedClasses.clear();
+        swapPendingClasses.clear();
+        updateSelectedList();
+
+        if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+        currentOrder = null;
+    };
+
+    const updateProgressBar = (current, total, message = '') => {
+        if (!progressBarContainer) return;
+        if (current === -1) {
+            progressBarContainer.classList.add('hidden');
+            return;
+        }
+        progressBarContainer.classList.remove('hidden');
+        const percentage = total > 0 ? (current / total) * 100 : 0;
+        progressBarElement.style.width = `${percentage}%`;
+        progressBarText.textContent = message;
+    };
+
+    // --- CORE LOGIC FUNCTIONS ---
+    // Save cached data to localStorage (include user info)
+    const saveCachedData = () => {
+        try {
+            const cacheData = {
+                userId: userId, // Store current userId to verify cache ownership
+                dotId,                       // session restore needs the current term
+                profile: userProfile,        // greeting + UI restore while offline
+                vip: vipStatus,              // expiry re-validated against the local clock on restore
+                allScheduleData,
+                registeredClassesData,
+                selectedClasses: Array.from(selectedClasses.entries()),
+                swapPendingClasses: Array.from(swapPendingClasses.entries()),
+                subjectTypeMap: Array.from(subjectTypeMap.entries()),
+                timestamp: new Date().getTime()
+            };
+            localStorage.setItem('userDataCache', JSON.stringify(cacheData));
+        } catch (error) {
+            console.error('Failed to save cache:', error);
+        }
+    };
+
+    // Load cached data from localStorage (check user ID match)
+    const loadCachedData = (currentUserId) => {
+        try {
+            const cached = localStorage.getItem('userDataCache');
+            if (!cached) return false;
+
+            const cacheData = JSON.parse(cached);
+            
+            // Check if cached data belongs to a different user
+            if (cacheData.userId && cacheData.userId !== currentUserId) {
+                console.log('Cache belongs to different user, clearing...');
+                localStorage.removeItem('userDataCache');
+                return false;
+            }
+            
+            // Cache expires after 24 hours
+            const CACHE_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - cacheData.timestamp > CACHE_DURATION) {
+                localStorage.removeItem('userDataCache');
+                return false;
+            }
+
+            // Restore data
+            allScheduleData = cacheData.allScheduleData || [];
+            registeredClassesData = cacheData.registeredClassesData || [];
+            selectedClasses = new Map(cacheData.selectedClasses || []);
+            swapPendingClasses = new Map(cacheData.swapPendingClasses || []);
+            subjectTypeMap = new Map(cacheData.subjectTypeMap || []);
+
+            return true;
+        } catch (error) {
+            console.error('Failed to load cache:', error);
+            localStorage.removeItem('userDataCache');
+            return false;
+        }
+    };
+
+    // Render whatever loadCachedData() restored (tables + "Tải lại" button state).
+    const renderCachedState = () => {
+        if (allScheduleData.length > 0) {
+            renderScheduleTable();
+            // Update button text to "Tải lại"
+            if (fetchBtn) {
+                const btnSpan = fetchBtn.querySelector('span');
+                if (btnSpan) btnSpan.textContent = 'Tải lại lịch học';
+                fetchBtn.originalHTML = fetchBtn.innerHTML;
+            }
+        }
+
+        if (registeredClassesData.length > 0) {
+            renderRegisteredTable(registeredClassesData);
+        }
+
+        if (selectedClasses.size > 0) {
+            updateSelectedList();
+        }
+    };
+
+    // Offline/degraded session restore: the backend/portal could not be reached, but the
+    // token was NOT rejected — rebuild the whole UI from the localStorage snapshot so the
+    // student can keep reading their schedule and selection. Server-side checks still gate
+    // any live action; VIP expiry is re-derived from the cached expiry date, never trusted
+    // blindly from the snapshot.
+    const restoreSessionFromCache = () => {
+        try {
+            const cached = JSON.parse(localStorage.getItem('userDataCache') || 'null');
+            if (!cached || !cached.userId || !cached.profile || !cached.dotId) return false;
+
+            const CACHE_DURATION = 24 * 60 * 60 * 1000;
+            if (new Date().getTime() - cached.timestamp > CACHE_DURATION) return false;
+
+            userId = cached.userId;
+            dotId = cached.dotId;
+            userProfile = cached.profile;
+            const exp = cached.vip && cached.vip.expiryDate ? new Date(cached.vip.expiryDate).getTime() : 0;
+            vipStatus = exp > Date.now()
+                ? { hasVIP: true, daysLeft: Math.ceil((exp - Date.now()) / 86400000), expiryDate: cached.vip.expiryDate, planType: cached.vip.planType, unknown: true }
+                : { hasVIP: false, unknown: true };
+
+            loadCachedData(userId);
+            updateUIAfterLogin(userProfile);
+            renderCachedState();
+            log('📦 Chế độ offline: phiên được khôi phục từ dữ liệu đã lưu — vui lòng KHÔNG thực hiện đăng ký cho tới khi kết nối lại');
+            return true;
+        } catch (error) {
+            console.error('Offline session restore failed:', error);
+            return false;
+        }
+    };
+
+    const handleLogin = async () => {
+        toggleLoading(loginBtn, true);
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!username || !password) {
+            log("Vui lòng nhập tên đăng nhập và mật khẩu.", true);
+            toggleLoading(loginBtn, false);
+            return;
+        }
+
+        const tokenRes = await backendRequest('login', { username, password });
+
+        if (tokenRes && tokenRes.token) {
+            authToken = tokenRes.token;
+            
+            // Save session to localStorage with JWT token
+            localStorage.setItem('userSession', JSON.stringify({
+                token: authToken,
+                username: username,
+                loginTime: new Date().getTime()
+            }));
+            
+            log("✅ Đăng nhập thành công.");
+            const initialData = await backendRequest('getInitialData');
+            if (initialData && initialData.success) {
+                dotId = initialData.dot.id;
+                userId = initialData.profile.maSinhVien || initialData.profile.username;
+                vipStatus = initialData.vip || { hasVIP: false };
+                userProfile = initialData.profile;
+                log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
+                updateUIAfterLogin(initialData.profile);
+                
+                // Try to load cached data first (check if belongs to current user)
+                if (loadCachedData(userId)) {
+                    log('📦 Đã khôi phục dữ liệu từ cache');
+                    renderCachedState();
+                } else {
+                    // No cache, fetch fresh data
+                    await fetchRegisteredClasses();
+                }
+                
+                // VIP status came with getInitialData (initialData.vip) — no polling needed
+            } else {
+                log(`❌ Lỗi lấy dữ liệu ban đầu: ${initialData?.message || 'Không rõ'}`, true);
+                authToken = null;
+                localStorage.removeItem('userSession');
+            }
+        } else {
+            log(`❌ Đăng nhập thất bại: ${tokenRes?.message || 'Lỗi không xác định'}`, true);
+        }
+        toggleLoading(loginBtn, false);
+    };
+
+    // Validate JWT token with portal API (via backend proxy to avoid CORS).
+    // Tri-state on purpose:
+    //   'valid'   – server confirmed the token works
+    //   'invalid' – server/portal DEFINITIVELY rejected it (expired session)
+    //   'unknown' – no answer at all: network down, backend 5xx, or the backend explicitly
+    //               marked the portal as temporarily unavailable. A failed verification is
+    //               NOT proof of an expired session, so the caller keeps the session and
+    //               restores from cache instead of logging the student out.
+    const validateTokenWithPortal = async (token) => {
+        try {
+            const response = await fetch('/api/handler', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    action: 'validateToken'
+                })
+            });
+            
+            if (!response.ok) return 'unknown';
+            const data = await response.json();
+            
+            if (data && data.success === true && data.valid === true) return 'valid';
+            if (data && data.success === true && data.valid === false && data.upstreamUnavailable !== true) return 'invalid';
+            return 'unknown';
+        } catch (error) {
+            console.error('Token validation failed:', error);
+            return 'unknown';
+        }
+    };
+
+    // Auto-login with saved session
+    const autoLogin = async () => {
+        const session = localStorage.getItem('userSession');
+        if (!session) return false;
+        
+        // A corrupt session blob is junk, not a live session: drop it and show the form.
+        let token, loginTime;
+        try {
+            ({ token, loginTime } = JSON.parse(session));
+        } catch {
+            localStorage.removeItem('userSession');
+            return false;
+        }
+        if (!token || !loginTime) {
+            localStorage.removeItem('userSession');
+            return false;
+        }
+        
+        // Session expires after 24 hours
+        const SESSION_DURATION = 24 * 60 * 60 * 1000;
+        if (new Date().getTime() - loginTime > SESSION_DURATION) {
+            localStorage.removeItem('userSession');
+            return false;
+        }
+        
+        try {
+            
+            // Validate token with portal API
+            const verdict = await validateTokenWithPortal(token);
+            
+            if (verdict === 'invalid') {
+                log('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại', true);
+                localStorage.removeItem('userSession');
+                return false;
+            }
+            if (verdict === 'unknown') {
+                log('⚠️ Không xác minh được token với server (mất kết nối?). Sẽ khôi phục phiên từ dữ liệu đã lưu.', true);
+            }
+            
+            // Token is valid (or unverifiable), restore session
+            authToken = token;
+            
+            const initialData = await backendRequest('getInitialData');
+            if (initialData && initialData.success) {
+                if (verdict === 'valid') log('✅ Đã khôi phục phiên đăng nhập');
+                dotId = initialData.dot.id;
+                userId = initialData.profile.maSinhVien || initialData.profile.username;
+                vipStatus = initialData.vip || { hasVIP: false };
+                userProfile = initialData.profile;
+                log(`✅ Đã chọn đợt: ${initialData.dot.tenHocKy}`);
+                updateUIAfterLogin(initialData.profile);
+                
+                // Try to load cached data first (check if belongs to current user)
+                if (loadCachedData(userId)) {
+                    log('📦 Đã khôi phục dữ liệu từ cache');
+                    renderCachedState();
+                } else {
+                    // No cache, fetch fresh data
+                    await fetchRegisteredClasses();
+                }
+                
+                // VIP status came with getInitialData (initialData.vip) — no polling needed
+                
+                return true;
+            }
+            
+            // getInitialData failed. The session was NOT rejected, so instead of bouncing
+            // the user to the login form, rebuild everything from the local snapshot.
+            if (restoreSessionFromCache()) {
+                return true;
+            }
+            // Nothing cached to live on (first login never completed, or cache expired):
+            // keep the stored session — it may work on the next reload — but show the form.
+            log('❌ Không thể tải dữ liệu và không có cache để khôi phục. Kiểm tra kết nối rồi thử lại.', true);
+            return false;
+        } catch (error) {
+            console.error('Auto-login failed:', error);
+            return false;
+        }
+    };
+
+    const handleLogout = async () => {
+        await stopProcess();
+        
+        authToken = null;
+        dotId = null;
+        userId = null;
+        vipStatus = { hasVIP: false };
+        userProfile = null;
+        
+        // Clear session and cache
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('userDataCache');
+
+        // Reset fetch button to its initial state for the next login
+        if (fetchBtn) {
+            const btnSpan = fetchBtn.querySelector('span');
+            if (btnSpan) {
+                btnSpan.textContent = 'Tải lịch học';
+            }
+            fetchBtn.originalHTML = fetchBtn.innerHTML;
+        }
+
+        resetUI();
+        log("Đã đăng xuất.");
+    };
+
+    const fetchFullSchedule = async () => {
+        if (!authToken) return log("Chưa đăng nhập.", true);
+        toggleLoading(fetchBtn, true);
+        isProcessStopped = false;
+        log("♻️ Bắt đầu lấy toàn bộ lịch học từ server...");
+
+        const fetchPrerequisites = true;
+
+        const scheduleRes = await backendRequest('getFullSchedule', { dotId, fetchPrerequisites, userId });
+
+        if (scheduleRes && scheduleRes.success) {
+            // Filter out locked classes from the schedule
+            const totalClasses = scheduleRes.schedule.length;
+            const unlockedClasses = scheduleRes.schedule.filter(cls => cls.tenTrangThai !== 'Đã khóa lớp');
+            
+            allScheduleData = unlockedClasses;
+            subjectTypeMap = new Map(Object.entries(scheduleRes.subjectTypes));
+            
+            log(`✅ Đã tải thành công ${totalClasses} lớp học phần.`);
+            log(`📋 Hiển thị ${unlockedClasses.length} lớp chưa khóa (đã lọc bỏ ${totalClasses - unlockedClasses.length} lớp đã khóa).`);
+
+            // Update button's originalHTML to its new state before toggling loading off
+            fetchBtn.originalHTML = fetchBtn.originalHTML.replace('Tải lịch học', 'Tải lại lịch học');
+
+            // Render table first for better UX
+            await renderScheduleTable();
+            
+            // Save to cache
+            saveCachedData();
+            
+            // Sync to shared database in background (don't await)
+            syncToSharedDatabase(scheduleRes.schedule, scheduleRes.subjectTypes);
+        } else {
+            log("❌ Lỗi khi tải lịch học từ server.", true);
+        }
+        updateProgressBar(-1);
+        toggleLoading(fetchBtn, false);
+    };
+    
+    // Sync class data to shared database for community
+    const syncToSharedDatabase = async (classData, subjectTypes) => {
+        if (!classData || classData.length === 0) {
+            console.warn('Cannot sync: no class data');
+            return;
+        }
+        if (!dotId || !userId) {
+            console.warn('Cannot sync: missing dotId or userId', { dotId, userId });
+            log('⚠️ Không thể đồng bộ: thiếu thông tin đợt/người dùng');
+            return;
+        }
+        
+        try {
+            console.log('Starting sync with:', { dotId, userId, classCount: classData.length });
+            log('📤 Đang đồng bộ dữ liệu vào CSDL cộng đồng...');
+            
+            // Group by source
+            const dkhpClasses = classData.filter(c => c.source !== 'dkhpdk');
+            const dkhpdkClasses = classData.filter(c => c.source === 'dkhpdk');
+            
+            let totalSynced = 0;
+            
+            // Sync dkhp classes
+            if (dkhpClasses.length > 0) {
+                console.log('Syncing dkhp classes:', dkhpClasses.length);
+                const syncResult = await backendRequest('syncClassData', {
+                    dotId,
+                    userId,
+                    source: 'dkhp',
+                    classData: dkhpClasses.map(cls => ({
+                        id: cls.id,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        maHocPhan: cls.maHocPhan,
+                        tenMonHoc: cls.tenMonHoc,
+                        soTinChi: cls.soTinChi || 0,
+                        tenTrangThai: cls.tenTrangThai,
+                        phanTramDangKy: cls.phanTramDangKy || 0,
+                        choDangKy: cls.choDangKy !== false,
+                        scheduleDetails: cls.scheduleDetails || [],
+                        isBatBuoc: subjectTypes ? (typeof subjectTypes === 'object' ? subjectTypes[cls.maHocPhan] : undefined) : undefined
+                    }))
+                });
+                console.log('Sync dkhp result:', syncResult);
+                
+                if (syncResult && syncResult.success) {
+                    totalSynced += syncResult.total || 0;
+                }
+            }
+            
+            // Sync dkhpdk classes
+            if (dkhpdkClasses.length > 0) {
+                console.log('Syncing dkhpdk classes:', dkhpdkClasses.length);
+                const syncResult = await backendRequest('syncClassData', {
+                    dotId,
+                    userId,
+                    source: 'dkhpdk',
+                    classData: dkhpdkClasses.map(cls => ({
+                        id: cls.id,
+                        maLopHocPhan: cls.maLopHocPhan,
+                        maHocPhan: cls.maHocPhan,
+                        tenMonHoc: cls.tenMonHoc,
+                        soTinChi: cls.soTinChi || 0,
+                        tenTrangThai: cls.tenTrangThai,
+                        phanTramDangKy: cls.phanTramDangKy || 0,
+                        choDangKy: cls.choDangKy !== false,
+                        scheduleDetails: cls.scheduleDetails || [],
+                        isBatBuoc: null
+                    }))
+                });
+                console.log('Sync dkhpdk result:', syncResult);
+                
+                if (syncResult && syncResult.success) {
+                    totalSynced += syncResult.total || 0;
+                }
+            }
+            
+            if (totalSynced > 0) {
+                log(`📦 Đã đồng bộ ${totalSynced} lớp vào CSDL cộng đồng`);
+            } else {
+                console.warn('Sync completed but totalSynced is 0');
+            }
+        } catch (error) {
+            console.error('Sync to shared DB failed:', error);
+            log('⚠️ Đồng bộ CSDL cộng đồng thất bại');
+        }
+    };
+
+    const fetchRegisteredClasses = async () => {
+        if (!authToken) return;
+        toggleLoading(refreshRegisteredBtn, true);
+        // Always fetch prerequisites (set to true)
+        const fetchPrerequisites = true;
+
+        const registeredRes = await backendRequest('getRegisteredClasses', { dotId, fetchPrerequisites, userId });
+
+        if (registeredRes && registeredRes.success) {
+            registeredClassesData = registeredRes.body; // Save for conflict detection
+            await renderRegisteredTable(registeredRes.body);
+            
+            // Save to cache
+            saveCachedData();
+            
+            // Re-render schedule table to update conflict highlights
+            renderScheduleTable();
+            log(`✅ Tải danh sách đã đăng ký thành công (${registeredRes.body.length} lớp).`);
+        } else {
+            log("❌ Lỗi khi tải danh sách đã đăng ký.", true);
+        }
+        toggleLoading(refreshRegisteredBtn, false);
+    };
+
+    const cancelRegistration = async (registrationId, tenMonHoc, source) => {
+        // Use custom confirmation modal instead of default confirm()
+        showConfirmModal(
+            `Bạn có chắc chắn muốn hủy môn học <strong>"${tenMonHoc}"</strong> không?<br><br>Hành động này không thể hoàn tác.`,
+            async () => {
+                // On confirm
+                log(`Đang hủy môn ${tenMonHoc}...`);
+
+                const result = await backendRequest('cancel', { registrationId, source, userId, className: tenMonHoc });
+
+                if (result && result.success) {
+                    log(`✅ Hủy thành công.`);
+                    await fetchRegisteredClasses();
+                } else {
+                    log(`❌ Hủy thất bại: ${result?.message || 'Lỗi'}`, true);
+                }
+            },
+            () => {
+                // On cancel - do nothing
+                log(`Đã hủy thao tác hủy môn ${tenMonHoc}.`);
+            }
+        );
+    };
+
+    // Swap class function - Check target slot first, cancel old class, then register new class
+    const swapClass = async (registeredData, targetData) => {
+        const { id: regId, code: regCode, name: regName, source: regSource } = registeredData;
+        const { id: targetId, code: targetCode, name: targetName, source: targetSource, maHocPhan: targetMaHocPhan } = targetData;
+        
+        log(`🔄 Bắt đầu đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+        
+        // Step 1: Check target class availability first
+        log(`🔍 Kiểm tra lớp đích ${targetCode}...`);
+        
+        // Extract maHocPhan from targetCode if not available (remove last 2 characters)
+        const maHocPhan = targetMaHocPhan || targetCode.slice(0, -2);
+        
+        const checkResult = await backendRequestAuto('checkClassAvailability', { 
+            classId: targetId, 
+            dotId, 
+            maHocPhan, 
+            source: targetSource,
+            userId
+        });
+        
+        if (!checkResult || !checkResult.success) {
+            log(`⚠️ Không thể kiểm tra lớp đích, dừng đổi lớp để an toàn`, true);
+            return false;
+        }
+        
+        if (checkResult.isFull) {
+            log(`❌ Lớp ${targetCode} đã đầy (${checkResult.phanTramDangKy}%)`, true);
+            return false;
+        }
+        
+        if (!checkResult.canRegister) {
+            log(`❌ Lớp ${targetCode} không thể đăng ký - ${checkResult.message}`, true);
+            return false;
+        }
+        
+        log(`✅ Lớp ${targetCode} còn chỗ (${checkResult.phanTramDangKy}%), tiếp tục đổi lớp...`);
+        
+        // Step 2: Cancel old registered class FIRST (before registering new one)
+        log(`🗑️ Đang hủy lớp cũ ${regName} (${regCode})...`);
+        const cancelResult = await backendRequestAuto('cancel', { registrationId: regId, source: regSource, userId, className: `${regName} (${regCode})` });
+        
+        if (!cancelResult || !cancelResult.success) {
+            log(`❌ Hủy lớp ${regCode} thất bại: ${cancelResult?.message || 'Lỗi không xác định'}`, true);
+            return false;
+        }
+        
+        log(`✅ Đã hủy lớp ${regCode} thành công`);
+        
+        // Step 3: Register target class (after canceling old one)
+        log(`📝 Đang đăng ký lớp ${targetName} (${targetCode})...`);
+        const registerResult = await backendRequestAuto('register', { classId: targetId, source: targetSource, userId, className: `${targetName} (${targetCode})` });
+        
+        if (!registerResult || !registerResult.success) {
+            log(`❌ Đăng ký lớp ${targetCode} thất bại: ${registerResult?.message || 'Lỗi không xác định'}`, true);
+            log(`⚠️ CẢNH BÁO: Đã hủy lớp ${regCode} nhưng không đăng ký được lớp ${targetCode}. Vui lòng đăng ký lại thủ công!`, true);
+            await fetchRegisteredClasses();
+            return false;
+        }
+        
+        log(`✅ Đăng ký lớp ${targetCode} thành công!`);
+        log(`🎉 Đổi lớp hoàn tất: ${regName} → ${targetName}`);
+        
+        // Refresh registered classes list
+        await fetchRegisteredClasses();
+        
+        return true;
+    };
+
+    const startInsertion = () => {
+        const totalClasses = selectedClasses.size + swapPendingClasses.size;
+        if (totalClasses === 0) {
+            return log("Vui lòng chọn lớp để chèn.", true);
+        }
+        
+        stopProcess();
+        isProcessStopped = false;
+        toggleActionButtons(true);
+        log("🚀 Bắt đầu quá trình chèn lớp...");
+
+        const classesBySubject = new Map();
+        const completedSubjects = new Set(); // Track completed subjects
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
+            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
+        });
+        
+        // Add swap pending classes (only target classes for insertion)
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const targetClass = swap.target;
+            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
+            classesBySubject.get(targetClass.maHocPhan).push({ 
+                type: 'swap', 
+                class: targetClass,
+                registeredClass: swap.registered
+            });
+        });
+
+        classesBySubject.forEach((classItems, maHocPhan) => {
+            const tenMonHoc = classItems[0].class.tenMonHoc || maHocPhan;
+            const source = classItems[0].class.source;
+
+            // Recursive round scheduling (see AUTO_ROUND_DELAY_MS + backendRequestAuto semaphore)
+            const runInsertionLoop = async () => {
+                // Check if this subject already completed
+                if (completedSubjects.has(maHocPhan)) {
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
+                if (isProcessStopped) {
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
+                
+                try {
+                    const statusRes = await backendRequestAuto('checkClassStatus', { dotId, maHocPhan, source });
+
+                    if (statusRes && statusRes.success) {
+                        for (const availableClass of statusRes.body) {
+                            const matchedItem = classItems.find(item => item.class.id.toString() === availableClass.id.toString());
+                            
+                            if (matchedItem && availableClass.phanTramDangKy < 100) {
+                                if (matchedItem.type === 'swap') {
+                                    // Handle swap: cancel old class first, then register new class
+                                    const regClass = matchedItem.registeredClass;
+                                    log(`[${tenMonHoc}] 🔔 Đổi lớp: ${regClass.maLopHocPhan} → ${availableClass.maLopHocPhan}`);
+                                    
+                                    const swapResult = await swapClass(
+                                        {
+                                            id: regClass.id,
+                                            code: regClass.maLopHocPhan,
+                                            name: regClass.tenMonHoc,
+                                            source: regClass.source
+                                        },
+                                        {
+                                            id: availableClass.id,
+                                            code: availableClass.maLopHocPhan,
+                                            name: availableClass.tenMonHoc,
+                                            source: availableClass.source
+                                        }
+                                    );
+                                    
+                                    if (swapResult) {
+                                        log(`🎉 [${tenMonHoc}] ĐỔI LỚP THÀNH CÔNG! Dừng chèn cho môn này.`);
+                                        swapPendingClasses.delete(matchedItem.class.id.toString());
+                                        updateSelectedList();
+                                        
+                                        // Mark subject as completed to prevent further checks
+                                        completedSubjects.add(maHocPhan);
+                                        registrationIntervals.delete(maHocPhan);
+                                        return; // Exit loop completely
+                                    }
+                                } else {
+                                    // Handle regular registration
+                                    log(`[${tenMonHoc}] 🔔 Phát hiện lớp còn chỗ: ${availableClass.maLopHocPhan}`);
+                                    const regResult = await backendRequestAuto('register', { classId: availableClass.id, source, userId, className: `${tenMonHoc} (${availableClass.maLopHocPhan})` });
+
+                                    if (regResult && regResult.success) {
+                                        log(`🎉 [${tenMonHoc}] ĐĂNG KÝ THÀNH CÔNG! Dừng chèn cho môn này.`);
+                                        registrationIntervals.delete(maHocPhan);
+                                        selectedClasses.delete(availableClass.id.toString());
+                                        completedSubjects.add(maHocPhan);
+                                        await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                                        if (registrationIntervals.size === 0) await stopProcess();
+                                        return; // Exit loop completely
+                                    } else {
+                                        log(`❌ [${tenMonHoc}] Chèn thất bại: ${regResult?.message || 'Lỗi'}`, true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
+                }
+                
+                // Schedule the next round after a short breather (see AUTO_ROUND_DELAY_MS):
+                // network RTT dominates slot-grab speed anyway; the breather is what keeps
+                // the tab responsive during a long wait for a slot to open.
+                if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
+                    const timeoutId = setTimeout(runInsertionLoop, AUTO_ROUND_DELAY_MS);
+                    registrationIntervals.set(maHocPhan, timeoutId);
+                }
+            };
+            
+            // Start the first iteration immediately
+            runInsertionLoop();
+            registrationIntervals.set(maHocPhan, true); // Mark as active
+        });
+    };
+
+    const startRegistration = () => {
+        const totalClasses = selectedClasses.size + swapPendingClasses.size;
+        if (totalClasses === 0) {
+            return log("Vui lòng chọn lớp để đăng ký.", true);
+        }
+        
+        stopProcess();
+        isProcessStopped = false;
+        toggleActionButtons(true);
+        log("🚀 Bắt đầu đăng ký liên tục...");
+
+        const classesBySubject = new Map();
+        const completedSubjects = new Set(); // Track completed subjects
+        
+        // Add regular selected classes
+        selectedClasses.forEach(cls => {
+            if (!classesBySubject.has(cls.maHocPhan)) classesBySubject.set(cls.maHocPhan, []);
+            classesBySubject.get(cls.maHocPhan).push({ type: 'regular', class: cls });
+        });
+        
+        // Add swap pending classes
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const targetClass = swap.target;
+            if (!classesBySubject.has(targetClass.maHocPhan)) classesBySubject.set(targetClass.maHocPhan, []);
+            classesBySubject.get(targetClass.maHocPhan).push({ 
+                type: 'swap', 
+                class: targetClass,
+                registeredClass: swap.registered
+            });
+        });
+
+        classesBySubject.forEach((classItems, maHocPhan) => {
+            const tenMonHoc = classItems[0].class.tenMonHoc;
+
+            // Recursive round scheduling (see AUTO_ROUND_DELAY_MS + backendRequestAuto semaphore)
+            const runRegistrationLoop = async () => {
+                // Check if this subject already completed
+                if (completedSubjects.has(maHocPhan)) {
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
+                if (isProcessStopped) {
+                    registrationIntervals.delete(maHocPhan);
+                    return;
+                }
+                
+                try {
+                    for (const item of classItems) {
+                        if (isProcessStopped) {
+                            registrationIntervals.delete(maHocPhan);
+                            return;
+                        }
+                        
+                        if (item.type === 'swap') {
+                            // Handle swap registration
+                            const regClass = item.registeredClass;
+                            log(`[${tenMonHoc}] 🔄 Thử đổi lớp: ${regClass.maLopHocPhan} → ${item.class.maLopHocPhan}`);
+                            
+                            const swapResult = await swapClass(
+                                {
+                                    id: regClass.id,
+                                    code: regClass.maLopHocPhan,
+                                    name: regClass.tenMonHoc,
+                                    source: regClass.source
+                                },
+                                {
+                                    id: item.class.id,
+                                    code: item.class.maLopHocPhan,
+                                    name: item.class.tenMonHoc,
+                                    source: item.class.source
+                                }
+                            );
+                            
+                            if (swapResult) {
+                                swapPendingClasses.delete(item.class.id.toString());
+                                await updateSelectedList();
+                                
+                                // Mark subject as completed to prevent further checks
+                                completedSubjects.add(maHocPhan);
+                                registrationIntervals.delete(maHocPhan);
+                                if (registrationIntervals.size === 0) await stopProcess();
+                                return; // Exit loop completely
+                            }
+                        } else {
+                            // Handle regular registration
+                            log(`[${tenMonHoc}] ⏳ Gửi yêu cầu đăng ký lớp ${item.class.maLopHocPhan}...`);
+                            const result = await backendRequestAuto('register', { classId: item.class.id, source: item.class.source, userId, className: `${tenMonHoc} (${item.class.maLopHocPhan})` });
+
+                            if (result && (result.success || result.message === 'Bạn đã đăng ký môn này rồi.')) {
+                                log(`🎉 [${tenMonHoc}] THÀNH CÔNG! Dừng đăng ký cho môn này.`);
+                                registrationIntervals.delete(maHocPhan);
+                                selectedClasses.delete(item.class.id.toString());
+                                completedSubjects.add(maHocPhan);
+                                await Promise.all([fetchRegisteredClasses(), updateSelectedList(), renderScheduleTable()]);
+                                if (registrationIntervals.size === 0) await stopProcess();
+                                return; // Exit loop completely
+                            } else if (result) {
+                                log(`❌ [${tenMonHoc}] Thất bại: ${result.message}`, true);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    log(`❌ [${tenMonHoc}] Lỗi: ${error.message}`, true);
+                }
+                
+                // Schedule the next round after a short breather (see AUTO_ROUND_DELAY_MS).
+                if (!isProcessStopped && !completedSubjects.has(maHocPhan)) {
+                    const timeoutId = setTimeout(runRegistrationLoop, AUTO_ROUND_DELAY_MS);
+                    registrationIntervals.set(maHocPhan, timeoutId);
+                }
+            };
+            
+            // Start the first iteration immediately
+            runRegistrationLoop();
+            registrationIntervals.set(maHocPhan, true); // Mark as active
+        });
+    };
+
+    const stopProcess = async () => {
+        isProcessStopped = true;
+        log("🛑 Đang dừng tất cả các quá trình...");
+        registrationIntervals.forEach(clearTimeout);
+        registrationIntervals.clear();
+        toggleActionButtons(false);
+        log("🛑 Đã dừng tất cả quá trình.");
+    };
+
+    const toggleActionButtons = (isProcessing) => {
+        // Registration/insertion no longer require VIP — visibility only tracks processing state
+        startRegistrationBtn.classList.toggle('hidden', isProcessing);
+        stopBtn.classList.toggle('hidden', !isProcessing);
+    };
+
+    // --- RENDER FUNCTIONS ---
+    const renderScheduleTable = async () => {
+        const query = searchInput.value.toLowerCase();
+        const selectedSubject = subjectFilter.value;
+        if (allScheduleData.length > 0) {
+            const subjects = [...new Set(allScheduleData.map(cls => cls.tenMonHoc))].sort();
+            subjectFilter.innerHTML = '<option value="">Tất cả môn học</option>' + subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('');
+        }
+        // Show all classes including "Đã khóa lớp"
+        const filteredData = allScheduleData.filter(cls =>
+            (!selectedSubject || cls.tenMonHoc === selectedSubject) &&
+            (`${cls.tenMonHoc} ${cls.maLopHocPhan} ${cls.maHocPhan}`.toLowerCase().includes(query))
+        );
+        if (filteredData.length === 0) {
+            scheduleContainer.innerHTML = allScheduleData.length === 0 ? '<p class="text-gray-500 text-center py-8">Vui lòng đăng nhập và nhấn "Lấy Lịch Học".</p>' : '<p class="text-gray-500 text-center py-8">Không tìm thấy lớp học phần nào.</p>';
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-500';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Loại HP</th><th scope="col" class="px-6 py-3">Số TC</th>
+                <th scope="col" class="px-6 py-3">Trạng thái</th><th scope="col" class="px-6 py-3">Đã đăng ký</th>
+            </tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        filteredData.forEach(cls => {
+            const row = document.createElement('tr');
+            const isSelected = selectedClasses.has(cls.id.toString());
+            
+            // Check if class is locked
+            const isLocked = cls.tenTrangThai === 'Đã khóa lớp';
+            
+            // Check for schedule conflict
+            const conflictCheck = checkScheduleConflict(cls.scheduleDetails, registeredClassesData);
+            const hasConflict = conflictCheck.hasConflict;
+            
+            // Build row class and cursor based on status
+            let rowClass = 'bg-white border-b transition-colors duration-200';
+            if (isLocked) {
+                // Locked class - gray background, not clickable
+                rowClass += ' bg-gray-200 cursor-not-allowed opacity-60';
+            } else if (hasConflict) {
+                // Conflict - red background, not clickable
+                rowClass += ' bg-red-100 cursor-not-allowed';
+            } else if (isSelected) {
+                // Selected - blue background, clickable
+                rowClass += ' bg-blue-200 cursor-pointer hover:bg-sky-100';
+            } else {
+                // Normal - white background, clickable
+                rowClass += ' cursor-pointer hover:bg-sky-100';
+            }
+            
+            row.className = rowClass;
+            row.dataset.classId = cls.id;
+            
+            // Store locked status
+            if (isLocked) {
+                row.dataset.isLocked = 'true';
+            }
+            
+            // Store conflict info for tooltip
+            if (hasConflict) {
+                row.dataset.hasConflict = 'true';
+                row.dataset.conflictInfo = JSON.stringify(conflictCheck.conflicts);
+            }
+            
+            const isBatBuoc = subjectTypeMap.get(cls.maHocPhan);
+            const typeHtml = cls.source === 'dkhpdk'
+                ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-purple-200 text-purple-800 whitespace-nowrap">Điều kiện</span>`
+                : (isBatBuoc === undefined
+                    ? 'N/A'
+                    : (isBatBuoc
+                        ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-green-200 text-green-800 whitespace-nowrap">Bắt buộc</span>`
+                        : `<span class="text-xs font-medium px-2.5 py-0.5 rounded bg-red-200 text-red-800 whitespace-nowrap">Tự chọn</span>`));
+            
+            // Add warnings below subject name (only conflict warning, not locked)
+            let warnings = '';
+            if (hasConflict) {
+                const conflictItems = conflictCheck.conflicts.map(c => {
+                    // Find registered class data for swap functionality
+                    const regClass = registeredClassesData.find(reg => reg.maLopHocPhan === c.registeredCode);
+                    const regId = regClass ? regClass.id : '';
+                    const regSource = regClass ? regClass.source : 'dkhp';
+                    const regSubjectCode = regClass ? regClass.maHocPhan : '';
+                    const regStatus = regClass ? (regClass.tenTrangThaiLopHocPhan || '') : '';
+                    
+                    return `
+                        <div class="flex items-center justify-between gap-2 py-1.5 px-2 bg-white rounded border border-red-200">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xs font-mono font-semibold text-red-600 whitespace-nowrap">${c.registeredCode}</span>
+                                <span class="text-xs text-gray-600 truncate">${c.registeredClass}</span>
+                            </div>
+                            <button class="swap-from-conflict-btn flex-shrink-0 px-2.5 py-1 text-xs font-semibold rounded bg-orange-500 text-white hover:bg-orange-600 transition whitespace-nowrap"
+                                    data-reg-id="${regId}"
+                                    data-reg-code="${c.registeredCode}"
+                                    data-reg-name="${c.registeredClass}"
+                                    data-reg-source="${regSource}"
+                                    data-reg-subject-code="${regSubjectCode}"
+                                    data-reg-status="${regStatus}"
+                                    data-target-id="${cls.id}"
+                                    data-target-code="${cls.maLopHocPhan}"
+                                    data-target-name="${cls.tenMonHoc}">
+                                🔄 Đổi lớp
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+                warnings += `
+                    <div class="mt-2 p-2 bg-red-50 border-l-4 border-red-500 rounded">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <p class="text-xs font-bold text-red-800">TRÙNG LỊCH HỌC</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            ${conflictItems}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            row.innerHTML = `
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${cls.tenMonHoc}${warnings}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(cls.scheduleDetails)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${cls.maLopHocPhan}</td>
+                <td class="px-6 py-4 whitespace-nowrap" data-label="Loại HP">${typeHtml}</td>
+                <td class="px-6 py-4" data-label="Số TC">${cls.soTinChi === 0 ? '' : (cls.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${cls.tenTrangThai || 'N/A'}</td>
+                <td class="px-6 py-4 font-semibold ${cls.phanTramDangKy >= 100 ? 'text-red-500' : 'text-green-500'}" data-label="Đã ĐK">${cls.phanTramDangKy}%</td>`;
+            tbody.appendChild(row);
+        });
+        scheduleContainer.innerHTML = '';
+        scheduleContainer.appendChild(table);
+    };
+
+    const renderRegisteredTable = async (data) => {
+        if (!data || data.length === 0) {
+            registeredContainer.innerHTML = `<p class="text-gray-500 text-center py-8">Bạn chưa đăng ký học phần nào.</p>`;
+            return;
+        }
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm text-left text-gray-500';
+        table.innerHTML = `
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10"><tr>
+                <th scope="col" class="px-6 py-3">Tên môn học & Lịch học</th><th scope="col" class="px-6 py-3">Mã LHP</th>
+                <th scope="col" class="px-6 py-3">Số TC</th><th scope="col" class="px-6 py-3">Trạng thái</th>
+                <th scope="col" class="px-6 py-3">Hành động</th>
+            </tr></thead><tbody></tbody>`;
+        const tbody = table.querySelector('tbody');
+        data.forEach(reg => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            const sourceBadge = reg.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-purple-200 text-purple-800">Điều kiện</span>` : '';
+            
+            // Try to find maHocPhan from allScheduleData if not present in registered data
+            let maHocPhan = reg.maHocPhan;
+            if (!maHocPhan) {
+                const matchingClass = allScheduleData.find(cls => cls.maLopHocPhan === reg.maLopHocPhan);
+                if (matchingClass) {
+                    maHocPhan = matchingClass.maHocPhan;
+                }
+            }
+            
+            row.innerHTML = `
+                <th scope="row" class="px-6 py-4 font-medium text-gray-900">${reg.tenMonHoc} ${sourceBadge}<div class="text-xs mt-1 text-gray-600">${formatScheduleDetail(reg.scheduleDetails)}</div></th>
+                <td class="px-6 py-4" data-label="Mã LHP">${reg.maLopHocPhan}</td>
+                <td class="px-6 py-4" data-label="Số TC">${reg.soTinChi === 0 ? '' : (reg.soTinChi ?? 'N/A')}</td>
+                <td class="px-6 py-4" data-label="Trạng thái">${reg.tenTrangThaiLopHocPhan || 'N/A'}</td>
+                <td class="px-6 py-4" data-label="Hành động">${
+                    // Allow actions for "Đang chờ đăng ký" and "Đang lên kế hoạch" regardless of isAllowCancel
+                    (reg.isAllowCancel === false && reg.tenTrangThaiLopHocPhan !== 'Đang chờ đăng ký' && reg.tenTrangThaiLopHocPhan !== 'Đang lên kế hoạch')
+                        ? ''
+                        : `
+                            <button data-reg-id="${reg.id ?? ''}" data-ten-mon="${reg.tenMonHoc ?? ''}" data-source="${reg.source ?? ''}" class="font-medium text-red-600 hover:underline cancel-btn mr-3">Hủy</button>
+                            <button data-reg-id="${reg.id ?? ''}" 
+                                    data-reg-code="${reg.maLopHocPhan ?? ''}" 
+                                    data-reg-name="${reg.tenMonHoc ?? ''}" 
+                                    data-reg-source="${reg.source ?? ''}"
+                                    data-reg-subject-code="${maHocPhan ?? ''}"
+                                    data-reg-status="${reg.tenTrangThaiLopHocPhan || ''}"
+                                    class="font-medium text-blue-600 hover:underline swap-from-registered-btn">Xem lớp khác</button>
+                        `
+                }</td>`;
+            tbody.appendChild(row);
+        });
+        registeredContainer.innerHTML = '';
+        registeredContainer.appendChild(table);
+    };
+
+    // Show swap from conflict modal - allows swapping directly from conflict warning
+    const showSwapFromConflictModal = async (registeredClassData, targetClassData) => {
+        const { id: regId, code: regCode, name: regName, source: regSource } = registeredClassData;
+        const { id: targetId, code: targetCode, name: targetName } = targetClassData;
+        
+        // Find registered class details
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        if (!registeredClass) {
+            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+            return;
+        }
+        
+        // Find target class
+        const targetClass = allScheduleData.find(c => c.id.toString() === targetId);
+        if (!targetClass) {
+            log('❌ Không tìm thấy thông tin lớp đích', true);
+            return;
+        }
+        
+        // Show modal to confirm swap to the target class directly
+        showConfirmModal(
+            `Xác nhận đổi lớp trùng lịch?<br><br>` +
+            `<div class="bg-gray-50 p-3 rounded mb-2">` +
+            `<p class="text-sm"><span class="font-semibold text-red-600">Hủy:</span> ${regName} <span class="text-gray-500">(${regCode})</span></p>` +
+            `<p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>` +
+            `</div>` +
+            `<p class="text-sm text-gray-600">Lớp mới sẽ được thêm vào danh sách đổi lớp.</p>`,
+            () => {
+                // Check if there's already a swap for this registered class and remove it
+                let oldSwapEntry = null;
+                swapPendingClasses.forEach((swap, key) => {
+                    if (swap.registered.id.toString() === regId) {
+                        oldSwapEntry = key;
+                    }
+                });
+                
+                if (oldSwapEntry) {
+                    swapPendingClasses.delete(oldSwapEntry);
+                }
+                
+                // Add to swap pending list
+                swapPendingClasses.set(targetId, {
+                    registered: registeredClass,
+                    target: targetClass
+                });
+                
+                log(`✅ Đã thêm vào danh sách đổi lớp: ${regName} (${regCode}) → ${targetName} (${targetCode})`);
+                updateSelectedList();
+                
+                // Re-render schedule table to update conflict status
+                renderScheduleTable();
+            },
+            () => {
+                // On cancel - do nothing
+            }
+        );
+    };
+
+    // Show swap class modal from registered classes table
+    const showSwapClassModal = async (registeredClassData) => {
+        const { id: regId, code: regCode, name: regName, source: regSource, subjectCode, status: regStatus } = registeredClassData;
+        
+        // Find registered class details
+        const registeredClass = registeredClassesData.find(c => c.id.toString() === regId);
+        if (!registeredClass) {
+            log('❌ Không tìm thấy thông tin lớp đã đăng ký', true);
+            return;
+        }
+        
+        // Get subject code - try multiple sources (prioritize registeredClass data)
+        let actualSubjectCode = subjectCode || registeredClass.maHocPhan;
+        
+        // If still not found, extract from maLopHocPhan by removing last 2 characters
+        // Example: DT012301 -> DT0123, TT0401 -> TT04
+        if (!actualSubjectCode && regCode) {
+            actualSubjectCode = regCode.slice(0, -2);
+            console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', actualSubjectCode);
+        }
+        
+        // Last resort: search in allScheduleData (may fail if class is locked)
+        if (!actualSubjectCode) {
+            const matchingClass = allScheduleData.find(cls => 
+                cls.id.toString() === regId || 
+                cls.maLopHocPhan === regCode
+            );
+            if (matchingClass) {
+                actualSubjectCode = matchingClass.maHocPhan;
+                console.log('✅ Found maHocPhan from allScheduleData:', actualSubjectCode);
+            }
+        }
+        
+        if (!actualSubjectCode) {
+            log('❌ Không tìm thấy mã học phần của lớp này', true);
+            console.log('❌ Debug info:');
+            console.log('  - Registered class data:', registeredClass);
+            console.log('  - Tried to find with:', { regId, regCode });
+            console.log('  - subjectCode from button:', subjectCode);
+            return;
+        }
+        
+        console.log('🔍 Looking for classes with maHocPhan:', actualSubjectCode);
+        console.log('📊 Total classes in allScheduleData:', allScheduleData.length);
+        console.log('🔍 Current class code (regCode):', regCode);
+        
+        // Try to find classes in allScheduleData first
+        let availableClasses = allScheduleData.filter(cls => {
+            const matches = cls.maHocPhan === actualSubjectCode && 
+                cls.maLopHocPhan !== regCode &&
+                cls.tenTrangThai !== 'Đã khóa lớp';
+            
+            if (cls.maHocPhan === actualSubjectCode) {
+                console.log('  ➜ Same subject:', cls.maLopHocPhan, '| isCurrent:', cls.maLopHocPhan === regCode, '| Status:', cls.tenTrangThai, '| Match:', matches);
+            }
+            
+            return matches;
+        });
+        
+        console.log('Classes found in allScheduleData:', availableClasses.length);
+        
+        // If no classes found in cache, fetch from API
+        if (availableClasses.length === 0) {
+            log(`🔍 Không tìm thấy lớp trong cache, đang lấy từ API cho môn ${regName}...`);
+            
+            // Extract maHocPhan from maLopHocPhan: Remove last 2 characters
+            // Example: DT012301 -> DT0123, TT0401 -> TT04
+            let detectedMaHocPhan = actualSubjectCode;
+            
+            if (!detectedMaHocPhan || detectedMaHocPhan.length < 2) {
+                detectedMaHocPhan = regCode.slice(0, -2);
+                console.log('✅ Extracted maHocPhan from maLopHocPhan:', regCode, '->', detectedMaHocPhan);
+            }
+            
+            console.log('🔍 Using maHocPhan for API call:', detectedMaHocPhan);
+            
+            const checkStatusRes = await backendRequest('checkClassStatus', { 
+                dotId, 
+                maHocPhan: detectedMaHocPhan, 
+                source: regSource 
+            });
+            
+            // Track if data is from shared database
+            let isFromSharedDB = checkStatusRes?.fromSharedDB || false;
+            
+            if (checkStatusRes && checkStatusRes.success && Array.isArray(checkStatusRes.body)) {
+                // Check if data came from shared DB
+                if (isFromSharedDB) {
+                    log(`📦 Sử dụng dữ liệu từ CSDL cộng đồng`);
+                }
+                
+                // Get schedule details for each class (skip if already has scheduleDetails from shared DB)
+                const classesWithDetails = await Promise.all(
+                    checkStatusRes.body.map(async (cls) => {
+                        // If class already has scheduleDetails (from shared DB), use it
+                        if (cls.scheduleDetails && !cls.scheduleDetails.error) {
+                            return {
+                                ...cls,
+                                maHocPhan: detectedMaHocPhan,
+                                tenMonHoc: cls.tenMonHoc || regName,
+                                source: regSource,
+                                fromSharedDB: cls.fromSharedDB || isFromSharedDB
+                            };
+                        }
+                        
+                        // Otherwise fetch schedule details
+                        const scheduleDetails = await backendRequest('getScheduleDetails', {
+                            classId: cls.id,
+                            source: regSource
+                        });
+                        
+                        return {
+                            ...cls,
+                            maHocPhan: detectedMaHocPhan,
+                            tenMonHoc: cls.tenMonHoc || regName,
+                            source: regSource,
+                            scheduleDetails: scheduleDetails?.success ? scheduleDetails.body : { error: true },
+                            fromSharedDB: isFromSharedDB
+                        };
+                    })
+                );
+                
+                // Filter out current registered class and locked/planning classes
+                availableClasses = classesWithDetails.filter(cls => 
+                    cls.maLopHocPhan !== regCode &&
+                    cls.tenTrangThai !== 'Đã khóa lớp'
+                );
+                
+                console.log('Classes fetched from API:', availableClasses.length);
+                
+                if (isFromSharedDB) {
+                    log(`✅ Đã lấy ${availableClasses.length} lớp từ CSDL cộng đồng`);
+                } else {
+                    log(`✅ Đã lấy ${availableClasses.length} lớp từ API`);
+                }
+            } else {
+                log(`❌ Không thể lấy danh sách lớp từ API`, true);
+            }
+        }
+        
+        // Check if any classes are from shared DB
+        const hasSharedDBClasses = availableClasses.some(cls => cls.fromSharedDB);
+        
+        if (availableClasses.length === 0) {
+            log(`❌ Không có lớp nào khác để đổi cho môn ${regName} (Mã HP: ${actualSubjectCode})`, true);
+            return;
+        }
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.id = 'swap-class-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        
+        // Shared DB notice
+        const sharedDBNotice = hasSharedDBClasses ? `
+            <div class="mb-4 p-3 bg-cyan-50 border-l-4 border-cyan-500 rounded flex items-start gap-2">
+                <span class="text-xl">📦</span>
+                <div>
+                    <p class="font-bold text-sm text-cyan-800">Dữ liệu từ CSDL cộng đồng</p>
+                    <p class="text-xs text-cyan-700 mt-1">Một số lớp được lấy từ cơ sở dữ liệu chia sẻ. Thông tin % đăng ký có thể chưa cập nhật mới nhất.</p>
+                </div>
+            </div>
+        ` : '';
+        
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold">� Xem lớp khác</h2>
+                        <p class="text-sm text-blue-100 mt-1">Môn học: ${regName} (${regCode})</p>
+                    </div>
+                    <button id="close-swap-modal" class="text-white hover:text-gray-200 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto flex-1">
+                    ${sharedDBNotice}
+                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                        <p class="text-sm text-gray-700">
+                            <span class="font-bold">📋 Lịch học hiện tại:</span><br>
+                            <div class="mt-2 text-gray-600">${formatScheduleDetail(registeredClass.scheduleDetails)}</div>
+                        </p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-gray-800 mb-3">Chọn lớp muốn đăng ký:</h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Mã LHP</th>
+                                    <th scope="col" class="px-4 py-3">Lịch học</th>
+                                    <th scope="col" class="px-4 py-3">Trạng thái</th>
+                                    <th scope="col" class="px-4 py-3">Đã ĐK</th>
+                                    <th scope="col" class="px-4 py-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="swap-classes-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Render available classes
+        const tbody = modal.querySelector('#swap-classes-tbody');
+        availableClasses.forEach(cls => {
+            const row = document.createElement('tr');
+            row.className = 'bg-white border-b hover:bg-gray-50';
+            
+            // Check if schedules conflict
+            const hasConflict = checkScheduleConflictBetweenTwo(registeredClass.scheduleDetails, cls.scheduleDetails);
+            const conflictBadge = hasConflict 
+                ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">⚠️ Trùng lịch</span>' 
+                : '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓ Không trùng</span>';
+            
+            const isFull = cls.phanTramDangKy >= 100;
+            const statusColor = isFull ? 'text-red-600 font-bold' : 'text-green-600';
+            
+            // Shared DB badge
+            const sharedDBBadge = cls.fromSharedDB 
+                ? '<span class="ml-1 text-xs bg-cyan-100 text-cyan-700 px-1.5 py-0.5 rounded">📦</span>' 
+                : '';
+            
+            // Format last updated time for shared DB classes
+            const lastUpdatedInfo = cls.fromSharedDB && cls.lastUpdatedAt
+                ? `<div class="text-xs text-gray-400 mt-1">Cập nhật: ${formatLastUpdated(cls.lastUpdatedAt)}</div>`
+                : '';
+            
+            row.innerHTML = `
+                <td class="px-4 py-3 font-medium">${cls.maLopHocPhan}${sharedDBBadge}</td>
+                <td class="px-4 py-3">
+                    <div class="text-xs">${formatScheduleDetail(cls.scheduleDetails)}</div>
+                </td>
+                <td class="px-4 py-3">${cls.tenTrangThai || 'N/A'}${lastUpdatedInfo}</td>
+                <td class="px-4 py-3 ${statusColor}">${cls.phanTramDangKy}%</td>
+                <td class="px-4 py-3">
+                    <div class="flex flex-col gap-2">
+                        ${conflictBadge}
+                        <button class="execute-swap-btn px-3 py-1 text-xs font-semibold rounded transition bg-green-600 text-white hover:bg-green-700"
+                                data-target-id="${cls.id}"
+                                data-target-code="${cls.maLopHocPhan}"
+                                data-target-name="${cls.tenMonHoc}"
+                                data-target-source="${cls.source}"
+                                data-has-conflict="${hasConflict}">
+                            ✓ Chọn đăng ký
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+        
+        // Close modal handler
+        modal.querySelector('#close-swap-modal').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Execute select for registration handler
+        modal.querySelectorAll('.execute-swap-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const targetId = btn.dataset.targetId;
+                const targetCode = btn.dataset.targetCode;
+                const targetName = btn.dataset.targetName;
+                const targetSource = btn.dataset.targetSource;
+                const hasConflict = btn.dataset.hasConflict === 'true';
+                
+                // Find target class full info from availableClasses (not allScheduleData)
+                const targetClass = availableClasses.find(c => c.id.toString() === targetId);
+                if (!targetClass) {
+                    alert('❌ Không tìm thấy thông tin lớp');
+                    console.log('❌ Debug: targetId =', targetId);
+                    console.log('❌ Available classes:', availableClasses.map(c => ({ id: c.id, code: c.maLopHocPhan })));
+                    return;
+                }
+                
+                // Check if already selected
+                if (selectedClasses.has(targetId)) {
+                    log(`⚠️ Lớp ${targetCode} đã có trong danh sách chọn`, true);
+                    return;
+                }
+                
+                const conflictWarning = hasConflict 
+                    ? '<div class="mb-3 p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded"><p class="text-sm text-yellow-800 font-semibold">⚠️ CẢNH BÁO: Lớp này trùng lịch với lớp đã đăng ký!</p></div>'
+                    : '';
+                
+                const slotInfo = targetClass.phanTramDangKy >= 100 
+                    ? '<p class="text-sm text-orange-600 mt-2">⏳ Lớp đang đầy, hệ thống sẽ tự động chờ và đăng ký khi có chỗ trống.</p>'
+                    : '<p class="text-sm text-green-600 mt-2">✅ Lớp còn chỗ, sẽ đăng ký ngay khi bắt đầu.</p>';
+                
+                const confirmMsg = `
+                    ${conflictWarning}
+                    <p class="text-gray-700 mb-2">Xác nhận thêm vào danh sách đăng ký?</p>
+                    <div class="bg-gray-50 p-3 rounded mb-2">
+                        <p class="text-sm"><span class="font-semibold text-green-600">Đăng ký:</span> ${targetName} <span class="text-gray-500">(${targetCode})</span></p>
+                    </div>
+                    ${slotInfo}
+                `;
+                
+                showConfirmModal(
+                    confirmMsg,
+                    () => {
+                        // On confirm - Add to selected classes (same as selecting from schedule table)
+                        selectedClasses.set(targetId, targetClass);
+                        
+                        log(`✅ Đã thêm lớp ${targetName} (${targetCode}) vào danh sách đăng ký`);
+                        
+                        if (targetClass.phanTramDangKy >= 100) {
+                            log(`⏳ Lớp đang đầy (${targetClass.phanTramDangKy}%), hệ thống sẽ tự động chờ cho đến khi có chỗ trống`);
+                        }
+                        
+                        updateSelectedList();
+                        renderScheduleTable(); // Re-render to update selection status
+                        modal.remove();
+                    },
+                    () => {
+                        // On cancel - do nothing
+                    }
+                );
+            });
+        });
+    };
+    
+    // Check schedule conflict between two specific classes
+    const checkScheduleConflictBetweenTwo = (schedule1, schedule2) => {
+        if (!schedule1 || !Array.isArray(schedule1) || schedule1.length === 0) return false;
+        if (!schedule2 || !Array.isArray(schedule2) || schedule2.length === 0) return false;
+        
+        for (const s1 of schedule1) {
+            const periods1 = parsePeriods(s1.tietHoc);
+            if (periods1.length === 0) continue;
+            
+            for (const s2 of schedule2) {
+                const periods2 = parsePeriods(s2.tietHoc);
+                if (periods2.length === 0) continue;
+                
+                // Check if same day of week
+                if (s1.thu === s2.thu) {
+                    // Check if date ranges overlap
+                    if (dateRangesOverlap(s1.ngayBatDau, s1.ngayKetThuc, s2.ngayBatDau, s2.ngayKetThuc)) {
+                        // Check if periods overlap
+                        if (periodsOverlap(periods1, periods2)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
+    };
+
+    const updateSelectedList = async () => {
+        const totalCount = selectedClasses.size + swapPendingClasses.size;
+        
+        if (totalCount === 0) {
+            selectedList.innerHTML = `<p class="text-gray-500">Chưa có lớp nào được chọn.</p>`;
+            registrationControls.classList.add('hidden');
+            
+            // Save to cache even when empty
+            saveCachedData();
+            return;
+        }
+        
+        let html = '';
+        
+        // Render regular selected classes
+        selectedClasses.forEach(cls => {
+            const sourceBadge = cls.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            html += `
+                <div class="flex justify-between items-center bg-blue-50 p-2 rounded-md hover:bg-blue-100">
+                    <div>
+                        <p class="font-semibold text-sm text-blue-800">${cls.tenMonHoc} ${sourceBadge}</p>
+                        <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(cls, cls.scheduleDetails)}</div>
+                    </div>
+                    <button data-class-id="${cls.id}" class="remove-selected-btn text-red-500 hover:text-red-700 ml-2">&times;</button>
+                </div>`;
+        });
+        
+        // Render swap pending classes with strikethrough old class and arrow to new class
+        swapPendingClasses.forEach((swap, targetClassId) => {
+            const registeredClass = swap.registered;
+            const targetClass = swap.target;
+            
+            const regSourceBadge = registeredClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            const targetSourceBadge = targetClass.source === 'dkhpdk' ? `<span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-800">ĐK</span>` : '';
+            
+            html += `
+                <div class="flex justify-between items-center bg-yellow-50 border-2 border-yellow-400 p-2 rounded-md hover:bg-yellow-100">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-xs font-bold text-yellow-800 uppercase">Đổi lớp</span>
+                        </div>
+                        
+                        <!-- Old class (strikethrough) -->
+                        <div class="mb-1">
+                            <p class="font-semibold text-sm text-gray-500 line-through decoration-2">${registeredClass.tenMonHoc} ${regSourceBadge}</p>
+                            <div class="text-xs text-gray-400 line-through mt-1">${formatSelectedClassDetail(registeredClass, registeredClass.scheduleDetails)}</div>
+                        </div>
+                        
+                        <!-- Arrow -->
+                        <div class="flex items-center gap-2 my-1">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                            <span class="text-xs font-semibold text-green-700">Đổi sang</span>
+                        </div>
+                        
+                        <!-- New class -->
+                        <div>
+                            <p class="font-semibold text-sm text-green-800">${targetClass.tenMonHoc} ${targetSourceBadge}</p>
+                            <div class="text-xs text-gray-600 mt-1">${formatSelectedClassDetail(targetClass, targetClass.scheduleDetails)}</div>
+                        </div>
+                    </div>
+                    <button data-target-class-id="${targetClassId}" class="remove-swap-btn text-red-500 hover:text-red-700 ml-2 flex-shrink-0">&times;</button>
+                </div>`;
+        });
+        
+        selectedList.innerHTML = html;
+        registrationControls.classList.remove('hidden');
+        
+        // Save to cache whenever selection changes
+        saveCachedData();
+    };
+
+    // --- EVENT LISTENERS ---
+    
+    // Guide button
+    const guideBtn = document.getElementById('guide-btn');
+    if (guideBtn) {
+        guideBtn.addEventListener('click', () => {
+            showGuideModal();
+        });
+    }
+
+    // About button
+    const aboutBtn = document.getElementById('about-btn');
+    if (aboutBtn) {
+        aboutBtn.addEventListener('click', () => {
+            showAboutModal();
+        });
+    }
+
+    // Footer About button
+    const footerAboutBtn = document.getElementById('footer-about-btn');
+    if (footerAboutBtn) {
+        footerAboutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAboutModal();
+        });
+    }
+    
+    // Try auto-login on page load
+    autoLogin().then(success => {
+        if (!success) {
+            // Show login form if auto-login failed
+            loginForm.classList.remove('hidden');
+        }
+    });
+    
+    loginBtn.addEventListener('click', handleLogin);
+    refreshRegisteredBtn.addEventListener('click', () => {
+        fetchRegisteredClasses();
+    });
+    startInsertionBtn.addEventListener('click', startInsertion);
+    startRegistrationBtn.addEventListener('click', startRegistration);
+    stopBtn.addEventListener('click', stopProcess);
+    searchInput.addEventListener('input', () => renderScheduleTable());
+    subjectFilter.addEventListener('change', () => renderScheduleTable());
+    passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+    document.addEventListener('click', (e) => {
+        const scheduleRow = e.target.closest('#schedule-container tr');
+        if (scheduleRow) {
+            // Check if class is locked
+            if (scheduleRow.dataset.isLocked === 'true') {
+                log('🔒 Không thể chọn lớp này vì đã bị khóa', true);
+                return;
+            }
+            
+            // Check if row has conflict
+            if (scheduleRow.dataset.hasConflict === 'true') {
+                const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
+                const conflictList = conflicts.map((conflict, idx) => {
+                    const details = conflict.uniqueConflicts.map(c => 
+                        `${c.day}, Tiết ${c.conflictPeriod}`
+                    ).join(' và ');
+                    return `${idx + 1}. ${conflict.registeredClass} (${conflict.registeredCode}) - ${details}`;
+                }).join('\n');
+                
+                log(`⚠️ KHÔNG THỂ CHỌN LỚP NÀY\n\n🔴 Trùng lịch học với ${conflicts.length} môn đã đăng ký:\n\n${conflictList}\n\n💡 Vui lòng chọn lớp khác hoặc hủy đăng ký lớp bị trùng.`, true);
+                return;
+            }
+            
+            const classId = scheduleRow.dataset.classId;
+            const cls = allScheduleData.find(c => c.id.toString() === classId);
+            if (!cls) return;
+            if (selectedClasses.has(classId)) {
+                selectedClasses.delete(classId);
+            } else {
+                selectedClasses.set(classId, cls);
+            }
+            scheduleRow.classList.toggle('bg-blue-200');
+            updateSelectedList();
+        }
+        const removeBtn = e.target.closest('.remove-selected-btn');
+        if (removeBtn) {
+            const classId = removeBtn.dataset.classId;
+            const removedClass = selectedClasses.get(classId);
+            selectedClasses.delete(classId);
+            const rowToUpdate = document.querySelector(`#schedule-container tr[data-class-id='${classId}']`);
+            if (rowToUpdate) rowToUpdate.classList.remove('bg-blue-200');
+            updateSelectedList();
+        }
+        
+        const removeSwapBtn = e.target.closest('.remove-swap-btn');
+        if (removeSwapBtn) {
+            const targetClassId = removeSwapBtn.dataset.targetClassId;
+            const removedSwap = swapPendingClasses.get(targetClassId);
+            swapPendingClasses.delete(targetClassId);
+            updateSelectedList();
+            log("🗑️ Đã hủy yêu cầu đổi lớp");
+        }
+        
+        const cancelBtn = e.target.closest('.cancel-btn');
+        if (cancelBtn) {
+            const { regId, tenMon, source } = cancelBtn.dataset;
+            cancelRegistration(regId, tenMon, source);
+        }
+        
+        const swapFromRegisteredBtn = e.target.closest('.swap-from-registered-btn');
+        if (swapFromRegisteredBtn) {
+            const registeredData = {
+                id: swapFromRegisteredBtn.dataset.regId,
+                code: swapFromRegisteredBtn.dataset.regCode,
+                name: swapFromRegisteredBtn.dataset.regName,
+                source: swapFromRegisteredBtn.dataset.regSource,
+                subjectCode: swapFromRegisteredBtn.dataset.regSubjectCode,
+                status: swapFromRegisteredBtn.dataset.regStatus
+            };
+            
+            showSwapClassModal(registeredData);
+        }
+        
+        const swapFromConflictBtn = e.target.closest('.swap-from-conflict-btn');
+        if (swapFromConflictBtn) {
+            // Prevent row selection when clicking swap button
+            e.stopPropagation();
+            
+            const registeredData = {
+                id: swapFromConflictBtn.dataset.regId,
+                code: swapFromConflictBtn.dataset.regCode,
+                name: swapFromConflictBtn.dataset.regName,
+                source: swapFromConflictBtn.dataset.regSource,
+                subjectCode: swapFromConflictBtn.dataset.regSubjectCode,
+                status: swapFromConflictBtn.dataset.regStatus
+            };
+            
+            const targetData = {
+                id: swapFromConflictBtn.dataset.targetId,
+                code: swapFromConflictBtn.dataset.targetCode,
+                name: swapFromConflictBtn.dataset.targetName
+            };
+            
+            showSwapFromConflictModal(registeredData, targetData);
+        }
+        
+        const swapBtn = e.target.closest('.swap-class-btn');
+        if (swapBtn) {
+            const registeredData = {
+                id: swapBtn.dataset.registeredId,
+                code: swapBtn.dataset.registeredCode,
+                name: swapBtn.dataset.registeredName,
+                source: swapBtn.dataset.registeredSource
+            };
+            const targetData = {
+                id: swapBtn.dataset.targetId,
+                code: swapBtn.dataset.targetCode,
+                name: swapBtn.dataset.targetName,
+                source: swapBtn.dataset.targetSource
+            };
+            
+            // Find full class objects from data
+            const registeredClass = registeredClassesData.find(c => c.id.toString() === registeredData.id);
+            const targetClass = allScheduleData.find(c => c.id.toString() === targetData.id);
+            
+            if (!registeredClass || !targetClass) {
+                log("❌ Không tìm thấy thông tin đầy đủ của lớp", true);
+                return;
+            }
+            
+            // Validate registered class can be cancelled
+            const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+            
+            if (registeredStatus === 'Đã khóa lớp') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            if (registeredStatus === 'Đã mở chính thức') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký' && registeredStatus !== 'Đang lên kế hoạch') {
+                log(`❌ Không thể đổi lớp ${registeredData.code} - Trạng thái: ${registeredStatus}`, true);
+                return;
+            }
+            
+            // Validate target class can be registered
+            const targetStatus = targetClass.tenTrangThai || '';
+            
+            if (targetStatus === 'Đã khóa lớp') {
+                log(`❌ Không thể đăng ký lớp ${targetData.code} - Trạng thái: ${targetStatus}`, true);
+                return;
+            }
+            
+            // All validations passed - add to swap pending list
+            swapPendingClasses.set(targetData.id, {
+                registered: registeredClass,
+                target: targetClass
+            });
+            
+            log(`✅ Đã thêm yêu cầu đổi lớp: ${registeredData.name} → ${targetData.name}`);
+            log(`📋 Trạng thái: ${registeredStatus} → ${targetStatus}`);
+            updateSelectedList();
+            
+            // Close tooltip
+            if (tooltipElement) {
+                tooltipElement.remove();
+                tooltipElement = null;
+            }
+        }
+    });
+
+    // Add hover tooltip for conflict rows
+    let tooltipElement = null;
+    
+    document.addEventListener('mouseover', (e) => {
+        const scheduleRow = e.target.closest('#schedule-container tr');
+        if (scheduleRow && scheduleRow.dataset.hasConflict === 'true') {
+            // Remove existing tooltip
+            if (tooltipElement) {
+                tooltipElement.remove();
+                tooltipElement = null;
+            }
+            
+            // Create tooltip
+            const conflicts = JSON.parse(scheduleRow.dataset.conflictInfo);
+            const targetClassId = scheduleRow.dataset.classId;
+            const targetClass = allScheduleData.find(c => c.id.toString() === targetClassId);
+            
+            const conflictMessages = conflicts.map(conflict => {
+                // Format all unique conflicts for this class
+                const conflictDetails = conflict.uniqueConflicts.map(c => 
+                    `<div class="flex items-center gap-2 mt-1.5 text-xs text-red-100">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                            </svg>
+                            ${c.day}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                            Tiết ${c.conflictPeriod}
+                        </span>
+                    </div>`
+                ).join('');
+                
+                // Find the registered class to get its ID and percentage
+                const registeredClass = registeredClassesData.find(r => r.maLopHocPhan === conflict.registeredCode);
+                
+                // Check if swap is allowed based on class status
+                let canSwap = false;
+                let swapDisabledReason = '';
+                
+                if (!registeredClass) {
+                    swapDisabledReason = 'Không tìm thấy thông tin lớp';
+                } else {
+                    const registeredStatus = registeredClass.tenTrangThaiLopHocPhan || '';
+                    const targetStatus = targetClass?.tenTrangThai || '';
+                    
+                    // Check registered class can be cancelled
+                    if (registeredStatus === 'Đã khóa lớp') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    } else if (registeredStatus === 'Đã mở chính thức') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    } else if (registeredClass.isAllowCancel === false && registeredStatus !== 'Đang chờ đăng ký' && registeredStatus !== 'Đang lên kế hoạch') {
+                        swapDisabledReason = `Trạng thái: ${registeredStatus}`;
+                    }
+                    // Check target class can be registered
+                    else if (targetStatus === 'Đã khóa lớp') {
+                        swapDisabledReason = `Lớp đích - Trạng thái: ${targetStatus}`;
+                    } else {
+                        canSwap = true;
+                    }
+                }
+                
+                const swapButton = canSwap ? 
+                    `<button class="swap-class-btn mt-2 w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold py-1.5 px-3 rounded transition duration-200 flex items-center justify-center gap-1"
+                            data-registered-id="${registeredClass.id}"
+                            data-registered-code="${conflict.registeredCode}"
+                            data-registered-name="${conflict.registeredClass}"
+                            data-registered-source="${registeredClass.source}"
+                            data-target-id="${targetClassId}"
+                            data-target-code="${targetClass?.maLopHocPhan || ''}"
+                            data-target-name="${targetClass?.tenMonHoc || ''}"
+                            data-target-source="${targetClass?.source || ''}">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z"/>
+                        </svg>
+                        Đổi lớp
+                    </button>` 
+                    : `<p class="mt-2 text-xs text-yellow-300">⚠️ Không thể đổi: ${swapDisabledReason}</p>`;
+                
+                return `<div class="py-2 border-b border-red-500 last:border-0">
+                    <div class="flex items-start gap-2">
+                        <span class="text-red-200 text-lg flex-shrink-0">📚</span>
+                        <div class="flex-1">
+                            <p class="font-semibold text-white">${conflict.registeredClass}</p>
+                            <p class="text-xs text-red-100 mt-1">Mã LHP: ${conflict.registeredCode}</p>
+                            ${conflictDetails}
+                            ${swapButton}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            tooltipElement = document.createElement('div');
+            tooltipElement.className = 'fixed bg-gradient-to-br from-red-600 to-red-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 max-w-md border-2 border-red-500';
+            tooltipElement.innerHTML = `
+                <div class="flex items-center gap-2 mb-3 pb-2 border-b border-red-500">
+                    <svg class="w-6 h-6 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-bold text-lg">TRÙNG LỊCH HỌC</span>
+                </div>
+                ${conflictMessages}
+                <div class="mt-3 pt-2 text-xs text-red-100">
+                    💡 Tip: Chọn lớp học khác hoặc hủy đăng ký lớp bị trùng
+                </div>
+            `;
+            
+            document.body.appendChild(tooltipElement);
+            
+            // Position tooltip near cursor
+            const updateTooltipPosition = (event) => {
+                const x = event.clientX + 15;
+                const y = event.clientY + 15;
+                tooltipElement.style.left = x + 'px';
+                tooltipElement.style.top = y + 'px';
+            };
+            
+            updateTooltipPosition(e);
+            scheduleRow.addEventListener('mousemove', updateTooltipPosition);
+            scheduleRow.addEventListener('mouseleave', () => {
+                if (tooltipElement) {
+                    tooltipElement.remove();
+                    tooltipElement = null;
+                }
+            });
+        }
+    });
+});

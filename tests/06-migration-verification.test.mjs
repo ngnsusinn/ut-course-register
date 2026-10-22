@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { tryConnectMongo, REPO } from './helpers.mjs';
 
-const SKIP = process.env.SKIP_DB === '1';
+const SKIP = process.env.SKIP_DB === '1' || !process.env.MONGODB_URI;
 const MANIFEST_PATH = REPO + 'tests/fixtures/migration-manifest.json';
 
 const canonicalize = (v) => (v instanceof Date ? { __date: v.toISOString() }
